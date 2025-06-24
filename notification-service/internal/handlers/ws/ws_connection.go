@@ -80,4 +80,5 @@ func (wsc *WSConnection) handelRequests() {
 }
 
 func (wsc *WSConnection) CloseConnection() {
+	wsc.wsconn.Close()
 }
