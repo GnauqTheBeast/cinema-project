@@ -1,20 +1,22 @@
 package handlers
 
 import (
+	"net/http"
+
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/samber/do"
-	"net/http"
+
 	"notification-service/internal/handlers/ws"
 )
 
-type groupWebsocket struct {
+type groupWebSocket struct {
 	container *do.Injector
 	upgrader  *websocket.Upgrader
 }
 
-func NewGroupWebsocket(container *do.Injector) *groupWebsocket {
-	return &groupWebsocket{
+func NewGroupWebSocket(container *do.Injector) *groupWebSocket {
+	return &groupWebSocket{
 		container: container,
 		upgrader: &websocket.Upgrader{
 			ReadBufferSize:  1024,
@@ -26,7 +28,7 @@ func NewGroupWebsocket(container *do.Injector) *groupWebsocket {
 	}
 }
 
-func (g *groupWebsocket) WebsocketHandler(c echo.Context) error {
+func (g *groupWebSocket) WebsocketHandler(c echo.Context) error {
 	w := c.Response()
 	r := c.Request()
 	conn, err := g.upgrader.Upgrade(w, r, nil)
@@ -36,7 +38,7 @@ func (g *groupWebsocket) WebsocketHandler(c echo.Context) error {
 	}
 
 	// Create a new WSConnection instance
-	wsConn, err := ws.NewWSConnection(r.Context(), g.containier, conn)
+	wsConn, err := ws.NewWebSocketConnection(r.Context(), g.container, conn)
 	if err != nil {
 		c.Logger().Errorf("Failed to create WebSocket connection: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create WebSocket connection")

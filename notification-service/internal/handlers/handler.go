@@ -3,6 +3,8 @@ package handlers
 import (
 	"net/http"
 
+	"notification-service/internal/types"
+
 	"github.com/labstack/echo-contrib/pprof"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -44,27 +46,22 @@ func New(cfg *Config) (http.Handler, error) {
 	routesAPIv1 := r.Group("/api/v1")
 	{
 		routesAPIv1.GET("", Hello)
-		routesPool := routesAPIv1.Group("/pool")
-		{
-			p := groupPool{cfg.Container}
-			routesPool.GET("/details/:chain/:pool", p.GetPool)
-			routesPool.GET("/list", p.GetPoolsByFilters)
-
-			c := groupCandle{cfg.Container}
-			routesPool.GET("/candles/:dex/:chain/:pool/:interval/latest", c.GetLatestCandles)
-			routesPool.GET("/candles/:dex/:chain/:pool/:interval/:timeframe", c.GetCandlesByTimeFrame)
-
-			e := groupEvents{cfg.Container}
-			routesPool.GET("/events/:chain/:pool", e.ShowEvents)
-		}
+		//routesNoti := routesAPIv1.Group("/notifications")
+		//{
+		//
+		//}
 	}
 
 	groupWebSocket := NewGroupWebSocket(cfg.Container)
-	r.GET("/ws", groupWebSocket.WebSocketHandler)
+	r.GET("/ws", groupWebSocket.WebsocketHandler)
 
 	return r, nil
 }
 
 func Hello(c echo.Context) error {
-	return httpx.RestAbort(c, "Hello, world!", nil)
+	return types.ResponseWithMessage(c, &types.Body{
+		Code:    http.StatusOK,
+		Message: http.StatusText(http.StatusOK),
+		Data:    "Hello World!",
+	})
 }

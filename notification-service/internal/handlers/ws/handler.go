@@ -1,18 +1,15 @@
 package ws
 
 import (
-	"context"
 	"github.com/samber/do"
 )
 
-type WebsocketHandler struct {
+type WebSocketHandler struct {
 	containier *do.Injector
 }
 
-func NewWebSocketHandler(container *do.Injector) *WebsocketHandler {
-	return &WebsocketHandler{
+func NewWebSocketHandler(container *do.Injector) (*WebSocketHandler, error) {
+	return &WebSocketHandler{
 		containier: container,
-	}
+	}, nil
 }
-
-func (h *WebsocketHandler) NewWebSocketConnection(ctx context.Context) error {}

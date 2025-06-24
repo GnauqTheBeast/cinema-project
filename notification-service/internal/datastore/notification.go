@@ -3,6 +3,7 @@ package datastore
 import (
 	"context"
 	"fmt"
+
 	"github.com/uptrace/bun"
 	"notification-service/internal/models"
 )
@@ -25,6 +26,7 @@ func GetNotificationsByUserId(ctx context.Context, db *bun.DB, userId string, li
 	err := db.NewSelect().
 		Model(&notis).
 		Where("user_id = ?", userId).
+		Where("status != ?", models.NotificationStatusDeleted).
 		Order("created_at DESC").
 		Limit(limit).
 		Offset(offset).

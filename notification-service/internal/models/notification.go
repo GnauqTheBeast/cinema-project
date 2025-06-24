@@ -9,6 +9,7 @@ const (
 	NotificationStatusSent    NotificationStatus = "sent"
 	NotificationStatusFailed  NotificationStatus = "failed"
 	NotificationStatusRead    NotificationStatus = "read"
+	NotificationStatusDeleted NotificationStatus = "deleted"
 )
 
 type Notification struct {

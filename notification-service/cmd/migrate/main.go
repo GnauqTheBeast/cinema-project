@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"notification-service/internal/datastore"
-	"notification-service/internal/models"
-	"notification-service/internal/pkg/db"
 	"os"
 	"strings"
 	"time"
+
+	"notification-service/internal/datastore"
+	"notification-service/internal/models"
+	"notification-service/internal/pkg/db"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
