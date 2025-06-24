@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/redis/go-redis/v9"
 	"notification-service/internal/pkg/pubsub"
 )
@@ -12,10 +13,10 @@ type RedisPubSub struct {
 	writeClient redis.UniversalClient
 }
 
-func NewRedisPubsub(readClient *redis.UniversalClient, writeClient *redis.UniversalClient) *RedisPubSub {
+func NewRedisPubsub(readClient redis.UniversalClient, writeClient redis.UniversalClient) *RedisPubSub {
 	return &RedisPubSub{
-		readClient:  *readClient,
-		writeClient: *writeClient,
+		readClient:  readClient,
+		writeClient: writeClient,
 	}
 }
 
