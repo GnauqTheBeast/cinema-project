@@ -41,7 +41,7 @@ func provideDatabase(_ *do.Injector) (*bun.DB, error) {
 		DSN:          os.Getenv("DB_DSN"),
 		Password:     os.Getenv("DB_PASSWORD"),
 		MaxOpenConns: 100,
-		MaxIdleConns: 10,
+		MaxIdleConns: 100,
 	})
 	if err != nil {
 		return nil, err

@@ -1,0 +1,21 @@
+user_id,title,content,status
+1fd2f25c-d6cd-4adf-b301-4ff4ac05bde1,Welcome,Chào mừng bạn đến với hệ thống!,pending
+9a7abafe-1db7-4b7f-8519-e8b7b87e52cd,Info,Tài khoản của bạn đã được cập nhật,sent
+6e9c9d3f-3d88-4cf0-93e6-5d3b3f0c5c0e,Alert,Phát hiện hoạt động bất thường,read
+c4538d77-08c2-4c0e-b942-c9518bc8edc3,Promo,Ưu đãi chỉ trong hôm nay!,failed
+ec5f6c14-3fc9-4cb5-9ce6-0d4127c7cb15,Welcome,Cảm ơn bạn đã tham gia!,pending
+ab6cbd3c-e6fa-4f18-8124-fcb12f53e4e4,Info,Bạn có 1 tin nhắn mới,sent
+f9ac4b2e-1c13-4570-88f8-1668d4a86b71,Alert,Tài khoản bị khóa tạm thời,read
+d4784c58-4a12-47a4-95fc-08b8a0b3ea1d,Promo,Giảm giá 50% cho đơn đầu tiên,failed
+e63879a9-22d5-4c49-a953-f1d4626f7f22,Welcome,Hãy cập nhật thông tin cá nhân,pending
+9b1fc155-e9ed-4702-bdc3-f382b3b1dc93,Info,Tính năng mới đã được bật,sent
+af87e7b6-538a-4609-83cc-47a929421c97,Alert,Đăng nhập từ thiết bị lạ,read
+52c0a169-8f39-4019-91c4-5d479193901e,Promo,Miễn phí vận chuyển tuần này!,failed
+f03ac2e1-dcc1-4a84-b65f-16df0f5aa9bd,Welcome,Khám phá tính năng mới ngay!,pending
+382a8969-16e7-4f83-b8e3-e58fa9f0b8bc,Info,Hồ sơ đã hoàn thành,sent
+4c2a4e6f-858e-4c94-8e12-c6e7409c054e,Alert,Thử lại mật khẩu không thành công,read
+21eac58f-c11f-4ab5-a7c0-c13df2468b33,Promo,Mã giảm giá dành riêng cho bạn,failed
+6cb20356-65c2-4907-9939-27416cb1e38e,Welcome,Chào mừng quay trở lại!,pending
+d172837f-0a33-4ac1-bf1a-4631847cb614,Info,Email xác minh đã được gửi,sent
+7c289a94-bbd7-4d17-a5e9-cd8ccbe4569e,Alert,Cảnh báo bảo mật,read
+55307ec7-f999-4c50-a340-2d1f69e665e4,Promo,Nâng cấp gói ngay hôm nay!,failed
