@@ -13,11 +13,11 @@ const (
 )
 
 type Notification struct {
-	Id        string             `bun:"id,pk,type:uuid"`
-	UserId    string             `bun:"user_id,type:uuid"`
-	Title     string             `bun:"title,type:text"`
-	Content   string             `bun:"content,type:text"`
-	Status    NotificationStatus `bun:"status"`
-	CreatedAt *time.Time         `bun:"created_at,default:current_timestamp"`
-	UpdatedAt *time.Time         `bun:"updated_at,default:current_timestamp"`
+	Id        string             `bun:"id,pk" json:"id"`
+	UserId    string             `bun:"user_id" json:"user_id"`
+	Title     string             `bun:"title" json:"title"`
+	Content   string             `bun:"content" json:"content"`
+	Status    NotificationStatus `bun:"status" json:"status"`
+	CreatedAt *time.Time         `bun:"created_at,default:current_timestamp" json:"created_at"`
+	UpdatedAt *time.Time         `bun:"updated_at,default:current_timestamp" json:"updated_at"`
 }

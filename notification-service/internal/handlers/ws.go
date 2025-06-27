@@ -28,7 +28,7 @@ func NewGroupWebSocket(container *do.Injector) *groupWebSocket {
 	}
 }
 
-func (g *groupWebSocket) WebsocketHandler(c echo.Context) error {
+func (g *groupWebSocket) WebsocketHandleConnection(c echo.Context) error {
 	w := c.Response()
 	r := c.Request()
 	conn, err := g.upgrader.Upgrade(w, r, nil)

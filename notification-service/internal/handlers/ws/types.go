@@ -17,13 +17,13 @@ func (ctx *WSContext) Context() context.Context {
 }
 
 type WSRequest struct {
-	ID     int             `json:"id"`
+	Id     int             `json:"id"`
 	Method string          `json:"method"`
 	Params json.RawMessage `json:"params"` // must be map[string]interface{} or []interface{}
 }
 
 type WSResponse struct {
-	ID     int             `json:"id"`
+	Id     int             `json:"id"`
 	Result json.RawMessage `json:"result,omitempty"` // must be map[string]interface{} or []interface{}
 	Error  *WSError        `json:"error,omitempty"`
 }

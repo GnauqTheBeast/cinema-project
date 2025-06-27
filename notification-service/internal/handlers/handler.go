@@ -53,7 +53,7 @@ func New(cfg *Config) (http.Handler, error) {
 	}
 
 	groupWebSocket := NewGroupWebSocket(cfg.Container)
-	r.GET("/ws", groupWebSocket.WebsocketHandler)
+	r.GET("/ws", groupWebSocket.WebsocketHandleConnection)
 
 	return r, nil
 }

@@ -1,6 +1,7 @@
 package container
 
 import (
+	"notification-service/internal/services"
 	"os"
 
 	"github.com/redis/go-redis/v9"
@@ -36,13 +37,15 @@ func NewContainer() *do.Injector {
 	}
 
 	do.Provide(injector, provideDatabase)
-	do.ProvideNamed(injector, "db-readonly", provideReadonlyDatabase)
+	do.ProvideNamed(injector, "readonly-db", provideReadonlyDatabase)
 
 	do.ProvideNamed(injector, "redis-db", provideRedisDb)
 	do.ProvideNamed(injector, "redis-pubsub-db", provideRedisPubsubDb)
 	do.ProvideNamed(injector, "redis-pubsub-readonly-db", provideRedisPubsubReadonlyDb)
 
 	do.Provide(injector, provideRedisPubsub)
+
+	do.Provide(injector, provideEmailService)
 
 	return injector
 }
@@ -137,4 +140,8 @@ func provideRedisPubsub(i *do.Injector) (pubsub.PubSub, error) {
 	}
 
 	return redisPubsub.NewRedisPubsub(pubsubReadonly, pubsub), nil
+}
+
+func provideEmailService(i *do.Injector) (*services.EmailService, error) {
+	return services.NewEmailService(i)
 }

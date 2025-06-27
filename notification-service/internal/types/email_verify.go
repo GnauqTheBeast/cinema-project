@@ -1,0 +1,26 @@
+package types
+
+import "encoding/json"
+
+type EmailVerify struct {
+	From       string `json:"from"`
+	To         string `json:"to"`
+	Subject    string `json:"subject"`
+	Body       string `json:"body"`
+	VerifyCode string `json:"verify_code"`
+	VerifyURL  string `json:"verify_url"`
+}
+
+type EmailVerifyMessage struct {
+	To         string `json:"to"`
+	VerifyCode string `json:"verify_code"`
+	VerifyURL  string `json:"verify_url"`
+}
+
+func UnmarshalEmailVerify(data []byte) (interface{}, error) {
+	emailVerify := new(EmailVerifyMessage)
+	if err := json.Unmarshal(data, emailVerify); err != nil {
+		return nil, err
+	}
+	return emailVerify, nil
+}

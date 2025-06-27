@@ -2,6 +2,8 @@ package ws
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -35,14 +37,21 @@ func NewWebSocketConnection(ctx context.Context, container *do.Injector, wsconn 
 		return nil, err
 	}
 
-	return &WSConnection{
+	wsc := &WSConnection{
 		baseCtx:      ctx,
 		wsconn:       wsconn,
 		requestChan:  make(chan *WSRequest, requestChannelCapacity),
 		responseChan: make(chan *WSResponse, responseChannelCapacity),
 		handler:      handler,
 		running:      0,
-	}, nil
+	}
+
+	// limit 2^20 = 1MB
+	wsconn.SetReadLimit(1 << 20)
+	wsconn.SetReadDeadline(time.Now().Add(pongWait))
+	wsconn.SetPongHandler(wsc.pongHandler)
+
+	return wsc, nil
 }
 
 func (wsc *WSConnection) Start() {
@@ -55,12 +64,28 @@ func (wsc *WSConnection) Start() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		err := wsc.handelRequests()
+		if err != nil {
+			wsc.CloseConnection()
+			return
+		}
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		_ = wsc.readMessage()
 	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		_ = wsc.writeMessage()
+	}()
+
+	wg.Wait()
+
+	return
 }
 
 func (wsc *WSConnection) Context() context.Context {
@@ -75,10 +100,119 @@ func (wsc *WSConnection) Context() context.Context {
 	return wsc.ctx
 }
 
-func (wsc *WSConnection) handelRequests() {
-	// wsc.handler
+func (wsc *WSConnection) writeMessage() error {
+	ticker := time.NewTicker(pingInterval)
+	defer func() {
+		ticker.Stop()
+	}()
+
+	for {
+		select {
+		case msg, ok := <-wsc.responseChan:
+			if !ok {
+				return fmt.Errorf("websocket response message error")
+			}
+
+			if msg == nil {
+				logrus.Warn("Response is nil")
+				continue
+			}
+
+			rspByte, err := json.Marshal(msg)
+			if err != nil {
+				return err
+			}
+
+			if err := wsc.wsconn.WriteMessage(websocket.TextMessage, rspByte); err != nil {
+				return err
+			}
+
+		case <-ticker.C:
+			if err := wsc.wsconn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return err
+			}
+		}
+	}
+}
+
+func (wsc *WSConnection) readMessage() error {
+	for {
+		msgType, payload, err := wsc.wsconn.ReadMessage()
+		if err != nil {
+			wsc.CloseConnection()
+			return err
+		}
+
+		logrus.Printf("Received message type: %d content: %s\n", msgType, string(payload))
+
+		msg := new(WSRequest)
+		if err := json.Unmarshal(payload, msg); err != nil {
+			return err
+		}
+
+		wsc.requestChan <- msg
+	}
+}
+
+func (wsc *WSConnection) handelRequests() error {
+	ctx := &WSContext{
+		WSConn: wsc,
+	}
+
+	for request := range wsc.requestChan {
+		switch request.Method {
+		case "NOTIFICATION":
+			response, err := wsc.handler.notificatonHandler(ctx, request)
+			if err != nil {
+				return err
+			}
+
+			wsc.sendMessage(response)
+		default:
+			return fmt.Errorf("websocket connection does not support this method")
+		}
+	}
+	return nil
+}
+
+func (wsc *WSConnection) sendMessage(response *WSResponse) {
+	if response == nil {
+		return
+	}
+	select {
+	case wsc.responseChan <- response:
+		logrus.Printf("Sent response to client: %v", response)
+	default:
+		logrus.Printf("Dropped response to client: %v", response)
+	}
 }
 
 func (wsc *WSConnection) CloseConnection() {
-	wsc.wsconn.Close()
+	if !atomic.CompareAndSwapUint32(&wsc.running, 1, 0) {
+		logrus.Warn("WebSocket connection already closed")
+		return
+	}
+
+	close(wsc.requestChan)
+
+	if err := wsc.wsconn.WriteMessage(websocket.CloseMessage, nil); err != nil {
+		logrus.Warn(err)
+		return
+	}
+
+	if wsc.ctx != nil {
+		wsc.cancel()
+	}
+
+	if err := wsc.wsconn.Close(); err != nil {
+		logrus.Warn(err)
+		return
+	}
+
+	logrus.Info("WebSocket connection closed")
+}
+
+func (wsc *WSConnection) pongHandler(msg string) error {
+	logrus.Println(msg)
+	return wsc.wsconn.SetReadDeadline(time.Now().Add(pongWait))
 }
