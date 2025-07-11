@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/uptrace/bun"
 	"notification-service/internal/models"
+
+	"github.com/uptrace/bun"
 )
 
 func CreateNotificationTable(ctx context.Context, db *bun.DB) error {
@@ -26,7 +27,7 @@ func GetNotificationsByUserId(ctx context.Context, db *bun.DB, userId string, li
 	err := db.NewSelect().
 		Model(&notis).
 		Where("user_id = ?", userId).
-		Where("status != ?", models.NotificationStatusDeleted).
+		Where("status IN (?, ?)", models.NotificationStatusRead, models.NotificationStatusPending).
 		Order("created_at DESC").
 		Limit(limit).
 		Offset(offset).

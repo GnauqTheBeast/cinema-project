@@ -119,7 +119,7 @@ func seedMockData(db *bun.DB) error {
 			UserId:    strings.TrimSpace(segments[0]),
 			Title:     strings.TrimSpace(segments[1]),
 			Content:   strings.TrimSpace(segments[2]),
-			Status:    models.NotificationStatus(strings.TrimSpace(segments[1])),
+			Status:    models.NotificationStatus(strings.ToUpper(strings.TrimSpace(segments[3]))),
 			CreatedAt: &t,
 			UpdatedAt: &t,
 		})

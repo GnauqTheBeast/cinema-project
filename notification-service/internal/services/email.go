@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+
 	"github.com/samber/do"
 	"github.com/uptrace/bun"
 	"notification-service/internal/pkg/email"

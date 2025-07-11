@@ -46,10 +46,11 @@ func New(cfg *Config) (http.Handler, error) {
 	routesAPIv1 := r.Group("/api/v1")
 	{
 		routesAPIv1.GET("", Hello)
-		//routesNoti := routesAPIv1.Group("/notifications")
-		//{
-		//
-		//}
+		routesNoti := routesAPIv1.Group("/notifications")
+		{
+			gn := groupNotification{container: cfg.Container}
+			routesNoti.GET("/:userId", gn.GetNotifications)
+		}
 	}
 
 	groupWebSocket := NewGroupWebSocket(cfg.Container)

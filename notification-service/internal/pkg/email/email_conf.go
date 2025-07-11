@@ -1,8 +1,9 @@
 package email
 
 import (
-	"notification-service/internal/utils/env"
 	"os"
+
+	"notification-service/internal/utils/env"
 )
 
 type EmailConfig struct {

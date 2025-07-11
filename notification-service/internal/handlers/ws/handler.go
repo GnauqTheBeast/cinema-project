@@ -3,6 +3,7 @@ package ws
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/samber/do"
 	"notification-service/internal/pkg/pubsub"
 	"notification-service/internal/services"

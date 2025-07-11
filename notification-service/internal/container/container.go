@@ -1,8 +1,9 @@
 package container
 
 import (
-	"notification-service/internal/services"
 	"os"
+
+	"notification-service/internal/services"
 
 	"github.com/redis/go-redis/v9"
 	"notification-service/internal/pkg/pubsub"
@@ -46,7 +47,7 @@ func NewContainer() *do.Injector {
 	do.Provide(injector, provideRedisPubsub)
 
 	do.Provide(injector, provideEmailService)
-
+	do.Provide(injector, provideNotificationService)
 	return injector
 }
 
@@ -144,4 +145,8 @@ func provideRedisPubsub(i *do.Injector) (pubsub.PubSub, error) {
 
 func provideEmailService(i *do.Injector) (*services.EmailService, error) {
 	return services.NewEmailService(i)
+}
+
+func provideNotificationService(i *do.Injector) (*services.NotificationService, error) {
+	return services.NewNotificationService(i)
 }
