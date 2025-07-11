@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"os/signal"
 	"strings"
@@ -61,7 +62,7 @@ func serve(c *cli.Context) error {
 
 	errWg.Go(func() error {
 		logrus.Printf("ListenAndServe: %s (%s)\n", c.String("addr"), vs["API_MODE"])
-		if err = server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err = server.ListenAndServe(); err != nil && !errors.Is(http.ErrServerClosed, err) {
 			return err
 		}
 		return nil
