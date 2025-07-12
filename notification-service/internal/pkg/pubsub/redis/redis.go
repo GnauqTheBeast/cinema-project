@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/redis/go-redis/v9"
 	"notification-service/internal/pkg/pubsub"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type RedisPubSub struct {

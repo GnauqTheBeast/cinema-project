@@ -3,8 +3,9 @@ package redis
 import (
 	"context"
 
-	"github.com/redis/go-redis/v9"
 	"notification-service/internal/pkg/pubsub"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type RedisSubscriber struct {
