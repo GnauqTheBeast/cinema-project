@@ -1,51 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
-import LoadingSpinner from './components/LoadingSpinner';
 
 function App() {
-  const { isAuthenticated, loading } = useAuth();
+  const [token, setToken] = useState(() => localStorage.getItem('token'));
 
-  if (loading) {
-    return <LoadingSpinner />;
-  }
+  useEffect(() => {
+    const onStorage = () => setToken(localStorage.getItem('token'));
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  // Listen for token changes from LoginPage
+  useEffect(() => {
+    const handler = () => setToken(localStorage.getItem('token'));
+    window.addEventListener('tokenChange', handler);
+    return () => window.removeEventListener('tokenChange', handler);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Routes>
-        {/* Public routes */}
-        <Route 
-          path="/login" 
-          element={!isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" replace />} 
-        />
-        <Route 
-          path="/register" 
-          element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/dashboard" replace />} 
-        />
-        
-        {/* Protected routes */}
-        <Route 
-          path="/dashboard" 
-          element={isAuthenticated ? <DashboardPage /> : <Navigate to="/login" replace />} 
-        />
-        
-        {/* Default redirect */}
-        <Route 
-          path="/" 
-          element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} 
-        />
-        
-        {/* 404 fallback */}
-        <Route 
-          path="*" 
-          element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} 
-        />
-      </Routes>
-    </div>
+    <Routes>
+      <Route path="/login" element={!token ? <LoginPage onLogin={() => setToken(localStorage.getItem('token'))} /> : <Navigate to="/dashboard" replace />} />
+      <Route path="/register" element={!token ? <RegisterPage /> : <Navigate to="/dashboard" replace />} />
+      <Route path="/dashboard" element={token ? <DashboardPage /> : <Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to={token ? "/dashboard" : "/login"} replace />} />
+    </Routes>
   );
 }
 
-export default App;
+export default App; 

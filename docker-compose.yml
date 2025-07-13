@@ -48,16 +48,16 @@ services:
       - JWT_REFRESH_EXPIRES_IN=7d
       - REDIS_HOST=app_redis
       - REDIS_PORT=6379
-      - CORS_ORIGIN=http://localhost:3002
+      - REDIS_PUBSUB_URL=redis://app_redis:6379/4
+      - CORS_ORIGIN=http://localhost:3000
     ports:
       - "3001:3001"
     depends_on:
       - postgres
       - redis
     restart: unless-stopped
-    volumes:
-      - ./auth-service:/app
-      - /app/node_modules
+    # volumes:
+      # - ./auth-service:/app
 
   frontend:
     container_name: cinema_frontend
@@ -70,13 +70,13 @@ services:
       - REACT_APP_API_URL=http://localhost:3001/api
       - CHOKIDAR_USEPOLLING=true
     ports:
-      - "3002:3002"
+      - "3000:3000"
     depends_on:
       - auth-service
     restart: unless-stopped
-    volumes:
-      - ./FE:/app
-      - /app/node_modules
+    # volumes:
+      # - ./FE:/app
+      # - /app/node_modules
 
 networks:
   app:
