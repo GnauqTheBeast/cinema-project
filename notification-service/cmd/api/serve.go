@@ -1,7 +1,21 @@
 package main
 
 import (
+	"context"
+	"errors"
+	"net/http"
+	"os/signal"
+	"strings"
+	"syscall"
+
+	"github.com/samber/do"
+
+	"notification-service/internal/services"
+
+	"golang.org/x/sync/errgroup"
+
 	"notification-service/internal/container"
+	"notification-service/internal/handlers"
 	"notification-service/internal/utils/env"
 
 	"github.com/sirupsen/logrus"
@@ -32,13 +46,49 @@ func serve(c *cli.Context) error {
 		return err
 	}
 
-	container := container.NewContainer()
+	i := container.NewContainer()
 
-	logrus.Println("Environment variables:", vs)
-	logrus.Println("Container:", container)
+	router, err := handlers.New(&handlers.Config{
+		Container: i,
+		Mode:      vs["API_MODE"],
+		Origins:   strings.Split(vs["API_ORIGINS"], ","),
+	})
 
-	addr := c.String("addr")
-	logrus.Println("Starting notification service on", addr)
+	server := &http.Server{
+		Addr:    c.String("addr"),
+		Handler: router,
+	}
 
-	return nil
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	errWg, errCtx := errgroup.WithContext(ctx)
+
+	errWg.Go(func() error {
+		logrus.Printf("ListenAndServe: %s (%s)\n", c.String("addr"), vs["API_MODE"])
+		if err = server.ListenAndServe(); err != nil && !errors.Is(http.ErrServerClosed, err) {
+			return err
+		}
+		return nil
+	})
+
+	emailService, err := do.Invoke[*services.EmailService](i)
+	if err != nil {
+		return err
+	}
+
+	errWg.Go(func() error {
+		logrus.Printf("Email verification service started\n")
+		if err = emailService.SubscribeEmailVerifyQueue(ctx); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	errWg.Go(func() error {
+		<-errCtx.Done()
+		return server.Shutdown(context.TODO())
+	})
+
+	return errWg.Wait()
 }
