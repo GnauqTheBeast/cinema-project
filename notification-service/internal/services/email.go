@@ -1,7 +1,11 @@
 package services
 
 import (
+	"context"
 	"fmt"
+
+	"github.com/sirupsen/logrus"
+	"notification-service/internal/pkg/pubsub"
 
 	"github.com/samber/do"
 	"github.com/uptrace/bun"
@@ -13,6 +17,7 @@ type EmailService struct {
 	container    *do.Injector
 	readonlyDb   *bun.DB
 	db           *bun.DB
+	pubsub       pubsub.PubSub
 	Notification *NotificationService
 	email        *email.EmailClient
 }
@@ -33,12 +38,68 @@ func NewEmailService(i *do.Injector) (*EmailService, error) {
 		return nil, err
 	}
 
+	pubsub, err := do.Invoke[pubsub.PubSub](i)
+	if err != nil {
+		return nil, err
+	}
+
 	return &EmailService{
 		container:  i,
 		readonlyDb: readonlyDb,
 		db:         db,
 		email:      email,
+		pubsub:     pubsub,
 	}, nil
+}
+
+func (e *EmailService) SubscribeEmailVerifyQueue(ctx context.Context) error {
+	topic := "email_verify"
+
+	subscriber, err := e.pubsub.Subscribe(ctx, []string{topic}, types.UnmarshalEmailVerify)
+	if err != nil {
+		return fmt.Errorf("failed to subscribe to topic %s: %w", topic, err)
+	}
+
+	logrus.Printf("Subscribed to topic %s\n", topic)
+
+	go func() {
+		defer func() {
+			if err := subscriber.Unsubscribe(ctx); err != nil {
+				logrus.Warnf("Error unsubscribing: %v\n", err)
+			}
+		}()
+
+		for {
+			select {
+			case <-ctx.Done():
+				logrus.Println("Context done, stopping subscriber")
+				return
+			case msg := <-subscriber.MessageChan():
+				if msg.Topic == topic {
+					emailVerifyMsg, ok := msg.Data.(*types.EmailVerifyMessage)
+					if !ok {
+						logrus.Warnf("Received message with invalid data type: %T", msg.Data)
+						continue
+					}
+
+					emailVerify := &types.EmailVerify{
+						From:       "quangnguyenngoc314@gmail.com",
+						To:         emailVerifyMsg.To,
+						Subject:    "Verify your email",
+						VerifyCode: emailVerifyMsg.VerifyCode,
+						VerifyURL:  fmt.Sprintf("https://example.com/verify?code=%s", emailVerifyMsg.VerifyCode),
+					}
+
+					if err := e.SendVerifyEmail(emailVerify); err != nil {
+						logrus.Warnf("Error sending verify email: %v\n", err)
+						continue
+					}
+				}
+			}
+		}
+	}()
+
+	return nil
 }
 
 func (e *EmailService) SendVerifyEmail(email *types.EmailVerify) error {

@@ -8,6 +8,10 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/samber/do"
+
+	"notification-service/internal/services"
+
 	"golang.org/x/sync/errgroup"
 
 	"notification-service/internal/container"
@@ -63,6 +67,19 @@ func serve(c *cli.Context) error {
 	errWg.Go(func() error {
 		logrus.Printf("ListenAndServe: %s (%s)\n", c.String("addr"), vs["API_MODE"])
 		if err = server.ListenAndServe(); err != nil && !errors.Is(http.ErrServerClosed, err) {
+			return err
+		}
+		return nil
+	})
+
+	emailService, err := do.Invoke[*services.EmailService](i)
+	if err != nil {
+		return err
+	}
+
+	errWg.Go(func() error {
+		logrus.Printf("Email verification service started\n")
+		if err = emailService.SubscribeEmailVerifyQueue(ctx); err != nil {
 			return err
 		}
 		return nil
