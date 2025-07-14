@@ -56,12 +56,9 @@ export async function register(req, res, next) {
     const verifyUrl = `https://yourdomain.com/verify?code=${verifyCode}`;
     // Send to Redis pubsub
     const msg = {
-      topic: 'email_verify', 
-      data: {
-        to: email,
-        verify_code: verifyCode,
-        verify_url: verifyUrl
-      }
+      to: email,
+      verify_code: verifyCode,
+      verify_url: verifyUrl
     }
 
     console.log(msg)

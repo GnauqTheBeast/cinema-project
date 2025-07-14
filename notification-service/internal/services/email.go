@@ -90,6 +90,8 @@ func (e *EmailService) SubscribeEmailVerifyQueue(ctx context.Context) error {
 						VerifyURL:  fmt.Sprintf("https://example.com/verify?code=%s", emailVerifyMsg.VerifyCode),
 					}
 
+					logrus.Infof("User %s requested email verification\n", emailVerify.To)
+
 					if err := e.SendVerifyEmail(emailVerify); err != nil {
 						logrus.Warnf("Error sending verify email: %v\n", err)
 						continue
