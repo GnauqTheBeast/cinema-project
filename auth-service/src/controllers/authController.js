@@ -52,7 +52,7 @@ export async function register(req, res, next) {
     await t.commit();
 
     // Generate verify code and URL
-    const verifyCode = uuidv4();
+    const verifyCode = uuidv4(); // TODO: 6 char
     const verifyUrl = `https://yourdomain.com/verify?code=${verifyCode}`;
     // Send to Redis pubsub
     const msg = {
@@ -63,7 +63,10 @@ export async function register(req, res, next) {
 
     console.log(msg)
 
+  
     await redisPubSubClient.publish('email_verify', JSON.stringify(msg));
+
+    // TODO: save otp to redis cache (key - value): otp - email
 
     res.status(201).json({ message: 'Registered successfully. Please check your email to verify.' });
   } catch (err) {
