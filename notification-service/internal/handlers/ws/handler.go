@@ -106,7 +106,7 @@ func (h *WebSocketHandler) handleEmailVerify(ctx *WSContext, requestId int, mess
 		VerifyURL:  fmt.Sprintf("https://example.com/verify?code=%s", message.VerifyCode),
 	}
 
-	_ = h.emailService.SendVerifyEmail(emailVerify)
+	_ = h.emailService.SendEmail(emailVerify)
 
 	response := &WSResponse{
 		Id:     requestId,
