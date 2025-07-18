@@ -61,7 +61,7 @@ func (e *EmailService) SubscribeEmailVerifyQueue(ctx context.Context) error {
 		return fmt.Errorf("failed to subscribe to topic %s: %w", topic, err)
 	}
 
-	logrus.Printf("Subscribed to topic %s\n", topic)
+	logrus.Printf("Subscribed to topics: %s, %s\n", topic, forgotPasswordTopic)
 
 	go func() {
 		defer func() {
@@ -119,7 +119,7 @@ func (e *EmailService) SendEmail(email *types.EmailVerify) error {
 	}
 
 	msg := fmt.Sprintf(
-		"MIME-Version: 1.0\r\n"+
+		"MIME-Version: 1.0\r	\n"+
 			"Content-Type: text/html; charset=\"UTF-8\"\r\n"+
 			"From: %s\r\n"+
 			"To: %s\r\n"+
