@@ -1,5 +1,3 @@
-version: "3.3"
-
 services:
   postgres:
     container_name: app_postgres
@@ -27,6 +25,56 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
+
+  auth-service:
+    container_name: auth_service
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    networks:
+      - app
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DB_HOST=app_postgres
+      - DB_PORT=5432
+      - DB_NAME=cinema_app
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - JWT_SECRET=cinema-project-super-secret-jwt-key-2024
+      - JWT_EXPIRES_IN=24h
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - REDIS_HOST=app_redis
+      - REDIS_PORT=6379
+      - REDIS_PUBSUB_URL=redis://app_redis:6379/4
+      - CORS_ORIGIN=http://localhost:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    # volumes:
+      # - ./auth-service:/app
+
+  frontend:
+    container_name: cinema_frontend
+    build:
+      context: ./FE
+      dockerfile: Dockerfile
+    networks:
+      - app
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001/api
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service
+    restart: unless-stopped
+    # volumes:
+      # - ./FE:/app
+      # - /app/node_modules
 
 networks:
   app:

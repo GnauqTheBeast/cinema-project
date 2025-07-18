@@ -54,13 +54,14 @@ func NewEmailService(i *do.Injector) (*EmailService, error) {
 
 func (e *EmailService) SubscribeEmailVerifyQueue(ctx context.Context) error {
 	topic := "email_verify"
+	forgotPasswordTopic := "forgot_password"
 
-	subscriber, err := e.pubsub.Subscribe(ctx, []string{topic}, types.UnmarshalEmailVerify)
+	subscriber, err := e.pubsub.Subscribe(ctx, []string{topic, forgotPasswordTopic}, types.UnmarshalEmailVerify)
 	if err != nil {
 		return fmt.Errorf("failed to subscribe to topic %s: %w", topic, err)
 	}
 
-	logrus.Printf("Subscribed to topic %s\n", topic)
+	logrus.Printf("Subscribed to topics: %s, %s\n", topic, forgotPasswordTopic)
 
 	go func() {
 		defer func() {
@@ -75,25 +76,31 @@ func (e *EmailService) SubscribeEmailVerifyQueue(ctx context.Context) error {
 				logrus.Println("Context done, stopping subscriber")
 				return
 			case msg := <-subscriber.MessageChan():
-				if msg.Topic == topic {
-					emailVerifyMsg, ok := msg.Data.(*types.EmailVerifyMessage)
-					if !ok {
-						logrus.Warnf("Received message with invalid data type: %T", msg.Data)
-						continue
-					}
+				receiveMsg, ok := msg.Data.(*types.EmailVerifyMessage)
+				if !ok {
+					logrus.Warnf("Received message with wrong type: %T\n", msg.Data)
+					continue
+				}
 
-					emailVerify := &types.EmailVerify{
-						From:       "quangnguyenngoc314@gmail.com",
-						To:         emailVerifyMsg.To,
-						Subject:    "Verify your email",
-						VerifyCode: emailVerifyMsg.VerifyCode,
-						VerifyURL:  fmt.Sprintf("https://example.com/verify?code=%s", emailVerifyMsg.VerifyCode),
-					}
+				emailVerify := &types.EmailVerify{
+					From:       "quangnguyenngoc314@gmail.com",
+					To:         receiveMsg.To,
+					VerifyCode: receiveMsg.VerifyCode,
+					VerifyURL:  fmt.Sprintf("http://localhost:3000/verify?code=%s", receiveMsg.VerifyCode),
+				}
 
-					if err := e.SendVerifyEmail(emailVerify); err != nil {
-						logrus.Warnf("Error sending verify email: %v\n", err)
-						continue
-					}
+				switch msg.Topic {
+				case topic:
+					emailVerify.Subject = "Verify your email"
+					logrus.Printf("Received email verification email %s\n", emailVerify.Subject)
+				case forgotPasswordTopic:
+					emailVerify.Subject = "Forgot your password?"
+					logrus.Printf("Received forgot_password_verify email %s\n", emailVerify.Subject)
+				}
+
+				if err := e.SendEmail(emailVerify); err != nil {
+					logrus.Warnf("Error sending verify email: %v\n", err)
+					continue
 				}
 			}
 		}
@@ -102,10 +109,17 @@ func (e *EmailService) SubscribeEmailVerifyQueue(ctx context.Context) error {
 	return nil
 }
 
-func (e *EmailService) SendVerifyEmail(email *types.EmailVerify) error {
-	email.Body = defaultVerifyContent(email.VerifyCode, email.VerifyURL)
+func (e *EmailService) SendEmail(email *types.EmailVerify) error {
+	switch email.Subject {
+	case "Verify your email":
+		email.Body = defaultVerifyContent(email.VerifyCode, email.VerifyURL)
+
+	case "Forgot your password?":
+		email.Body = defaultForgotPasswordContent(email.VerifyCode, email.VerifyURL)
+	}
+
 	msg := fmt.Sprintf(
-		"MIME-Version: 1.0\r\n"+
+		"MIME-Version: 1.0\r	\n"+
 			"Content-Type: text/html; charset=\"UTF-8\"\r\n"+
 			"From: %s\r\n"+
 			"To: %s\r\n"+
@@ -132,6 +146,28 @@ func defaultVerifyContent(otp, verifyUrl string) string {
       <a href="` + verifyUrl + `" style="display: inline-block; padding: 12px 24px; background-color: #e50914; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Verify My Account</a>
 
       <p style="margin-top: 30px; color: #888;">If you didn't sign up for this account, please ignore this email.</p>
+      <p>– The HQ Cinema Team</p>
+    </div>
+  </body>
+</html>`
+}
+
+func defaultForgotPasswordContent(otp, resetUrl string) string {
+	return `
+<html>
+  <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+    <div style="max-width: 600px; margin: auto; background: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+      <h2 style="color: #e50914;">🔑 Password Reset Request</h2>
+      <p>Hi there,</p>
+      <p>We received a request to reset your password. You can reset it using one of the following methods:</p>
+
+      <h3 style="color: #333;">📮 Your OTP Code:</h3>
+      <p style="font-size: 24px; font-weight: bold; background: #f1f1f1; padding: 10px 20px; border-radius: 8px; display: inline-block;">` + otp + `</p>
+
+      <p style="margin-top: 30px;">OR click the button below to reset your password instantly:</p>
+      <a href="` + resetUrl + `" style="display: inline-block; padding: 12px 24px; background-color: #e50914; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset My Password</a>
+
+      <p style="margin-top: 30px; color: #888;">If you did not request a password reset, you can safely ignore this email.</p>
       <p>– The HQ Cinema Team</p>
     </div>
   </body>
