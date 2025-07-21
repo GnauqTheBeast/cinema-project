@@ -39,7 +39,7 @@ func (h *WebSocketHandler) notificatonHandler(ctx *WSContext, request *WSRequest
 		return &WSResponse{
 			Id:     request.Id,
 			Result: nil,
-			Error:  &WSError{Code: 400, Message: "Invalid request ID"},
+			Error:  &WSError{Code: 400, Message: "Invalid request Id"},
 		}, nil
 	}
 
