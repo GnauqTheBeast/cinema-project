@@ -7,22 +7,22 @@ import (
 
 type Business interface{}
 
-type api struct {
+type handler struct {
 	biz Business
 }
 
-func NewAPI(i *do.Injector) (*api, error) {
+func NewAPI(i *do.Injector) (*handler, error) {
 	biz, err := do.Invoke[Business](i)
 	if err != nil {
 		return nil, err
 	}
 
-	return &api{
+	return &handler{
 		biz: biz,
 	}, nil
 }
 
-func (a *api) HelloWorld(c *gin.Context) {
+func (*handler) HelloWorld(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"message": "Hello World",
 	})

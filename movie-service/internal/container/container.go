@@ -3,6 +3,8 @@ package container
 import (
 	"os"
 
+	"movie-service/internal/module/movie/repository/grpc"
+
 	"movie-service/internal/module/movie/business"
 	"movie-service/internal/module/movie/repository/postgres"
 	"movie-service/internal/module/movie/transport/rest"
@@ -53,6 +55,7 @@ func NewContainer() *do.Injector {
 
 	do.Provide(injector, provideMovieRepository)
 	do.Provide(injector, provideMovieBusiness)
+	do.Provide(injector, provideAuthService)
 
 	return injector
 }
@@ -202,4 +205,8 @@ func provideMovieRepository(i *do.Injector) (business.MovieRepository, error) {
 
 func provideMovieBusiness(i *do.Injector) (rest.Business, error) {
 	return business.NewBusiness(i)
+}
+
+func provideAuthService(i *do.Injector) (*grpc.AuthGrpcClient, error) {
+	return grpc.NewAuthGrpcClient(i)
 }

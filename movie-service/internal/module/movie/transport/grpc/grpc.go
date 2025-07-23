@@ -1,15 +1,16 @@
 package grpc
 
+import "movie-service/proto/pb"
+
 type Business interface{}
 
-//
-//type MovieServiceServer struct {
-//	pb.UnimplementedTourServiceServer
-//	business Business
-//}
-//
-//func NewTourServiceServer(business Business) *MovieServiceServer {
-//	return &MovieServiceServer{
-//		business: business,
-//	}
-//}
+type MovieServiceServer struct {
+	pb.UnimplementedAuthServiceServer
+	business Business
+}
+
+func NewMovieGRPCServer(business Business) *MovieServiceServer {
+	return &MovieServiceServer{
+		business: business,
+	}
+}

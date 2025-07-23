@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/sirupsen/logrus"
+	"movie-service/internal/container"
+	"movie-service/internal/module/movie/transport/rest"
 	"movie-service/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -23,5 +25,20 @@ func ServeAPI() *cli.Command {
 
 			return router.Run(":8083")
 		},
+	}
+}
+
+type Handler interface {
+	HelloWorld(c *gin.Context)
+}
+
+func startRouteV1(group *gin.RouterGroup) {
+	i := container.NewContainer()
+
+	movieApi, _ := rest.NewAPI(i)
+
+	movies := group.Group("/movies")
+	{
+		movies.GET("", movieApi.HelloWorld)
 	}
 }
