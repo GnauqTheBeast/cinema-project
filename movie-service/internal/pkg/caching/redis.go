@@ -57,7 +57,7 @@ Deletes all keys in redis that match the pattern.
 
 It uses SCAN to iterate over the keys and delete them in batches of 100.
 
-Wildcard (*) is supported in the pattern, but it should be used carefully, as it can be exstreamly slow on production with large datasets.
+Wildcard (*) is supported in the pattern, but it should be used carefully, as it can be extremely slow on production with large datasets.
 */
 func DeleteKeys(ctx context.Context, client redis.UniversalClient, pattern string) error {
 	clusterClient, ok := client.(*redis.ClusterClient)
