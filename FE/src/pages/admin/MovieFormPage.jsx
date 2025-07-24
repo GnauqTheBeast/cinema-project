@@ -310,7 +310,7 @@ export default function MovieFormPage() {
                   }}
                 >
                   <option value="upcoming">Upcoming</option>
-                  <option value="now_showing">Now Showing</option>
+                  <option value="showing">Now Showing</option>
                   <option value="ended">Ended</option>
                 </select>
               </div>

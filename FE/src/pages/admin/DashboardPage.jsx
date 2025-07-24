@@ -151,7 +151,7 @@ export default function DashboardPage() {
                 textAlign: 'center'
               }}>
                 <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#4caf50' }}>
-                  {stats.by_status?.now_showing || 0}
+                  {stats.by_status?.showing || 0}
                 </div>
                 <div style={{ color: '#666' }}>Now Showing</div>
               </div>

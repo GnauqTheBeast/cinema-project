@@ -7,7 +7,7 @@ export default function MovieCard({ movie }) {
   const getStatusColor = (status) => {
     switch (status) {
       case 'upcoming': return '#ff9800';
-      case 'now_showing': return '#4caf50';
+      case 'showing': return '#4caf50';
       case 'ended': return '#f44336';
       default: return '#757575';
     }

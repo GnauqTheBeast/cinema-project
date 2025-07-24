@@ -55,7 +55,7 @@ export default function MovieDetailPage() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'upcoming': return '#ff9800';
-      case 'now_showing': return '#4caf50';
+      case 'showing': return '#4caf50';
       case 'ended': return '#f44336';
       default: return '#757575';
     }
@@ -233,7 +233,7 @@ export default function MovieDetailPage() {
               <div style={{ marginBottom: '24px' }}>
                 <strong>Update Status:</strong>
                 <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {['upcoming', 'now_showing', 'ended'].map(status => (
+                  {['upcoming', 'showing', 'ended'].map(status => (
                     <button
                       key={status}
                       onClick={() => handleStatusChange(status)}
