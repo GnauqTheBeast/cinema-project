@@ -6,7 +6,7 @@ import (
 	"github.com/uptrace/bun"
 )
 
-type Movies struct {
+type Movie struct {
 	bun.BaseModel `bun:"table:movies,alias:m"`
 
 	Id          string     `bun:"id,pk" json:"id"`

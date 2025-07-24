@@ -11,7 +11,7 @@ import (
 
 func CreateMovieTable(ctx context.Context, db *bun.DB) error {
 	_, err := db.NewCreateTable().
-		Model((*models.Movies)(nil)).
+		Model((*models.Movie)(nil)).
 		IfNotExists().
 		Exec(ctx)
 	if err != nil {

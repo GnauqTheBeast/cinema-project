@@ -21,6 +21,15 @@ func responseSuccess(c *gin.Context, data interface{}) {
 	})
 }
 
+// 201 Created
+func responseCreated(c *gin.Context, data interface{}) {
+	c.JSON(http.StatusCreated, responseMessage{
+		Message:    http.StatusText(http.StatusCreated),
+		StatusCode: http.StatusCreated,
+		Data:       data,
+	})
+}
+
 // 202 Accepted
 func responseAccepted(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusAccepted, responseMessage{
@@ -36,6 +45,24 @@ func responseSuccessWithMessage(c *gin.Context, message string) {
 		Data:       nil,
 		StatusCode: http.StatusOK,
 		Message:    message,
+	})
+}
+
+// 400 Bad Request
+func responseBadRequest(c *gin.Context, message string) {
+	c.JSON(http.StatusBadRequest, responseMessage{
+		Data:       nil,
+		StatusCode: http.StatusBadRequest,
+		Message:    message,
+	})
+}
+
+// 400 Bad Request with error object
+func responseBadRequestWithError(c *gin.Context, err error) {
+	c.JSON(http.StatusBadRequest, responseMessage{
+		Data:       nil,
+		StatusCode: http.StatusBadRequest,
+		Message:    err.Error(),
 	})
 }
 

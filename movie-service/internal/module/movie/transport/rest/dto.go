@@ -1,0 +1,155 @@
+package rest
+
+import (
+	"time"
+
+	"movie-service/internal/module/movie/entity"
+)
+
+// Request DTOs
+type CreateMovieRequest struct {
+	Title       string     `json:"title" binding:"required,min=1,max=255"`
+	Director    string     `json:"director,omitempty"`
+	Cast        string     `json:"cast,omitempty"`
+	Genre       string     `json:"genre,omitempty"`
+	Duration    int        `json:"duration" binding:"required,min=1"`
+	ReleaseDate *time.Time `json:"release_date,omitempty"`
+	Description string     `json:"description,omitempty"`
+	TrailerURL  string     `json:"trailer_url,omitempty"`
+	PosterURL   string     `json:"poster_url,omitempty"`
+	Status      string     `json:"status,omitempty"`
+}
+
+type UpdateMovieRequest struct {
+	Title       string     `json:"title" binding:"required,min=1,max=255"`
+	Director    string     `json:"director,omitempty"`
+	Cast        string     `json:"cast,omitempty"`
+	Genre       string     `json:"genre,omitempty"`
+	Duration    int        `json:"duration" binding:"required,min=1"`
+	ReleaseDate *time.Time `json:"release_date,omitempty"`
+	Description string     `json:"description,omitempty"`
+	TrailerURL  string     `json:"trailer_url,omitempty"`
+	PosterURL   string     `json:"poster_url,omitempty"`
+	Status      string     `json:"status,omitempty"`
+}
+
+type UpdateMovieStatusRequest struct {
+	Status string `json:"status" binding:"required,oneof=upcoming showing ended"`
+}
+
+type GetMoviesQuery struct {
+	Page int `form:"page,default=1" binding:"min=1"`
+	Size int `form:"size,default=10" binding:"min=1,max=100"`
+}
+
+// Response DTOs
+type MovieResponse struct {
+	Id          string     `json:"id"`
+	Title       string     `json:"title"`
+	Director    string     `json:"director,omitempty"`
+	Cast        string     `json:"cast,omitempty"`
+	Genre       string     `json:"genre,omitempty"`
+	Duration    int        `json:"duration"`
+	ReleaseDate *time.Time `json:"release_date,omitempty"`
+	Description string     `json:"description,omitempty"`
+	TrailerURL  string     `json:"trailer_url,omitempty"`
+	PosterURL   string     `json:"poster_url,omitempty"`
+	Status      string     `json:"status"`
+	CreatedAt   *time.Time `json:"created_at"`
+	UpdatedAt   *time.Time `json:"updated_at,omitempty"`
+}
+
+type GetMoviesResponse struct {
+	Movies []*MovieResponse `json:"movies"`
+	Meta   *MetaResponse    `json:"meta"`
+}
+
+type MetaResponse struct {
+	Page       int `json:"page"`
+	Size       int `json:"size"`
+	Total      int `json:"total"`
+	TotalPages int `json:"total_pages"`
+}
+
+// Helper functions to convert between DTOs and entities
+func (r *CreateMovieRequest) ToEntity() *entity.Movie {
+	movie := &entity.Movie{
+		Title:       r.Title,
+		Director:    r.Director,
+		Cast:        r.Cast,
+		Genre:       r.Genre,
+		Duration:    r.Duration,
+		ReleaseDate: r.ReleaseDate,
+		Description: r.Description,
+		TrailerURL:  r.TrailerURL,
+		PosterURL:   r.PosterURL,
+	}
+
+	movie.Status = entity.MovieStatusUpcoming
+	if r.Status != "" {
+		movie.Status = entity.MovieStatus(r.Status)
+	}
+
+	return movie
+}
+
+func (r *UpdateMovieRequest) ToEntity(id string) *entity.Movie {
+	movie := &entity.Movie{
+		Id:          id,
+		Title:       r.Title,
+		Director:    r.Director,
+		Cast:        r.Cast,
+		Genre:       r.Genre,
+		Duration:    r.Duration,
+		ReleaseDate: r.ReleaseDate,
+		Description: r.Description,
+		TrailerURL:  r.TrailerURL,
+		PosterURL:   r.PosterURL,
+	}
+
+	if r.Status != "" {
+		movie.Status = entity.MovieStatus(r.Status)
+	}
+
+	return movie
+}
+
+func ToMovieResponse(movie *entity.Movie) *MovieResponse {
+	return &MovieResponse{
+		Id:          movie.Id,
+		Title:       movie.Title,
+		Director:    movie.Director,
+		Cast:        movie.Cast,
+		Genre:       movie.Genre,
+		Duration:    movie.Duration,
+		ReleaseDate: movie.ReleaseDate,
+		Description: movie.Description,
+		TrailerURL:  movie.TrailerURL,
+		PosterURL:   movie.PosterURL,
+		Status:      string(movie.Status),
+		CreatedAt:   movie.CreatedAt,
+		UpdatedAt:   movie.UpdatedAt,
+	}
+}
+
+func ToMoviesResponse(movies []*entity.Movie, page, size, total int) *GetMoviesResponse {
+	movieResponses := make([]*MovieResponse, len(movies))
+	for i, movie := range movies {
+		movieResponses[i] = ToMovieResponse(movie)
+	}
+
+	totalPages := (total + size - 1) / size // Ceiling division
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	return &GetMoviesResponse{
+		Movies: movieResponses,
+		Meta: &MetaResponse{
+			Page:       page,
+			Size:       size,
+			Total:      total,
+			TotalPages: totalPages,
+		},
+	}
+}

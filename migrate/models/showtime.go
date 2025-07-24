@@ -20,7 +20,7 @@ type Showtime struct {
 	CreatedAt time.Time  `bun:"created_at,nullzero,default:current_timestamp" json:"created_at"`
 	UpdatedAt *time.Time `bun:"updated_at" json:"updated_at,omitempty"`
 
-	Movies   *Movies    `bun:"rel:belongs-to,join:movie_id=id" json:"movies,omitempty"`
+	Movie    *Movie     `bun:"rel:belongs-to,join:movie_id=id" json:"movie,omitempty"`
 	Room     *Room      `bun:"rel:belongs-to,join:room_id=id" json:"room,omitempty"`
 	Bookings []*Booking `bun:"rel:has-many,join:id=showtime_id" json:"bookings,omitempty"`
 }

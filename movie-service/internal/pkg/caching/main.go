@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"time"
-)
 
-var ErrCacheMiss = errors.New("cache: key is missing")
+	"github.com/go-redis/cache/v9"
+)
 
 type ReadOnlyCache interface {
 	Get(ctx context.Context, key string, target any) error
@@ -21,7 +21,7 @@ type Cache interface {
 func UseCache[T any](ctx context.Context, cash Cache, key string, ttl time.Duration, callback func() (T, error)) (T, error) {
 	var v T
 	err := cash.Get(ctx, key, &v)
-	if !errors.Is(err, ErrCacheMiss) {
+	if !errors.Is(err, cache.ErrCacheMiss) {
 		return v, err
 	}
 
@@ -39,7 +39,7 @@ func UseCache[T any](ctx context.Context, cash Cache, key string, ttl time.Durat
 func UseCacheWithRO[T any](ctx context.Context, roCash ReadOnlyCache, cash Cache, key string, ttl time.Duration, callback func() (T, error)) (T, error) {
 	var v T
 	err := roCash.Get(ctx, key, &v)
-	if !errors.Is(err, ErrCacheMiss) {
+	if !errors.Is(err, cache.ErrCacheMiss) {
 		return v, err
 	}
 
@@ -47,7 +47,6 @@ func UseCacheWithRO[T any](ctx context.Context, roCash ReadOnlyCache, cash Cache
 	if err != nil {
 		return v, err
 	}
-
 	// fire and forget
 	//nolint:errcheck
 	cash.Set(ctx, key, v, ttl)

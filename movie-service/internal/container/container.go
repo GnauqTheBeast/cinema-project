@@ -7,12 +7,13 @@ import (
 
 	"movie-service/internal/module/movie/business"
 	"movie-service/internal/module/movie/repository/postgres"
-	"movie-service/internal/module/movie/transport/rest"
+
 	"movie-service/internal/pkg/caching"
 
-	"github.com/redis/go-redis/v9"
 	"movie-service/internal/pkg/pubsub"
 	redisPubsub "movie-service/internal/pkg/pubsub/redis"
+
+	"github.com/redis/go-redis/v9"
 
 	"movie-service/internal/pkg/db"
 	"movie-service/internal/utils/env"
@@ -79,8 +80,8 @@ func provideDatabase(_ *do.Injector) (*bun.DB, error) {
 
 func provideReadonlyDatabase(_ *do.Injector) (*bun.DB, error) {
 	db, err := db.NewPostgres(&db.PostgresConfig{
-		DSN:          os.Getenv("DB_DSN"),
-		Password:     os.Getenv("DB_PASSWORD"),
+		DSN:          os.Getenv("DB_READONLY_DSN"),
+		Password:     os.Getenv("DB_READONLY_PASSWORD"),
 		MaxOpenConns: 100,
 		MaxIdleConns: 100,
 	})
@@ -203,7 +204,7 @@ func provideMovieRepository(i *do.Injector) (business.MovieRepository, error) {
 	return postgres.NewMovieRepository(i)
 }
 
-func provideMovieBusiness(i *do.Injector) (rest.Business, error) {
+func provideMovieBusiness(i *do.Injector) (business.MovieBiz, error) {
 	return business.NewBusiness(i)
 }
 
