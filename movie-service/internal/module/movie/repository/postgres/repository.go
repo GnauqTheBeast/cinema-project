@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"movie-service/internal/module/movie/business"
@@ -86,14 +87,21 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*entity.Movie, err
 	return &movie, nil
 }
 
-func (r *Repository) GetMany(ctx context.Context, limit int, offset int) ([]*entity.Movie, error) {
-	var movies []*entity.Movie
-	err := r.roDb.NewSelect().
-		Model(&movies).
+func (r *Repository) GetMany(ctx context.Context, limit, offset int, search string) ([]*entity.Movie, error) {
+	query := r.roDb.NewSelect().
+		Model((*entity.Movie)(nil)).
 		Order("created_at DESC").
 		Limit(limit).
-		Offset(offset).
-		Scan(ctx)
+		Offset(offset)
+
+	if search != "" {
+		searchPattern := "%" + strings.ToLower(search) + "%"
+		query = query.Where(`LOWER("title") LIKE ? OR LOWER("director") LIKE ? OR LOWER("cast") LIKE ? OR LOWER("genre") LIKE ?`,
+			searchPattern, searchPattern, searchPattern, searchPattern)
+	}
+
+	var movies []*entity.Movie
+	err := query.Scan(ctx, &movies)
 	if err != nil {
 		return nil, err
 	}
@@ -101,16 +109,37 @@ func (r *Repository) GetMany(ctx context.Context, limit int, offset int) ([]*ent
 	return movies, nil
 }
 
-func (r *Repository) GetTotalCount(ctx context.Context) (int, error) {
-	count, err := r.roDb.NewSelect().
-		Model((*entity.Movie)(nil)).
-		Where("status != ?", entity.MovieStatusEnded).
-		Count(ctx)
+func (r *Repository) GetTotalCount(ctx context.Context, search string) (int, error) {
+	query := r.roDb.NewSelect().
+		Model((*entity.Movie)(nil))
+
+	if search != "" {
+		searchPattern := "%" + strings.ToLower(search) + "%"
+		query = query.Where(`LOWER("title") LIKE ? OR LOWER("director") LIKE ? OR LOWER("cast") LIKE ? OR LOWER("genre") LIKE ?`,
+			searchPattern, searchPattern, searchPattern, searchPattern)
+	}
+
+	count, err := query.Count(ctx)
 	if err != nil {
 		return 0, err
 	}
 
 	return count, nil
+}
+
+func (r *Repository) GetMovieStats(ctx context.Context) ([]*entity.MovieStat, error) {
+	var results []*entity.MovieStat
+	err := r.roDb.NewSelect().
+		Model((*entity.Movie)(nil)).
+		Column("status").
+		ColumnExpr("COUNT(*) as count").
+		Group("status").
+		Scan(ctx, &results)
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }
 
 func (r *Repository) Update(ctx context.Context, movie *entity.Movie) error {

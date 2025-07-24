@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
 	"movie-service/internal/module/movie/entity"
 	"movie-service/internal/pkg/caching"
 	"movie-service/internal/pkg/paging"
@@ -23,7 +22,8 @@ var (
 
 type MovieBiz interface {
 	GetMovieById(ctx context.Context, id string) (*entity.Movie, error)
-	GetMovies(ctx context.Context, page, size int) ([]*entity.Movie, int, error)
+	GetMovies(ctx context.Context, page, size int, search string) ([]*entity.Movie, int, error)
+	GetMovieStats(ctx context.Context) ([]*entity.MovieStat, error)
 	CreateMovie(ctx context.Context, movie *entity.Movie) error
 	UpdateMovie(ctx context.Context, movie *entity.Movie) error
 	DeleteMovie(ctx context.Context, id string) error
@@ -32,8 +32,9 @@ type MovieBiz interface {
 
 type MovieRepository interface {
 	GetByID(ctx context.Context, id string) (*entity.Movie, error)
-	GetMany(ctx context.Context, limit, offset int) ([]*entity.Movie, error)
-	GetTotalCount(ctx context.Context) (int, error)
+	GetMany(ctx context.Context, limit, offset int, search string) ([]*entity.Movie, error)
+	GetTotalCount(ctx context.Context, search string) (int, error)
+	GetMovieStats(ctx context.Context) ([]*entity.MovieStat, error)
 	Create(ctx context.Context, movie *entity.Movie) error
 	Update(ctx context.Context, movie *entity.Movie) error
 	Delete(ctx context.Context, id string) error
@@ -77,30 +78,25 @@ func NewBusiness(i *do.Injector) (MovieBiz, error) {
 
 func (b *business) GetMovieById(ctx context.Context, id string) (*entity.Movie, error) {
 	if id == "" {
-		return nil, fmt.Errorf("movie id is required")
+		return nil, ErrInvalidMovieData
 	}
 
 	callback := func() (*entity.Movie, error) {
-		movie, err := b.repository.GetByID(ctx, id)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, ErrMovieNotFound
-			}
-			return nil, err
-		}
-		return movie, nil
+		return b.repository.GetByID(ctx, id)
 	}
 
-	movie, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, keyMovieDetail(id), CACHE_TTL_5_MINS, callback)
+	movie, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, redisMovieDetail(id), CACHE_TTL_1_HOUR, callback)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrMovieNotFound
+		}
 		return nil, fmt.Errorf("failed to get movie: %w", err)
 	}
 
 	return movie, nil
 }
 
-func (b *business) GetMovies(ctx context.Context, page, size int) ([]*entity.Movie, int, error) {
-	// Validate and set defaults
+func (b *business) GetMovies(ctx context.Context, page, size int, search string) ([]*entity.Movie, int, error) {
 	if page <= 0 {
 		page = 1
 	}
@@ -111,7 +107,6 @@ func (b *business) GetMovies(ctx context.Context, page, size int) ([]*entity.Mov
 		size = 100
 	}
 
-	// Convert page/size to limit/offset
 	limit := size
 	offset := (page - 1) * size
 
@@ -121,20 +116,19 @@ func (b *business) GetMovies(ctx context.Context, page, size int) ([]*entity.Mov
 	}
 
 	totalCallback := func() (int, error) {
-		return b.repository.GetTotalCount(ctx)
+		return b.repository.GetTotalCount(ctx, search)
 	}
 
-	total, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, keyTotalMovieCount, CACHE_TTL_1_HOUR, totalCallback)
+	total, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, redisTotalMovieCount(search), CACHE_TTL_1_HOUR, totalCallback)
 	if err != nil {
-		logrus.Errorf(err.Error())
 		return nil, 0, fmt.Errorf("failed to get total count: %w", err)
 	}
 
 	moviesCallback := func() ([]*entity.Movie, error) {
-		return b.repository.GetMany(ctx, limit, offset)
+		return b.repository.GetMany(ctx, limit, offset, search)
 	}
 
-	movies, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, keyPagingListMovie(pagingInfo), CACHE_TTL_1_HOUR, moviesCallback)
+	movies, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, redisPagingListMovie(pagingInfo, search), CACHE_TTL_1_HOUR, moviesCallback)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get movies: %w", err)
 	}
@@ -243,14 +237,26 @@ func (b *business) UpdateMovieStatus(ctx context.Context, id string, status enti
 	return nil
 }
 
+func (b *business) GetMovieStats(ctx context.Context) ([]*entity.MovieStat, error) {
+	callback := func() ([]*entity.MovieStat, error) {
+		return b.repository.GetMovieStats(ctx)
+	}
+
+	stats, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, keyMovieStats, CACHE_TTL_15_MINS, callback)
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
 func (b *business) invalidateMovieCache(ctx context.Context, movieId string) {
-	_ = b.cache.Delete(ctx, keyMovieDetail(movieId))
+	_ = b.cache.Delete(ctx, redisMovieDetail(movieId))
 }
 
 func (b *business) invalidateMoviesListCache(ctx context.Context) {
-	// Invalidate total count cache
-	_ = b.cache.Delete(ctx, keyTotalMovieCount)
+	_ = b.cache.Delete(ctx, redisTotalMovieCount(""))
 
-	// Delete all pagination cache keys with pattern
-	_ = caching.DeleteKeys(ctx, b.redisClient, keyPagingListMoviePattern)
+	_ = b.redisClient.Del(ctx, keyPagingListMoviePattern)
+	_ = b.redisClient.Del(ctx, keyMovieDetailPattern)
 }

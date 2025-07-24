@@ -8,13 +8,16 @@ import (
 )
 
 const (
-	keyPagingListMovieFormat  = "v1_paging_movie_%d_%d" // v1_paging_movie_<limit>_<offset>
+	keyPagingListMovie        = "v1_paging_movie_%d_%d_%s" // v1_paging_movie_<limit>_<offset>_<search>
 	keyPagingListMoviePattern = "v1_paging_movie_*"
 
-	keyMovieDetailFormat  = "v1_movie_detail_%s" // v1_movie_<movie_id>
+	keyMovieDetail        = "v1_movie_detail_%s" // v1_movie_<movie_id>
 	keyMovieDetailPattern = "v1_movie_detail_*"
 
-	keyTotalMovieCount = "v1_total_movie_count" // v1_total_movie_count
+	keyTotalMovieCount        = "v1_total_movie_count_%s" // v1_total_movie_count_<search>
+	keyTotalMovieCountPattern = "v1_total_movie_count_*"
+
+	keyMovieStats = "v1_movie_stats"
 
 	CACHE_TTL_5_SEC   = 5 * time.Second
 	CACHE_TTL_15_SEC  = 15 * time.Second
@@ -28,10 +31,14 @@ const (
 	CACHE_TTL_1_DAY   = 24 * time.Hour
 )
 
-func keyPagingListMovie(paging *paging.Paging) string {
-	return fmt.Sprintf(keyPagingListMovieFormat, paging.Limit, paging.Offset)
+func redisPagingListMovie(paging *paging.Paging, search string) string {
+	return fmt.Sprintf(keyPagingListMovie, paging.Limit, paging.Offset, search)
 }
 
-func keyMovieDetail(movieId string) string {
-	return fmt.Sprintf(keyMovieDetailFormat, movieId)
+func redisMovieDetail(movieId string) string {
+	return fmt.Sprintf(keyMovieDetail, movieId)
+}
+
+func redisTotalMovieCount(search string) string {
+	return fmt.Sprintf(keyTotalMovieCount, search)
 }

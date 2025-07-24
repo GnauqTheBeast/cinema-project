@@ -1,10 +1,6 @@
-package rest
+package entity
 
-import (
-	"time"
-
-	"movie-service/internal/module/movie/entity"
-)
+import "time"
 
 // Request DTOs
 type CreateMovieRequest struct {
@@ -38,8 +34,9 @@ type UpdateMovieStatusRequest struct {
 }
 
 type GetMoviesQuery struct {
-	Page int `form:"page,default=1" binding:"min=1"`
-	Size int `form:"size,default=10" binding:"min=1,max=100"`
+	Page   int    `form:"page,default=1" binding:"min=1"`
+	Size   int    `form:"size,default=10" binding:"min=1,max=100"`
+	Search string `form:"search"`
 }
 
 // Response DTOs
@@ -72,12 +69,12 @@ type MetaResponse struct {
 }
 
 // Helper functions to convert between DTOs and entities
-func (r *CreateMovieRequest) ToEntity() *entity.Movie {
-	movie := &entity.Movie{
+func (r *CreateMovieRequest) ToEntity() *Movie {
+	movie := &Movie{
 		Title:       r.Title,
 		Director:    r.Director,
 		Cast:        r.Cast,
-		Genre:       r.Genre,
+		Genre:       Genre(r.Genre),
 		Duration:    r.Duration,
 		ReleaseDate: r.ReleaseDate,
 		Description: r.Description,
@@ -85,21 +82,21 @@ func (r *CreateMovieRequest) ToEntity() *entity.Movie {
 		PosterURL:   r.PosterURL,
 	}
 
-	movie.Status = entity.MovieStatusUpcoming
+	movie.Status = MovieStatusUpcoming
 	if r.Status != "" {
-		movie.Status = entity.MovieStatus(r.Status)
+		movie.Status = MovieStatus(r.Status)
 	}
 
 	return movie
 }
 
-func (r *UpdateMovieRequest) ToEntity(id string) *entity.Movie {
-	movie := &entity.Movie{
+func (r *UpdateMovieRequest) ToEntity(id string) *Movie {
+	movie := &Movie{
 		Id:          id,
 		Title:       r.Title,
 		Director:    r.Director,
 		Cast:        r.Cast,
-		Genre:       r.Genre,
+		Genre:       Genre(r.Genre),
 		Duration:    r.Duration,
 		ReleaseDate: r.ReleaseDate,
 		Description: r.Description,
@@ -108,19 +105,19 @@ func (r *UpdateMovieRequest) ToEntity(id string) *entity.Movie {
 	}
 
 	if r.Status != "" {
-		movie.Status = entity.MovieStatus(r.Status)
+		movie.Status = MovieStatus(r.Status)
 	}
 
 	return movie
 }
 
-func ToMovieResponse(movie *entity.Movie) *MovieResponse {
+func ToMovieResponse(movie *Movie) *MovieResponse {
 	return &MovieResponse{
 		Id:          movie.Id,
 		Title:       movie.Title,
 		Director:    movie.Director,
 		Cast:        movie.Cast,
-		Genre:       movie.Genre,
+		Genre:       string(movie.Genre),
 		Duration:    movie.Duration,
 		ReleaseDate: movie.ReleaseDate,
 		Description: movie.Description,
@@ -132,7 +129,7 @@ func ToMovieResponse(movie *entity.Movie) *MovieResponse {
 	}
 }
 
-func ToMoviesResponse(movies []*entity.Movie, page, size, total int) *GetMoviesResponse {
+func ToMoviesResponse(movies []*Movie, page, size, total int) *GetMoviesResponse {
 	movieResponses := make([]*MovieResponse, len(movies))
 	for i, movie := range movies {
 		movieResponses[i] = ToMovieResponse(movie)
@@ -152,4 +149,9 @@ func ToMoviesResponse(movies []*entity.Movie, page, size, total int) *GetMoviesR
 			TotalPages: totalPages,
 		},
 	}
+}
+
+type MovieStat struct {
+	Status string `bun:"status"`
+	Count  int64  `bun:"count"`
 }

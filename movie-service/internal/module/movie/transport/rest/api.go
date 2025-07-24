@@ -27,7 +27,7 @@ func NewAPI(i *do.Injector) (*handler, error) {
 }
 
 func (h *handler) GetMovies(c *gin.Context) {
-	var query GetMoviesQuery
+	var query entity.GetMoviesQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
 		responseBadRequest(c, fmt.Sprintf("Invalid query parameters: %s", err.Error()))
 		return
@@ -40,13 +40,13 @@ func (h *handler) GetMovies(c *gin.Context) {
 		query.Size = 10
 	}
 
-	movies, total, err := h.biz.GetMovies(c.Request.Context(), query.Page, query.Size)
+	movies, total, err := h.biz.GetMovies(c.Request.Context(), query.Page, query.Size, query.Search)
 	if err != nil {
 		responseErrorWithMessage(c, "Failed to get movies")
 		return
 	}
 
-	response := ToMoviesResponse(movies, query.Page, query.Size, total)
+	response := entity.ToMoviesResponse(movies, query.Page, query.Size, total)
 	responseSuccess(c, response)
 }
 
@@ -68,12 +68,12 @@ func (h *handler) GetMovieById(c *gin.Context) {
 		return
 	}
 
-	response := ToMovieResponse(movie)
+	response := entity.ToMovieResponse(movie)
 	responseSuccess(c, response)
 }
 
 func (h *handler) CreateMovie(c *gin.Context) {
-	var req CreateMovieRequest
+	var req entity.CreateMovieRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		responseBadRequest(c, fmt.Sprintf("Invalid request body: %s", err.Error()))
 		return
@@ -91,7 +91,7 @@ func (h *handler) CreateMovie(c *gin.Context) {
 		return
 	}
 
-	response := ToMovieResponse(movie)
+	response := entity.ToMovieResponse(movie)
 	responseCreated(c, response)
 }
 
@@ -102,7 +102,7 @@ func (h *handler) UpdateMovie(c *gin.Context) {
 		return
 	}
 
-	var req UpdateMovieRequest
+	var req entity.UpdateMovieRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		responseBadRequest(c, fmt.Sprintf("Invalid request body: %s", err.Error()))
 		return
@@ -130,7 +130,7 @@ func (h *handler) UpdateMovie(c *gin.Context) {
 		return
 	}
 
-	response := ToMovieResponse(movie)
+	response := entity.ToMovieResponse(movie)
 	responseSuccess(c, response)
 }
 
@@ -162,7 +162,7 @@ func (h *handler) UpdateMovieStatus(c *gin.Context) {
 		return
 	}
 
-	var req UpdateMovieStatusRequest
+	var req entity.UpdateMovieStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		responseBadRequest(c, fmt.Sprintf("Invalid request body: %s", err.Error()))
 		return
@@ -191,7 +191,7 @@ func (h *handler) UpdateMovieStatus(c *gin.Context) {
 		return
 	}
 
-	response := ToMovieResponse(movie)
+	response := entity.ToMovieResponse(movie)
 	responseSuccess(c, response)
 }
 
@@ -205,28 +205,10 @@ func (h *handler) HelloWorld(c *gin.Context) {
 }
 
 func (h *handler) GetMovieStats(c *gin.Context) {
-	allMovies, _, err := h.biz.GetMovies(c.Request.Context(), 1, 1000)
+	stats, err := h.biz.GetMovieStats(c.Request.Context())
 	if err != nil {
-		responseErrorWithMessage(c, "Failed to get movie statistics")
+		responseErrorWithMessage(c, "Failed to get movie statistics"+err.Error())
 		return
-	}
-
-	stats := map[string]interface{}{
-		"total":    len(allMovies),
-		"upcoming": 0,
-		"showing":  0,
-		"ended":    0,
-	}
-
-	for _, movie := range allMovies {
-		switch movie.Status {
-		case entity.MovieStatusUpcoming:
-			stats["upcoming"] = stats["upcoming"].(int) + 1
-		case entity.MovieStatusShowing:
-			stats["showing"] = stats["showing"].(int) + 1
-		case entity.MovieStatusEnded:
-			stats["ended"] = stats["ended"].(int) + 1
-		}
 	}
 
 	responseSuccess(c, stats)

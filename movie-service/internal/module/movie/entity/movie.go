@@ -14,6 +14,21 @@ const (
 	MovieStatusEnded    MovieStatus = "ended"
 )
 
+type Genre string
+
+const (
+	GenreAction    Genre = "action"
+	GenreComedy    Genre = "comedy"
+	GenreDrama     Genre = "drama"
+	GenreHorror    Genre = "horror"
+	GenreRomance   Genre = "romance"
+	GenreSciFi     Genre = "sci-fi"
+	GenreThriller  Genre = "thriller"
+	GenreWestern   Genre = "western"
+	GenreAnimation Genre = "animation"
+	GenreFamily    Genre = "family"
+)
+
 type Movie struct {
 	bun.BaseModel `bun:"table:movies,alias:m"`
 
@@ -21,7 +36,7 @@ type Movie struct {
 	Title       string      `bun:"title,notnull" json:"title"`
 	Director    string      `bun:"director" json:"director"`
 	Cast        string      `bun:"cast" json:"cast"`
-	Genre       string      `bun:"genre" json:"genre"`
+	Genre       Genre       `bun:"genre" json:"genre"`
 	Duration    int         `bun:"duration,notnull" json:"duration"`
 	ReleaseDate *time.Time  `bun:"release_date,type:date" json:"release_date"`
 	Description string      `bun:"description" json:"description"`
