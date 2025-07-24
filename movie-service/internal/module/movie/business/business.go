@@ -252,5 +252,5 @@ func (b *business) invalidateMoviesListCache(ctx context.Context) {
 	_ = b.cache.Delete(ctx, keyTotalMovieCount)
 
 	// Delete all pagination cache keys with pattern
-	_ = caching.DeleteKeys(ctx, b.redisClient, keyMovieDetailPattern)
+	_ = caching.DeleteKeys(ctx, b.redisClient, keyPagingListMoviePattern)
 }
