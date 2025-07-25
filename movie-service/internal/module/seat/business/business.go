@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"movie-service/internal/pkg/paging"
+
 	"movie-service/internal/module/seat/entity"
 	"movie-service/internal/pkg/caching"
 
@@ -104,12 +106,25 @@ func (b *business) GetSeats(ctx context.Context, page, size int, search, roomId,
 
 	offset := (page - 1) * size
 
-	seats, err := b.repository.GetMany(ctx, size, offset, search, roomId, rowNumber, seatType, status)
+	pagingObj := &paging.Paging{
+		Limit:  size,
+		Offset: offset,
+	}
+
+	callback := func() ([]*entity.Seat, error) {
+		return b.repository.GetMany(ctx, size, offset, search, roomId, rowNumber, seatType, status)
+	}
+
+	seats, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, redisSeatsList(pagingObj, search), CACHE_TTL_30_MINS, callback)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get seats: %w", err)
 	}
 
-	total, err := b.repository.GetTotalCount(ctx, search, roomId, rowNumber, seatType, status)
+	callbackTotal := func() (int, error) {
+		return b.repository.GetTotalCount(ctx, search, roomId, rowNumber, seatType, status)
+	}
+
+	total, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, redisSeatsList(pagingObj, search+":total"), CACHE_TTL_30_MINS, callbackTotal)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get total count: %w", err)
 	}
@@ -151,7 +166,8 @@ func (b *business) CreateSeat(ctx context.Context, seat *entity.Seat) error {
 		return fmt.Errorf("failed to create seat: %w", err)
 	}
 
-	_ = b.cache.Delete(ctx, redisSeatsList())
+	pagingObj := &paging.Paging{Limit: 10, Offset: 0}
+	_ = b.cache.Delete(ctx, redisSeatsList(pagingObj, ""))
 	_ = b.cache.Delete(ctx, redisRoomSeats(seat.RoomId))
 
 	return nil
@@ -212,8 +228,9 @@ func (b *business) UpdateSeat(ctx context.Context, id string, updates *entity.Up
 		return fmt.Errorf("failed to update seat: %w", err)
 	}
 
+	pagingObj := &paging.Paging{Limit: 10, Offset: 0}
 	_ = b.cache.Delete(ctx, redisSeatDetail(id))
-	_ = b.cache.Delete(ctx, redisSeatsList())
+	_ = b.cache.Delete(ctx, redisSeatsList(pagingObj, ""))
 	_ = b.cache.Delete(ctx, redisRoomSeats(seat.RoomId))
 
 	return nil
@@ -236,8 +253,9 @@ func (b *business) DeleteSeat(ctx context.Context, id string) error {
 		return fmt.Errorf("failed to delete seat: %w", err)
 	}
 
+	pagingObj := &paging.Paging{Limit: 10, Offset: 0}
 	_ = b.cache.Delete(ctx, redisSeatDetail(id))
-	_ = b.cache.Delete(ctx, redisSeatsList())
+	_ = b.cache.Delete(ctx, redisSeatsList(pagingObj, ""))
 	_ = b.cache.Delete(ctx, redisRoomSeats(seat.RoomId))
 
 	return nil
@@ -266,8 +284,9 @@ func (b *business) UpdateSeatStatus(ctx context.Context, id string, status entit
 		return fmt.Errorf("failed to update seat status: %w", err)
 	}
 
+	pagingObj := &paging.Paging{Limit: 10, Offset: 0}
 	_ = b.cache.Delete(ctx, redisSeatDetail(id))
-	_ = b.cache.Delete(ctx, redisSeatsList())
+	_ = b.cache.Delete(ctx, redisSeatsList(pagingObj, ""))
 	_ = b.cache.Delete(ctx, redisRoomSeats(seat.RoomId))
 
 	return nil

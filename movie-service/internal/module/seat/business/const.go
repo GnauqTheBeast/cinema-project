@@ -3,6 +3,8 @@ package business
 import (
 	"fmt"
 	"time"
+
+	"movie-service/internal/pkg/paging"
 )
 
 const (
@@ -15,8 +17,8 @@ func redisSeatDetail(id string) string {
 	return fmt.Sprintf("seat:detail:%s", id)
 }
 
-func redisSeatsList() string {
-	return "seats:list"
+func redisSeatsList(paging *paging.Paging, searchQuery string) string {
+	return fmt.Sprintf("seats:list:paging:page:%d:size%d:search:%s", paging.Limit, paging.Offset, searchQuery)
 }
 
 func redisRoomSeats(roomId string) string {
