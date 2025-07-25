@@ -18,8 +18,11 @@ export default function AdminLayout({ children }) {
 
   const navItems = [
     { path: '/admin/dashboard', label: '📊 Dashboard', icon: '📊' },
-    { path: '/admin/movies', label: '🎬 Movies', icon: '🎬' },
-    { path: '/admin/revenue', label: '💰 Revenue', icon: '💰' },
+    { path: '/admin/movies', label: '🎬 Phim', icon: '🎬' },
+    { path: '/admin/rooms', label: '🏠 Phòng chiếu', icon: '🏠' },
+    { path: '/admin/seats', label: '💺 Ghế ngồi', icon: '💺' },
+    { path: '/admin/showtimes', label: '🕒 Lịch chiếu', icon: '🕒' },
+    { path: '/admin/revenue', label: '💰 Doanh thu', icon: '💰' },
   ];
 
   return (

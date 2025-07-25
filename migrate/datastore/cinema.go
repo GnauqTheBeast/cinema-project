@@ -40,6 +40,8 @@ func CreateSeatTable(ctx context.Context, db *bun.DB) error {
 		return fmt.Errorf("failed to create seats table: %w", err)
 	}
 	return nil
+
+	// TODO: create index on roomId, rowNumber, columnNumber on seats
 }
 
 func CreateShowtimeTable(ctx context.Context, db *bun.DB) error {

@@ -3,6 +3,9 @@ package main
 import (
 	"movie-service/internal/container"
 	"movie-service/internal/module/movie/transport/rest"
+	roomRest "movie-service/internal/module/room/transport/rest"
+	seatRest "movie-service/internal/module/seat/transport/rest"
+	showtimeRest "movie-service/internal/module/showtime/transport/rest"
 	"movie-service/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -12,51 +15,109 @@ import (
 
 func ServeAPI() *cli.Command {
 	return &cli.Command{
-		Name:  "serve",
-		Usage: "start the API server",
+		Name:  "api",
+		Usage: "start movie service api",
 		Action: func(c *cli.Context) error {
 			router := gin.Default()
-			router.RedirectTrailingSlash = true
-			gin.SetMode(gin.DebugMode)
 			router.Use(middleware.Cors())
+			// router.Use(middleware.AuthMiddleware())
 
-			logrus.Printf("ListenAndServe: %s\n", "8083")
-			startRouteV1(router.Group("/api/v1"))
+			v1 := router.Group("/api/v1")
+			startRouteV1(v1)
 
+			logrus.Info("Movie service api is running on port 8083")
 			return router.Run(":8083")
 		},
 	}
 }
 
-type Handler interface {
-	GetMovies(c *gin.Context)
-	GetMovieById(c *gin.Context)
-	CreateMovie(c *gin.Context)
-	UpdateMovie(c *gin.Context)
-	DeleteMovie(c *gin.Context)
-	UpdateMovieStatus(c *gin.Context)
-	GetMovieStats(c *gin.Context)
-	HelloWorld(c *gin.Context)
-}
-
 func startRouteV1(group *gin.RouterGroup) {
 	i := container.NewContainer()
 
+	// Initialize all APIs
 	movieApi, err := rest.NewAPI(i)
 	if err != nil {
 		panic(err)
 	}
 
-	movies := group.Group("/movies")
-	{
-		movies.GET("", movieApi.GetMovies)                      // GET /api/v1/movies
-		movies.POST("", movieApi.CreateMovie)                   // POST /api/v1/movies
-		movies.GET("/stats", movieApi.GetMovieStats)            // GET /api/v1/movies/stats
-		movies.GET("/:id", movieApi.GetMovieById)               // GET /api/v1/movies/{id}
-		movies.PUT("/:id", movieApi.UpdateMovie)                // PUT /api/v1/movies/{id}
-		movies.DELETE("/:id", movieApi.DeleteMovie)             // DELETE /api/v1/movies/{id}
-		movies.PATCH("/:id/status", movieApi.UpdateMovieStatus) // PATCH /api/v1/movies/{id}/status
+	roomApi, err := roomRest.NewAPI(i)
+	if err != nil {
+		panic(err)
 	}
 
+	seatApi, err := seatRest.NewAPI(i)
+	if err != nil {
+		panic(err)
+	}
+
+	showtimeApi, err := showtimeRest.NewAPI(i)
+	if err != nil {
+		panic(err)
+	}
+
+	// Health check endpoint
 	group.GET("/health", movieApi.HelloWorld)
+
+	// Movie endpoints
+	movies := group.Group("/movies")
+	{
+		movies.GET("", movieApi.GetMovies)
+		movies.POST("", movieApi.CreateMovie)
+		movies.GET("/stats", movieApi.GetMovieStats)
+		movies.GET("/:id", movieApi.GetMovieById)
+		movies.PUT("/:id", movieApi.UpdateMovie)
+		movies.DELETE("/:id", movieApi.DeleteMovie)
+		movies.PATCH("/:id/status", movieApi.UpdateMovieStatus)
+		// Movie-specific showtime endpoints
+		movies.GET("/:id/showtimes", showtimeApi.GetShowtimesByMovie)
+	}
+
+	// Room endpoints
+	rooms := group.Group("/rooms")
+	{
+		rooms.GET("", roomApi.GetRooms)
+		rooms.POST("", roomApi.CreateRoom)
+		rooms.GET("/:id", roomApi.GetRoomById)
+		rooms.PUT("/:id", roomApi.UpdateRoom)
+		rooms.DELETE("/:id", roomApi.DeleteRoom)
+		rooms.PATCH("/:id/status", roomApi.UpdateRoomStatus)
+		// Room-specific seat and showtime endpoints
+		rooms.GET("/:id/seats", seatApi.GetSeatsByRoom)
+		rooms.GET("/:id/showtimes", showtimeApi.GetShowtimesByRoom)
+	}
+
+	// Seat endpoints
+	seats := group.Group("/seats")
+	{
+		seats.GET("", seatApi.GetSeats)
+		seats.POST("", seatApi.CreateSeat)
+		seats.GET("/:id", seatApi.GetSeatById)
+		seats.PUT("/:id", seatApi.UpdateSeat)
+		seats.DELETE("/:id", seatApi.DeleteSeat)
+		seats.PATCH("/:id/status", seatApi.UpdateSeatStatus)
+	}
+
+	// Showtime endpoints
+	showtimes := group.Group("/showtimes")
+	{
+		showtimes.GET("", showtimeApi.GetShowtimes)
+		showtimes.POST("", showtimeApi.CreateShowtime)
+		showtimes.GET("/upcoming", showtimeApi.GetUpcomingShowtimes)
+		showtimes.GET("/conflict-check", showtimeApi.CheckTimeConflict)
+		showtimes.GET("/:id", showtimeApi.GetShowtimeById)
+		showtimes.PUT("/:id", showtimeApi.UpdateShowtime)
+		showtimes.DELETE("/:id", showtimeApi.DeleteShowtime)
+		showtimes.PATCH("/:id/status", showtimeApi.UpdateShowtimeStatus)
+	}
+
+	// Admin routes (optional grouping for future middleware)
+	admin := group.Group("/admin")
+	{
+		admin.GET("/dashboard", func(c *gin.Context) {
+			c.JSON(200, gin.H{
+				"message": "Admin dashboard - Coming soon",
+				"modules": []string{"movies", "rooms", "seats", "showtimes"},
+			})
+		})
+	}
 }

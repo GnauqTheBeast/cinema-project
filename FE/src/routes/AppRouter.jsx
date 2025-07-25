@@ -7,6 +7,12 @@ import MoviesPage from '../pages/admin/MoviesPage';
 import MovieDetailPage from '../pages/admin/MovieDetailPage';
 import MovieFormPage from '../pages/admin/MovieFormPage';
 import RevenueStatsPage from '../pages/admin/RevenueStatsPage';
+import RoomsPage from '../pages/admin/RoomsPage';
+import RoomFormPage from '../pages/admin/RoomFormPage';
+import SeatsPage from '../pages/admin/SeatsPage';
+import SeatFormPage from '../pages/admin/SeatFormPage';
+import ShowtimesPage from '../pages/admin/ShowtimesPage';
+import ShowtimeFormPage from '../pages/admin/ShowtimeFormPage';
 
 const AppRouter = ({ token }) => {
   const ProtectedRoute = ({ children }) => {
@@ -38,6 +44,8 @@ const AppRouter = ({ token }) => {
           </AdminRoute>
         } 
       />
+
+      {/* Movie Routes */}
       <Route 
         path="/admin/movies" 
         element={
@@ -70,6 +78,86 @@ const AppRouter = ({ token }) => {
           </AdminRoute>
         } 
       />
+
+      {/* Room Routes */}
+      <Route 
+        path="/admin/rooms" 
+        element={
+          <AdminRoute>
+            <RoomsPage />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/rooms/new" 
+        element={
+          <AdminRoute>
+            <RoomFormPage />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/rooms/:id/edit" 
+        element={
+          <AdminRoute>
+            <RoomFormPage />
+          </AdminRoute>
+        } 
+      />
+
+      {/* Seat Routes */}
+      <Route 
+        path="/admin/seats" 
+        element={
+          <AdminRoute>
+            <SeatsPage />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/seats/new" 
+        element={
+          <AdminRoute>
+            <SeatFormPage />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/seats/:id/edit" 
+        element={
+          <AdminRoute>
+            <SeatFormPage />
+          </AdminRoute>
+        } 
+      />
+
+      {/* Showtime Routes */}
+      <Route 
+        path="/admin/showtimes" 
+        element={
+          <AdminRoute>
+            <ShowtimesPage />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/showtimes/new" 
+        element={
+          <AdminRoute>
+            <ShowtimeFormPage />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/showtimes/:id/edit" 
+        element={
+          <AdminRoute>
+            <ShowtimeFormPage />
+          </AdminRoute>
+        } 
+      />
+
+      {/* Revenue Stats */}
       <Route 
         path="/admin/revenue" 
         element={

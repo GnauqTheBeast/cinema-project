@@ -16,12 +16,32 @@ type Paging struct {
 	Offset int
 }
 
+type PageInfo struct {
+	Page       int `json:"page"`
+	Size       int `json:"size"`
+	Total      int `json:"total"`
+	TotalPages int `json:"total_pages"`
+}
+
 func GetQueryPaging(c *gin.Context) *Paging {
 	page := stringToInt(c.DefaultQuery("page", defaultQueryPage))
 	size := stringToInt(c.DefaultQuery("size", defaultQueryPageSize))
 	return &Paging{
 		Limit:  size,
 		Offset: (page - 1) * size,
+	}
+}
+
+func NewPageInfo(page, size, total int) *PageInfo {
+	totalPages := total / size
+	if total%size > 0 {
+		totalPages++
+	}
+	return &PageInfo{
+		Page:       page,
+		Size:       size,
+		Total:      total,
+		TotalPages: totalPages,
 	}
 }
 

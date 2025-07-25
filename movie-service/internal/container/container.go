@@ -8,6 +8,15 @@ import (
 	"movie-service/internal/module/movie/business"
 	"movie-service/internal/module/movie/repository/postgres"
 
+	roomBusiness "movie-service/internal/module/room/business"
+	roomPostgres "movie-service/internal/module/room/repository/postgres"
+
+	seatBusiness "movie-service/internal/module/seat/business"
+	seatPostgres "movie-service/internal/module/seat/repository/postgres"
+
+	showtimeBusiness "movie-service/internal/module/showtime/business"
+	showtimePostgres "movie-service/internal/module/showtime/repository/postgres"
+
 	"movie-service/internal/pkg/caching"
 
 	"movie-service/internal/pkg/pubsub"
@@ -54,9 +63,22 @@ func NewContainer() *do.Injector {
 	do.Provide(injector, provideReadisCacheReadOnly)
 	do.Provide(injector, provideRedisPubsub)
 
+	// Movie module
 	do.Provide(injector, provideMovieRepository)
 	do.Provide(injector, provideMovieBusiness)
 	do.Provide(injector, provideAuthService)
+
+	// Room module
+	do.Provide(injector, provideRoomRepository)
+	do.Provide(injector, provideRoomBusiness)
+
+	// Seat module
+	do.Provide(injector, provideSeatRepository)
+	do.Provide(injector, provideSeatBusiness)
+
+	// Showtime module
+	do.Provide(injector, provideShowtimeRepository)
+	do.Provide(injector, provideShowtimeBusiness)
 
 	return injector
 }
@@ -200,6 +222,7 @@ func provideRedisPubsub(i *do.Injector) (pubsub.PubSub, error) {
 	return redisPubsub.NewRedisPubsub(pubsubReadonly, pubsub), nil
 }
 
+// Movie providers
 func provideMovieRepository(i *do.Injector) (business.MovieRepository, error) {
 	return postgres.NewMovieRepository(i)
 }
@@ -210,4 +233,31 @@ func provideMovieBusiness(i *do.Injector) (business.MovieBiz, error) {
 
 func provideAuthService(i *do.Injector) (*grpc.AuthGrpcClient, error) {
 	return grpc.NewAuthGrpcClient(i)
+}
+
+// Room providers
+func provideRoomRepository(i *do.Injector) (roomBusiness.RoomRepository, error) {
+	return roomPostgres.NewRoomRepository(i)
+}
+
+func provideRoomBusiness(i *do.Injector) (roomBusiness.RoomBiz, error) {
+	return roomBusiness.NewBusiness(i)
+}
+
+// Seat providers
+func provideSeatRepository(i *do.Injector) (seatBusiness.SeatRepository, error) {
+	return seatPostgres.NewSeatRepository(i)
+}
+
+func provideSeatBusiness(i *do.Injector) (seatBusiness.SeatBiz, error) {
+	return seatBusiness.NewBusiness(i)
+}
+
+// Showtime providers
+func provideShowtimeRepository(i *do.Injector) (showtimeBusiness.ShowtimeRepository, error) {
+	return showtimePostgres.NewShowtimeRepository(i)
+}
+
+func provideShowtimeBusiness(i *do.Injector) (showtimeBusiness.ShowtimeBiz, error) {
+	return showtimeBusiness.NewBusiness(i)
 }

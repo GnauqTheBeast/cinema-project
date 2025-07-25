@@ -5,6 +5,7 @@ import "movie-service/proto/pb"
 type Business interface{}
 
 type MovieServiceServer struct {
+	// TODO: embed movie service server, not auth service server
 	pb.UnimplementedAuthServiceServer
 	business Business
 }

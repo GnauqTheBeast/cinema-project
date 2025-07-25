@@ -6,6 +6,7 @@ import (
 
 	"movie-service/internal/module/movie/business"
 	"movie-service/internal/module/movie/entity"
+	"movie-service/internal/pkg/response"
 
 	"github.com/gin-gonic/gin"
 	"github.com/samber/do"
@@ -29,7 +30,7 @@ func NewAPI(i *do.Injector) (*handler, error) {
 func (h *handler) GetMovies(c *gin.Context) {
 	var query entity.GetMoviesQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
-		responseBadRequest(c, fmt.Sprintf("Invalid query parameters: %s", err.Error()))
+		response.BadRequest(c, fmt.Sprintf("Invalid query parameters: %s", err.Error()))
 		return
 	}
 
@@ -42,174 +43,166 @@ func (h *handler) GetMovies(c *gin.Context) {
 
 	movies, total, err := h.biz.GetMovies(c.Request.Context(), query.Page, query.Size, query.Search)
 	if err != nil {
-		responseErrorWithMessage(c, "Failed to get movies")
+		response.ErrorWithMessage(c, "Failed to get movies")
 		return
 	}
 
-	response := entity.ToMoviesResponse(movies, query.Page, query.Size, total)
-	responseSuccess(c, response)
+	resp := entity.ToMoviesResponse(movies, query.Page, query.Size, total)
+	response.Success(c, resp)
 }
 
 func (h *handler) GetMovieById(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		responseBadRequest(c, "Movie ID is required")
+		response.BadRequest(c, "Movie ID is required")
 		return
 	}
 
 	movie, err := h.biz.GetMovieById(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, business.ErrMovieNotFound) {
-			responseNotFound(c, fmt.Errorf("movie not found"))
+			response.NotFound(c, fmt.Errorf("movie not found"))
 			return
 		}
 
-		responseErrorWithMessage(c, "Failed to get movie")
+		response.ErrorWithMessage(c, "Failed to get movie")
 		return
 	}
 
-	response := entity.ToMovieResponse(movie)
-	responseSuccess(c, response)
+	resp := entity.ToMovieResponse(movie)
+	response.Success(c, resp)
 }
 
 func (h *handler) CreateMovie(c *gin.Context) {
 	var req entity.CreateMovieRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		responseBadRequest(c, fmt.Sprintf("Invalid request body: %s", err.Error()))
+		response.BadRequest(c, fmt.Sprintf("Invalid request body: %s", err.Error()))
 		return
 	}
 
 	movie := req.ToEntity()
-	err := h.biz.CreateMovie(c.Request.Context(), movie)
-	if err != nil {
+	if err := h.biz.CreateMovie(c.Request.Context(), movie); err != nil {
 		if errors.Is(err, business.ErrInvalidMovieData) {
-			responseBadRequest(c, "Invalid movie data provided")
+			response.BadRequest(c, "Invalid movie data")
 			return
 		}
 
-		responseErrorWithMessage(c, "Failed to create movie")
+		response.ErrorWithMessage(c, "Failed to create movie")
 		return
 	}
 
-	response := entity.ToMovieResponse(movie)
-	responseCreated(c, response)
+	resp := entity.ToMovieResponse(movie)
+	response.Created(c, resp)
 }
 
 func (h *handler) UpdateMovie(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		responseBadRequest(c, "Movie ID is required")
+		response.BadRequest(c, "Movie ID is required")
 		return
 	}
 
 	var req entity.UpdateMovieRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		responseBadRequest(c, fmt.Sprintf("Invalid request body: %s", err.Error()))
+		response.BadRequest(c, fmt.Sprintf("Invalid request body: %s", err.Error()))
 		return
 	}
 
 	movie := req.ToEntity(id)
-	err := h.biz.UpdateMovie(c.Request.Context(), movie)
-	if err != nil {
+	if err := h.biz.UpdateMovie(c.Request.Context(), movie); err != nil {
 		if errors.Is(err, business.ErrMovieNotFound) {
-			responseNotFound(c, fmt.Errorf("movie not found"))
+			response.NotFound(c, fmt.Errorf("movie not found"))
 			return
 		}
-
 		if errors.Is(err, business.ErrInvalidMovieData) {
-			responseBadRequest(c, "Invalid movie data provided")
+			response.BadRequest(c, "Invalid movie data")
 			return
 		}
 
-		if errors.Is(err, business.ErrInvalidStatusTransition) {
-			responseBadRequest(c, "Invalid status transition")
-			return
-		}
-
-		responseErrorWithMessage(c, "Failed to update movie")
+		response.ErrorWithMessage(c, "Failed to update movie")
 		return
 	}
 
-	response := entity.ToMovieResponse(movie)
-	responseSuccess(c, response)
+	updatedMovie, err := h.biz.GetMovieById(c.Request.Context(), id)
+	if err != nil {
+		response.ErrorWithMessage(c, "Failed to get updated movie")
+		return
+	}
+
+	resp := entity.ToMovieResponse(updatedMovie)
+	response.Success(c, resp)
 }
 
 func (h *handler) DeleteMovie(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		responseBadRequest(c, "Movie ID is required")
+		response.BadRequest(c, "Movie ID is required")
 		return
 	}
 
-	err := h.biz.DeleteMovie(c.Request.Context(), id)
-	if err != nil {
+	if err := h.biz.DeleteMovie(c.Request.Context(), id); err != nil {
 		if errors.Is(err, business.ErrMovieNotFound) {
-			responseNotFound(c, fmt.Errorf("movie not found"))
+			response.NotFound(c, fmt.Errorf("movie not found"))
 			return
 		}
 
-		responseErrorWithMessage(c, "Failed to delete movie")
+		response.ErrorWithMessage(c, "Failed to delete movie")
 		return
 	}
 
-	responseSuccessWithMessage(c, "Movie deleted successfully")
+	response.NoContent(c)
 }
 
 func (h *handler) UpdateMovieStatus(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		responseBadRequest(c, "Movie ID is required")
+		response.BadRequest(c, "Movie ID is required")
 		return
 	}
 
 	var req entity.UpdateMovieStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		responseBadRequest(c, fmt.Sprintf("Invalid request body: %s", err.Error()))
+		response.BadRequest(c, fmt.Sprintf("Invalid request body: %s", err.Error()))
 		return
 	}
 
-	status := entity.MovieStatus(req.Status)
-	err := h.biz.UpdateMovieStatus(c.Request.Context(), id, status)
-	if err != nil {
+	if err := h.biz.UpdateMovieStatus(c.Request.Context(), id, entity.MovieStatus(req.Status)); err != nil {
 		if errors.Is(err, business.ErrMovieNotFound) {
-			responseNotFound(c, fmt.Errorf("movie not found"))
+			response.NotFound(c, fmt.Errorf("movie not found"))
+			return
+		}
+		if errors.Is(err, business.ErrInvalidMovieData) {
+			response.BadRequest(c, "Invalid movie status")
 			return
 		}
 
-		if errors.Is(err, business.ErrInvalidStatusTransition) {
-			responseBadRequest(c, "Invalid status transition")
-			return
-		}
-
-		responseErrorWithMessage(c, "Failed to update movie status")
+		response.ErrorWithMessage(c, "Failed to update movie status")
 		return
 	}
 
 	movie, err := h.biz.GetMovieById(c.Request.Context(), id)
 	if err != nil {
-		responseErrorWithMessage(c, "Failed to get updated movie")
+		response.ErrorWithMessage(c, "Failed to get updated movie")
 		return
 	}
 
-	response := entity.ToMovieResponse(movie)
-	responseSuccess(c, response)
-}
-
-func (h *handler) HelloWorld(c *gin.Context) {
-	data := gin.H{
-		"message": "Hello World from Movie Service",
-		"service": "movie-service",
-		"version": "1.0.0",
-	}
-	responseSuccess(c, data)
+	resp := entity.ToMovieResponse(movie)
+	response.Success(c, resp)
 }
 
 func (h *handler) GetMovieStats(c *gin.Context) {
 	stats, err := h.biz.GetMovieStats(c.Request.Context())
 	if err != nil {
-		responseErrorWithMessage(c, "Failed to get movie statistics"+err.Error())
+		response.ErrorWithMessage(c, "Failed to get movie stats")
 		return
 	}
 
-	responseSuccess(c, stats)
+	response.Success(c, stats)
+}
+
+func (h *handler) HelloWorld(c *gin.Context) {
+	response.Success(c, gin.H{
+		"message": "Hello from Movie Service API!",
+		"status":  "healthy",
+	})
 }
