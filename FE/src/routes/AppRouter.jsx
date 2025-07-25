@@ -1,0 +1,178 @@
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import LoginPage from '../pages/LoginPage';
+import RegisterPage from '../pages/RegisterPage';
+import DashboardPage from '../pages/admin/DashboardPage';
+import MoviesPage from '../pages/admin/MoviesPage';
+import MovieDetailPage from '../pages/admin/MovieDetailPage';
+import MovieFormPage from '../pages/admin/MovieFormPage';
+import RevenueStatsPage from '../pages/admin/RevenueStatsPage';
+import RoomsPage from '../pages/admin/RoomsPage';
+import RoomFormPage from '../pages/admin/RoomFormPage';
+import SeatsPage from '../pages/admin/SeatsPage';
+import SeatFormPage from '../pages/admin/SeatFormPage';
+import ShowtimesPage from '../pages/admin/ShowtimesPage';
+import ShowtimeFormPage from '../pages/admin/ShowtimeFormPage';
+
+const AppRouter = ({ token }) => {
+  const ProtectedRoute = ({ children }) => {
+    return token ? children : <Navigate to="/login" replace />;
+  };
+
+  const AdminRoute = ({ children }) => {
+    return token ? children : <Navigate to="/login" replace />;
+  };
+
+  return (
+    <Routes>
+      {/* Public Routes */}
+      <Route 
+        path="/login" 
+        element={!token ? <LoginPage /> : <Navigate to="/admin/movies" replace />} 
+      />
+      <Route 
+        path="/register" 
+        element={!token ? <RegisterPage /> : <Navigate to="/admin/movies" replace />} 
+      />
+
+      {/* Admin Routes */}
+      <Route 
+        path="/admin/dashboard" 
+        element={
+          <AdminRoute>
+            <DashboardPage />
+          </AdminRoute>
+        } 
+      />
+
+      {/* Movie Routes */}
+      <Route 
+        path="/admin/movies" 
+        element={
+          <AdminRoute>
+            <MoviesPage />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/movies/new" 
+        element={
+          <AdminRoute>
+            <MovieFormPage />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/movies/:id" 
+        element={
+          <AdminRoute>
+            <MovieDetailPage />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/movies/:id/edit" 
+        element={
+          <AdminRoute>
+            <MovieFormPage />
+          </AdminRoute>
+        } 
+      />
+
+      {/* Room Routes */}
+      <Route 
+        path="/admin/rooms" 
+        element={
+          <AdminRoute>
+            <RoomsPage />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/rooms/new" 
+        element={
+          <AdminRoute>
+            <RoomFormPage />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/rooms/:id/edit" 
+        element={
+          <AdminRoute>
+            <RoomFormPage />
+          </AdminRoute>
+        } 
+      />
+
+      {/* Seat Routes */}
+      <Route 
+        path="/admin/seats" 
+        element={
+          <AdminRoute>
+            <SeatsPage />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/seats/new" 
+        element={
+          <AdminRoute>
+            <SeatFormPage />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/seats/:id/edit" 
+        element={
+          <AdminRoute>
+            <SeatFormPage />
+          </AdminRoute>
+        } 
+      />
+
+      {/* Showtime Routes */}
+      <Route 
+        path="/admin/showtimes" 
+        element={
+          <AdminRoute>
+            <ShowtimesPage />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/showtimes/new" 
+        element={
+          <AdminRoute>
+            <ShowtimeFormPage />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/showtimes/:id/edit" 
+        element={
+          <AdminRoute>
+            <ShowtimeFormPage />
+          </AdminRoute>
+        } 
+      />
+
+      {/* Revenue Stats */}
+      <Route 
+        path="/admin/revenue" 
+        element={
+          <AdminRoute>
+            <RevenueStatsPage />
+          </AdminRoute>
+        } 
+      />
+
+      {/* Default redirects */}
+      <Route path="/admin" element={<Navigate to="/admin/movies" replace />} />
+      <Route path="/" element={<Navigate to={token ? "/admin/movies" : "/login"} replace />} />
+      <Route path="*" element={<Navigate to={token ? "/admin/movies" : "/login"} replace />} />
+    </Routes>
+  );
+};
+
+export default AppRouter; 

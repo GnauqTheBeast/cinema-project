@@ -86,7 +86,7 @@ func (e *EmailService) SubscribeEmailVerifyQueue(ctx context.Context) error {
 					From:       "quangnguyenngoc314@gmail.com",
 					To:         receiveMsg.To,
 					VerifyCode: receiveMsg.VerifyCode,
-					VerifyURL:  fmt.Sprintf("http://localhost:3000/verify?code=%s", receiveMsg.VerifyCode),
+					VerifyURL:  receiveMsg.VerifyCode,
 				}
 
 				switch msg.Topic {
