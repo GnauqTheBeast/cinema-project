@@ -174,7 +174,7 @@ func (b *business) UpdateMovie(ctx context.Context, movie *entity.Movie) error {
 	}
 
 	if movie.Status != existingMovie.Status {
-		if !existingMovie.CanTransitionTo(entity.MovieStatus(movie.Status)) {
+		if !existingMovie.CanTransitionTo(movie.Status) {
 			return ErrInvalidStatusTransition
 		}
 	}
@@ -257,6 +257,6 @@ func (b *business) invalidateMovieCache(ctx context.Context, movieId string) {
 func (b *business) invalidateMoviesListCache(ctx context.Context) {
 	_ = b.cache.Delete(ctx, redisTotalMovieCount(""))
 
-	_ = b.redisClient.Del(ctx, keyPagingListMoviePattern)
-	_ = b.redisClient.Del(ctx, keyMovieDetailPattern)
+	_ = caching.DeleteKeys(ctx, b.redisClient, keyPagingListMoviePattern)
+	_ = caching.DeleteKeys(ctx, b.redisClient, keyMovieDetailPattern)
 }

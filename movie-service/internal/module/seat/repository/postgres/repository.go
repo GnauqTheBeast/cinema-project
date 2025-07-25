@@ -118,7 +118,7 @@ func (r *Repository) GetMany(ctx context.Context, limit, offset int, search, roo
 		Offset(offset).
 		Scan(ctx, &seats)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get seats: %w", err)
+		return nil, err
 	}
 
 	return seats, nil
@@ -150,7 +150,7 @@ func (r *Repository) GetTotalCount(ctx context.Context, search, roomId, rowNumbe
 
 	count, err := query.Count(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("failed to get total count: %w", err)
+		return 0, err
 	}
 
 	return count, nil
