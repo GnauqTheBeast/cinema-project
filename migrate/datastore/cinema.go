@@ -35,6 +35,7 @@ func CreateSeatTable(ctx context.Context, db *bun.DB) error {
 	_, err := db.NewCreateTable().
 		Model((*models.Seat)(nil)).
 		IfNotExists().
+		ForeignKey("(room_id) REFERENCES rooms(id) ON DELETE CASCADE").
 		Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create seats table: %w", err)
@@ -48,6 +49,8 @@ func CreateShowtimeTable(ctx context.Context, db *bun.DB) error {
 	_, err := db.NewCreateTable().
 		Model((*models.Showtime)(nil)).
 		IfNotExists().
+		ForeignKey("(room_id) REFERENCES rooms(id) ON DELETE CASCADE").
+		ForeignKey("(movie_id) REFERENCES movies(id) ON DELETE CASCADE").
 		Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create showtimes table: %w", err)

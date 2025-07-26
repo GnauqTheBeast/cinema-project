@@ -13,6 +13,8 @@ func CreateBookingTable(ctx context.Context, db *bun.DB) error {
 	_, err := db.NewCreateTable().
 		Model((*models.Booking)(nil)).
 		IfNotExists().
+		ForeignKey("(user_id) REFERENCES users(id) ON DELETE CASCADE").
+		ForeignKey("(showtime_id) REFERENCES showtimes(id) ON DELETE CASCADE").
 		Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create bookings table: %w", err)
@@ -24,6 +26,8 @@ func CreateTicketTable(ctx context.Context, db *bun.DB) error {
 	_, err := db.NewCreateTable().
 		Model((*models.Ticket)(nil)).
 		IfNotExists().
+		ForeignKey("(booking_id) REFERENCES bookings(id) ON DELETE CASCADE").
+		ForeignKey("(seat_id) REFERENCES seats(id) ON DELETE CASCADE").
 		Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create tickets table: %w", err)
@@ -35,6 +39,7 @@ func CreatePaymentTable(ctx context.Context, db *bun.DB) error {
 	_, err := db.NewCreateTable().
 		Model((*models.Payment)(nil)).
 		IfNotExists().
+		ForeignKey("(booking_id) REFERENCES bookings(id) ON DELETE CASCADE").
 		Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create payments table: %w", err)
