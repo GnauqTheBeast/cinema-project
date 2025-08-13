@@ -6,13 +6,12 @@ import (
 	"net/http"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/samber/do"
 
 	"notification-service/internal/services"
-
-	"golang.org/x/sync/errgroup"
 
 	"notification-service/internal/container"
 	"notification-service/internal/handlers"
@@ -62,33 +61,32 @@ func serve(c *cli.Context) error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	errWg, errCtx := errgroup.WithContext(ctx)
+	wg := new(sync.WaitGroup)
 
-	errWg.Go(func() error {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 		logrus.Printf("ListenAndServe: %s (%s)\n", c.String("addr"), vs["API_MODE"])
 		if err = server.ListenAndServe(); err != nil && !errors.Is(http.ErrServerClosed, err) {
-			return err
+			logrus.Fatalf("ListenAndServe: %v\n", err)
 		}
-		return nil
-	})
+	}()
 
 	emailService, err := do.Invoke[*services.EmailService](i)
 	if err != nil {
 		return err
 	}
 
-	errWg.Go(func() error {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 		logrus.Printf("Email verification service started\n")
 		if err = emailService.SubscribeEmailVerifyQueue(ctx); err != nil {
-			return err
+			logrus.Fatalf("Email verification service error: %v\n", err)
 		}
-		return nil
-	})
+	}()
 
-	errWg.Go(func() error {
-		<-errCtx.Done()
-		return server.Shutdown(context.TODO())
-	})
+	wg.Wait()
 
-	return errWg.Wait()
+	return nil
 }
