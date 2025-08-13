@@ -15,7 +15,7 @@ import (
 
 func ServeAPI() *cli.Command {
 	return &cli.Command{
-		Name:  "api",
+		Name:  "serve",
 		Usage: "start movie service api",
 		Action: func(c *cli.Context) error {
 			router := gin.Default()

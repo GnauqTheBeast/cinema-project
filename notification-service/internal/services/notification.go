@@ -27,19 +27,14 @@ type NotificationService struct {
 }
 
 func NewNotificationService(container *do.Injector) (*NotificationService, error) {
-	db, err := do.InvokeNamed[*bun.DB](container, "postgres-db")
+	db, err := do.Invoke[*bun.DB](container)
 	if err != nil {
-		// Fallback to default if named not available
-		db, err = do.Invoke[*bun.DB](container)
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 
-	roDb, err := do.InvokeNamed[*bun.DB](container, "postgres-ro-db")
+	roDb, err := do.InvokeNamed[*bun.DB](container, "readonly-db")
 	if err != nil {
-		// Fallback to main db if read-only not available
-		roDb = db
+		return nil, err
 	}
 
 	return &NotificationService{

@@ -1,13 +1,10 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"net/http"
-	"os/signal"
 	"strings"
 	"sync"
-	"syscall"
 
 	"github.com/samber/do"
 
@@ -58,9 +55,6 @@ func serve(c *cli.Context) error {
 		Handler: router,
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
 	wg := new(sync.WaitGroup)
 
 	wg.Add(1)
@@ -81,7 +75,7 @@ func serve(c *cli.Context) error {
 	go func() {
 		defer wg.Done()
 		logrus.Printf("Email verification service started\n")
-		if err = emailService.SubscribeEmailVerifyQueue(ctx); err != nil {
+		if err = emailService.SubscribeEmailVerifyQueue(c.Context); err != nil {
 			logrus.Fatalf("Email verification service error: %v\n", err)
 		}
 	}()
