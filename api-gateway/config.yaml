@@ -1,0 +1,59 @@
+server:
+  port: "8000"
+  host: "0.0.0.0"
+  read_timeout: 30
+  write_timeout: 30
+  idle_timeout: 120
+
+services:
+  auth_service:
+    url: "http://localhost:3001"
+    health_check_path: "/api/auth/health"
+    timeout: 30
+    retries: 3
+    load_balancer: []
+    
+  movie_service:
+    url: "http://localhost:8080"
+    health_check_path: "/api/health"
+    timeout: 30
+    retries: 3
+    load_balancer: []
+    
+  notification_service:
+    url: "http://localhost:8081"
+    health_check_path: "/api/v1"
+    timeout: 30
+    retries: 3
+    load_balancer: []
+
+redis:
+  address: "localhost:6379"
+  password: ""
+  db: 0
+
+auth:
+  jwt_secret: "${JWT_SECRET:cinema-jwt-secret-key-2024}"
+  token_expiration: 3600
+  public_paths:
+    - "/api/auth/login"
+    - "/api/auth/register"
+    - "/api/movies"
+    - "/api/movies/*"
+    - "/health"
+    - "/metrics"
+  admin_paths:
+    - "/api/admin/*"
+    - "/api/movies/create"
+    - "/api/movies/*/update"
+    - "/api/movies/*/delete"
+
+rate_limit:
+  requests_per_second: 100
+  burst_size: 200
+  window_size: 60
+
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout"
