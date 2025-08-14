@@ -8,10 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"api-gateway/internal/pkg/response"
-
 	"api-gateway/internal/config"
 	"api-gateway/internal/pkg/logger"
+	"api-gateway/internal/pkg/response"
 	"github.com/gin-gonic/gin"
 	"github.com/go-resty/resty/v2"
 )
@@ -87,7 +86,7 @@ func (p *Proxy) ProxyRequest(c *gin.Context) {
 		bodyBytes, err := io.ReadAll(c.Request.Body)
 		if err != nil {
 			p.logger.Error("Failed to read request body", "error", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read request body"})
+			response.InternalServerError(c, "Failed to read request body")
 			return
 		}
 		c.Request.Body = io.NopCloser(bytes.NewReader(bodyBytes))
@@ -110,7 +109,7 @@ func (p *Proxy) ProxyRequest(c *gin.Context) {
 	case "PATCH":
 		resp, err = req.Patch(targetPath)
 	default:
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method not allowed"})
+		response.Forbidden(c, "Unsupported method")
 		return
 	}
 
