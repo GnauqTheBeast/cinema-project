@@ -46,10 +46,35 @@ func New(cfg *Config) (http.Handler, error) {
 	routesAPIv1 := r.Group("/api/v1")
 	{
 		routesAPIv1.GET("", Hello)
+
+		// Initialize notification handler
+		notificationHandler, err := NewNotificationHandler(cfg.Container)
+		if err != nil {
+			return nil, err
+		}
+
 		routesNoti := routesAPIv1.Group("/notifications")
 		{
-			gn := groupNotification{container: cfg.Container}
-			routesNoti.GET("/:userId", gn.GetNotifications)
+			// GET /api/v1/notifications/:userId - Get notifications with pagination
+			routesNoti.GET("/:userId", notificationHandler.GetNotifications)
+
+			// GET /api/v1/notifications/:userId/:id - Get single notification
+			routesNoti.GET("/:userId/:id", notificationHandler.GetNotificationById)
+
+			// POST /api/v1/notifications - Create notification
+			routesNoti.POST("", notificationHandler.CreateNotification)
+
+			// PUT /api/v1/notifications/:userId/:id/status - Update notification status
+			routesNoti.PUT("/:userId/:id/status", notificationHandler.UpdateNotificationStatus)
+
+			// DELETE /api/v1/notifications/:userId/:id - Delete notification
+			routesNoti.DELETE("/:userId/:id", notificationHandler.DeleteNotification)
+
+			// POST /api/v1/notifications/:userId/mark-read - Mark notifications as read
+			routesNoti.POST("/:userId/mark-read", notificationHandler.MarkAsRead)
+
+			// GET /api/v1/notifications/:userId/unread-count - Get unread count
+			routesNoti.GET("/:userId/unread-count", notificationHandler.GetUnreadCount)
 		}
 	}
 
