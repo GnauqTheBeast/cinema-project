@@ -21,8 +21,8 @@ services:
     load_balancer: []
     
   notification_service:
-    url: "http://localhost:8081"
-    health_check_path: "/api/v1/health"
+    url: "http://localhost:8080"
+    health_check_path: "/health"
     timeout: 30
     retries: 3
     load_balancer: []
@@ -51,9 +51,9 @@ auth:
     - "/api/v1/rooms/*/seats"
     - "/api/v1/rooms/*/showtimes"
     
-    # Notification service - public endpoints
-    - "/api/v1"
-    - "/ws"
+    # Notification service - public endpoints  
+    - "/api/v1/notifications/*/unread-count"
+    - "/api/v1/notifications/ws"
     
     # Gateway endpoints
     - "/health"
@@ -77,7 +77,7 @@ auth:
     - "/api/v1/admin/*"
     
     # Notification service - admin endpoints
-    - "/api/v1/notifications/create"
+    - "/api/v1/notifications"
     - "/api/v1/notifications/*/delete"
 
 rate_limit:

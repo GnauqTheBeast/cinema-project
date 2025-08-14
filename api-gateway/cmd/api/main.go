@@ -83,7 +83,7 @@ func main() {
 	router.Use(middleware.SecurityHeaders())
 	router.Use(middleware.CORS(middleware.DefaultCORSConfig()))
 	router.Use(rateLimiter.Limit())
-	router.Use(authMiddleware.Authenticate())
+	// router.Use(authMiddleware.Authenticate()) // Uncomment if authentication globally
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
@@ -112,7 +112,7 @@ func main() {
 
 	// Gateway info endpoint
 	router.GET("/api/gateway/info", func(c *gin.Context) {
-		response.Success(c, gin.H{
+		response.Success(c, map[string]interface{}{
 			"name":     "Cinema API Gateway",
 			"version":  "1.0.0",
 			"services": []string{"auth-service", "movie-service", "notification-service"},

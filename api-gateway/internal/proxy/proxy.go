@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"api-gateway/internal/pkg/response"
+
 	"api-gateway/internal/config"
 	"api-gateway/internal/pkg/logger"
 	"github.com/gin-gonic/gin"
@@ -59,14 +61,10 @@ func (p *Proxy) ProxyRequest(c *gin.Context) {
 
 	service, targetPath := p.getTargetService(path)
 	if service == nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Service not found",
-			"path":  path,
-		})
+		response.NotFound(c, "Service not found")
 		return
 	}
 
-	// Create service proxy
 	proxy := p.createServiceProxy(service.Name, service.Endpoint)
 
 	// Prepare request
@@ -122,10 +120,7 @@ func (p *Proxy) ProxyRequest(c *gin.Context) {
 			"path", targetPath,
 			"error", err)
 
-		c.JSON(http.StatusServiceUnavailable, gin.H{
-			"error":   "Service unavailable",
-			"service": service.Name,
-		})
+		response.InternalServerError(c, "Service unavailable")
 		return
 	}
 
@@ -173,8 +168,7 @@ func (p *Proxy) getTargetService(path string) (*ServiceInfo, string) {
 			Endpoint: p.config.Services.MovieService,
 		}, path
 
-	case strings.HasPrefix(path, "/api/v1/notifications"),
-		strings.HasPrefix(path, "/ws"):
+	case strings.HasPrefix(path, "/api/v1/notifications"):
 		return &ServiceInfo{
 			Name:     "notification-service",
 			Endpoint: p.config.Services.NotificationService,
