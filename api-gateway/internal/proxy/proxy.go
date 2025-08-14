@@ -57,7 +57,6 @@ func (p *Proxy) ProxyRequest(c *gin.Context) {
 	path := c.Request.URL.Path
 	method := c.Request.Method
 
-	// Determine target service based on path
 	service, targetPath := p.getTargetService(path)
 	if service == nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -165,16 +164,16 @@ func (p *Proxy) getTargetService(path string) (*ServiceInfo, string) {
 			Endpoint: p.config.Services.AuthService,
 		}, path
 
-	case strings.HasPrefix(path, "/api/movies"),
-		strings.HasPrefix(path, "/api/rooms"),
-		strings.HasPrefix(path, "/api/seats"),
-		strings.HasPrefix(path, "/api/showtimes"):
+	case strings.HasPrefix(path, "/api/v1/movies"),
+		strings.HasPrefix(path, "/api/v1/rooms"),
+		strings.HasPrefix(path, "/api/v1/seats"),
+		strings.HasPrefix(path, "/api/v1/showtimes"):
 		return &ServiceInfo{
 			Name:     "movie-service",
 			Endpoint: p.config.Services.MovieService,
 		}, path
 
-	case strings.HasPrefix(path, "/api/notifications"),
+	case strings.HasPrefix(path, "/api/v1/notifications"),
 		strings.HasPrefix(path, "/ws"):
 		return &ServiceInfo{
 			Name:     "notification-service",

@@ -103,12 +103,12 @@ func setDefaults() {
 	viper.SetDefault("services.auth_service.timeout", 30)
 	viper.SetDefault("services.auth_service.retries", 3)
 
-	viper.SetDefault("services.movie_service.url", "http://localhost:8080")
+	viper.SetDefault("services.movie_service.url", "http://localhost:8083")
 	viper.SetDefault("services.movie_service.health_check_path", "/api/health")
 	viper.SetDefault("services.movie_service.timeout", 30)
 	viper.SetDefault("services.movie_service.retries", 3)
 
-	viper.SetDefault("services.notification_service.url", "http://localhost:8080")
+	viper.SetDefault("services.notification_service.url", "http://localhost:8081")
 	viper.SetDefault("services.notification_service.health_check_path", "/api/v1")
 	viper.SetDefault("services.notification_service.timeout", 30)
 	viper.SetDefault("services.notification_service.retries", 3)

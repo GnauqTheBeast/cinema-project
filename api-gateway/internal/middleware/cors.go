@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -121,7 +122,7 @@ func checkOrigin(origin string, allowedOrigins []string) string {
 }
 
 func formatDuration(d time.Duration) string {
-	return string(int64(d.Seconds()))
+	return strconv.FormatInt(int64(d.Seconds()), 10)
 }
 
 // SecurityHeaders middleware

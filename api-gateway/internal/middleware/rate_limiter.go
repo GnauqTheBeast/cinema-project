@@ -3,13 +3,13 @@ package middleware
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"time"
 
 	"api-gateway/internal/config"
 	"api-gateway/internal/pkg/limiter"
 	"api-gateway/internal/pkg/logger"
+	"api-gateway/internal/pkg/response"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 )
@@ -60,9 +60,7 @@ func (rl *RateLimiter) Limit() gin.HandlerFunc {
 				"method", c.Request.Method,
 				"error", err)
 
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Internal server error",
-			})
+			response.InternalServerError(c, "Rate limiter service unavailable")
 			c.Abort()
 			return
 		}
@@ -96,14 +94,8 @@ func (rl *RateLimiter) handleRateLimitExceeded(c *gin.Context, remaining int, re
 	c.Header("X-RateLimit-Limit", strconv.Itoa(rl.config.RateLimit.RequestsPerSecond))
 	c.Header("X-RateLimit-Remaining", "0")
 	c.Header("X-RateLimit-Reset", strconv.FormatInt(resetTime.Unix(), 10))
-	c.Header("Retry-After", strconv.FormatInt(int64(time.Until(resetTime).Seconds()), 10))
 
-	c.JSON(http.StatusTooManyRequests, gin.H{
-		"error":       "Rate limit exceeded",
-		"code":        "RATE_LIMIT_EXCEEDED",
-		"message":     "Too many requests. Please try again later.",
-		"retry_after": time.Until(resetTime).Seconds(),
-	})
-
+	retryAfter := int64(time.Until(resetTime).Seconds())
+	response.TooManyRequests(c, "Too many requests. Please try again later.", retryAfter)
 	c.Abort()
 }

@@ -1,13 +1,13 @@
 package middleware
 
 import (
-	"net/http"
 	"path/filepath"
 	"strings"
 
 	"api-gateway/internal/config"
 	"api-gateway/internal/pkg/auth"
 	"api-gateway/internal/pkg/logger"
+	"api-gateway/internal/pkg/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -45,10 +45,7 @@ func (a *AuthMiddleware) Authenticate() gin.HandlerFunc {
 				"method", method,
 				"error", err)
 
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Authentication required",
-				"code":  "UNAUTHORIZED",
-			})
+			response.UnauthorizedWithCode(c, "Authentication required", "UNAUTHORIZED")
 			c.Abort()
 			return
 		}
@@ -61,10 +58,7 @@ func (a *AuthMiddleware) Authenticate() gin.HandlerFunc {
 				"method", method,
 				"error", err)
 
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid or expired token",
-				"code":  "TOKEN_INVALID",
-			})
+			response.UnauthorizedWithCode(c, "Invalid or expired token", "TOKEN_INVALID")
 			c.Abort()
 			return
 		}
@@ -77,10 +71,7 @@ func (a *AuthMiddleware) Authenticate() gin.HandlerFunc {
 				"user_id", claims.UserID,
 				"role", claims.Role)
 
-			c.JSON(http.StatusForbidden, gin.H{
-				"error": "Insufficient permissions",
-				"code":  "FORBIDDEN",
-			})
+			response.ForbiddenWithCode(c, "Insufficient permissions", "FORBIDDEN")
 			c.Abort()
 			return
 		}
@@ -141,26 +132,22 @@ func (a *AuthMiddleware) isAdminPath(path string) bool {
 
 // RefreshToken Optional: Middleware to refresh tokens
 func (a *AuthMiddleware) RefreshToken() gin.HandlerFunc {
-	return gin.HandlerFunc(func(c *gin.Context) {
+	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		token, err := auth.ExtractTokenFromHeader(authHeader)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Invalid token format",
-			})
+			response.BadRequest(c, "Invalid token format")
 			return
 		}
 
 		newToken, err := a.jwtManager.RefreshToken(token)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Cannot refresh token",
-			})
+			response.Unauthorized(c, "Cannot refresh token")
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
+		response.Success(c, gin.H{
 			"token": newToken,
 		})
-	})
+	}
 }

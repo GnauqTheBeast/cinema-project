@@ -16,6 +16,7 @@ import (
 	"api-gateway/internal/middleware"
 	"api-gateway/internal/pkg/auth"
 	"api-gateway/internal/pkg/logger"
+	"api-gateway/internal/pkg/response"
 	"api-gateway/internal/proxy"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -54,9 +55,10 @@ func main() {
 		if err := redisClient.Ping(ctx).Err(); err != nil {
 			log.Warn("Failed to connect to Redis, rate limiting will use in-memory fallback", "error", err)
 			redisClient = nil
-		} else {
-			log.Info("Connected to Redis successfully")
+			return
 		}
+
+		log.Info("Connected to Redis successfully")
 	}
 
 	// Initialize JWT manager
@@ -99,11 +101,7 @@ func main() {
 			status = http.StatusServiceUnavailable
 		}
 
-		c.JSON(status, gin.H{
-			"status":    "ok",
-			"services":  healthStatus,
-			"timestamp": time.Now(),
-		})
+		response.Success(c, status)
 	})
 
 	// Metrics endpoint for Prometheus
@@ -114,7 +112,7 @@ func main() {
 
 	// Gateway info endpoint
 	router.GET("/api/gateway/info", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
+		response.Success(c, gin.H{
 			"name":     "Cinema API Gateway",
 			"version":  "1.0.0",
 			"services": []string{"auth-service", "movie-service", "notification-service"},
