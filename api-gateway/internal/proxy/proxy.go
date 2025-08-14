@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"api-gateway/internal/config"
-	"api-gateway/pkg/logger"
-
+	"api-gateway/internal/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/go-resty/resty/v2"
 )

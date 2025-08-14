@@ -1,144 +1,89 @@
 package middleware
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"api-gateway/internal/config"
-	"api-gateway/pkg/logger"
-
+	"api-gateway/internal/pkg/limiter"
+	"api-gateway/internal/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/time/rate"
 )
 
 type RateLimiter struct {
-	config      *config.Config
-	redisClient *redis.Client
-	logger      logger.Logger
-	limiter     *rate.Limiter // In-memory fallback
+	config  *config.Config
+	limiter limiter.Limiter
+	logger  logger.Logger
+	limit   limiter.Limit
 }
 
 func NewRateLimiter(cfg *config.Config, redisClient *redis.Client, log logger.Logger) *RateLimiter {
-	// Create in-memory rate limiter as fallback
-	limiter := rate.NewLimiter(
-		rate.Limit(cfg.RateLimit.RequestsPerSecond),
-		cfg.RateLimit.BurstSize,
-	)
+	var rlimiter limiter.Limiter
+	if redisClient != nil {
+		if rl, err := limiter.NewRedisLimiter(redisClient); err == nil {
+			rlimiter = rl
+		}
+	}
+
+	limit := limiter.Limit{
+		Rate:   cfg.RateLimit.RequestsPerSecond,
+		Burst:  cfg.RateLimit.BurstSize,
+		Period: time.Duration(cfg.RateLimit.WindowSize) * time.Second,
+	}
 
 	return &RateLimiter{
-		config:      cfg,
-		redisClient: redisClient,
-		logger:      log,
-		limiter:     limiter,
+		config:  cfg,
+		limiter: rlimiter,
+		logger:  log,
+		limit:   limit,
 	}
 }
 
 func (rl *RateLimiter) Limit() gin.HandlerFunc {
-	return gin.HandlerFunc(func(c *gin.Context) {
-		// Get client identifier (IP or user ID if authenticated)
+	return func(c *gin.Context) {
 		clientID := rl.getClientID(c)
 
-		// Try Redis-based rate limiting first
-		if rl.redisClient != nil {
-			allowed, remaining, resetTime, err := rl.checkRedisRateLimit(c, clientID)
-			if err != nil {
-				rl.logger.Warn("Redis rate limiting failed, falling back to in-memory",
-					"client_id", clientID,
-					"error", err)
-				// Fall back to in-memory rate limiting
-				if !rl.limiter.Allow() {
-					rl.handleRateLimitExceeded(c, 0, time.Now().Add(time.Second))
-					return
-				}
-			} else {
-				// Set rate limit headers
-				c.Header("X-RateLimit-Limit", strconv.Itoa(rl.config.RateLimit.RequestsPerSecond))
-				c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
-				c.Header("X-RateLimit-Reset", strconv.FormatInt(resetTime.Unix(), 10))
-
-				if !allowed {
-					rl.handleRateLimitExceeded(c, remaining, resetTime)
-					return
-				}
-			}
-		} else {
-			// Use in-memory rate limiting
-			if !rl.limiter.Allow() {
-				rl.handleRateLimitExceeded(c, 0, time.Now().Add(time.Second))
+		result, err := rl.limiter.Allow(c.Request.Context(), clientID, rl.limit)
+		if err != nil {
+			if errors.Is(err, limiter.ErrRateLimited) {
+				rl.handleRateLimitExceeded(c, result.Remaining, time.Now().Add(result.RetryAfter))
 				return
 			}
+
+			rl.logger.Error("Rate limiter error",
+				"client_id", clientID,
+				"path", c.Request.URL.Path,
+				"method", c.Request.Method,
+				"error", err)
+
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Internal server error",
+			})
+			c.Abort()
+			return
 		}
 
-		rl.logger.Debug("Rate limit check passed",
-			"client_id", clientID,
-			"path", c.Request.URL.Path)
+		if result != nil {
+			c.Header("X-RateLimit-Limit", strconv.Itoa(rl.limit.Rate))
+			c.Header("X-RateLimit-Remaining", strconv.Itoa(result.Remaining))
+			c.Header("X-RateLimit-Reset", strconv.FormatInt(time.Now().Add(result.ResetAfter).Unix(), 10))
+		}
 
 		c.Next()
-	})
+	}
 }
 
+// getClientID determines the client ID based on user ID or IP address.
 func (rl *RateLimiter) getClientID(c *gin.Context) string {
-	// Use user ID if authenticated, otherwise use IP address
 	if userID, exists := c.Get("user_id"); exists {
 		return fmt.Sprintf("user:%s", userID)
 	}
 
-	// Get real IP address considering proxy headers
-	ip := c.ClientIP()
-	return fmt.Sprintf("ip:%s", ip)
-}
-
-func (rl *RateLimiter) checkRedisRateLimit(c *gin.Context, clientID string) (allowed bool, remaining int, resetTime time.Time, err error) {
-	ctx := c.Request.Context()
-	window := time.Duration(rl.config.RateLimit.WindowSize) * time.Second
-	limit := rl.config.RateLimit.RequestsPerSecond
-
-	now := time.Now()
-	windowStart := now.Truncate(window)
-	key := fmt.Sprintf("rate_limit:%s:%d", clientID, windowStart.Unix())
-
-	// Use Redis pipeline for atomic operations
-	pipe := rl.redisClient.Pipeline()
-
-	// Increment counter
-	incrCmd := pipe.Incr(ctx, key)
-
-	// Set expiration if this is the first request in the window
-	pipe.Expire(ctx, key, window)
-
-	// Execute pipeline
-	_, err = pipe.Exec(ctx)
-	if err != nil {
-		return false, 0, time.Time{}, err
-	}
-
-	// Get current count
-	current, err := incrCmd.Result()
-	if err != nil {
-		return false, 0, time.Time{}, err
-	}
-
-	// Calculate remaining requests and reset time
-	remaining = limit - int(current)
-	if remaining < 0 {
-		remaining = 0
-	}
-
-	resetTime = windowStart.Add(window)
-	allowed = current <= int64(limit)
-
-	rl.logger.Debug("Redis rate limit check",
-		"client_id", clientID,
-		"current", current,
-		"limit", limit,
-		"remaining", remaining,
-		"allowed", allowed)
-
-	return allowed, remaining, resetTime, nil
+	return fmt.Sprintf("ip:%s", c.ClientIP())
 }
 
 func (rl *RateLimiter) handleRateLimitExceeded(c *gin.Context, remaining int, resetTime time.Time) {
@@ -161,36 +106,4 @@ func (rl *RateLimiter) handleRateLimitExceeded(c *gin.Context, remaining int, re
 	})
 
 	c.Abort()
-}
-
-// Optional: Method to check rate limit without incrementing (for preflight checks)
-func (rl *RateLimiter) CheckRateLimit(clientID string) (allowed bool, remaining int, resetTime time.Time) {
-	if rl.redisClient == nil {
-		// For in-memory limiter, we can't check without consuming
-		return rl.limiter.Allow(), 0, time.Now().Add(time.Second)
-	}
-
-	ctx := context.Background()
-	window := time.Duration(rl.config.RateLimit.WindowSize) * time.Second
-	limit := rl.config.RateLimit.RequestsPerSecond
-
-	now := time.Now()
-	windowStart := now.Truncate(window)
-	key := fmt.Sprintf("rate_limit:%s:%d", clientID, windowStart.Unix())
-
-	// Get current count without incrementing
-	current, err := rl.redisClient.Get(ctx, key).Int()
-	if err != nil && err != redis.Nil {
-		return false, 0, time.Now()
-	}
-
-	remaining = limit - current
-	if remaining < 0 {
-		remaining = 0
-	}
-
-	resetTime = windowStart.Add(window)
-	allowed = current < limit
-
-	return allowed, remaining, resetTime
 }

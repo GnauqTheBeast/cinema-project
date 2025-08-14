@@ -55,7 +55,7 @@ func CORS(config *CORSConfig) gin.HandlerFunc {
 		config = DefaultCORSConfig()
 	}
 
-	return gin.HandlerFunc(func(c *gin.Context) {
+	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
 
 		// Check if origin is allowed
@@ -93,7 +93,7 @@ func CORS(config *CORSConfig) gin.HandlerFunc {
 		}
 
 		c.Next()
-	})
+	}
 }
 
 func checkOrigin(origin string, allowedOrigins []string) string {
@@ -124,7 +124,7 @@ func formatDuration(d time.Duration) string {
 	return string(int64(d.Seconds()))
 }
 
-// Security headers middleware
+// SecurityHeaders middleware
 func SecurityHeaders() gin.HandlerFunc {
 	return gin.HandlerFunc(func(c *gin.Context) {
 		// Basic security headers

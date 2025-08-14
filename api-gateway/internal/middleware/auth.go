@@ -6,9 +6,8 @@ import (
 	"strings"
 
 	"api-gateway/internal/config"
-	"api-gateway/pkg/auth"
-	"api-gateway/pkg/logger"
-
+	"api-gateway/internal/pkg/auth"
+	"api-gateway/internal/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,7 +26,7 @@ func NewAuthMiddleware(jwtManager *auth.JWTManager, cfg *config.Config, log logg
 }
 
 func (a *AuthMiddleware) Authenticate() gin.HandlerFunc {
-	return gin.HandlerFunc(func(c *gin.Context) {
+	return func(c *gin.Context) {
 		path := c.Request.URL.Path
 		method := c.Request.Method
 
@@ -99,7 +98,7 @@ func (a *AuthMiddleware) Authenticate() gin.HandlerFunc {
 			"role", claims.Role)
 
 		c.Next()
-	})
+	}
 }
 
 func (a *AuthMiddleware) isPublicPath(path string) bool {
@@ -107,15 +106,15 @@ func (a *AuthMiddleware) isPublicPath(path string) bool {
 		// Handle wildcard patterns
 		if strings.HasSuffix(publicPath, "*") {
 			prefix := strings.TrimSuffix(publicPath, "*")
-			if strings.HasPrefix(path, prefix) {
-				return true
+			if !strings.HasPrefix(path, prefix) {
+				return false
 			}
-		} else {
-			// Exact match or glob pattern match
-			matched, _ := filepath.Match(publicPath, path)
-			if matched || path == publicPath {
-				return true
-			}
+			return true
+		}
+		// Exact match or glob pattern match
+		matched, _ := filepath.Match(publicPath, path)
+		if matched || path == publicPath {
+			return true
 		}
 	}
 	return false
@@ -126,21 +125,21 @@ func (a *AuthMiddleware) isAdminPath(path string) bool {
 		// Handle wildcard patterns
 		if strings.HasSuffix(adminPath, "*") {
 			prefix := strings.TrimSuffix(adminPath, "*")
-			if strings.HasPrefix(path, prefix) {
-				return true
+			if !strings.HasPrefix(path, prefix) {
+				return false
 			}
-		} else {
-			// Exact match or glob pattern match
-			matched, _ := filepath.Match(adminPath, path)
-			if matched || path == adminPath {
-				return true
-			}
+			return true
+		}
+		// Exact match or glob pattern match
+		matched, _ := filepath.Match(adminPath, path)
+		if matched || path == adminPath {
+			return true
 		}
 	}
 	return false
 }
 
-// Optional: Middleware to refresh tokens
+// RefreshToken Optional: Middleware to refresh tokens
 func (a *AuthMiddleware) RefreshToken() gin.HandlerFunc {
 	return gin.HandlerFunc(func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")

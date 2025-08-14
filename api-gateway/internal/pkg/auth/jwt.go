@@ -9,6 +9,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+const (
+	issuer = "cinema-api-gateway"
+)
+
 var (
 	ErrTokenInvalid = errors.New("token is invalid")
 	ErrTokenExpired = errors.New("token is expired")
@@ -43,7 +47,7 @@ func (j *JWTManager) GenerateToken(userID, email, role string) (string, error) {
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(j.expiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
-			Issuer:    "cinema-api-gateway",
+			Issuer:    issuer,
 		},
 	}
 

@@ -14,10 +14,9 @@ import (
 
 	"api-gateway/internal/config"
 	"api-gateway/internal/middleware"
+	"api-gateway/internal/pkg/auth"
+	"api-gateway/internal/pkg/logger"
 	"api-gateway/internal/proxy"
-	"api-gateway/pkg/auth"
-	"api-gateway/pkg/logger"
-
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
