@@ -53,7 +53,7 @@ func main() {
 		// Test Redis connection
 		ctx := context.Background()
 		if err := redisClient.Ping(ctx).Err(); err != nil {
-			log.Warn("Failed to connect to Redis, rate limiting will use in-memory fallback", "error", err)
+			log.Warn("Failed to connect to Redis", "error", err)
 			redisClient = nil
 			return
 		}

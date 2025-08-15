@@ -127,7 +127,7 @@ func formatDuration(d time.Duration) string {
 
 // SecurityHeaders middleware
 func SecurityHeaders() gin.HandlerFunc {
-	return gin.HandlerFunc(func(c *gin.Context) {
+	return func(c *gin.Context) {
 		// Basic security headers
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-Frame-Options", "DENY")
@@ -151,5 +151,5 @@ func SecurityHeaders() gin.HandlerFunc {
 		}
 
 		c.Next()
-	})
+	}
 }
