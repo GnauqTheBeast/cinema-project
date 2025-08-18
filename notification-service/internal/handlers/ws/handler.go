@@ -77,12 +77,14 @@ func (h *WebSocketHandler) notificatonHandler(ctx *WSContext, request *WSRequest
 			_ = subscriber.Unsubscribe(ctx.Context())
 		}()
 
+		channel := subscriber.MessageChan()
+
 		for {
 			select {
 			case <-ctx.Context().Done():
 				fmt.Println("Context done, stopping subscriber")
 				return
-			case msg := <-subscriber.MessageChan():
+			case msg := <-channel:
 				if msg.Topic == fmt.Sprintf("email_verify_%s", userId) {
 					h.handleEmailVerify(ctx, request.Id, msg.Data.(*types.EmailVerifyMessage))
 				}
