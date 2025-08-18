@@ -57,3 +57,51 @@ func CreateShowtimeTable(ctx context.Context, db *bun.DB) error {
 	}
 	return nil
 }
+
+func DropMovieTable(ctx context.Context, db *bun.DB) error {
+	_, err := db.NewDropTable().
+		Model((*models.Movie)(nil)).
+		IfExists().
+		Cascade().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to drop movies table: %w", err)
+	}
+	return nil
+}
+
+func DropRoomTable(ctx context.Context, db *bun.DB) error {
+	_, err := db.NewDropTable().
+		Model((*models.Room)(nil)).
+		IfExists().
+		Cascade().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to drop rooms table: %w", err)
+	}
+	return nil
+}
+
+func DropSeatTable(ctx context.Context, db *bun.DB) error {
+	_, err := db.NewDropTable().
+		Model((*models.Seat)(nil)).
+		IfExists().
+		Cascade().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to drop seats table: %w", err)
+	}
+	return nil
+}
+
+func DropShowtimeTable(ctx context.Context, db *bun.DB) error {
+	_, err := db.NewDropTable().
+		Model((*models.Showtime)(nil)).
+		IfExists().
+		Cascade().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to drop showtimes table: %w", err)
+	}
+	return nil
+}

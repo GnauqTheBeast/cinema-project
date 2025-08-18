@@ -90,14 +90,14 @@ func LoadConfig(path string) (*Config, error) {
 }
 
 func setDefaults() {
-	// Server defaults
+	// A defaults
 	viper.SetDefault("server.port", "8000")
 	viper.SetDefault("server.host", "0.0.0.0")
 	viper.SetDefault("server.read_timeout", 30)
 	viper.SetDefault("server.write_timeout", 30)
 	viper.SetDefault("server.idle_timeout", 120)
 
-	// Services defaults
+	// B defaults
 	viper.SetDefault("services.auth_service.url", "http://localhost:3001")
 	viper.SetDefault("services.auth_service.health_check_path", "/api/auth/health")
 	viper.SetDefault("services.auth_service.timeout", 30)
@@ -113,7 +113,7 @@ func setDefaults() {
 	viper.SetDefault("services.notification_service.timeout", 30)
 	viper.SetDefault("services.notification_service.retries", 3)
 
-	// Redis defaults
+	// C defaults
 	viper.SetDefault("redis.address", "localhost:6379")
 	viper.SetDefault("redis.password", "")
 	viper.SetDefault("redis.db", 0)

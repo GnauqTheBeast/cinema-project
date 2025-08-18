@@ -57,3 +57,51 @@ func CreateRolePermissionTable(ctx context.Context, db *bun.DB) error {
 	}
 	return nil
 }
+
+func DropUserTable(ctx context.Context, db *bun.DB) error {
+	_, err := db.NewDropTable().
+		Model((*models.User)(nil)).
+		IfExists().
+		Cascade().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to drop users table: %w", err)
+	}
+	return nil
+}
+
+func DropStaffProfileTable(ctx context.Context, db *bun.DB) error {
+	_, err := db.NewDropTable().
+		Model((*models.StaffProfile)(nil)).
+		IfExists().
+		Cascade().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to drop staff_profile table: %w", err)
+	}
+	return nil
+}
+
+func DropCustomerProfileTable(ctx context.Context, db *bun.DB) error {
+	_, err := db.NewDropTable().
+		Model((*models.CustomerProfile)(nil)).
+		IfExists().
+		Cascade().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to drop customer_profile table: %w", err)
+	}
+	return nil
+}
+
+func DropRolePermissionTable(ctx context.Context, db *bun.DB) error {
+	_, err := db.NewDropTable().
+		Model((*models.RolePermission)(nil)).
+		IfExists().
+		Cascade().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to drop role_permissions table: %w", err)
+	}
+	return nil
+}
