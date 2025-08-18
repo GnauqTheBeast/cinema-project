@@ -417,23 +417,3 @@ func stringPtr(s string) *string {
 func intPtr(i int) *int {
 	return &i
 }
-
-func SeedAll(ctx context.Context, db *bun.DB) error {
-	seedFuncs := []func(context.Context, *bun.DB) error{
-		SeedRoles,
-		SeedPermissions,
-		SeedMovies,
-		SeedRooms,
-		SeedUsers,
-		SeedNotifications,
-	}
-
-	for _, seedFunc := range seedFuncs {
-		if err := seedFunc(ctx, db); err != nil {
-			return err
-		}
-	}
-
-	fmt.Println("All data seeded successfully!")
-	return nil
-}

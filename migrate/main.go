@@ -27,11 +27,14 @@ func main() {
 
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
+		case "up":
+			log.Println(MigrateAll(ctx, db))
+			return
 		case "down":
 			log.Println(DropAllTables(ctx, db))
 			return
 		case "seed":
-			log.Println(datastore.SeedAll(ctx, db))
+			log.Println(SeedAll(ctx, db))
 			return
 		case "reset":
 			log.Println("Dropping all tables...")
@@ -43,11 +46,12 @@ func main() {
 				log.Fatal(err)
 			}
 			log.Println("Seeding all data...")
-			log.Println(datastore.SeedAll(ctx, db))
+			log.Println(SeedAll(ctx, db))
 			return
+		default:
+			log.Fatalf("Unknown command: %s", os.Args[1])
 		}
 	}
-	log.Println(MigrateAll(ctx, db))
 }
 
 func MigrateAll(ctx context.Context, db *bun.DB) error {
@@ -103,5 +107,25 @@ func DropAllTables(ctx context.Context, db *bun.DB) error {
 	}
 
 	fmt.Println("All tables dropped successfully!")
+	return nil
+}
+
+func SeedAll(ctx context.Context, db *bun.DB) error {
+	seedFuncs := []func(context.Context, *bun.DB) error{
+		datastore.SeedRoles,
+		datastore.SeedPermissions,
+		datastore.SeedMovies,
+		datastore.SeedRooms,
+		datastore.SeedUsers,
+		datastore.SeedNotifications,
+	}
+
+	for _, seedFunc := range seedFuncs {
+		if err := seedFunc(ctx, db); err != nil {
+			return err
+		}
+	}
+
+	fmt.Println("All data seeded successfully!")
 	return nil
 }
