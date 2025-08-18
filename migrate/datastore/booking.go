@@ -46,3 +46,39 @@ func CreatePaymentTable(ctx context.Context, db *bun.DB) error {
 	}
 	return nil
 }
+
+func DropBookingTable(ctx context.Context, db *bun.DB) error {
+	_, err := db.NewDropTable().
+		Model((*models.Booking)(nil)).
+		IfExists().
+		Cascade().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to drop bookings table: %w", err)
+	}
+	return nil
+}
+
+func DropTicketTable(ctx context.Context, db *bun.DB) error {
+	_, err := db.NewDropTable().
+		Model((*models.Ticket)(nil)).
+		IfExists().
+		Cascade().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to drop tickets table: %w", err)
+	}
+	return nil
+}
+
+func DropPaymentTable(ctx context.Context, db *bun.DB) error {
+	_, err := db.NewDropTable().
+		Model((*models.Payment)(nil)).
+		IfExists().
+		Cascade().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to drop payments table: %w", err)
+	}
+	return nil
+}

@@ -25,11 +25,33 @@ func main() {
 
 	db := bun.NewDB(sqldb, pgdialect.New())
 
-	if len(os.Args) > 1 && os.Args[1] == "down" {
-		log.Println(DropAllTables(ctx, db))
-		return
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "up":
+			log.Println(MigrateAll(ctx, db))
+			return
+		case "down":
+			log.Println(DropAllTables(ctx, db))
+			return
+		case "seed":
+			log.Println(SeedAll(ctx, db))
+			return
+		case "reset":
+			log.Println("Dropping all tables...")
+			if err := DropAllTables(ctx, db); err != nil {
+				log.Fatal(err)
+			}
+			log.Println("Creating all tables...")
+			if err := MigrateAll(ctx, db); err != nil {
+				log.Fatal(err)
+			}
+			log.Println("Seeding all data...")
+			log.Println(SeedAll(ctx, db))
+			return
+		default:
+			log.Fatalf("Unknown command: %s", os.Args[1])
+		}
 	}
-	log.Println(MigrateAll(ctx, db))
 }
 
 func MigrateAll(ctx context.Context, db *bun.DB) error {
@@ -61,29 +83,49 @@ func MigrateAll(ctx context.Context, db *bun.DB) error {
 }
 
 func DropAllTables(ctx context.Context, db *bun.DB) error {
-	//dropFuncs := []func(context.Context, *bun.DB) error{
-	//	datastore.DropCustomerProfileTable,
-	//	datastore.DropStaffProfileTable,
-	//	datastore.DropNotificationTable,
-	//	datastore.DropPaymentTable,
-	//	datastore.DropTicketTable,
-	//	datastore.DropBookingTable,
-	//	datastore.DropShowtimeTable,
-	//	datastore.DropSeatTable,
-	//	datastore.DropRoomTable,
-	//	datastore.DropMovieTable,
-	//	datastore.DropUserTable,
-	//	datastore.DropRolePermissionTable,
-	//	datastore.DropPermissionTable,
-	//	datastore.DropRoleTable,
-	//}
-	//
-	//for _, dropFunc := range dropFuncs {
-	//	if err := dropFunc(ctx, db); err != nil {
-	//		return err
-	//	}
-	//}
+	dropFuncs := []func(context.Context, *bun.DB) error{
+		datastore.DropCustomerProfileTable,
+		datastore.DropStaffProfileTable,
+		datastore.DropNotificationTable,
+		datastore.DropPaymentTable,
+		datastore.DropTicketTable,
+		datastore.DropBookingTable,
+		datastore.DropShowtimeTable,
+		datastore.DropSeatTable,
+		datastore.DropRoomTable,
+		datastore.DropMovieTable,
+		datastore.DropUserTable,
+		datastore.DropRolePermissionTable,
+		datastore.DropPermissionTable,
+		datastore.DropRoleTable,
+	}
+
+	for _, dropFunc := range dropFuncs {
+		if err := dropFunc(ctx, db); err != nil {
+			return err
+		}
+	}
 
 	fmt.Println("All tables dropped successfully!")
+	return nil
+}
+
+func SeedAll(ctx context.Context, db *bun.DB) error {
+	seedFuncs := []func(context.Context, *bun.DB) error{
+		datastore.SeedRoles,
+		datastore.SeedPermissions,
+		datastore.SeedMovies,
+		datastore.SeedRooms,
+		datastore.SeedUsers,
+		datastore.SeedNotifications,
+	}
+
+	for _, seedFunc := range seedFuncs {
+		if err := seedFunc(ctx, db); err != nil {
+			return err
+		}
+	}
+
+	fmt.Println("All data seeded successfully!")
 	return nil
 }

@@ -64,7 +64,7 @@ func (wsc *WSConnection) Start() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := wsc.handelRequests()
+		err := wsc.handleRequests()
 		if err != nil {
 			wsc.CloseConnection()
 			return
@@ -154,7 +154,7 @@ func (wsc *WSConnection) readMessage() error {
 	}
 }
 
-func (wsc *WSConnection) handelRequests() error {
+func (wsc *WSConnection) handleRequests() error {
 	ctx := &WSContext{
 		WSConn: wsc,
 	}

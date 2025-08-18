@@ -19,3 +19,15 @@ func CreateRoleTable(ctx context.Context, db *bun.DB) error {
 	}
 	return nil
 }
+
+func DropRoleTable(ctx context.Context, db *bun.DB) error {
+	_, err := db.NewDropTable().
+		Model((*models.Role)(nil)).
+		IfExists().
+		Cascade().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to drop roles table: %w", err)
+	}
+	return nil
+}

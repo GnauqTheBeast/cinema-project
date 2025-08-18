@@ -1,0 +1,91 @@
+server:
+  port: "8000"
+  host: "0.0.0.0"
+  read_timeout: 30
+  write_timeout: 30
+  idle_timeout: 120
+
+services:
+  auth_service:
+    url: "http://localhost:8002"
+    health_check_path: "/api/auth/health"
+    timeout: 30
+    retries: 3
+    load_balancer: []
+    
+  movie_service:
+    url: "http://localhost:8083"
+    health_check_path: "/api/v1/health"
+    timeout: 30
+    retries: 3
+    load_balancer: []
+    
+  notification_service:
+    url: "http://localhost:8080"
+    health_check_path: "/health"
+    timeout: 30
+    retries: 3
+    load_balancer: []
+
+redis:
+  address: "localhost:6379"
+  password: ""
+  db: 0
+
+auth:
+  jwt_secret: "${JWT_SECRET:cinema-jwt-secret-key-2024}"
+  token_expiration: 3600
+  public_paths:
+    # Auth service endpoints
+    - "/api/auth/login"
+    - "/api/auth/register"
+    
+    # Movie service - public read endpoints
+    - "/api/v1/health"
+    - "/api/v1/movies"
+    - "/api/v1/movies/*"
+    - "/api/v1/showtimes"
+    - "/api/v1/showtimes/*"
+    - "/api/v1/showtimes/upcoming"
+    - "/api/v1/rooms"
+    - "/api/v1/rooms/*/seats"
+    - "/api/v1/rooms/*/showtimes"
+    
+    # Notification service - public endpoints  
+    - "/api/v1/notifications/*/unread-count"
+    - "/api/v1/notifications/ws"
+    
+    # Gateway endpoints
+    - "/health"
+    - "/metrics"
+    - "/api/gateway/info"
+    
+  admin_paths:
+    # Movie service - admin only endpoints
+    - "/api/v1/movies/create"
+    - "/api/v1/movies/*/update"
+    - "/api/v1/movies/*/delete"
+    - "/api/v1/rooms/create"
+    - "/api/v1/rooms/*/update"
+    - "/api/v1/rooms/*/delete"
+    - "/api/v1/seats/create"
+    - "/api/v1/seats/*/update"
+    - "/api/v1/seats/*/delete"
+    - "/api/v1/showtimes/create"
+    - "/api/v1/showtimes/*/update"
+    - "/api/v1/showtimes/*/delete"
+    - "/api/v1/admin/*"
+    
+    # Notification service - admin endpoints
+    - "/api/v1/notifications"
+    - "/api/v1/notifications/*/delete"
+
+rate_limit:
+  requests_per_second: 100
+  burst_size: 200
+  window_size: 60
+
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout"

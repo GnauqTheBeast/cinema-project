@@ -41,11 +41,13 @@ func New(cfg *Config) (http.Handler, error) {
 	})
 	r.Use(cors)
 
-	r.GET("", Hello)
+	// Health check endpoint
+	r.GET("/health", Hello)
 
 	routesAPIv1 := r.Group("/api/v1")
 	{
-		routesAPIv1.GET("", Hello)
+		// Health check for service discovery
+		routesAPIv1.GET("/health", Hello)
 
 		// Initialize notification handler
 		notificationHandler, err := NewNotificationHandler(cfg.Container)
@@ -61,25 +63,26 @@ func New(cfg *Config) (http.Handler, error) {
 			// GET /api/v1/notifications/:userId/:id - Get single notification
 			routesNoti.GET("/:userId/:id", notificationHandler.GetNotificationById)
 
-			// POST /api/v1/notifications - Create notification
+			// POST /api/v1/notifications - Create notification (admin only)
 			routesNoti.POST("", notificationHandler.CreateNotification)
 
 			// PUT /api/v1/notifications/:userId/:id/status - Update notification status
 			routesNoti.PUT("/:userId/:id/status", notificationHandler.UpdateNotificationStatus)
 
-			// DELETE /api/v1/notifications/:userId/:id - Delete notification
+			// DELETE /api/v1/notifications/:userId/:id - Delete notification (admin only)
 			routesNoti.DELETE("/:userId/:id", notificationHandler.DeleteNotification)
 
 			// POST /api/v1/notifications/:userId/mark-read - Mark notifications as read
 			routesNoti.POST("/:userId/mark-read", notificationHandler.MarkAsRead)
 
-			// GET /api/v1/notifications/:userId/unread-count - Get unread count
+			// GET /api/v1/notifications/:userId/unread-count - Get unread count (public)
 			routesNoti.GET("/:userId/unread-count", notificationHandler.GetUnreadCount)
 		}
 	}
 
+	// WebSocket endpoint for real-time notifications
 	groupWebSocket := NewGroupWebSocket(cfg.Container)
-	r.GET("/ws", groupWebSocket.WebsocketHandleConnection)
+	r.GET("/api/v1/notifications/ws", groupWebSocket.WebsocketHandleConnection)
 
 	return r, nil
 }
