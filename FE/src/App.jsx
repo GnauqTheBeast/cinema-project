@@ -16,7 +16,7 @@ function App() {
     return () => window.removeEventListener('tokenChange', handler);
   }, []);
 
-  return <AppRouter token={token} />;
+  return <AppRouter token={token} setToken={setToken} />;
 }
 
 export default App; 

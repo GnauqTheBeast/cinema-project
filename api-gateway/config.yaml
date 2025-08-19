@@ -7,8 +7,8 @@ server:
 
 services:
   auth_service:
-    url: "http://localhost:8002"
-    health_check_path: "/api/auth/health"
+    url: "http://localhost:3001"
+    health_check_path: "/api/health"
     timeout: 30
     retries: 3
     load_balancer: []

@@ -2,6 +2,8 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
+import VerifyOtpPage from '../pages/VerifyOtpPage';
+import HomePage from '../pages/HomePage';
 import DashboardPage from '../pages/admin/DashboardPage';
 import MoviesPage from '../pages/admin/MoviesPage';
 import MovieDetailPage from '../pages/admin/MovieDetailPage';
@@ -14,7 +16,7 @@ import SeatFormPage from '../pages/admin/SeatFormPage';
 import ShowtimesPage from '../pages/admin/ShowtimesPage';
 import ShowtimeFormPage from '../pages/admin/ShowtimeFormPage';
 
-const AppRouter = ({ token }) => {
+const AppRouter = ({ token, setToken }) => {
   const ProtectedRoute = ({ children }) => {
     return token ? children : <Navigate to="/login" replace />;
   };
@@ -26,13 +28,18 @@ const AppRouter = ({ token }) => {
   return (
     <Routes>
       {/* Public Routes */}
+      <Route path="/" element={<HomePage />} />
       <Route 
         path="/login" 
-        element={!token ? <LoginPage /> : <Navigate to="/admin/movies" replace />} 
+        element={!token ? <LoginPage onLogin={() => window.location.reload()} /> : <Navigate to="/admin/movies" replace />} 
       />
       <Route 
         path="/register" 
         element={!token ? <RegisterPage /> : <Navigate to="/admin/movies" replace />} 
+      />
+      <Route 
+        path="/verify" 
+        element={!token ? <VerifyOtpPage /> : <Navigate to="/admin/movies" replace />} 
       />
 
       {/* Admin Routes */}
@@ -169,8 +176,7 @@ const AppRouter = ({ token }) => {
 
       {/* Default redirects */}
       <Route path="/admin" element={<Navigate to="/admin/movies" replace />} />
-      <Route path="/" element={<Navigate to={token ? "/admin/movies" : "/login"} replace />} />
-      <Route path="*" element={<Navigate to={token ? "/admin/movies" : "/login"} replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

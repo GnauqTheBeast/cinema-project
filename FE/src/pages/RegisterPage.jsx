@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { FaEnvelope, FaLock, FaUserCircle } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaUser, FaMapMarkerAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 
 export default function RegisterPage() {
@@ -18,6 +18,8 @@ export default function RegisterPage() {
  });
  const [error, setError] = useState('');
  const [success, setSuccess] = useState('');
+ const [showPassword, setShowPassword] = useState(false);
+ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
  const navigate = useNavigate();
 
 
@@ -30,8 +32,7 @@ export default function RegisterPage() {
    e.preventDefault();
    setError(''); setSuccess('');
    const data = {
-     ...form,
-     discriminator: 'Customer'
+     ...form
    };
    try {
      await axios.post(`${API_URL}/auth/register`, data);
@@ -44,110 +45,169 @@ export default function RegisterPage() {
 
 
  return (
-   <div className="flex items-center justify-center min-h-screen bg-blue-900">
-     <div className="w-full max-w-lg flex flex-col items-center">
-       <div className="flex flex-col items-center mb-8">
-         <FaUserCircle className="text-[100px] text-white bg-blue-800 rounded-full p-2 shadow-lg mb-2" />
+   <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black flex items-center justify-center p-4">
+     <div className="w-full max-w-lg">
+       <div className="bg-black/80 backdrop-blur-sm border border-red-600/30 rounded-2xl p-8 shadow-2xl">
+         <div className="text-center mb-8">
+           <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-red-600 to-red-800 rounded-full flex items-center justify-center shadow-lg">
+             <span className="text-white font-bold text-2xl">CGV</span>
+           </div>
+           <h1 className="text-2xl font-bold text-white mb-2">Đăng Ký</h1>
+           <p className="text-gray-400 text-sm">Tạo tài khoản để trải nghiệm điện ảnh</p>
+         </div>
+         
+         <form onSubmit={handleSubmit} className="space-y-5">
+           <div>
+             <label className="block text-gray-300 text-sm font-medium mb-2">Email</label>
+             <div className="relative">
+               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                 <FaEnvelope className="h-5 w-5 text-gray-400" />
+               </div>
+               <input
+                 name="email"
+                 type="email"
+                 value={form.email}
+                 onChange={handleChange}
+                 required
+                 className="w-full pl-10 pr-3 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-300"
+                 placeholder="Nhập email của bạn"
+               />
+             </div>
+           </div>
+           
+           <div>
+             <label className="block text-gray-300 text-sm font-medium mb-2">Mật khẩu</label>
+             <div className="relative">
+               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                 <FaLock className="h-5 w-5 text-gray-400" />
+               </div>
+               <input
+                 name="password"
+                 type={showPassword ? "text" : "password"}
+                 value={form.password}
+                 onChange={handleChange}
+                 required
+                 className="w-full pl-10 pr-12 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-300"
+                 placeholder="Nhập mật khẩu"
+               />
+               <button
+                 type="button"
+                 onClick={() => setShowPassword(!showPassword)}
+                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-red-500 transition-colors duration-300"
+               >
+                 {showPassword ? <FaEyeSlash className="h-5 w-5" /> : <FaEye className="h-5 w-5" />}
+               </button>
+             </div>
+           </div>
+           
+           <div>
+             <label className="block text-gray-300 text-sm font-medium mb-2">Xác nhận mật khẩu</label>
+             <div className="relative">
+               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                 <FaLock className="h-5 w-5 text-gray-400" />
+               </div>
+               <input
+                 name="confirmPassword"
+                 type={showConfirmPassword ? "text" : "password"}
+                 value={form.confirmPassword}
+                 onChange={handleChange}
+                 required
+                 className="w-full pl-10 pr-12 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-300"
+                 placeholder="Nhập lại mật khẩu"
+               />
+               <button
+                 type="button"
+                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-red-500 transition-colors duration-300"
+               >
+                 {showConfirmPassword ? <FaEyeSlash className="h-5 w-5" /> : <FaEye className="h-5 w-5" />}
+               </button>
+             </div>
+           </div>
+           
+           <div className="grid grid-cols-2 gap-4">
+             <div>
+               <label className="block text-gray-300 text-sm font-medium mb-2">Họ</label>
+               <div className="relative">
+                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                   <FaUser className="h-5 w-5 text-gray-400" />
+                 </div>
+                 <input
+                   name="firstName"
+                   value={form.firstName}
+                   onChange={handleChange}
+                   required
+                   className="w-full pl-10 pr-3 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-300"
+                   placeholder="Họ"
+                 />
+               </div>
+             </div>
+             <div>
+               <label className="block text-gray-300 text-sm font-medium mb-2">Tên</label>
+               <div className="relative">
+                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                   <FaUser className="h-5 w-5 text-gray-400" />
+                 </div>
+                 <input
+                   name="lastName"
+                   value={form.lastName}
+                   onChange={handleChange}
+                   required
+                   className="w-full pl-10 pr-3 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-300"
+                   placeholder="Tên"
+                 />
+               </div>
+             </div>
+           </div>
+           
+           <div>
+             <label className="block text-gray-300 text-sm font-medium mb-2">Địa chỉ</label>
+             <div className="relative">
+               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                 <FaMapMarkerAlt className="h-5 w-5 text-gray-400" />
+               </div>
+               <input
+                 name="address"
+                 value={form.address}
+                 onChange={handleChange}
+                 className="w-full pl-10 pr-3 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-300"
+                 placeholder="Nhập địa chỉ của bạn"
+               />
+             </div>
+           </div>
+           
+           {error && (
+             <div className="bg-red-900/50 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg text-sm">
+               {error}
+             </div>
+           )}
+           
+           {success && (
+             <div className="bg-green-900/50 border border-green-500/50 text-green-300 px-4 py-3 rounded-lg text-sm">
+               {success}
+             </div>
+           )}
+           
+           <button
+             type="submit"
+             className="w-full bg-gradient-to-r from-red-600 to-red-800 hover:from-red-700 hover:to-red-900 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-red-600/25"
+           >
+             ĐĂNG KÝ
+           </button>
+         </form>
+         
+         <div className="mt-8 text-center">
+           <p className="text-gray-400 text-sm">
+             Đã có tài khoản?{' '}
+             <Link 
+               to="/login" 
+               className="text-red-400 hover:text-red-300 font-medium transition-colors duration-300"
+             >
+               Đăng nhập ngay
+             </Link>
+           </p>
+         </div>
        </div>
-       <form onSubmit={handleSubmit} className="w-full bg-transparent flex flex-col gap-6">
-         <div>
-           <label className="block text-gray-200 mb-1">Email ID</label>
-           <div className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm">
-             <FaEnvelope className="text-blue-900 mr-2" />
-             <input
-               name="email"
-               type="email"
-               value={form.email}
-               onChange={handleChange}
-               required
-               className="flex-1 bg-transparent outline-none text-blue-900 placeholder-gray-400"
-               placeholder="Email ID"
-             />
-           </div>
-         </div>
-         <div>
-           <label className="block text-gray-200 mb-1">Password</label>
-           <div className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm">
-             <FaLock className="text-blue-900 mr-2" />
-             <input
-               name="password"
-               type="password"
-               value={form.password}
-               onChange={handleChange}
-               required
-               className="flex-1 bg-transparent outline-none text-blue-900 placeholder-gray-400"
-               placeholder="Password"
-             />
-           </div>
-         </div>
-         <div>
-           <label className="block text-gray-200 mb-1">Confirm Password</label>
-           <div className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm">
-             <FaLock className="text-blue-900 mr-2" />
-             <input
-               name="confirmPassword"
-               type="password"
-               value={form.confirmPassword}
-               onChange={handleChange}
-               required
-               className="flex-1 bg-transparent outline-none text-blue-900 placeholder-gray-400"
-               placeholder="Confirm Password"
-             />
-           </div>
-         </div>
-         <div className="flex space-x-4">
-           <div className="w-1/2">
-             <label className="block text-gray-200 mb-1">First Name</label>
-             <div className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm">
-               <input
-                 name="firstName"
-                 value={form.firstName}
-                 onChange={handleChange}
-                 required
-                 className="flex-1 bg-transparent outline-none text-blue-900 placeholder-gray-400"
-                 placeholder="First Name"
-               />
-             </div>
-           </div>
-           <div className="w-1/2">
-             <label className="block text-gray-200 mb-1">Last Name</label>
-             <div className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm">
-               <input
-                 name="lastName"
-                 value={form.lastName}
-                 onChange={handleChange}
-                 required
-                 className="flex-1 bg-transparent outline-none text-blue-900 placeholder-gray-400"
-                 placeholder="Last Name"
-               />
-             </div>
-           </div>
-         </div>
-         <div>
-           <label className="block text-gray-200 mb-1">Address</label>
-           <div className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm">
-             <input
-               name="address"
-               value={form.address}
-               onChange={handleChange}
-               className="flex-1 bg-transparent outline-none text-blue-900 placeholder-gray-400"
-               placeholder="Address"
-             />
-           </div>
-         </div>
-         {error && <div className="text-red-400 text-sm text-center">{error}</div>}
-         {success && <div className="text-green-600 text-sm text-center">{success}</div>}
-         <button
-           type="submit"
-           className="w-full bg-blue-800 hover:bg-blue-700 text-white font-semibold py-2 rounded-full transition duration-200 mt-2 shadow-md"
-         >
-           REGISTER
-         </button>
-       </form>
-       <p className="mt-8 text-center text-gray-200 text-sm">
-         Already have an account?{' '}
-         <Link to="/login" className="text-white underline hover:text-blue-200">Login</Link>
-       </p>
      </div>
    </div>
  );
