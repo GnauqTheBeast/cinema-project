@@ -2,7 +2,7 @@ import Joi from 'joi';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import { QueryTypes } from 'sequelize';
+import {Model, QueryTypes} from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 
 import { User, CustomerProfile, sequelize } from '../models/index.js';
@@ -251,21 +251,20 @@ class AuthController {
         return;
       }
       
-      const valid = await bcrypt.compare(password, user.password);
+      const valid = await bcrypt.compare(password, user.dataValues.password);
       if (!valid) {
         res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.INVALID_CREDENTIALS });
         return;
       }
 
       const token = jwt.sign(
-        { userId: user.id, email: user.email }, 
-        process.env.JWT_SECRET!,
-        { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+        { userId: user.dataValues.id, email: user.dataValues.email }, 
+        process.env.JWT_SECRET as string,
       );
 
       const response: IAuthResponse = {
         token,
-        user: { id: user.id, email: user.email, name: user.name }
+        user: { id: user.dataValues.id, email: user.dataValues.email, name: user.dataValues.name }
       };
 
       res.json(response);
