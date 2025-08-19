@@ -266,65 +266,50 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 	now := time.Now()
 	users := []*models.User{
 		{
-			Id:                   uuid.New().String(),
-			Name:                 "Admin User",
-			Email:                "admin@cinema.com",
-			Password:             "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
-			PhoneNumber:          stringPtr("+1234567890"),
-			TotalPaymentAmount:   0,
-			Point:                100,
-			OnchainWalletAddress: stringPtr("0x1234567890abcdef"),
-			RoleId:               &adminRoleId,
-			CreatedAt:            now,
+			Id:          uuid.New().String(),
+			Name:        "Admin User",
+			Email:       "admin@cinema.com",
+			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+			PhoneNumber: stringPtr("+1234567890"),
+			RoleId:      &adminRoleId,
+			CreatedAt:   now,
 		},
 		{
-			Id:                 uuid.New().String(),
-			Name:               "John Staff",
-			Email:              "john.staff@cinema.com",
-			Password:           "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
-			PhoneNumber:        stringPtr("+1234567891"),
-			TotalPaymentAmount: 0,
-			Point:              50,
-			RoleId:             &staffRoleId,
-			Address:            stringPtr("123 Staff Street"),
-			Salary:             intPtr(50000),
-			CreatedAt:          now,
+			Id:          uuid.New().String(),
+			Name:        "John Staff",
+			Email:       "john.staff@cinema.com",
+			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+			PhoneNumber: stringPtr("+1234567891"),
+			RoleId:      &staffRoleId,
+			Address:     stringPtr("123 Staff Street"),
+			CreatedAt:   now,
 		},
 		{
-			Id:                   uuid.New().String(),
-			Name:                 "Alice Customer",
-			Email:                "alice@email.com",
-			Password:             "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
-			PhoneNumber:          stringPtr("+1234567892"),
-			TotalPaymentAmount:   150,
-			Point:                75,
-			OnchainWalletAddress: stringPtr("0xabcdef1234567890"),
-			RoleId:               &customerRoleId,
-			CreatedAt:            now,
+			Id:          uuid.New().String(),
+			Name:        "Alice Customer",
+			Email:       "alice@email.com",
+			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+			PhoneNumber: stringPtr("+1234567892"),
+			RoleId:      &customerRoleId,
+			CreatedAt:   now,
 		},
 		{
-			Id:                   uuid.New().String(),
-			Name:                 "Bob Customer",
-			Email:                "bob@email.com",
-			Password:             "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
-			PhoneNumber:          stringPtr("+1234567893"),
-			TotalPaymentAmount:   300,
-			Point:                150,
-			OnchainWalletAddress: stringPtr("0xfedcba0987654321"),
-			RoleId:               &customerRoleId,
-			CreatedAt:            now,
+			Id:          uuid.New().String(),
+			Name:        "Bob Customer",
+			Email:       "bob@email.com",
+			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+			PhoneNumber: stringPtr("+1234567893"),
+			RoleId:      &customerRoleId,
+			CreatedAt:   now,
 		},
 		{
-			Id:                   uuid.New().String(),
-			Name:                 "Emma Wilson",
-			Email:                "emma@email.com",
-			Password:             "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
-			PhoneNumber:          stringPtr("+1234567894"),
-			TotalPaymentAmount:   75,
-			Point:                35,
-			OnchainWalletAddress: stringPtr("0x1122334455667788"),
-			RoleId:               &customerRoleId,
-			CreatedAt:            now,
+			Id:          uuid.New().String(),
+			Name:        "Emma Wilson",
+			Email:       "emma@email.com",
+			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+			PhoneNumber: stringPtr("+1234567894"),
+			RoleId:      &customerRoleId,
+			CreatedAt:   now,
 		},
 	}
 

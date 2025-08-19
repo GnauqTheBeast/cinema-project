@@ -1,17 +1,23 @@
 import { Sequelize, DataTypes, Model, ModelDefined } from 'sequelize';
 import dotenv from 'dotenv';
-import { IUser, IDatabaseManager } from '../types/index.js';
+import { IUser, ICustomerProfile, IDatabaseManager, UserStatus } from '../types/index.js';
 
 interface IUserCreationAttributes extends Omit<IUser, 'id' | 'created_at' | 'updated_at'> {
   id?: string;
 }
 
+interface ICustomerProfileCreationAttributes extends Omit<ICustomerProfile, 'id'> {
+  id?: string;
+}
+
 export type UserModel = ModelDefined<IUser, IUserCreationAttributes>;
+export type CustomerProfileModel = ModelDefined<ICustomerProfile, ICustomerProfileCreationAttributes>;
 
 class DatabaseManager implements IDatabaseManager {
   private static instance: DatabaseManager | null = null;
   private static sequelize: Sequelize | null = null;
   private static User: UserModel | null = null;
+  private static CustomerProfile: CustomerProfileModel | null = null;
 
   constructor() {
     if (DatabaseManager.instance) {
@@ -78,17 +84,10 @@ class DatabaseManager implements IDatabaseManager {
         type: DataTypes.STRING,
         allowNull: true
       },
-      total_payment_amount: {
-        type: DataTypes.BIGINT,
-        defaultValue: 0
-      },
-      point: {
-        type: DataTypes.BIGINT,
-        defaultValue: 0
-      },
-      onchain_wallet_address: {
+      status: {
         type: DataTypes.STRING,
-        allowNull: true
+        allowNull: false,
+        defaultValue: UserStatus.PENDING
       },
       role_id: {
         type: DataTypes.STRING,
@@ -97,10 +96,6 @@ class DatabaseManager implements IDatabaseManager {
       address: {
         type: DataTypes.STRING,
         allowNull: true
-      },
-      salary: {
-        type: DataTypes.BIGINT,
-        allowNull: true
       }
     }, {
       tableName: 'users',
@@ -108,6 +103,40 @@ class DatabaseManager implements IDatabaseManager {
       createdAt: 'created_at',
       updatedAt: 'updated_at'
     }) as UserModel;
+
+    // Define CustomerProfile model
+    DatabaseManager.CustomerProfile = DatabaseManager.sequelize.define<Model<ICustomerProfile, ICustomerProfileCreationAttributes>>('CustomerProfile', {
+      id: {
+        type: DataTypes.STRING,
+        primaryKey: true,
+      },
+      user_id: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        references: {
+          model: 'users',
+          key: 'id'
+        },
+        onDelete: 'CASCADE'
+      },
+      total_payment_amount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
+      point: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
+      onchain_wallet_address: {
+        type: DataTypes.STRING,
+        allowNull: true
+      }
+    }, {
+      tableName: 'customer_profile',
+      timestamps: false
+    }) as CustomerProfileModel;
   }
 
   static getSequelize(): Sequelize {
@@ -122,6 +151,13 @@ class DatabaseManager implements IDatabaseManager {
       DatabaseManager.getInstance();
     }
     return DatabaseManager.User!;
+  }
+
+  static getCustomerProfile(): CustomerProfileModel {
+    if (!DatabaseManager.CustomerProfile) {
+      DatabaseManager.getInstance();
+    }
+    return DatabaseManager.CustomerProfile!;
   }
 
   async testConnection(): Promise<boolean> {
@@ -160,4 +196,5 @@ const databaseManager = DatabaseManager.getInstance();
 // Export for backward compatibility
 export const sequelize = DatabaseManager.getSequelize();
 export const User = DatabaseManager.getUser();
+export const CustomerProfile = DatabaseManager.getCustomerProfile();
 export default DatabaseManager;
