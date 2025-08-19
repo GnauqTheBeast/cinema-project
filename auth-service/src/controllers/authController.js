@@ -14,12 +14,14 @@ const VERIFY_BASE_URL = 'https://yourdomain.com/verify';
 const REDIS_TOPICS = {
   EMAIL_VERIFY: 'email_verify'
 };
+
 const ERROR_MESSAGES = {
   CUSTOMER_ONLY: 'Chỉ cho phép đăng ký tài khoản Customer.',
   EMAIL_EXISTS: 'Email already exists',
   INVALID_CREDENTIALS: 'Invalid email or password',
   REGISTRATION_SUCCESS: 'Registered successfully. Please check your email to verify.'
 };
+
 const HTTP_STATUS = {
   OK: 200,
   CREATED: 201,
@@ -76,6 +78,75 @@ const getCustomerRoleId = async () => {
   }
 };
 
+const saveOTPToCache = async (email, otp) => {
+  const OTP_CACHE_KEY = `otp:${email}`;
+  const OTP_TTL = 300; // 5 minutes
+  
+  const otpData = {
+    otp: otp,
+    count: 0,
+    created_at: new Date().toISOString()
+  };
+  
+  await redisClient.setEx(OTP_CACHE_KEY, OTP_TTL, JSON.stringify(otpData));
+};
+
+const verifyOTPFromCache = async (email, inputOtp) => {
+  const OTP_CACHE_KEY = `otp:${email}`;
+  const MAX_ATTEMPTS = 5;
+  
+  try {
+    const cachedData = await redisClient.get(OTP_CACHE_KEY);
+    
+    if (!cachedData) {
+      return {
+        success: false,
+        message: 'OTP expired or not found',
+        attempts: 0
+      };
+    }
+    
+    const otpData = JSON.parse(cachedData);
+    
+    // Check if max attempts reached
+    if (otpData.count >= MAX_ATTEMPTS) {
+      return {
+        success: false,
+        message: 'Maximum OTP attempts exceeded. Please request a new OTP.',
+        attempts: otpData.count
+      };
+    }
+    
+    // Increment attempt count
+    otpData.count++;
+    
+    // Check if OTP matches
+    if (otpData.otp === inputOtp) {
+      // OTP is correct, delete from cache
+      await redisClient.del(OTP_CACHE_KEY);
+      return {
+        success: true,
+        message: 'OTP verified successfully',
+        attempts: otpData.count
+      };
+    } else {
+      // OTP is incorrect, update count in cache
+      const remainingTTL = await redisClient.ttl(OTP_CACHE_KEY);
+      await redisClient.setEx(OTP_CACHE_KEY, remainingTTL, JSON.stringify(otpData));
+      
+      return {
+        success: false,
+        message: `Invalid OTP. ${MAX_ATTEMPTS - otpData.count} attempts remaining.`,
+        attempts: otpData.count
+      };
+    }
+    
+  } catch (error) {
+    console.error('Error verifying OTP from cache:', error);
+    throw error;
+  }
+};
+
 const registerSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().min(6).required(),
@@ -89,6 +160,11 @@ const registerSchema = Joi.object({
 const loginSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().required()
+});
+
+const verifyOtpSchema = Joi.object({
+  email: Joi.string().email().required(),
+  otp: Joi.string().length(6).required()
 });
 
 export async function register(req, res, next) {
@@ -131,7 +207,8 @@ export async function register(req, res, next) {
 
     await redisPubSubClient.publish(REDIS_TOPICS.EMAIL_VERIFY, JSON.stringify(msg));
 
-    // TODO: save otp to redis cache (key - value): otp - email
+    // Save OTP to Redis cache for verification
+    await saveOTPToCache(email, verifyCode);
 
     await t.commit();
 
@@ -156,6 +233,31 @@ export async function login(req, res, next) {
     if (!valid) return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: ERROR_MESSAGES.INVALID_CREDENTIALS });
     const token = jwt.sign({ userId: user.id, email: user.email, discriminator: user.discriminator }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
     res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+  } catch (err) {
+    if (err.isJoi) return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: err.details[0].message });
+    next(err);
+  }
+}
+
+export async function verifyOtp(req, res, next) {
+  try {
+    const { email, otp } = await verifyOtpSchema.validateAsync(req.body);
+    
+    const result = await verifyOTPFromCache(email, otp);
+    
+    if (result.success) {
+      res.status(HTTP_STATUS.OK).json({ 
+        message: result.message,
+        verified: true 
+      });
+    } else {
+      res.status(HTTP_STATUS.BAD_REQUEST).json({ 
+        message: result.message,
+        verified: false,
+        attempts: result.attempts 
+      });
+    }
+    
   } catch (err) {
     if (err.isJoi) return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: err.details[0].message });
     next(err);
