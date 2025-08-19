@@ -123,6 +123,7 @@ func (e *EmailService) SubscribeEmailVerifyQueue(ctx context.Context) error {
 					}); err != nil {
 						logrus.Warnf("Error publishing message to topic %s: %v\n", fmt.Sprintf("email_verify_%s", receiveMsg.UserId), err)
 					}
+					logrus.Info("Email verify sent for user: ", receiveMsg.To)
 				}()
 
 				go func() {
