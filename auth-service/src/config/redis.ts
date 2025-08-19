@@ -68,10 +68,20 @@ class RedisManager implements IRedisManager {
 
   async disconnect(): Promise<boolean> {
     try {
-      await Promise.all([
-        RedisManager.redisClient!.quit(),
-        RedisManager.redisPubSubClient!.quit()
-      ]);
+      const disconnectPromises = [];
+      
+      if (RedisManager.redisClient && RedisManager.redisClient.isOpen) {
+        disconnectPromises.push(RedisManager.redisClient.quit());
+      }
+      
+      if (RedisManager.redisPubSubClient && RedisManager.redisPubSubClient.isOpen) {
+        disconnectPromises.push(RedisManager.redisPubSubClient.quit());
+      }
+      
+      if (disconnectPromises.length > 0) {
+        await Promise.all(disconnectPromises);
+      }
+      
       console.log('All Redis clients disconnected');
       return true;
     } catch (error) {

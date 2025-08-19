@@ -47,6 +47,7 @@ class DatabaseManager implements IDatabaseManager {
       password: process.env.DB_PASSWORD || 'postgres',
       dialect: 'postgres',
       logging: false,
+
       pool: {
         max: 5,
         min: 0,

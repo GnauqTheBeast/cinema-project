@@ -10,7 +10,6 @@ export interface IUser {
   status: UserStatus;
   role_id?: string;
   address?: string;
-  created_at: Date;
   updated_at?: Date;
 }
 
