@@ -131,7 +131,7 @@ func (s *NotificationService) CreateNotification(ctx context.Context, userId, ti
 	notification := &models.Notification{
 		Id:      uuid.New().String(),
 		UserId:  userId,
-		Title:   title,
+		Title:   models.NotificationTitle(title),
 		Content: content,
 		Status:  models.NotificationStatusPending,
 	}

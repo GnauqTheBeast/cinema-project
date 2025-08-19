@@ -14,4 +14,4 @@ redisPubSubClient.on('error', (err) => console.error('Redis PubSub Client Error'
 await redisClient.connect();
 await redisPubSubClient.connect();
 
-export { redisClient as default, redisPubSubClient }; 
+export { redisClient as default, redisPubSubClient };

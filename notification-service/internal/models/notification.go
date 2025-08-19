@@ -12,12 +12,19 @@ const (
 	NotificationStatusDeleted NotificationStatus = "deleted"
 )
 
+type NotificationTitle string
+
+const (
+	NotificationForgotPassword NotificationTitle = "Forgot Password"
+	NotificationEmailVerified  NotificationTitle = "Email Verified"
+)
+
 type Notification struct {
 	Id        string             `bun:"id,pk" json:"id"`
 	UserId    string             `bun:"user_id" json:"user_id"`
-	Title     string             `bun:"title" json:"title"`
+	Title     NotificationTitle  `bun:"title" json:"title"`
 	Content   string             `bun:"content" json:"content"`
-	Status    NotificationStatus `bun:"status" json:"status"`
+	Status    NotificationStatus `bun:"status,default:'pending'" json:"status"`
 	CreatedAt *time.Time         `bun:"created_at,default:current_timestamp" json:"created_at"`
 	UpdatedAt *time.Time         `bun:"updated_at,default:current_timestamp" json:"updated_at"`
 }

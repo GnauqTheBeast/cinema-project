@@ -27,4 +27,4 @@ CREATE TABLE IF NOT EXISTS "Staffs" (
   position VARCHAR(255) NOT NULL,
   "managerCode" VARCHAR(255),
   title VARCHAR(255)
-); 
+);

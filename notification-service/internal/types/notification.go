@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"time"
 
 	"notification-service/internal/models"
@@ -61,7 +62,7 @@ func ToNotificationResponse(notification *models.Notification) *NotificationResp
 	response := &NotificationResponse{
 		ID:      notification.Id,
 		UserID:  notification.UserId,
-		Title:   notification.Title,
+		Title:   string(notification.Title),
 		Content: notification.Content,
 		Status:  string(notification.Status),
 	}
@@ -95,7 +96,7 @@ func (req *CreateNotificationRequest) ToEntity() *models.Notification {
 	now := time.Now()
 	return &models.Notification{
 		UserId:    req.UserID,
-		Title:     req.Title,
+		Title:     models.NotificationTitle(req.Title),
 		Content:   req.Content,
 		Status:    models.NotificationStatusPending,
 		CreatedAt: &now,
@@ -108,7 +109,7 @@ func (req *UpdateNotificationRequest) ApplyUpdates(notification *models.Notifica
 	now := time.Now()
 
 	if req.Title != nil {
-		notification.Title = *req.Title
+		notification.Title = models.NotificationTitle(*req.Title)
 	}
 
 	if req.Content != nil {
@@ -134,4 +135,18 @@ func ValidateStatus(status string) bool {
 	default:
 		return false
 	}
+}
+
+type NotificationMessage struct {
+	UserId  string `json:"user_id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+func UnmarshalNotificationMessage(data []byte) (interface{}, error) {
+	msg := new(NotificationMessage)
+	if err := json.Unmarshal(data, msg); err != nil {
+		return nil, err
+	}
+	return msg, nil
 }
