@@ -12,6 +12,7 @@ type EmailVerify struct {
 }
 
 type EmailVerifyMessage struct {
+	UserId     string `json:"user_id"`
 	To         string `json:"to"`
 	VerifyCode string `json:"verify_code"`
 	VerifyURL  string `json:"verify_url"`

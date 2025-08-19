@@ -61,9 +61,8 @@ func (h *WebSocketHandler) notificatonHandler(ctx *WSContext, request *WSRequest
 		}, nil
 	}
 
-	topic := fmt.Sprintf("notification_%s", userId)
-
-	subscriber, err := h.pubsub.Subscribe(ctx.Context(), []string{topic}, types.UnmarshalEmailVerify)
+	topic := notificationTopic(userId)
+	subscriber, err := h.pubsub.Subscribe(ctx.Context(), []string{topic}, types.UnmarshalNotificationMessage)
 	if err != nil {
 		return &WSResponse{
 			Id:     request.Id,
@@ -78,15 +77,18 @@ func (h *WebSocketHandler) notificatonHandler(ctx *WSContext, request *WSRequest
 		}()
 
 		channel := subscriber.MessageChan()
-
 		for {
 			select {
 			case <-ctx.Context().Done():
 				fmt.Println("Context done, stopping subscriber")
 				return
 			case msg := <-channel:
-				if msg.Topic == fmt.Sprintf("email_verify_%s", userId) {
-					h.handleEmailVerify(ctx, request.Id, msg.Data.(*types.EmailVerifyMessage))
+				if msg.Topic == emailVerifyTopic(userId) {
+					ctx.WSConn.sendMessage(&WSResponse{
+						Id:     request.Id,
+						Result: json.RawMessage(`{"status": "email sent"}`),
+						Error:  nil,
+					})
 				}
 			}
 		}
@@ -97,24 +99,4 @@ func (h *WebSocketHandler) notificatonHandler(ctx *WSContext, request *WSRequest
 		Result: json.RawMessage(`{"status": "success", "message": "Notification sent"}`),
 		Error:  nil,
 	}, nil
-}
-
-func (h *WebSocketHandler) handleEmailVerify(ctx *WSContext, requestId int, message *types.EmailVerifyMessage) {
-	emailVerify := &types.EmailVerify{
-		From:       "quangnguyenngoc314@gmail.com",
-		To:         message.To,
-		Subject:    "Verify your email",
-		VerifyCode: message.VerifyCode,
-		VerifyURL:  fmt.Sprintf("https://example.com/verify?code=%s", message.VerifyCode),
-	}
-
-	_ = h.emailService.SendEmail(emailVerify)
-
-	response := &WSResponse{
-		Id:     requestId,
-		Result: json.RawMessage(`{"status": "email sent"}`),
-		Error:  nil,
-	}
-
-	ctx.WSConn.sendMessage(response)
 }

@@ -14,104 +14,62 @@ export const sequelize = new Sequelize({
 
 export const User = sequelize.define('User', {
   id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
+    type: DataTypes.STRING,
     primaryKey: true,
   },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
   email: {
-    type: DataTypes.STRING(255),
+    type: DataTypes.STRING,
     allowNull: false,
     unique: true,
     validate: { isEmail: true }
   },
   password: {
-    type: DataTypes.STRING(255),
+    type: DataTypes.STRING,
     allowNull: false
   },
-  discriminator: {
-    type: DataTypes.STRING(255),
-    allowNull: false
+  phone_number: {
+    type: DataTypes.STRING,
+    allowNull: true
   },
-  fullNameId: {
-    type: DataTypes.UUID,
-    allowNull: false
+  total_payment_amount: {
+    type: DataTypes.BIGINT,
+    defaultValue: 0
+  },
+  point: {
+    type: DataTypes.BIGINT,
+    defaultValue: 0
+  },
+  onchain_wallet_address: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  role_id: {
+    type: DataTypes.STRING,
+    allowNull: true
   },
   address: {
-    type: DataTypes.STRING(255),
+    type: DataTypes.STRING,
     allowNull: true
-  },
-  walletAddress: {
-    type: DataTypes.STRING(255),
-    allowNull: true
-  }
-}, {
-  tableName: 'Users',
-  timestamps: false
-});
-
-export const Customer = sequelize.define('Customer', {
-  userId: {
-    type: DataTypes.UUID,
-    primaryKey: true
-  },
-  loyaltyPoint: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0
-  }
-}, {
-  tableName: 'Customers',
-  timestamps: false
-});
-
-export const Staff = sequelize.define('Staff', {
-  userId: {
-    type: DataTypes.UUID,
-    primaryKey: true
   },
   salary: {
-    type: DataTypes.DOUBLE,
-    allowNull: false
-  },
-  position: {
-    type: DataTypes.STRING(255),
-    allowNull: false
-  },
-  managerCode: {
-    type: DataTypes.STRING(255),
-    allowNull: true
-  },
-  title: {
-    type: DataTypes.STRING(255),
+    type: DataTypes.BIGINT,
     allowNull: true
   }
 }, {
-  tableName: 'Staffs',
-  timestamps: false
+  tableName: 'users',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
 });
 
-export const FullName = sequelize.define('FullName', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
-  },
-  firstName: {
-    type: DataTypes.STRING(255),
-    allowNull: false
-  },
-  lastName: {
-    type: DataTypes.STRING(255),
-    allowNull: false
-  }
-}, {
-  tableName: 'FullName',
-  timestamps: false
-});
+// Using customer_profile table instead of separate Customers table
 
-// Associations
-User.belongsTo(FullName, { foreignKey: 'fullNameId', as: 'fullName' });
-FullName.hasMany(User, { foreignKey: 'fullNameId', as: 'users' });
-User.hasOne(Customer, { foreignKey: 'userId', as: 'customer' });
-User.hasOne(Staff, { foreignKey: 'userId', as: 'staff' });
-Customer.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-Staff.belongsTo(User, { foreignKey: 'userId', as: 'user' }); 
+// Using staff_profile table instead of separate Staffs table
+
+// FullName is now embedded in users.name field
+
+// No associations needed for simplified users table

@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+	"notification-service/internal/datastore"
+	"notification-service/internal/models"
+
 	"github.com/sirupsen/logrus"
 	"notification-service/internal/pkg/pubsub"
 
@@ -70,12 +74,14 @@ func (e *EmailService) SubscribeEmailVerifyQueue(ctx context.Context) error {
 			}
 		}()
 
+		channel := subscriber.MessageChan()
+
 		for {
 			select {
 			case <-ctx.Done():
 				logrus.Println("Context done, stopping subscriber")
 				return
-			case msg := <-subscriber.MessageChan():
+			case msg := <-channel:
 				receiveMsg, ok := msg.Data.(*types.EmailVerifyMessage)
 				if !ok {
 					logrus.Warnf("Received message with wrong type: %T\n", msg.Data)
@@ -86,22 +92,44 @@ func (e *EmailService) SubscribeEmailVerifyQueue(ctx context.Context) error {
 					From:       "quangnguyenngoc314@gmail.com",
 					To:         receiveMsg.To,
 					VerifyCode: receiveMsg.VerifyCode,
-					VerifyURL:  receiveMsg.VerifyCode,
+					VerifyURL:  receiveMsg.VerifyURL,
+				}
+
+				noti := &models.Notification{
+					Id:     uuid.NewString(),
+					UserId: receiveMsg.UserId,
 				}
 
 				switch msg.Topic {
 				case topic:
 					emailVerify.Subject = "Verify your email"
-					logrus.Printf("Received email verification email %s\n", emailVerify.Subject)
+					noti.Title = models.NotificationEmailVerified
+					noti.Content = fmt.Sprintf("Please verify your email with code")
 				case forgotPasswordTopic:
 					emailVerify.Subject = "Forgot your password?"
-					logrus.Printf("Received forgot_password_verify email %s\n", emailVerify.Subject)
+					noti.Title = models.NotificationForgotPassword
+					noti.Content = fmt.Sprintf("Please reset your password with code")
 				}
 
 				if err := e.SendEmail(emailVerify); err != nil {
 					logrus.Warnf("Error sending verify email: %v\n", err)
 					continue
 				}
+
+				go func() {
+					if err = e.pubsub.Publish(ctx, &pubsub.Message{
+						Topic: fmt.Sprintf("email_verify_%s", receiveMsg.UserId),
+						Data:  emailVerify,
+					}); err != nil {
+						logrus.Warnf("Error publishing message to topic %s: %v\n", fmt.Sprintf("email_verify_%s", receiveMsg.UserId), err)
+					}
+				}()
+
+				go func() {
+					if err = datastore.CreateNotification(ctx, e.db, noti); err != nil {
+						logrus.Warnf("Error creating notification: %v\n", err)
+					}
+				}()
 			}
 		}
 	}()
