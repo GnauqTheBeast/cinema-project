@@ -1,25 +1,25 @@
 import Joi from 'joi';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { Request, Response, NextFunction } from 'express';
-import {Model, QueryTypes} from 'sequelize';
-import { v4 as uuidv4 } from 'uuid';
+import {NextFunction, Request, Response} from 'express';
+import {QueryTypes} from 'sequelize';
+import {v4 as uuidv4} from 'uuid';
 
-import { User, CustomerProfile, sequelize } from '../models/index.js';
-import { redisClient, redisPubSubClient } from '../config/redis.js';
+import {CustomerProfile, sequelize, User} from '../models/index.js';
+import {redisClient, redisPubSubClient} from '../config/redis.js';
 import {
-  IRegisterRequest,
-  ILoginRequest,
-  IVerifyOtpRequest,
+  ErrorMessages,
+  HttpStatus,
+  IApiError,
   IAuthResponse,
   IController,
+  IEmailVerifyMessage,
+  ILoginRequest,
   IOtpData,
   IOtpVerifyResult,
-  IEmailVerifyMessage,
-  HttpStatus,
-  ErrorMessages,
-  IApiError,
-  UserStatus, IUser
+  IRegisterRequest,
+  IVerifyOtpRequest,
+  UserStatus
 } from '../types/index.js';
 
 class AuthController {
@@ -28,7 +28,7 @@ class AuthController {
   static readonly BCRYPT_SALT_ROUNDS = 10;
   static readonly OTP_MIN = 100000;
   static readonly OTP_MAX = 999999;
-  static readonly VERIFY_BASE_URL = 'https://yourdomain.com/verify';
+  static readonly VERIFY_BASE_URL = 'http://localhost:3000/verify';
   static readonly REDIS_TOPICS = {
     EMAIL_VERIFY: 'email_verify'
   } as const;
@@ -38,8 +38,8 @@ class AuthController {
     return Math.floor(this.OTP_MIN + Math.random() * (this.OTP_MAX - this.OTP_MIN + 1)).toString();
   }
 
-  static createVerifyUrl(code: string): string {
-    return `${this.VERIFY_BASE_URL}?code=${code}`;
+  static createVerifyUrl(email: string, code: string): string {
+    return `${this.VERIFY_BASE_URL}?email=${encodeURIComponent(email)}&code=${code}`;
   }
 
   static createEmailVerifyMessage(userId: string, email: string, verifyCode: string, verifyUrl: string): IEmailVerifyMessage {
@@ -172,6 +172,10 @@ class AuthController {
     otp: Joi.string().length(6).required()
   });
 
+  static resendOtpSchema = Joi.object({
+    email: Joi.string().email().required()
+  });
+
   static register: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const t = await sequelize.transaction();
     try {
@@ -179,43 +183,42 @@ class AuthController {
       const { email, password, firstName, lastName, address } = data;
 
       // Check if email exists
-      const exists = await User.findOne({ where: { email } });
-      if (exists) throw new Error(ErrorMessages.EMAIL_EXISTS);
+      const existUser = await User.findOne({ where: { email } });
+      if (existUser && existUser.dataValues.status !== UserStatus.PENDING) throw new Error(ErrorMessages.EMAIL_EXISTS);
 
       // Get customer role ID from cache or database
       const customerRoleId = await AuthController.getCustomerRoleId();
-      
+
       // Hash password
       const hashed = await bcrypt.hash(password, AuthController.BCRYPT_SALT_ROUNDS);
       // Create User
 
-      const userId = uuidv4();
-      const user = await User.create({
-        id: userId,
-        name: `${firstName} ${lastName}`,
-        email,
-        password: hashed,
-        role_id: customerRoleId,
-        address,
-        status: UserStatus.PENDING
-      }, { transaction: t });
+      let userId = existUser ? existUser.dataValues.id : uuidv4();
+      if (!existUser) {
+        const user = await User.create({
+          id: userId,
+          name: `${firstName} ${lastName}`,
+          email,
+          password: hashed,
+          role_id: customerRoleId,
+          address,
+          status: UserStatus.PENDING
+        }, { transaction: t });
 
-      // Create customer profile
-      const customerProfileId = uuidv4();
-      await CustomerProfile.create({
-        id: customerProfileId,
-        user_id: userId,
-        total_payment_amount: 0,
-        point: 0,
-        onchain_wallet_address: ""
-      }, { transaction: t });
+        const customerProfileId = uuidv4();
+        await CustomerProfile.create({
+          id: customerProfileId,
+          user_id: userId,
+          total_payment_amount: 0,
+          point: 0,
+          onchain_wallet_address: ""
+        }, { transaction: t });
+      }
 
       // Generate verify code and URL
       const verifyCode = AuthController.generateOTP();
-      const verifyUrl = AuthController.createVerifyUrl(verifyCode);
+      const verifyUrl = AuthController.createVerifyUrl(email, verifyCode);
       const msg = AuthController.createEmailVerifyMessage(userId, email, verifyCode, verifyUrl);
-
-      console.log('Email verify message:', msg);
 
       await redisPubSubClient.publish(AuthController.REDIS_TOPICS.EMAIL_VERIFY, JSON.stringify(msg));
 
@@ -248,6 +251,16 @@ class AuthController {
       const user = await User.findOne({ where: { email } });
       if (!user) {
         res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.INVALID_CREDENTIALS });
+        return;
+      }
+
+      // Check if user account is active
+      if (user.dataValues.status !== UserStatus.ACTIVE) {
+        res.status(HttpStatus.BAD_REQUEST).json({ 
+          message: 'Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email để xác thực OTP.',
+          requireVerification: true,
+          email: email
+        });
         return;
       }
       
@@ -322,11 +335,49 @@ class AuthController {
       next(err);
     }
   };
+
+  static resendOtp: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email } = await AuthController.resendOtpSchema.validateAsync(req.body);
+      
+      // Check if user exists and is still pending
+      const user = await User.findOne({ where: { email } });
+      if (!user) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: 'Email không tồn tại trong hệ thống' });
+        return;
+      }
+
+      if (user.dataValues.status === UserStatus.ACTIVE) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: 'Tài khoản đã được kích hoạt' });
+        return;
+      }
+
+      // Generate new OTP and send
+      const verifyCode = AuthController.generateOTP();
+      const verifyUrl = AuthController.createVerifyUrl(email, verifyCode);
+      const msg = AuthController.createEmailVerifyMessage(user.dataValues.id, email, verifyCode, verifyUrl);
+
+      console.log('Resend OTP message:', msg);
+
+      await redisPubSubClient.publish(AuthController.REDIS_TOPICS.EMAIL_VERIFY, JSON.stringify(msg));
+      await AuthController.saveOTPToCache(email, verifyCode);
+
+      res.status(HttpStatus.OK).json({ message: 'OTP mới đã được gửi đến email của bạn' });
+    } catch (err) {
+      const error = err as IApiError;
+      if (error.isJoi) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: error.details![0].message });
+        return;
+      }
+      next(err);
+    }
+  };
 }
 
 // Export static methods for backward compatibility
 export const register = AuthController.register.bind(AuthController);
 export const login = AuthController.login.bind(AuthController);
 export const verifyOtp = AuthController.verifyOtp.bind(AuthController);
+export const resendOtp = AuthController.resendOtp.bind(AuthController);
 
 export default AuthController;

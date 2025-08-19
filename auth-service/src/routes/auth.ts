@@ -20,6 +20,7 @@ class AuthRoutes {
     this.router.post('/register', this.handleAsync(AuthController.register));
     this.router.post('/login', this.handleAsync(AuthController.login));
     this.router.post('/verify-otp', this.handleAsync(AuthController.verifyOtp));
+    this.router.post('/resend-otp', this.handleAsync(AuthController.resendOtp));
   }
 
   // Async error handler wrapper
