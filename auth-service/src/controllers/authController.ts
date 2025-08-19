@@ -5,7 +5,7 @@ import { Request, Response, NextFunction } from 'express';
 import { QueryTypes } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 
-import { User, sequelize } from '../models/index.js';
+import { User, CustomerProfile, sequelize } from '../models/index.js';
 import { redisClient, redisPubSubClient } from '../config/redis.js';
 import {
   IRegisterRequest,
@@ -18,7 +18,8 @@ import {
   IEmailVerifyMessage,
   HttpStatus,
   ErrorMessages,
-  IApiError
+  IApiError,
+  UserStatus, IUser
 } from '../types/index.js';
 
 class AuthController {
@@ -196,8 +197,17 @@ class AuthController {
         password: hashed,
         role_id: customerRoleId,
         address,
-        total_payment_amount: 0n,
-        point: 0n
+        status: UserStatus.PENDING
+      }, { transaction: t });
+
+      // Create customer profile
+      const customerProfileId = uuidv4();
+      await CustomerProfile.create({
+        id: customerProfileId,
+        user_id: userId,
+        total_payment_amount: 0,
+        point: 0,
+        onchain_wallet_address: ""
       }, { transaction: t });
 
       // Generate verify code and URL
@@ -270,17 +280,32 @@ class AuthController {
   };
 
   static verifyOtp: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const t = await sequelize.transaction();
     try {
       const { email, otp } = await AuthController.verifyOtpSchema.validateAsync(req.body) as IVerifyOtpRequest;
       
       const result = await AuthController.verifyOTPFromCache(email, otp);
       
       if (result.success) {
-        res.status(HttpStatus.OK).json({ 
-          message: result.message,
-          verified: true 
-        });
+        // Update user status to active
+        const user = await User.findOne({ where: { email } });
+        if (user) {
+          await user.update({ status: UserStatus.ACTIVE }, { transaction: t });
+          await t.commit();
+          
+          res.status(HttpStatus.OK).json({ 
+            message: ErrorMessages.ACCOUNT_VERIFIED,
+            verified: true 
+          });
+        } else {
+          await t.rollback();
+          res.status(HttpStatus.BAD_REQUEST).json({ 
+            message: 'User not found',
+            verified: false 
+          });
+        }
       } else {
+        await t.rollback();
         res.status(HttpStatus.BAD_REQUEST).json({ 
           message: result.message,
           verified: false,
@@ -289,6 +314,7 @@ class AuthController {
       }
       
     } catch (err) {
+      await t.rollback();
       const error = err as IApiError;
       if (error.isJoi) {
         res.status(HttpStatus.BAD_REQUEST).json({ message: error.details![0].message });

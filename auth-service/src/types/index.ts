@@ -7,14 +7,19 @@ export interface IUser {
   email: string;
   password: string;
   phone_number?: string;
-  total_payment_amount: bigint;
-  point: bigint;
-  onchain_wallet_address?: string;
+  status: UserStatus;
   role_id?: string;
   address?: string;
-  salary?: bigint;
   created_at: Date;
   updated_at?: Date;
+}
+
+export interface ICustomerProfile {
+  id: string;
+  user_id: string;
+  total_payment_amount: number;
+  point: number;
+  onchain_wallet_address?: string;
 }
 
 // Request/Response types
@@ -124,6 +129,13 @@ export enum HttpStatus {
   INTERNAL_SERVER_ERROR = 500
 }
 
+export enum UserStatus {
+  PENDING = 'pending',
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  SUSPENDED = 'suspended'
+}
+
 export enum ErrorMessages {
   CUSTOMER_ONLY = 'Chỉ cho phép đăng ký tài khoản Customer.',
   EMAIL_EXISTS = 'Email already exists',
@@ -131,5 +143,6 @@ export enum ErrorMessages {
   REGISTRATION_SUCCESS = 'Registered successfully. Please check your email to verify.',
   OTP_EXPIRED = 'OTP expired or not found',
   OTP_MAX_ATTEMPTS = 'Maximum OTP attempts exceeded. Please request a new OTP.',
-  OTP_VERIFIED = 'OTP verified successfully'
+  OTP_VERIFIED = 'OTP verified successfully',
+  ACCOUNT_VERIFIED = 'Account verified and activated successfully'
 }
