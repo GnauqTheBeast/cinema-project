@@ -337,7 +337,7 @@ export default function HomePage() {
       {/* Features Section */}
       <section className="py-16 bg-gray-900">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-white text-center mb-12">Tại sao chọn CGV?</h2>
+          <h2 className="text-3xl font-bold text-white text-center mb-12">Tại sao chọn HQ Cinema?</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center group">
               <div className="w-16 h-16 bg-gradient-to-r from-red-600 to-red-800 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
@@ -371,7 +371,7 @@ export default function HomePage() {
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <div className="w-10 h-10 bg-gradient-to-r from-red-600 to-red-800 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold">CGV</span>
+                  <span className="text-white font-bold">HQ Cinema</span>
                 </div>
                 <span className="text-white font-bold text-lg">Cinema</span>
               </div>
@@ -388,7 +388,7 @@ export default function HomePage() {
               </ul>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-4">Rạp CGV</h4>
+              <h4 className="text-white font-semibold mb-4">Rạp HQ Cinema</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
                 <li><Link to="#" className="hover:text-red-400 transition-colors duration-300">Tất cả các rạp</Link></li>
                 <li><Link to="#" className="hover:text-red-400 transition-colors duration-300">Rạp đặc biệt</Link></li>
@@ -406,7 +406,7 @@ export default function HomePage() {
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center">
             <p className="text-gray-400 text-sm">
-              © 2024 CGV Cinema. All rights reserved.
+              © 2024 HQ Cinema. All rights reserved.
             </p>
           </div>
         </div>
