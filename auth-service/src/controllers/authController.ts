@@ -381,8 +381,6 @@ class AuthController {
       const verifyUrl = AuthController.createVerifyUrl(email, verifyCode);
       const msg = AuthController.createEmailVerifyMessage(user.dataValues.id, email, verifyCode, verifyUrl);
 
-      console.log('Resend OTP message:', msg);
-
       await redisPubSubClient.publish(AuthController.REDIS_TOPICS.EMAIL_VERIFY, JSON.stringify(msg));
       await AuthController.saveOTPToCache(email, verifyCode);
 
