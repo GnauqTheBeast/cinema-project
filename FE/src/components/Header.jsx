@@ -125,7 +125,7 @@ export default function Header() {
                 Lịch chiếu
               </Link>
               <Link to="/cinemas" className="text-gray-300 hover:text-red-400 transition-colors duration-300 py-2 font-medium">
-                Rạp CGV
+                Rạp HQ Cinema
               </Link>
               <Link to="/promotions" className="text-gray-300 hover:text-red-400 transition-colors duration-300 py-2 font-medium">
                 Khuyến mãi

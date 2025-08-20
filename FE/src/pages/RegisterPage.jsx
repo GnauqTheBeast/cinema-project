@@ -50,7 +50,7 @@ export default function RegisterPage() {
        <div className="bg-black/80 backdrop-blur-sm border border-red-600/30 rounded-2xl p-8 shadow-2xl">
          <div className="text-center mb-8">
            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-red-600 to-red-800 rounded-full flex items-center justify-center shadow-lg">
-             <span className="text-white font-bold text-2xl">CGV</span>
+             <span className="text-white font-bold text-2xl">HQ</span>
            </div>
            <h1 className="text-2xl font-bold text-white mb-2">Đăng Ký</h1>
            <p className="text-gray-400 text-sm">Tạo tài khoản để trải nghiệm điện ảnh</p>

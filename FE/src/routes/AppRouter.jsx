@@ -4,6 +4,7 @@ import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import VerifyOtpPage from '../pages/VerifyOtpPage';
 import HomePage from '../pages/HomePage';
+import ProfilePage from '../pages/ProfilePage';
 import AdminLoginPage from '../pages/admin/AdminLoginPage';
 import DashboardPage from '../pages/admin/DashboardPage';
 import MoviesPage from '../pages/admin/MoviesPage';
@@ -26,12 +27,12 @@ const AppRouter = ({ token, setToken }) => {
     if (!token) {
       return <Navigate to="/admin/login" replace />;
     }
-    
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (user.role !== 'admin' && user.role !== 'staff') {
       return <Navigate to="/admin/login" replace />;
     }
-    
+
     return children;
   };
 
@@ -41,21 +42,31 @@ const AppRouter = ({ token, setToken }) => {
       <Route path="/" element={<HomePage />} />
       <Route 
         path="/login" 
-        element={!token ? <LoginPage onLogin={() => window.location.reload()} /> : <Navigate to="/" replace />} 
+        element={!token ? <LoginPage onLogin={() => window.location.reload()} /> : <Navigate to="/" replace />}
       />
       <Route 
         path="/register" 
-        element={!token ? <RegisterPage /> : <Navigate to="/" replace />} 
+        element={!token ? <RegisterPage /> : <Navigate to="/" replace />}
       />
       <Route 
         path="/verify" 
-        element={!token ? <VerifyOtpPage /> : <Navigate to="/" replace />} 
+        element={!token ? <VerifyOtpPage /> : <Navigate to="/" replace />}
       />
 
       {/* Admin Login */}
-      <Route 
-        path="/admin/login" 
-        element={!token ? <AdminLoginPage /> : <Navigate to="/admin/dashboard" replace />} 
+      <Route
+        path="/admin/login"
+        element={!token ? <AdminLoginPage /> : <Navigate to="/admin/dashboard" replace />}
+      />
+
+      {/* User Routes */}
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
       />
 
       {/* Admin Routes */}
