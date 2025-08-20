@@ -5,6 +5,7 @@ import RegisterPage from '../pages/RegisterPage';
 import VerifyOtpPage from '../pages/VerifyOtpPage';
 import HomePage from '../pages/HomePage';
 import ProfilePage from '../pages/ProfilePage';
+import ShowtimePage from '../pages/ShowtimePage';
 import AdminLoginPage from '../pages/admin/AdminLoginPage';
 import DashboardPage from '../pages/admin/DashboardPage';
 import MoviesPage from '../pages/admin/MoviesPage';
@@ -60,6 +61,7 @@ const AppRouter = ({ token, setToken }) => {
       />
 
       {/* User Routes */}
+      <Route path="/showtimes" element={<ShowtimePage />} />
       <Route
         path="/profile"
         element={

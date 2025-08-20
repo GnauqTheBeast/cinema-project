@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FaSave, FaArrowLeft, FaExclamationTriangle, FaClock } from 'react-icons/fa';
+import { FaSave, FaArrowLeft, FaExclamationTriangle, FaClock, FaFilm, FaDoorOpen, FaCalendarAlt, FaMoneyBillWave, FaTags } from 'react-icons/fa';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { showtimeService } from '../../services/showtimeApi';
 import { roomService } from '../../services/roomApi';
@@ -26,6 +26,7 @@ const ShowtimeFormPage = () => {
   const [error, setError] = useState('');
   const [conflictWarning, setConflictWarning] = useState('');
   const [timeInfo, setTimeInfo] = useState('');
+  const [selectedMovie, setSelectedMovie] = useState(null);
 
   const showtimeFormats = showtimeService.getShowtimeFormats();
   const showtimeStatuses = showtimeService.getShowtimeStatuses();
@@ -42,7 +43,14 @@ const ShowtimeFormPage = () => {
     if (formData.start_time) {
       checkTimeInfo();
     }
-  }, [formData.start_time, formData.end_time]);
+  }, [formData.start_time, formData.end_time, selectedMovie]);
+
+  useEffect(() => {
+    if (formData.movie_id) {
+      const movie = movies.find(m => m.id === formData.movie_id);
+      setSelectedMovie(movie);
+    }
+  }, [formData.movie_id, movies]);
 
   useEffect(() => {
     if (formData.room_id && formData.start_time && formData.end_time) {
@@ -103,25 +111,30 @@ const ShowtimeFormPage = () => {
     if (!formData.start_time) return;
 
     const startTime = new Date(formData.start_time);
-    const truncatedStart = showtimeService.truncateToHalfHour(startTime);
     
     let info = '';
-    if (startTime.getTime() !== truncatedStart.getTime()) {
-      info = `Thời gian sẽ được làm tròn từ ${startTime.toLocaleTimeString('vi-VN')} thành ${truncatedStart.toLocaleTimeString('vi-VN')}`;
-    }
 
     if (formData.end_time) {
       const endTime = new Date(formData.end_time);
-      const truncatedEnd = showtimeService.truncateToHalfHour(endTime);
+      const scheduledDuration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
       
-      if (endTime.getTime() !== truncatedEnd.getTime()) {
-        info += info ? '\n' : '';
-        info += `Thời gian kết thúc sẽ được làm tròn từ ${endTime.toLocaleTimeString('vi-VN')} thành ${truncatedEnd.toLocaleTimeString('vi-VN')}`;
-      }
+      info += `Thời lượng lịch chiếu: ${Math.floor(scheduledDuration / 60)}h ${scheduledDuration % 60}m`;
 
-      const duration = (truncatedEnd.getTime() - truncatedStart.getTime()) / (1000 * 60);
-      info += info ? '\n' : '';
-      info += `Thời lượng: ${Math.floor(duration / 60)}h ${duration % 60}m`;
+      // Add movie duration validation
+      if (selectedMovie && selectedMovie.duration) {
+        const movieDuration = selectedMovie.duration;
+        info += '\n';
+        info += `Thời lượng phim: ${Math.floor(movieDuration / 60)}h ${movieDuration % 60}m`;
+        
+        if (scheduledDuration < movieDuration) {
+          info += '\n';
+          info += `⚠️ CẢNH BÁO: Thời lượng lịch chiếu (${Math.floor(scheduledDuration / 60)}h ${scheduledDuration % 60}m) ngắn hơn thời lượng phim (${Math.floor(movieDuration / 60)}h ${movieDuration % 60}m)`;
+        } else if (scheduledDuration > movieDuration + 30) {
+          const bufferTime = scheduledDuration - movieDuration;
+          info += '\n';
+          info += `✅ Thời gian dự phòng: ${Math.floor(bufferTime / 60)}h ${bufferTime % 60}m (bao gồm dọn dẹp, quảng cáo)`;
+        }
+      }
     }
 
     setTimeInfo(info);
@@ -129,8 +142,8 @@ const ShowtimeFormPage = () => {
 
   const checkTimeConflict = async () => {
     try {
-      const startTime = showtimeService.formatDateTime(formData.start_time);
-      const endTime = showtimeService.formatDateTime(formData.end_time);
+      const startTime = new Date(formData.start_time).toISOString();
+      const endTime = new Date(formData.end_time).toISOString();
       
       const response = await showtimeService.checkTimeConflict(
         formData.room_id,
@@ -177,6 +190,16 @@ const ShowtimeFormPage = () => {
       return;
     }
 
+    // Validate movie duration
+    if (selectedMovie && selectedMovie.duration) {
+      const scheduledDuration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+      
+      if (scheduledDuration < selectedMovie.duration) {
+        setError(`Thời lượng lịch chiếu (${Math.floor(scheduledDuration / 60)}h ${scheduledDuration % 60}m) phải lớn hơn hoặc bằng thời lượng phim (${Math.floor(selectedMovie.duration / 60)}h ${selectedMovie.duration % 60}m)`);
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       setError('');
@@ -184,8 +207,8 @@ const ShowtimeFormPage = () => {
       const requestData = {
         movie_id: formData.movie_id,
         room_id: formData.room_id,
-        start_time: showtimeService.formatDateTime(formData.start_time),
-        end_time: showtimeService.formatDateTime(formData.end_time),
+        start_time: new Date(formData.start_time).toISOString(),
+        end_time: new Date(formData.end_time).toISOString(),
         format: formData.format,
         base_price: basePrice
       };
@@ -220,14 +243,49 @@ const ShowtimeFormPage = () => {
     }));
   };
 
+  const calculateEndTime = (startTime, movieDuration) => {
+    if (!startTime) return '';
+    
+    const durationMinutes = movieDuration || 120; // default 2 hours if no movie duration
+    const endTime = new Date(new Date(startTime).getTime() + durationMinutes * 60 * 1000);
+    return endTime.toISOString().slice(0, 16);
+  };
+
   const handleStartTimeChange = (e) => {
     const startTime = e.target.value;
+    let endTime = formData.end_time;
+    
+    // Always auto-set end time when start time changes
+    if (startTime) {
+      const movieDuration = selectedMovie?.duration;
+      endTime = calculateEndTime(startTime, movieDuration);
+    }
+    
     setFormData(prev => ({
       ...prev,
       start_time: startTime,
-      // Auto-set end time to 2 hours later if empty
-      end_time: prev.end_time || new Date(new Date(startTime).getTime() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16)
+      end_time: endTime
     }));
+  };
+
+  const handleMovieChange = (e) => {
+    const movieId = e.target.value;
+    const movie = movies.find(m => m.id === movieId);
+    
+    setFormData(prev => {
+      let newEndTime = prev.end_time;
+      
+      // Auto-adjust end time when movie changes and start time exists
+      if (prev.start_time && movie?.duration) {
+        newEndTime = calculateEndTime(prev.start_time, movie.duration);
+      }
+      
+      return {
+        ...prev,
+        movie_id: movieId,
+        end_time: newEndTime
+      };
+    });
   };
 
   if (loading && isEditing) {
@@ -242,182 +300,225 @@ const ShowtimeFormPage = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/admin/showtimes')}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            <FaArrowLeft size={20} />
-          </button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {isEditing ? 'Chỉnh sửa lịch chiếu' : 'Thêm lịch chiếu mới'}
-            </h1>
-            <p className="text-gray-600">
-              {isEditing ? 'Cập nhật thông tin lịch chiếu' : 'Tạo lịch chiếu mới với tính năng làm tròn 30 phút'}
-            </p>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/admin/showtimes')}
+              className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 transition-all duration-200"
+            >
+              <FaArrowLeft size={18} />
+            </button>
+            <div className="flex-1">
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
+                  <FaClock className="text-white text-sm" />
+                </div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {isEditing ? 'Chỉnh sửa lịch chiếu' : 'Tạo lịch chiếu mới'}
+                </h1>
+              </div>
+              <p className="text-gray-600">
+                {isEditing ? 'Cập nhật thông tin lịch chiếu của phim' : 'Tạo lịch chiếu mới cho hệ thống rạp'}
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Form */}
-        <div className="bg-white rounded-lg shadow-sm">
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                {error}
-              </div>
-            )}
-
-            {conflictWarning && (
-              <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg flex items-center gap-2">
-                <FaExclamationTriangle />
-                {conflictWarning}
-              </div>
-            )}
-
-            {timeInfo && (
-              <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <FaClock />
-                  <span className="font-medium">Thông tin thời gian:</span>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+          <form onSubmit={handleSubmit} className="p-6 lg:p-8 space-y-6">
+            {/* Alert Messages */}
+            <div className="space-y-4">
+              {error && (
+                <div className="bg-gradient-to-r from-red-50 to-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <FaExclamationTriangle className="h-5 w-5 text-red-500 mt-0.5" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">Lỗi xác thực</h3>
+                      <div className="mt-1 text-sm text-red-700">{error}</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-sm whitespace-pre-line">{timeInfo}</div>
-              </div>
-            )}
+              )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Movie */}
-              <div>
-                <label htmlFor="movie_id" className="block text-sm font-medium text-gray-700 mb-2">
-                  Phim <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="movie_id"
-                  name="movie_id"
-                  value={formData.movie_id}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Chọn phim</option>
-                  {movies.map(movie => (
-                    <option key={movie.id} value={movie.id}>
-                      {movie.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {conflictWarning && (
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-500 p-4 rounded-lg shadow-sm">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <FaExclamationTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-yellow-800">Cảnh báo xung đột</h3>
+                      <div className="mt-1 text-sm text-yellow-700">{conflictWarning}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-              {/* Room */}
-              <div>
-                <label htmlFor="room_id" className="block text-sm font-medium text-gray-700 mb-2">
-                  Phòng chiếu <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="room_id"
-                  name="room_id"
-                  value={formData.room_id}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Chọn phòng</option>
-                  {rooms.map(room => (
-                    <option key={room.id} value={room.id}>
-                      Phòng {room.room_number} ({room.room_type.toUpperCase()})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {timeInfo && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-sm">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <FaClock className="h-5 w-5 text-blue-600 mt-0.5" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-blue-800">Thông tin thời gian</h3>
+                      <div className="mt-1 text-sm text-blue-700 whitespace-pre-line">{timeInfo}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
-              {/* Start Time */}
-              <div>
-                <label htmlFor="start_time" className="block text-sm font-medium text-gray-700 mb-2">
-                  Thời gian bắt đầu <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="datetime-local"
-                  id="start_time"
-                  name="start_time"
-                  value={formData.start_time}
-                  onChange={handleStartTimeChange}
-                  required
-                  min={new Date().toISOString().slice(0, 16)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+            {/* Form Fields */}
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Movie */}
+                <div className="space-y-2">
+                  <label htmlFor="movie_id" className="flex items-center text-sm font-semibold text-gray-900">
+                    <FaFilm className="mr-2 text-red-500" size={16} />
+                    Chọn phim <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <select
+                    id="movie_id"
+                    name="movie_id"
+                    value={formData.movie_id}
+                    onChange={handleMovieChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                  >
+                    <option value="">-- Chọn phim để chiếu --</option>
+                    {movies.map(movie => (
+                      <option key={movie.id} value={movie.id}>
+                        {movie.title} {movie.duration ? `(${Math.floor(movie.duration / 60)}h ${movie.duration % 60}m)` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              {/* End Time */}
-              <div>
-                <label htmlFor="end_time" className="block text-sm font-medium text-gray-700 mb-2">
-                  Thời gian kết thúc <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="datetime-local"
-                  id="end_time"
-                  name="end_time"
-                  value={formData.end_time}
-                  onChange={handleChange}
-                  required
-                  min={formData.start_time}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                {/* Room */}
+                <div className="space-y-2">
+                  <label htmlFor="room_id" className="flex items-center text-sm font-semibold text-gray-900">
+                    <FaDoorOpen className="mr-2 text-red-500" size={16} />
+                    Phòng chiếu <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <select
+                    id="room_id"
+                    name="room_id"
+                    value={formData.room_id}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                  >
+                    <option value="">-- Chọn phòng chiếu --</option>
+                    {rooms.map(room => (
+                      <option key={room.id} value={room.id}>
+                        Phòng {room.room_number} ({room.room_type.toUpperCase()})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {/* Format */}
-              <div>
-                <label htmlFor="format" className="block text-sm font-medium text-gray-700 mb-2">
-                  Định dạng <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="format"
-                  name="format"
-                  value={formData.format}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  {showtimeFormats.map(format => (
-                    <option key={format.value} value={format.value}>
-                      {format.label}
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Start Time */}
+                <div className="space-y-2">
+                  <label htmlFor="start_time" className="flex items-center text-sm font-semibold text-gray-900">
+                    <FaCalendarAlt className="mr-2 text-red-500" size={16} />
+                    Thời gian bắt đầu <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    id="start_time"
+                    name="start_time"
+                    value={formData.start_time}
+                    onChange={handleStartTimeChange}
+                    required
+                    min={new Date().toISOString().slice(0, 16)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                  />
+                </div>
+
+                {/* End Time */}
+                <div className="space-y-2">
+                  <label htmlFor="end_time" className="flex items-center text-sm font-semibold text-gray-900">
+                    <FaClock className="mr-2 text-red-500" size={16} />
+                    Thời gian kết thúc <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    id="end_time"
+                    name="end_time"
+                    value={formData.end_time}
+                    onChange={handleChange}
+                    required
+                    min={formData.start_time}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                  />
+                </div>
               </div>
 
-              {/* Base Price */}
-              <div>
-                <label htmlFor="base_price" className="block text-sm font-medium text-gray-700 mb-2">
-                  Giá vé cơ bản (VNĐ) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  id="base_price"
-                  name="base_price"
-                  value={formData.base_price}
-                  onChange={handleChange}
-                  min="0"
-                  step="1000"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập giá vé"
-                />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Format */}
+                <div className="space-y-2">
+                  <label htmlFor="format" className="flex items-center text-sm font-semibold text-gray-900">
+                    <FaTags className="mr-2 text-red-500" size={16} />
+                    Định dạng chiếu <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <select
+                    id="format"
+                    name="format"
+                    value={formData.format}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                  >
+                    {showtimeFormats.map(format => (
+                      <option key={format.value} value={format.value}>
+                        {format.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Base Price */}
+                <div className="space-y-2">
+                  <label htmlFor="base_price" className="flex items-center text-sm font-semibold text-gray-900">
+                    <FaMoneyBillWave className="mr-2 text-red-500" size={16} />
+                    Giá vé cơ bản (VNĐ) <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="base_price"
+                    name="base_price"
+                    value={formData.base_price}
+                    onChange={handleChange}
+                    min="0"
+                    step="1000"
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                    placeholder="Ví dụ: 80000"
+                  />
+                </div>
               </div>
 
               {/* Status (only for editing) */}
               {isEditing && (
-                <div>
-                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                    Trạng thái
+                <div className="space-y-2">
+                  <label htmlFor="status" className="flex items-center text-sm font-semibold text-gray-900">
+                    <FaExclamationTriangle className="mr-2 text-red-500" size={16} />
+                    Trạng thái lịch chiếu
                   </label>
                   <select
                     id="status"
                     name="status"
                     value={formData.status}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                   >
                     {showtimeStatuses.map(status => (
                       <option key={status.value} value={status.value}>
@@ -430,25 +531,25 @@ const ShowtimeFormPage = () => {
             </div>
 
             {/* Submit Button */}
-            <div className="flex justify-end gap-4 pt-6 border-t">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-8 border-t border-gray-200">
               <button
                 type="button"
                 onClick={() => navigate('/admin/showtimes')}
-                className="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-6 py-3 text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 font-medium"
               >
-                Hủy
+                Hủy thao tác
               </button>
               <button
                 type="submit"
                 disabled={loading || !!conflictWarning}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-8 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
               >
                 {loading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                 ) : (
-                  <FaSave />
+                  <FaSave size={18} />
                 )}
-                {isEditing ? 'Cập nhật' : 'Tạo mới'}
+                {isEditing ? 'Cập nhật lịch chiếu' : 'Tạo lịch chiếu mới'}
               </button>
             </div>
           </form>
