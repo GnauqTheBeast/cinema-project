@@ -9,7 +9,7 @@ export default function AdminLayout({ children }) {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.dispatchEvent(new Event('tokenChange'));
-    navigate('/login');
+    navigate('/admin/login');
   };
 
   const isActiveRoute = (path) => {

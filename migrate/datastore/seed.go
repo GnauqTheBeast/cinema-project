@@ -272,6 +272,7 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
 			PhoneNumber: stringPtr("+1234567890"),
 			RoleId:      &adminRoleId,
+			Status:      "active",
 			CreatedAt:   now,
 		},
 		{
