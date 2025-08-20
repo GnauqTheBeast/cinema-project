@@ -4,6 +4,7 @@ import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import VerifyOtpPage from '../pages/VerifyOtpPage';
 import HomePage from '../pages/HomePage';
+import AdminLoginPage from '../pages/admin/AdminLoginPage';
 import DashboardPage from '../pages/admin/DashboardPage';
 import MoviesPage from '../pages/admin/MoviesPage';
 import MovieDetailPage from '../pages/admin/MovieDetailPage';
@@ -22,7 +23,16 @@ const AppRouter = ({ token, setToken }) => {
   };
 
   const AdminRoute = ({ children }) => {
-    return token ? children : <Navigate to="/login" replace />;
+    if (!token) {
+      return <Navigate to="/admin/login" replace />;
+    }
+    
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user.role !== 'admin' && user.role !== 'staff') {
+      return <Navigate to="/admin/login" replace />;
+    }
+    
+    return children;
   };
 
   return (
@@ -31,15 +41,21 @@ const AppRouter = ({ token, setToken }) => {
       <Route path="/" element={<HomePage />} />
       <Route 
         path="/login" 
-        element={!token ? <LoginPage onLogin={() => window.location.reload()} /> : <Navigate to="/admin/movies" replace />} 
+        element={!token ? <LoginPage onLogin={() => window.location.reload()} /> : <Navigate to="/" replace />} 
       />
       <Route 
         path="/register" 
-        element={!token ? <RegisterPage /> : <Navigate to="/admin/movies" replace />} 
+        element={!token ? <RegisterPage /> : <Navigate to="/" replace />} 
       />
       <Route 
         path="/verify" 
-        element={!token ? <VerifyOtpPage /> : <Navigate to="/admin/movies" replace />} 
+        element={!token ? <VerifyOtpPage /> : <Navigate to="/" replace />} 
+      />
+
+      {/* Admin Login */}
+      <Route 
+        path="/admin/login" 
+        element={!token ? <AdminLoginPage /> : <Navigate to="/admin/dashboard" replace />} 
       />
 
       {/* Admin Routes */}

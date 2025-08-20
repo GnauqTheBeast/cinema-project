@@ -254,7 +254,14 @@ class AuthController {
         return;
       }
 
-      // Check if user account is active
+      // Validate password first
+      const valid = await bcrypt.compare(password, user.dataValues.password);
+      if (!valid) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.INVALID_CREDENTIALS });
+        return;
+      }
+
+      // Check if user account is active - only after valid credentials
       if (user.dataValues.status !== UserStatus.ACTIVE) {
         res.status(HttpStatus.BAD_REQUEST).json({ 
           message: 'Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email để xác thực OTP.',
@@ -263,21 +270,38 @@ class AuthController {
         });
         return;
       }
-      
-      const valid = await bcrypt.compare(password, user.dataValues.password);
-      if (!valid) {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.INVALID_CREDENTIALS });
-        return;
-      }
+
+      // Get user role information
+      const userWithRole = await sequelize.query(
+        `SELECT u.*, r.name as role_name 
+         FROM users u 
+         JOIN roles r ON u.role_id = r.id 
+         WHERE u.id = :userId`,
+        {
+          replacements: { userId: user.dataValues.id },
+          type: QueryTypes.SELECT
+        }
+      ) as Array<{ id: string; email: string; name: string; role_name: string }>;
+
+      const userRole = userWithRole[0]?.role_name || 'customer';
 
       const token = jwt.sign(
-        { userId: user.dataValues.id, email: user.dataValues.email }, 
+        { 
+          userId: user.dataValues.id, 
+          email: user.dataValues.email,
+          role: userRole
+        }, 
         process.env.JWT_SECRET as string,
       );
 
       const response: IAuthResponse = {
         token,
-        user: { id: user.dataValues.id, email: user.dataValues.email, name: user.dataValues.name }
+        user: { 
+          id: user.dataValues.id, 
+          email: user.dataValues.email, 
+          name: user.dataValues.name,
+          role: userRole
+        }
       };
 
       res.json(response);
