@@ -28,7 +28,7 @@ export default function HomePage() {
       const allMovies = allMoviesResponse.data?.movies || [];
       
       // Filter movies by status
-      const nowShowing = allMovies.filter(movie => movie.status === 'now_showing');
+      const nowShowing = allMovies.filter(movie => movie.status === 'showing');
       const upcoming = allMovies.filter(movie => movie.status === 'upcoming');
       
       setNowShowingMovies(nowShowing);

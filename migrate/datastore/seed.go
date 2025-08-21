@@ -395,17 +395,11 @@ func SeedNotifications(ctx context.Context, db *bun.DB) error {
 	return nil
 }
 
-// Helper functions
 func stringPtr(s string) *string {
 	return &s
 }
 
-func intPtr(i int) *int {
-	return &i
-}
-
 func SeedSeats(ctx context.Context, db *bun.DB) error {
-	// Get all rooms first
 	var rooms []models.Room
 	err := db.NewSelect().Model(&rooms).Scan(ctx)
 	if err != nil {
@@ -419,31 +413,40 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 	now := time.Now()
 	var seats []*models.Seat
 
-	// Seat configuration for different room types
 	seatConfigs := map[string]struct {
 		rows        []string
 		seatsPerRow int
-		vipRows     []string // VIP rows for standard/imax rooms
+		regularRows []string
+		vipRows     []string
+		coupleRows  []string
 	}{
 		"standard": {
 			rows:        []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"},
 			seatsPerRow: 10,
-			vipRows:     []string{"H", "I", "J", "K", "L"},
+			regularRows: []string{"A", "B", "C", "D", "E"},
+			vipRows:     []string{"F", "G", "H", "I", "J", "K", "L"},
+			coupleRows:  []string{},
 		},
 		"imax": {
 			rows:        []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"},
 			seatsPerRow: 14,
-			vipRows:     []string{"L", "M", "N", "O"},
+			regularRows: []string{"A", "B", "C", "D", "E"},
+			vipRows:     []string{"F", "G", "H", "I", "J", "K", "L"},
+			coupleRows:  []string{"M", "N", "O"},
 		},
 		"vip": {
-			rows:        []string{"A", "B", "C", "D", "E", "F", "G", "H"},
-			seatsPerRow: 10,
-			vipRows:     []string{"A", "B", "C", "D", "E", "F", "G", "H"}, // All VIP
+			rows:        []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"},
+			seatsPerRow: 8,
+			regularRows: []string{"A", "B", "C"},
+			vipRows:     []string{"D", "E", "F", "G", "H"},
+			coupleRows:  []string{"I", "J"},
 		},
 		"4dx": {
 			rows:        []string{"A", "B", "C", "D", "E", "F", "G", "H"},
 			seatsPerRow: 12,
+			regularRows: []string{},
 			vipRows:     []string{},
+			coupleRows:  []string{},
 		},
 	}
 
@@ -457,26 +460,29 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 			for seatNum := 1; seatNum <= config.seatsPerRow; seatNum++ {
 				seatType := "regular"
 
-				// Determine seat type based on room type and row
-				if room.RoomType == "vip" {
-					seatType = "vip"
-				} else if room.RoomType == "4dx" {
-					seatType = "4dx"
-				} else {
-					// For standard and IMAX, check if it's a VIP row
-					for _, vipRow := range config.vipRows {
-						if row == vipRow {
-							seatType = "vip"
-							break
-						}
+				for _, regularRow := range config.regularRows {
+					if row == regularRow {
+						seatType = "regular"
+						break
 					}
 				}
 
-				// Create couple seats for middle sections in VIP rows
-				if seatType == "vip" && seatNum%2 == 0 && seatNum >= 4 && seatNum <= config.seatsPerRow-2 {
-					if seatNum%4 == 0 {
-						seatType = "couple"
+				for _, vipRow := range config.vipRows {
+					if row == vipRow {
+						seatType = "vip"
+						break
 					}
+				}
+
+				for _, coupleRow := range config.coupleRows {
+					if row == coupleRow {
+						seatType = "couple"
+						break
+					}
+				}
+
+				if room.RoomType == "4dx" {
+					seatType = "4dx"
 				}
 
 				seat := &models.Seat{
@@ -489,11 +495,26 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 					CreatedAt:  now,
 				}
 				seats = append(seats, seat)
+
+				if seatType == "couple" && room.RoomType != "4dx" {
+					seatNum++
+					if seatNum <= config.seatsPerRow {
+						coupleSeat := &models.Seat{
+							Id:         uuid.New().String(),
+							RoomId:     room.Id,
+							SeatNumber: fmt.Sprintf("%02d", seatNum),
+							RowNumber:  row,
+							SeatType:   seatType,
+							Status:     "available",
+							CreatedAt:  now,
+						}
+						seats = append(seats, coupleSeat)
+					}
+				}
 			}
 		}
 	}
 
-	// Insert seats in batches to avoid memory issues
 	batchSize := 500
 	for i := 0; i < len(seats); i += batchSize {
 		end := i + batchSize
@@ -574,11 +595,6 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 		currentDate := now.AddDate(0, 0, day)
 
 		for _, movie := range movies {
-			// Skip if movie is upcoming and the date is before release date
-			if movie.Status == "upcoming" && movie.ReleaseDate != nil && currentDate.Before(*movie.ReleaseDate) {
-				continue
-			}
-
 			for _, room := range rooms {
 				formats := []string{"2d"}
 				if room.RoomType == "imax" {

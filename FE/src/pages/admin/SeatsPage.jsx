@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaSearch } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaEye, FaSearch, FaTh, FaList, FaCouch } from 'react-icons/fa';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { seatService } from '../../services/seatApi';
 import { roomService } from '../../services/roomApi';
@@ -17,6 +17,8 @@ const SeatsPage = () => {
   const [selectedSeatType, setSelectedSeatType] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedRow, setSelectedRow] = useState('');
+  const [viewMode, setViewMode] = useState('grid');
+  const [roomSeats, setRoomSeats] = useState([]);
 
   const seatTypes = seatService.getSeatTypes();
   const seatStatuses = seatService.getSeatStatuses();
@@ -53,9 +55,44 @@ const SeatsPage = () => {
       const response = await roomService.getRooms(1, 100);
       if (response.success) {
         setRooms(response.data.data || []);
+        // Set first room as default for grid view
+        if (response.data.data && response.data.data.length > 0) {
+          setSelectedRoom(response.data.data[0].id);
+        }
       }
     } catch (err) {
       console.error('Error fetching rooms:', err);
+    }
+  };
+
+  const fetchRoomSeats = async (roomId) => {
+    if (!roomId) return;
+    
+    try {
+      setLoading(true);
+      const response = await seatService.getSeatsByRoom(roomId);
+      console.log('Room seats response:', response); // Debug log
+      
+      let seats = [];
+      if (response.success && response.data) {
+        seats = Array.isArray(response.data) ? response.data : response.data.data || [];
+      } else if (Array.isArray(response)) {
+        seats = response;
+      } else if (response.data && Array.isArray(response.data)) {
+        seats = response.data;
+      }
+      
+      setRoomSeats(seats);
+      
+      if (!response.success && response.message) {
+        setError(response.message);
+      }
+    } catch (err) {
+      setError('Có lỗi xảy ra khi tải dữ liệu');
+      console.error('Error fetching room seats:', err);
+      setRoomSeats([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,8 +101,12 @@ const SeatsPage = () => {
   }, []);
 
   useEffect(() => {
-    fetchSeats();
-  }, [currentPage, search, selectedRoom, selectedSeatType, selectedStatus, selectedRow]);
+    if (viewMode === 'table') {
+      fetchSeats();
+    } else if (viewMode === 'grid' && selectedRoom) {
+      fetchRoomSeats(selectedRoom);
+    }
+  }, [currentPage, search, selectedRoom, selectedSeatType, selectedStatus, selectedRow, viewMode]);
 
   const handleSearch = (e) => {
     setSearch(e.target.value);
@@ -126,6 +167,99 @@ const SeatsPage = () => {
     return room ? `Phòng ${room.room_number}` : roomId;
   };
 
+  // Grid view functions
+  const createSeatGrid = () => {
+    const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'];
+    const seatsPerRow = 16;
+    const grid = {};
+
+    // Initialize empty grid
+    rows.forEach(row => {
+      grid[row] = {};
+      for (let i = 1; i <= seatsPerRow; i++) {
+        grid[row][i] = null;
+      }
+    });
+
+    // Populate with existing seats
+    if (Array.isArray(roomSeats)) {
+      roomSeats.forEach(seat => {
+        if (grid[seat.row_number] && grid[seat.row_number][parseInt(seat.seat_number)] !== undefined) {
+          grid[seat.row_number][parseInt(seat.seat_number)] = seat;
+        } else if (grid[seat.row_number]) {
+          grid[seat.row_number][parseInt(seat.seat_number)] = seat;
+        }
+      });
+    }
+
+    return grid;
+  };
+
+  const handleGridSeatClick = async (row, seatNumber) => {
+    const grid = createSeatGrid();
+    const existingSeat = grid[row][seatNumber];
+
+    if (existingSeat) {
+      // Remove seat
+      if (window.confirm(`Bạn có chắc chắn muốn xóa ghế ${row}${seatNumber.toString().padStart(2, '0')}?`)) {
+        try {
+          await seatService.deleteSeat(existingSeat.id);
+          fetchRoomSeats(selectedRoom);
+        } catch (err) {
+          alert('Có lỗi xảy ra khi xóa ghế');
+          console.error('Error deleting seat:', err);
+        }
+      }
+    } else {
+      // Add new seat with default type (regular)
+      try {
+        const newSeat = {
+          room_id: selectedRoom,
+          seat_number: seatNumber.toString().padStart(2, '0'),
+          row_number: row,
+          seat_type: 'regular', // Default type, can be changed later via edit
+          status: 'available'
+        };
+        
+        await seatService.createSeat(newSeat);
+        fetchRoomSeats(selectedRoom);
+      } catch (err) {
+        alert('Có lỗi xảy ra khi tạo ghế');
+        console.error('Error creating seat:', err);
+      }
+    }
+  };
+
+  const getSeatColor = (seat) => {
+    if (!seat) {
+      return 'bg-gray-100 border-gray-300 hover:bg-gray-200 cursor-pointer';
+    }
+
+    switch (seat.status) {
+      case 'available':
+        switch (seat.seat_type) {
+          case 'regular':
+            return 'bg-green-200 border-green-400 text-green-800';
+          case 'vip':
+            return 'bg-yellow-200 border-yellow-400 text-yellow-800';
+          case 'couple':
+            return 'bg-pink-200 border-pink-400 text-pink-800';
+          case '4dx':
+            return 'bg-purple-200 border-purple-400 text-purple-800';
+          default:
+            return 'bg-green-200 border-green-400 text-green-800';
+        }
+      case 'occupied':
+        return 'bg-red-200 border-red-400 text-red-800';
+      case 'maintenance':
+        return 'bg-orange-200 border-orange-400 text-orange-800';
+      case 'blocked':
+        return 'bg-gray-300 border-gray-500 text-gray-700';
+      default:
+        return 'bg-gray-200 border-gray-400 text-gray-700';
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -135,88 +269,154 @@ const SeatsPage = () => {
             <h1 className="text-3xl font-bold text-gray-900">Quản lý Ghế ngồi</h1>
             <p className="text-gray-600">Quản lý thông tin ghế ngồi trong các phòng chiếu</p>
           </div>
-          <Link
-            to="/admin/seats/new"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <FaPlus />
-            Thêm ghế mới
-          </Link>
+          <div className="flex items-center gap-4">
+            {/* View Mode Toggle */}
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`px-3 py-2 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <FaTh />
+                Lưới
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`px-3 py-2 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${
+                  viewMode === 'table'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <FaList />
+                Bảng
+              </button>
+            </div>
+            
+            {viewMode === 'table' && (
+              <Link
+                to="/admin/seats/new"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              >
+                <FaPlus />
+                Thêm ghế mới
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Filters */}
         <div className="bg-white p-4 rounded-lg shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <div className="relative">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          {viewMode === 'grid' ? (
+            // Grid view filters
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Phòng chiếu:</label>
+                <select
+                  value={selectedRoom}
+                  onChange={(e) => {
+                    setSelectedRoom(e.target.value);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {rooms.map(room => (
+                    <option key={room.id} value={room.id}>
+                      Phòng {room.room_number} ({room.room_type})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="text-sm text-gray-600 ml-auto">
+                <span className="inline-block w-4 h-4 bg-gray-100 border border-gray-300 rounded mr-2"></span>
+                Trống
+                <span className="inline-block w-4 h-4 bg-green-200 border border-green-400 rounded mr-2 ml-4"></span>
+                Thường
+                <span className="inline-block w-4 h-4 bg-yellow-200 border border-yellow-400 rounded mr-2 ml-4"></span>
+                VIP
+                <span className="inline-block w-4 h-4 bg-pink-200 border border-pink-400 rounded mr-2 ml-4"></span>
+                Couple
+                <span className="inline-block w-4 h-4 bg-purple-200 border border-purple-400 rounded mr-2 ml-4"></span>
+                4DX
+              </div>
+            </div>
+          ) : (
+            // Table view filters
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+              <div className="relative">
+                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm ghế..."
+                  value={search}
+                  onChange={handleSearch}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <select
+                value={selectedRoom}
+                onChange={(e) => {
+                  setSelectedRoom(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Tất cả phòng</option>
+                {rooms.map(room => (
+                  <option key={room.id} value={room.id}>
+                    Phòng {room.room_number}
+                  </option>
+                ))}
+              </select>
+
               <input
                 type="text"
-                placeholder="Tìm kiếm ghế..."
-                value={search}
-                onChange={handleSearch}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Hàng ghế"
+                value={selectedRow}
+                onChange={(e) => {
+                  setSelectedRow(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+
+              <select
+                value={selectedSeatType}
+                onChange={(e) => {
+                  setSelectedSeatType(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Tất cả loại ghế</option>
+                {seatTypes.map(type => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={selectedStatus}
+                onChange={(e) => {
+                  setSelectedStatus(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Tất cả trạng thái</option>
+                {seatStatuses.map(status => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
             </div>
-            
-            <select
-              value={selectedRoom}
-              onChange={(e) => {
-                setSelectedRoom(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Tất cả phòng</option>
-              {rooms.map(room => (
-                <option key={room.id} value={room.id}>
-                  Phòng {room.room_number}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="text"
-              placeholder="Hàng ghế"
-              value={selectedRow}
-              onChange={(e) => {
-                setSelectedRow(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-
-            <select
-              value={selectedSeatType}
-              onChange={(e) => {
-                setSelectedSeatType(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Tất cả loại ghế</option>
-              {seatTypes.map(type => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={selectedStatus}
-              onChange={(e) => {
-                setSelectedStatus(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Tất cả trạng thái</option>
-              {seatStatuses.map(status => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          )}
         </div>
 
         {/* Content */}
@@ -227,6 +427,92 @@ const SeatsPage = () => {
         ) : error ? (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
             {error}
+          </div>
+        ) : viewMode === 'grid' ? (
+          // Grid View
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {selectedRoom && getRoomName(selectedRoom)}
+              </h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Click vào ô trống để thêm ghế, click vào ghế để xóa. Màu sắc biểu thị loại ghế.
+              </p>
+            </div>
+
+            {/* Cinema Layout Container */}
+            <div className="flex flex-col items-center">
+              {/* Screen */}
+              <div className="mb-8">
+                <div className="bg-gray-800 text-white py-3 px-16 rounded-lg text-sm font-medium shadow-lg">
+                  MÀN HÌNH
+                </div>
+                <div className="text-center text-xs text-gray-500 mt-1">SCREEN</div>
+              </div>
+
+              {/* Seat Grid */}
+              <div className="overflow-x-auto">
+                <div className="inline-block">
+                  {roomSeats && Object.entries(createSeatGrid()).map(([row, rowSeats]) => (
+                    <div key={row} className="flex items-center justify-center mb-3">
+                      {/* Row Label Left */}
+                      <div className="w-8 text-center text-sm font-bold text-gray-700 mr-4">
+                        {row}
+                      </div>
+                      
+                      {/* Seats */}
+                      <div className="flex gap-1">
+                        {Object.entries(rowSeats).map(([seatNumber, seat]) => {
+                          const seatNum = parseInt(seatNumber);
+                          
+                          return (
+                            <button
+                              key={`${row}-${seatNumber}`}
+                              // onClick={() => handleGridSeatClick(row, seatNum)}
+                              className={`w-8 h-8 border-2 rounded text-xs font-semibold transition-all hover:scale-110 ${getSeatColor(seat)}`}
+                              title={seat ? `${row}${seatNumber.padStart(2, '0')} - ${getSeatTypeLabel(seat.seat_type)} - ${getStatusLabel(seat.status)}` : `Tạo ghế ${row}${seatNumber.padStart(2, '0')}`}
+                            >
+                              {seat ? (
+                                seat.seat_type === 'couple' ? (
+                                  <div className="flex items-center justify-center">
+                                    <FaCouch className="w-3 h-3" />
+                                  </div>
+                                ) : (
+                                  seatNumber.padStart(2, '0')
+                                )
+                              ) : (
+                                '+'
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Row Label Right */}
+                      <div className="w-8 text-center text-sm font-bold text-gray-700 ml-4">
+                        {row}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Entrance */}
+              <div className="mt-8 text-center">
+                <div className="text-xs text-gray-500 mb-2">ENTRANCE</div>
+                <div className="w-24 h-1 bg-gray-300 rounded"></div>
+              </div>
+            </div>
+
+            {/* Grid Stats */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Tổng số ghế: {Array.isArray(roomSeats) ? roomSeats.length : 0}</span>
+                <span>Còn trống: {Array.isArray(roomSeats) ? roomSeats.filter(s => s.status === 'available').length : 0}</span>
+                <span>Đã đặt: {Array.isArray(roomSeats) ? roomSeats.filter(s => s.status === 'occupied').length : 0}</span>
+                <span>Bảo trì: {Array.isArray(roomSeats) ? roomSeats.filter(s => s.status === 'maintenance').length : 0}</span>
+              </div>
+            </div>
           </div>
         ) : (
           <>
@@ -307,7 +593,7 @@ const SeatsPage = () => {
                           </Link>
                           <button
                             onClick={() => handleDelete(seat.id)}
-                            className="text-red-600 hover:text-red-900"  
+                            className="text-red-600 hover:text-red-900"
                             title="Xóa"
                           >
                             <FaTrash />
