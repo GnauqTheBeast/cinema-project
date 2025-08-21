@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AppRouter from './routes/AppRouter';
+import ChatBot from './components/ChatBot';
 
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem('token'));
@@ -16,7 +17,12 @@ function App() {
     return () => window.removeEventListener('tokenChange', handler);
   }, []);
 
-  return <AppRouter token={token} setToken={setToken} />;
+  return (
+    <>
+      <AppRouter token={token} setToken={setToken} />
+      <ChatBot />
+    </>
+  );
 }
 
 export default App; 

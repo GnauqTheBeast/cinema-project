@@ -247,8 +247,23 @@ const ShowtimeFormPage = () => {
     if (!startTime) return '';
     
     const durationMinutes = movieDuration || 120; // default 2 hours if no movie duration
-    const endTime = new Date(new Date(startTime).getTime() + durationMinutes * 60 * 1000);
-    return endTime.toISOString().slice(0, 16);
+    
+    // Create date object from datetime-local input format
+    const startDate = new Date(startTime);
+    
+    // Add movie duration in minutes
+    const endDate = new Date(startDate.getTime() + durationMinutes * 60 * 1000);
+    
+    console.log('calculateEndTime debug:', {
+      startTime,
+      durationMinutes,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      result: endDate.toISOString().slice(0, 16)
+    });
+    
+    // Return in datetime-local format (YYYY-MM-DDTHH:mm)
+    return endDate.toISOString().slice(0, 16);
   };
 
   const handleStartTimeChange = (e) => {
