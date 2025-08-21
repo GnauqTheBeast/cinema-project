@@ -587,11 +587,10 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 	timeSlots := map[string][]string{
 		"morning":   {"09:00", "11:30"},
 		"afternoon": {"14:00", "16:30"},
-		"evening":   {"19:00", "21:30"},
+		"evening":   {"19:00"},
 	}
 
-	// Generate showtimes for the next 7 days
-	for day := 0; day < 7; day++ {
+	for day := 0; day < 2; day++ {
 		currentDate := now.AddDate(0, 0, day)
 
 		for _, movie := range movies {

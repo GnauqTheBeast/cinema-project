@@ -448,19 +448,57 @@ const ShowtimesPage = () => {
                     Trước
                   </button>
                   
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`px-3 py-2 text-sm font-medium rounded-md ${
-                        currentPage === page
-                          ? 'text-blue-600 bg-blue-50 border border-blue-300'
-                          : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
+                  {(() => {
+                    const delta = 2; // Số trang hiện thị ở mỗi bên của trang hiện tại
+                    const range = [];
+                    const rangeWithDots = [];
+                    
+                    // Tính toán các trang cần hiện thị
+                    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+                      range.push(i);
+                    }
+                    
+                    // Luôn hiện trang 1
+                    if (currentPage - delta > 2) {
+                      rangeWithDots.push(1, '...');
+                    } else {
+                      rangeWithDots.push(1);
+                    }
+                    
+                    // Thêm các trang trong range (nếu không phải trang 1)
+                    rangeWithDots.push(...range.filter(page => page !== 1));
+                    
+                    // Thêm dấu ... và trang cuối nếu cần
+                    if (currentPage + delta < totalPages - 1) {
+                      rangeWithDots.push('...', totalPages);
+                    } else if (totalPages > 1 && !rangeWithDots.includes(totalPages)) {
+                      rangeWithDots.push(totalPages);
+                    }
+                    
+                    return rangeWithDots.map((page, index) => {
+                      if (page === '...') {
+                        return (
+                          <span key={`dots-${index}`} className="px-3 py-2 text-sm text-gray-500">
+                            ...
+                          </span>
+                        );
+                      }
+                      
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-3 py-2 text-sm font-medium rounded-md ${
+                            currentPage === page
+                              ? 'text-blue-600 bg-blue-50 border border-blue-300'
+                              : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    });
+                  })()}
                   
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
