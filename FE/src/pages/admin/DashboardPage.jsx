@@ -4,7 +4,7 @@ import { movieService } from '../../services/movieApi';
 import AdminLayout from '../../components/admin/AdminLayout';
 
 export default function DashboardPage() {
-  const user = JSON.parse(localStorage.getItem('user'));
+  const user = JSON.parse(localStorage.getItem('adminUser'));
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -42,7 +42,6 @@ export default function DashboardPage() {
           </h2>
           <div style={{ color: '#666', marginBottom: '16px' }}>
             <div><strong>Email:</strong> {user.email}</div>
-            <div><strong>Account Type:</strong> {user.discriminator}</div>
             {user.fullName && (
               <div><strong>Full Name:</strong> {user.fullName.firstName} {user.fullName.lastName}</div>
             )}

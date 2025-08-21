@@ -56,8 +56,6 @@ const ChatBot = () => {
         if (response.data.conversation_id && !conversationId) {
           setConversationId(response.data.conversation_id);
         }
-      } else {
-        throw new Error(response.message);
       }
       
       setIsLoading(false);

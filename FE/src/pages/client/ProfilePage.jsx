@@ -9,8 +9,8 @@ export default function ProfilePage() {
   // Mock user data
   const [userData, setUserData] = useState({
     id: 1,
-    name: 'Nguyễn Văn Quang',
-    email: 'quangnv@example.com',
+    name: 'Nguyễn Ngọc Quang',
+    email: 'quangnguyenngoc314@gmail.com',
     phone: '0123456789',
     birthDate: '1995-08-15',
     address: '123 Đường ABC, Quận 1, TP.HCM',

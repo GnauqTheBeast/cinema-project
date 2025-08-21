@@ -73,25 +73,12 @@ export default function HomePage() {
     return new Date(dateString).toLocaleDateString('vi-VN');
   };
 
-  // Helper function to get image URL
-  const getImageUrl = (movie) => {
-    return movie.poster_url || 'https://images.unsplash.com/photo-1478720568477-b0507e6e6392?w=300&h=450&fit=crop';
-  };
-
-  // Helper function to get backdrop URL
-  const getBackdropUrl = (movie) => {
-    // Try backdrop first, then poster, then fallback
-    return movie.poster_url || 'https://images.unsplash.com/photo-1489599514615-4b0a4ad0b53d?w=1200&h=600&fit=crop';
-  };
-
-  // Loading component
   const LoadingSpinner = () => (
     <div className="flex justify-center items-center py-12">
       <FaSpinner className="animate-spin text-4xl text-red-600" />
     </div>
   );
 
-  // Error component
   const ErrorMessage = ({ message }) => (
     <div className="text-center py-12">
       <p className="text-red-400 text-lg">{message}</p>
@@ -120,8 +107,6 @@ export default function HomePage() {
           </div>
         ) : heroMovies.length > 0 ? (
           heroMovies.map((movie, index) => {
-            const backdropUrl = getBackdropUrl(movie);
-            console.log('Hero movie backdrop URL:', movie.title, backdropUrl); // Debug log
             return (
               <div
                 key={movie.id}
@@ -130,13 +115,9 @@ export default function HomePage() {
                 }`}
               >
                 <img 
-                  src={backdropUrl}
+                  src={movie.poster_url}
                   alt={movie.title}
                   className="absolute inset-0 w-full h-full object-cover"
-                  onError={(e) => {
-                    console.log('Image failed to load:', backdropUrl);
-                    e.target.src = 'https://images.unsplash.com/photo-1489599514615-4b0a4ad0b53d?w=1200&h=600&fit=crop';
-                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/60"></div>
               <div className="absolute inset-0 flex items-center">
@@ -146,7 +127,7 @@ export default function HomePage() {
                       {movie.title}
                     </h1>
                     <p className="text-xl text-gray-200 mb-6">
-                      {movie.description || movie.synopsis || 'Một bộ phim đáng xem'}
+                      {movie.description}
                     </p>
                     <div className="flex items-center space-x-6 mb-8">
                       <div className="flex items-center space-x-2">
@@ -228,12 +209,9 @@ export default function HomePage() {
                 <div key={movie.id} className="bg-black/50 rounded-xl overflow-hidden hover:transform hover:scale-105 transition-all duration-300 group">
                   <div className="relative">
                     <img
-                      src={getImageUrl(movie)}
+                      src={movie.poster_url}
                       alt={movie.title}
                       className="w-full h-80 object-cover"
-                      onError={(e) => {
-                        e.target.src = 'https://images.unsplash.com/photo-1478720568477-b0507e6e6392?w=300&h=450&fit=crop';
-                      }}
                     />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                       {movie.trailer_url ? (
@@ -304,12 +282,9 @@ export default function HomePage() {
                 <div key={movie.id} className="bg-gray-900 rounded-xl overflow-hidden hover:transform hover:scale-105 transition-all duration-300 group">
                   <div className="relative">
                     <img
-                      src={getImageUrl(movie)}
+                      src={movie.poster_url}
                       alt={movie.title}
                       className="w-full h-96 object-cover"
-                      onError={(e) => {
-                        e.target.src = 'https://images.unsplash.com/photo-1478720568477-b0507e6e6392?w=300&h=450&fit=crop';
-                      }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
                     <div className="absolute bottom-4 left-4 right-4">
@@ -371,7 +346,7 @@ export default function HomePage() {
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <div className="w-10 h-10 bg-gradient-to-r from-red-600 to-red-800 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold">HQ Cinema</span>
+                  <span className="text-white font-bold">HQ</span>
                 </div>
                 <span className="text-white font-bold text-lg">Cinema</span>
               </div>
@@ -406,7 +381,7 @@ export default function HomePage() {
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center">
             <p className="text-gray-400 text-sm">
-              © 2024 HQ Cinema. All rights reserved.
+              © 2025 HQ Cinema. All rights reserved.
             </p>
           </div>
         </div>
