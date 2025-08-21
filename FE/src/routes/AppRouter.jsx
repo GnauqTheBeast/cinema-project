@@ -1,11 +1,11 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from '../pages/LoginPage';
-import RegisterPage from '../pages/RegisterPage';
-import VerifyOtpPage from '../pages/VerifyOtpPage';
-import HomePage from '../pages/HomePage';
-import ProfilePage from '../pages/ProfilePage';
-import ShowtimePage from '../pages/ShowtimePage';
+import LoginPage from '../pages/client/LoginPage';
+import RegisterPage from '../pages/client/RegisterPage';
+import VerifyOtpPage from '../pages/client/VerifyOtpPage';
+import HomePage from '../pages/client/HomePage';
+import ProfilePage from '../pages/client/ProfilePage';
+import ShowtimePage from '../pages/client/ShowtimePage';
 import AdminLoginPage from '../pages/admin/AdminLoginPage';
 import DashboardPage from '../pages/admin/DashboardPage';
 import MoviesPage from '../pages/admin/MoviesPage';

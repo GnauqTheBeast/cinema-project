@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FaUser, FaEnvelope, FaPhone, FaCalendarAlt, FaMapMarkerAlt, FaEdit, FaSave, FaTimes, FaEye, FaEyeSlash } from 'react-icons/fa';
-import Header from '../components/Header';
+import Header from '../../components/Header';
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaPlay, FaCalendarAlt, FaClock, FaStar, FaMapMarkerAlt, FaTicketAlt, FaArrowRight, FaSpinner } from 'react-icons/fa';
-import Header from '../components/Header';
-import { movieService } from '../services/movieService';
+import Header from '../../components/Header';
+import { movieService } from '../../services/movieService';
 
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
