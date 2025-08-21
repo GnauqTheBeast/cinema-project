@@ -116,6 +116,8 @@ func SeedAll(ctx context.Context, db *bun.DB) error {
 		datastore.SeedPermissions,
 		datastore.SeedMovies,
 		datastore.SeedRooms,
+		datastore.SeedSeats,
+		datastore.SeedShowtimes,
 		datastore.SeedUsers,
 		datastore.SeedNotifications,
 	}

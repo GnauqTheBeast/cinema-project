@@ -213,25 +213,25 @@ export default function MovieDetailPage() {
               {/* Basic Info */}
               <div style={{ marginBottom: '24px' }}>
                 <div style={{ marginBottom: '12px' }}>
-                  <strong>Director:</strong> {movie.director || 'Unknown'}
+                  <strong>Đạo diễn:</strong> {movie.director || 'Unknown'}
                 </div>
                 <div style={{ marginBottom: '12px' }}>
-                  <strong>Cast:</strong> {movie.cast || 'Unknown'}
+                  <strong>Diễn viên:</strong> {movie.cast || 'Unknown'}
                 </div>
                 <div style={{ marginBottom: '12px' }}>
-                  <strong>Genre:</strong> {movie.genre || 'Unknown'}
+                  <strong>Thể loại:</strong> {movie.genre || 'Unknown'}
                 </div>
                 <div style={{ marginBottom: '12px' }}>
-                  <strong>Duration:</strong> {formatDuration(movie.duration)}
+                  <strong>Thời lượng:</strong> {formatDuration(movie.duration)}
                 </div>
                 <div style={{ marginBottom: '12px' }}>
-                  <strong>Release Date:</strong> {formatDate(movie.release_date)}
+                  <strong>Ngày ra mắt:</strong> {formatDate(movie.release_date)}
                 </div>
               </div>
 
               {/* Status Update */}
               <div style={{ marginBottom: '24px' }}>
-                <strong>Update Status:</strong>
+                <strong>Thay đổi trạng thái:</strong>
                 <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {['upcoming', 'showing', 'ended'].map(status => (
                     <button
@@ -260,7 +260,7 @@ export default function MovieDetailPage() {
           {/* Description */}
           {movie.description && (
             <div style={{ marginTop: '32px' }}>
-              <h3 style={{ marginBottom: '12px' }}>Description</h3>
+              <h3 style={{ marginBottom: '12px' }}>Thông tin</h3>
               <p style={{ lineHeight: '1.6', color: '#666' }}>
                 {movie.description}
               </p>
@@ -294,9 +294,9 @@ export default function MovieDetailPage() {
             fontSize: '14px',
             color: '#999'
           }}>
-            <div>Created: {formatDate(movie.created_at)}</div>
+            <div>Ngày tạo: {formatDate(movie.created_at)}</div>
             {movie.updated_at && movie.updated_at !== movie.created_at && (
-              <div>Updated: {formatDate(movie.updated_at)}</div>
+              <div>Ngày chỉnh sửa: {formatDate(movie.updated_at)}</div>
             )}
           </div>
         </div>

@@ -20,7 +20,7 @@ export default function AdminLoginPage() {
       ...formData,
       [e.target.name]: e.target.value
     });
-    // Clear error when user starts typing
+
     if (error) setError('');
   };
 
@@ -31,20 +31,19 @@ export default function AdminLoginPage() {
 
     try {
       const response = await axios.post(`${API_URL}/auth/login`, formData);
-      
-      // Check if user has admin or staff role
+
       if (!response.data.user.role || (response.data.user.role !== 'admin' && response.data.user.role !== 'staff')) {
         setError('Bạn không có quyền truy cập vào hệ thống quản trị');
         setLoading(false);
         return;
       }
 
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      
+      localStorage.setItem('adminToken', response.data.token);
+      localStorage.setItem('adminUser', JSON.stringify(response.data.user));
+      window.dispatchEvent(new Event('tokenChange'));
+
       navigate('/admin/dashboard');
     } catch (err) {
-      console.error('Admin login error:', err);
       if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else {

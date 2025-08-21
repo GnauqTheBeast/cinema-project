@@ -1,11 +1,11 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from '../pages/LoginPage';
-import RegisterPage from '../pages/RegisterPage';
-import VerifyOtpPage from '../pages/VerifyOtpPage';
-import HomePage from '../pages/HomePage';
-import ProfilePage from '../pages/ProfilePage';
-import ShowtimePage from '../pages/ShowtimePage';
+import LoginPage from '../pages/client/LoginPage';
+import RegisterPage from '../pages/client/RegisterPage';
+import VerifyOtpPage from '../pages/client/VerifyOtpPage';
+import HomePage from '../pages/client/HomePage';
+import ProfilePage from '../pages/client/ProfilePage';
+import ShowtimePage from '../pages/client/ShowtimePage';
 import AdminLoginPage from '../pages/admin/AdminLoginPage';
 import DashboardPage from '../pages/admin/DashboardPage';
 import MoviesPage from '../pages/admin/MoviesPage';
@@ -19,18 +19,18 @@ import SeatFormPage from '../pages/admin/SeatFormPage';
 import ShowtimesPage from '../pages/admin/ShowtimesPage';
 import ShowtimeFormPage from '../pages/admin/ShowtimeFormPage';
 
-const AppRouter = ({ token, setToken }) => {
+const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
   const ProtectedRoute = ({ children }) => {
     return token ? children : <Navigate to="/login" replace />;
   };
 
   const AdminRoute = ({ children }) => {
-    if (!token) {
+    if (!adminToken) {
       return <Navigate to="/admin/login" replace />;
     }
 
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user.role !== 'admin' && user.role !== 'staff') {
+    const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
+    if (adminUser.role !== 'admin' && adminUser.role !== 'staff') {
       return <Navigate to="/admin/login" replace />;
     }
 
@@ -57,7 +57,7 @@ const AppRouter = ({ token, setToken }) => {
       {/* Admin Login */}
       <Route
         path="/admin/login"
-        element={!token ? <AdminLoginPage /> : <Navigate to="/admin/dashboard" replace />}
+        element={!adminToken ? <AdminLoginPage /> : <Navigate to="/admin/dashboard" replace />}
       />
 
       {/* User Routes */}

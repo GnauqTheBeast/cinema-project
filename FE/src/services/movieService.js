@@ -40,7 +40,7 @@ export const movieService = {
   // Get now showing movies
   getNowShowingMovies: async () => {
     try {
-      const response = await movieApi.get('/v1/movies?status=now_showing');
+      const response = await movieApi.get('/v1/movies?status=showing');
       return response.data;
     } catch (error) {
       console.error('Error fetching now showing movies:', error);

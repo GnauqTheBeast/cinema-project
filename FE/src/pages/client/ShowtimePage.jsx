@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FaCalendarAlt, FaClock, FaFilter, FaSearch, FaMapMarkerAlt, FaTicketAlt, FaSpinner, FaPlay } from 'react-icons/fa';
-import Header from '../components/Header';
-import { showtimeService } from '../services/showtimeApi';
-import { movieService } from '../services/movieService';
+import Header from '../../components/Header';
+import { showtimeService } from '../../services/showtimeApi';
+import { movieService } from '../../services/movieService';
 
 export default function ShowtimePage() {
   const [showtimes, setShowtimes] = useState([]);
