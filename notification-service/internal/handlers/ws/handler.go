@@ -82,15 +82,14 @@ func (h *WebSocketHandler) notificatonHandler(ctx *WSContext, request *WSRequest
 			case <-ctx.Context().Done():
 				fmt.Println("Context done, stopping subscriber")
 				return
-			case _ = <-channel:
-				// Here you can handle the received message
-				//if msg.Topic == emailVerifyTopic(userId) {
-				//	ctx.WSConn.sendMessage(&WSResponse{
-				//		Id:     request.Id,
-				//		Result: json.RawMessage(`{"status": "email sent"}`),
-				//		Error:  nil,
-				//	})
-				//}
+			case msg := <-channel:
+				if msg.Topic == notificationTopic(userId) {
+					ctx.WSConn.sendMessage(&WSResponse{
+						Id:     request.Id,
+						Result: json.RawMessage(`{"status": "notification sent"}`),
+						Error:  nil,
+					})
+				}
 			}
 		}
 	}()
