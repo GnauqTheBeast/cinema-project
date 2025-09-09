@@ -52,7 +52,7 @@ class AuthRoutes {
   // Get all registered routes for debugging
   public getRegisteredRoutes(): IRoute[] {
     return this.router.stack.map(layer => ({
-      method: Object.keys(layer.route?.methods || {})[0]?.toUpperCase() || 'UNKNOWN',
+      method: Object.keys((layer.route as any)?.methods || {})[0]?.toUpperCase() || 'UNKNOWN',
       path: layer.route?.path || 'UNKNOWN'
     }));
   }
