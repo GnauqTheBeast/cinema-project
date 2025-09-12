@@ -6,6 +6,7 @@ import {QueryTypes} from 'sequelize';
 import {v4 as uuidv4} from 'uuid';
 
 import {CustomerProfile, sequelize, User} from '../models/index.js';
+import { userClient } from '../services/userGrpcClient.js';
 import {redisClient, redisPubSubClient} from '../config/redis.js';
 import {
   ErrorMessages,
@@ -177,43 +178,26 @@ class AuthController {
   });
 
   static register: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const t = await sequelize.transaction();
     try {
       const data = await AuthController.registerSchema.validateAsync(req.body) as IRegisterRequest;
       const { email, password, firstName, lastName, address } = data;
-
-      // Check if email exists
-      const existUser = await User.findOne({ where: { email } });
-      if (existUser && existUser.dataValues.status !== UserStatus.PENDING) throw new Error(ErrorMessages.EMAIL_EXISTS);
 
       // Get customer role ID from cache or database
       const customerRoleId = await AuthController.getCustomerRoleId();
 
       // Hash password
       const hashed = await bcrypt.hash(password, AuthController.BCRYPT_SALT_ROUNDS);
-      // Create User
 
-      let userId = existUser ? existUser.dataValues.id : uuidv4();
-      if (!existUser) {
-        const user = await User.create({
-          id: userId,
-          name: `${firstName} ${lastName}`,
-          email,
-          password: hashed,
-          role_id: customerRoleId,
-          address,
-          status: UserStatus.PENDING
-        }, { transaction: t });
-
-        const customerProfileId = uuidv4();
-        await CustomerProfile.create({
-          id: customerProfileId,
-          user_id: userId,
-          total_payment_amount: 0,
-          point: 0,
-          onchain_wallet_address: ""
-        }, { transaction: t });
-      }
+      // Ensure user row is pending in user-service via gRPC
+      const name = `${firstName} ${lastName}`;
+      let userId = '';
+      await new Promise<void>((resolve, reject) => {
+        userClient.EnsurePending({ email, name, password: hashed, role_id: customerRoleId, address }, (err: any, resp: any) => {
+          if (err) return reject(err);
+          userId = resp?.id || '';
+          resolve();
+        });
+      });
 
       // Generate verify code and URL
       const verifyCode = AuthController.generateOTP();
@@ -225,11 +209,8 @@ class AuthController {
       // Save OTP to Redis cache for verification
       await AuthController.saveOTPToCache(email, verifyCode);
 
-      await t.commit();
-
       res.status(HttpStatus.CREATED).json({ message: ErrorMessages.REGISTRATION_SUCCESS });
     } catch (err) {
-      await t.rollback();
       console.error('Registration error:', err);
       
       const error = err as IApiError;
@@ -248,21 +229,27 @@ class AuthController {
   static login: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { email, password } = await AuthController.loginSchema.validateAsync(req.body) as ILoginRequest;
-      const user = await User.findOne({ where: { email } });
-      if (!user) {
+      // Fetch user via gRPC
+      const userResp: any = await new Promise((resolve, reject) => {
+        userClient.GetUserByEmail({ email }, (err: any, resp: any) => {
+          if (err) return reject(err);
+          resolve(resp);
+        });
+      });
+      if (!userResp.found) {
         res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.INVALID_CREDENTIALS });
         return;
       }
 
       // Validate password first
-      const valid = await bcrypt.compare(password, user.dataValues.password);
+      const valid = await bcrypt.compare(password, userResp.user.password);
       if (!valid) {
         res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.INVALID_CREDENTIALS });
         return;
       }
 
       // Check if user account is active - only after valid credentials
-      if (user.dataValues.status !== UserStatus.ACTIVE) {
+      if (userResp.user.status !== UserStatus.ACTIVE) {
         res.status(HttpStatus.BAD_REQUEST).json({ 
           message: 'Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email để xác thực OTP.',
           requireVerification: true,
@@ -273,22 +260,21 @@ class AuthController {
 
       // Get user role information
       const userWithRole = await sequelize.query(
-        `SELECT u.*, r.name as role_name 
+        `SELECT u.id, u.email, u.name, r.name as role_name 
          FROM users u 
          JOIN roles r ON u.role_id = r.id 
-         WHERE u.id = :userId`,
+         WHERE u.email = :email`,
         {
-          replacements: { userId: user.dataValues.id },
+          replacements: { email },
           type: QueryTypes.SELECT
         }
       ) as Array<{ id: string; email: string; name: string; role_name: string }>;
-
       const userRole = userWithRole[0]?.role_name || 'customer';
 
       const token = jwt.sign(
         { 
-          userId: user.dataValues.id, 
-          email: user.dataValues.email,
+          userId: userResp.user.id, 
+          email: userResp.user.email,
           role: userRole
         }, 
         process.env.JWT_SECRET as string,
@@ -297,9 +283,9 @@ class AuthController {
       const response: IAuthResponse = {
         token,
         user: { 
-          id: user.dataValues.id, 
-          email: user.dataValues.email, 
-          name: user.dataValues.name,
+          id: userResp.user.id, 
+          email: userResp.user.email, 
+          name: userResp.user.name,
           role: userRole
         }
       };
@@ -316,32 +302,23 @@ class AuthController {
   };
 
   static verifyOtp: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const t = await sequelize.transaction();
     try {
       const { email, otp } = await AuthController.verifyOtpSchema.validateAsync(req.body) as IVerifyOtpRequest;
       
       const result = await AuthController.verifyOTPFromCache(email, otp);
       
       if (result.success) {
-        // Update user status to active
-        const user = await User.findOne({ where: { email } });
-        if (user) {
-          await user.update({ status: UserStatus.ACTIVE }, { transaction: t });
-          await t.commit();
-          
-          res.status(HttpStatus.OK).json({ 
-            message: ErrorMessages.ACCOUNT_VERIFIED,
-            verified: true 
+        await new Promise<void>((resolve, reject) => {
+          userClient.ActivateUser({ email }, (err: any, resp: any) => {
+            if (err) return reject(err);
+            resolve();
           });
-        } else {
-          await t.rollback();
-          res.status(HttpStatus.BAD_REQUEST).json({ 
-            message: 'User not found',
-            verified: false 
-          });
-        }
+        });
+        res.status(HttpStatus.OK).json({ 
+          message: ErrorMessages.ACCOUNT_VERIFIED,
+          verified: true 
+        });
       } else {
-        await t.rollback();
         res.status(HttpStatus.BAD_REQUEST).json({ 
           message: result.message,
           verified: false,
@@ -350,7 +327,6 @@ class AuthController {
       }
       
     } catch (err) {
-      await t.rollback();
       const error = err as IApiError;
       if (error.isJoi) {
         res.status(HttpStatus.BAD_REQUEST).json({ message: error.details![0].message });
