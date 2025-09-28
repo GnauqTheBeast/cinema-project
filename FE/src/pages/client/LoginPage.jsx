@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
+import websocketService from '../../services/websocketService';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -21,6 +22,12 @@ export default function LoginPage({ onLogin }) {
      const res = await axios.post(`${API_URL}/auth/login`, { email, password });
      localStorage.setItem('token', res.data.token);
      localStorage.setItem('user', JSON.stringify(res.data.user));
+     
+     // Connect to WebSocket after successful login
+     if (res.data.user && res.data.user.id) {
+       websocketService.connect(res.data.user.id.toString());
+     }
+     
      if (onLogin) onLogin();
      navigate('/dashboard');
    } catch (err) {
