@@ -37,6 +37,7 @@ export default function AdminLayout({ children }) {
     { path: '/admin/seats', label: 'Ghế ngồi', icon: FaCouch },
     { path: '/admin/showtimes', label: 'Lịch chiếu', icon: FaClock },
     { path: '/admin/revenue', label: 'Doanh thu', icon: FaMoneyBillWave },
+    { path: '/admin/staff', label: 'Nhân viên', icon: FaUser },
   ];
 
   return (

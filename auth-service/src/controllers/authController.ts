@@ -84,6 +84,33 @@ class AuthController {
     }
   }
 
+  static async getRoleIdByName(roleName: string, cacheKey: string): Promise<string> {
+    try {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return cached;
+
+      const roleResult = await sequelize.query(
+        'SELECT id FROM roles WHERE name = :name LIMIT 1',
+        { replacements: { name: roleName }, type: QueryTypes.SELECT }
+      ) as { id: string }[];
+
+      if (roleResult.length === 0) {
+        throw new Error(`${roleName} role not found in database`);
+      }
+
+      const roleId = roleResult[0].id;
+      await redisClient.setEx(cacheKey, 3600, roleId);
+      return roleId;
+    } catch (error) {
+      console.error(`Error getting role ID for ${roleName}:`, error);
+      throw error;
+    }
+  }
+
+  static async getStaffRoleId(): Promise<string> {
+    return this.getRoleIdByName('staff', 'staff_role_id');
+  }
+
   static async saveOTPToCache(email: string, otp: string): Promise<void> {
     const OTP_CACHE_KEY = `otp:${email}`;
     const OTP_TTL = 300; // 5 minutes
@@ -271,13 +298,97 @@ class AuthController {
       ) as Array<{ id: string; email: string; name: string; role_name: string }>;
       const userRole = userWithRole[0]?.role_name || 'customer';
 
+      // Only allow customer to login via customer endpoint
+      if (userRole !== 'customer') {
+        res.status(HttpStatus.FORBIDDEN).json({ message: 'Tài khoản không thuộc khách hàng. Vui lòng đăng nhập tại trang quản trị.' });
+        return;
+      }
+
       const token = jwt.sign(
         { 
           userId: userResp.user.id, 
           email: userResp.user.email,
           role: userRole
         }, 
-        process.env.JWT_SECRET as string,
+        (process.env.JWT_SECRET || 'your-secret-key') as string,
+      );
+
+      const response: IAuthResponse = {
+        token,
+        user: { 
+          id: userResp.user.id, 
+          email: userResp.user.email, 
+          name: userResp.user.name,
+          role: userRole
+        }
+      };
+
+      res.json(response);
+    } catch (err) {
+      const error = err as IApiError;
+      if (error.isJoi) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: error.details![0].message });
+        return;
+      }
+      next(err);
+    }
+  };
+
+  static loginAdmin: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email, password } = await AuthController.loginSchema.validateAsync(req.body) as ILoginRequest;
+      // Fetch user via gRPC
+      const userResp: any = await new Promise((resolve, reject) => {
+        userClient.GetUserByEmail({ email }, (err: any, resp: any) => {
+          if (err) return reject(err);
+          resolve(resp);
+        });
+      });
+      if (!userResp.found) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.INVALID_CREDENTIALS });
+        return;
+      }
+
+      const valid = await bcrypt.compare(password, userResp.user.password);
+      if (!valid) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.INVALID_CREDENTIALS });
+        return;
+      }
+
+      if (userResp.user.status !== UserStatus.ACTIVE) {
+        res.status(HttpStatus.BAD_REQUEST).json({ 
+          message: 'Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email để xác thực OTP.',
+          requireVerification: true,
+          email: email
+        });
+        return;
+      }
+
+      const userWithRole = await sequelize.query(
+        `SELECT u.id, u.email, u.name, r.name as role_name 
+         FROM users u 
+         JOIN roles r ON u.role_id = r.id 
+         WHERE u.email = :email`,
+        {
+          replacements: { email },
+          type: QueryTypes.SELECT
+        }
+      ) as Array<{ id: string; email: string; name: string; role_name: string }>;
+      const userRole = userWithRole[0]?.role_name || 'customer';
+
+      // Only allow admin or staff via admin endpoint
+      if (userRole !== 'admin' && userRole !== 'staff') {
+        res.status(HttpStatus.FORBIDDEN).json({ message: 'Bạn không có quyền truy cập vào hệ thống quản trị' });
+        return;
+      }
+
+      const token = jwt.sign(
+        { 
+          userId: userResp.user.id, 
+          email: userResp.user.email,
+          role: userRole
+        }, 
+        (process.env.JWT_SECRET || 'your-secret-key') as string,
       );
 
       const response: IAuthResponse = {
@@ -370,6 +481,76 @@ class AuthController {
       next(err);
     }
   };
+
+  static createStaff: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      // Require admin JWT
+      const authHeader = req.headers.authorization || '';
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+      if (!token) {
+        res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Thiếu token xác thực' });
+        return;
+      }
+      let decoded: any;
+      try {
+        decoded = jwt.verify(token, (process.env.JWT_SECRET || 'your-secret-key') as string);
+      } catch {
+        res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Token không hợp lệ' });
+        return;
+      }
+      if (!decoded?.role || decoded.role !== 'admin') {
+        res.status(HttpStatus.FORBIDDEN).json({ message: 'Chỉ quản trị viên mới được tạo tài khoản nhân viên' });
+        return;
+      }
+
+      const schema = Joi.object({
+        email: Joi.string().email().required(),
+        password: Joi.string().min(6).required(),
+        name: Joi.string().required(),
+        address: Joi.string().allow('', null)
+      });
+
+      const { email, password, name, address } = await schema.validateAsync(req.body);
+
+      // Get staff role ID
+      const staffRoleId = await AuthController.getStaffRoleId();
+
+      // Hash password
+      const hashed = await bcrypt.hash(password, AuthController.BCRYPT_SALT_ROUNDS);
+
+      // Call user-service gRPC to create staff
+      const result: any = await new Promise((resolve, reject) => {
+        userClient.CreateStaff({ 
+          email, 
+          name, 
+          password: hashed, 
+          role_id: staffRoleId, 
+          address 
+        }, (err: any, resp: any) => {
+          if (err) return reject(err);
+          resolve(resp);
+        });
+      });
+
+      res.status(HttpStatus.CREATED).json({
+        message: result.message,
+        user: { 
+          id: result.id, 
+          email, 
+          name, 
+          role: 'staff', 
+          status: 'active' 
+        }
+      });
+    } catch (err) {
+      const error = err as IApiError;
+      if (error.isJoi) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: error.details![0].message });
+        return;
+      }
+      next(err);
+    }
+  };
 }
 
 // Export static methods for backward compatibility
@@ -377,5 +558,6 @@ export const register = AuthController.register.bind(AuthController);
 export const login = AuthController.login.bind(AuthController);
 export const verifyOtp = AuthController.verifyOtp.bind(AuthController);
 export const resendOtp = AuthController.resendOtp.bind(AuthController);
+export const loginAdmin = AuthController.loginAdmin.bind(AuthController);
 
 export default AuthController;

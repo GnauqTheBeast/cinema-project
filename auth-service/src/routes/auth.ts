@@ -18,9 +18,14 @@ class AuthRoutes {
   private initializeRoutes(): void {
     // Authentication routes
     this.router.post('/register', this.handleAsync(AuthController.register));
+    // Customer login
     this.router.post('/login', this.handleAsync(AuthController.login));
+    // Admin/staff login
+    this.router.post('/admin/login', this.handleAsync(AuthController.loginAdmin));
     this.router.post('/verify-otp', this.handleAsync(AuthController.verifyOtp));
     this.router.post('/resend-otp', this.handleAsync(AuthController.resendOtp));
+    // Admin create staff (no email verification, activate immediately)
+    this.router.post('/staff', this.handleAsync(AuthController.createStaff));
   }
 
   // Async error handler wrapper

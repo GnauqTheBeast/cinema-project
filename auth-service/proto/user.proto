@@ -6,6 +6,7 @@ service UserService {
   rpc EnsurePending(EnsurePendingRequest) returns (EnsurePendingResponse);
   rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
   rpc ActivateUser(ActivateUserRequest) returns (ActivateUserResponse);
+  rpc CreateStaff(CreateStaffRequest) returns (CreateStaffResponse);
 }
 
 message EnsurePendingRequest {
@@ -29,7 +30,7 @@ message User {
   string email = 3;
   string status = 4;
   string role_id = 5;
-  string password = 6;
+  string password = 6; // hashed
 }
 
 message GetUserByEmailResponse {
@@ -40,4 +41,16 @@ message GetUserByEmailResponse {
 message ActivateUserRequest { string email = 1; }
 message ActivateUserResponse { bool success = 1; }
 
+message CreateStaffRequest {
+  string email = 1;
+  string name = 2;
+  string password = 3;
+  string role_id = 4;
+  string address = 5;
+}
 
+message CreateStaffResponse {
+  string id = 1;
+  bool created = 2;
+  string message = 3;
+}

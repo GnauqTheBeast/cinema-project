@@ -18,6 +18,7 @@ import SeatsPage from '../pages/admin/SeatsPage';
 import SeatFormPage from '../pages/admin/SeatFormPage';
 import ShowtimesPage from '../pages/admin/ShowtimesPage';
 import ShowtimeFormPage from '../pages/admin/ShowtimeFormPage';
+import StaffManagementPage from '../pages/admin/StaffManagementPage';
 
 const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
   const ProtectedRoute = ({ children }) => {
@@ -199,6 +200,16 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
         element={
           <AdminRoute>
             <RevenueStatsPage />
+          </AdminRoute>
+        } 
+      />
+
+      {/* Staff Management */}
+      <Route 
+        path="/admin/staff" 
+        element={
+          <AdminRoute>
+            <StaffManagementPage />
           </AdminRoute>
         } 
       />

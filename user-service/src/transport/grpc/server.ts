@@ -82,6 +82,61 @@ export async function startGrpcServer(models: GrpcModels): Promise<void> {
       } catch (e: any) {
         callback({ code: grpc.status.INTERNAL, message: e.message } as any);
       }
+    },
+    createStaff: async (
+      call: grpc.ServerUnaryCall<any, any>,
+      callback: grpc.sendUnaryData<any>
+    ) => {
+      try {
+        const { email, name, password, role_id, address } = call.request;
+        
+        // Check if user already exists
+        const existing = await models.User.findOne({ where: { email } });
+        let id = existing?.get('id') as string | undefined;
+        let created = false;
+
+        if (!existing) {
+          // Create new staff user with active status
+          id = uuidv4();
+          await models.User.create({
+            id,
+            email,
+            name,
+            password,
+            role_id: role_id || null,
+            address: address || null,
+            status: 'active' // Staff accounts are active immediately
+          } as any);
+          
+          // Create customer profile for staff (they can also be customers)
+          await models.CustomerProfile.create({
+            id: uuidv4(),
+            user_id: id,
+            total_payment_amount: 0,
+            point: 0,
+            onchain_wallet_address: ''
+          } as any);
+          
+          created = true;
+        } else {
+          // Update existing user to active and staff role
+          await (existing as any).update({ 
+            status: 'active',
+            role_id: role_id || existing.get('role_id'),
+            name: name || existing.get('name'),
+            address: address || existing.get('address')
+          });
+          id = existing.get('id') as string;
+        }
+
+        const message = created 
+          ? 'Tạo tài khoản nhân viên thành công' 
+          : 'Tài khoản đã tồn tại, đã cập nhật trạng thái active';
+
+        callback(null, { id, created, message });
+      } catch (e: any) {
+        callback({ code: grpc.status.INTERNAL, message: e.message } as any);
+      }
     }
   });
 

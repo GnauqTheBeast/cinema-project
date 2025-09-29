@@ -30,13 +30,9 @@ export default function AdminLoginPage() {
     setError('');
 
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, formData);
+      const response = await axios.post(`${API_URL}/auth/admin/login`, formData);
 
-      if (!response.data.user.role || (response.data.user.role !== 'admin' && response.data.user.role !== 'staff')) {
-        setError('Bạn không có quyền truy cập vào hệ thống quản trị');
-        setLoading(false);
-        return;
-      }
+      // Backend already restricts roles; no client-side bypass
 
       localStorage.setItem('adminToken', response.data.token);
       localStorage.setItem('adminUser', JSON.stringify(response.data.user));
