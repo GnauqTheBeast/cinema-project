@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 
-// Database types
 export interface IUser {
   id: string;
   name: string;
@@ -21,7 +20,6 @@ export interface ICustomerProfile {
   onchain_wallet_address?: string;
 }
 
-// Request/Response types
 export interface IRegisterRequest {
   email: string;
   password: string;
@@ -48,15 +46,14 @@ export interface IAuthResponse {
     email: string;
     name: string;
     role: string;
+    permissions?: string[];
   };
 }
 
-// Controller types
 export interface IController {
   (req: Request, res: Response, next: NextFunction): Promise<void>;
 }
 
-// Redis OTP types
 export interface IOtpData {
   otp: string;
   count: number;
@@ -69,7 +66,6 @@ export interface IOtpVerifyResult {
   attempts: number;
 }
 
-// Email verification types
 export interface IEmailVerifyMessage {
   user_id: string;
   to: string;
@@ -77,7 +73,6 @@ export interface IEmailVerifyMessage {
   verify_url: string;
 }
 
-// Health check types
 export interface IHealthCheck {
   status: string;
   timestamp: string;
@@ -89,20 +84,17 @@ export interface IHealthCheck {
   memory: NodeJS.MemoryUsage;
 }
 
-// Error types
 export interface IApiError extends Error {
   status?: number;
   isJoi?: boolean;
   details?: any[];
 }
 
-// Database Manager interface
 export interface IDatabaseManager {
   testConnection(): Promise<boolean>;
   syncDatabase(): Promise<boolean>;
 }
 
-// Redis Manager interface  
 export interface IRedisManager {
   connect(): Promise<boolean>;
   disconnect(): Promise<boolean>;
@@ -110,7 +102,6 @@ export interface IRedisManager {
   flushAll(): Promise<boolean>;
 }
 
-// Server configuration
 export interface IServerConfig {
   port: number;
   corsOrigin: string;
@@ -118,7 +109,6 @@ export interface IServerConfig {
   jwtExpiresIn: string;
 }
 
-// Constants
 export enum HttpStatus {
   OK = 200,
   CREATED = 201,

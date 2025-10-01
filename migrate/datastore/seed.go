@@ -21,8 +21,14 @@ func SeedRoles(ctx context.Context, db *bun.DB) error {
 		},
 		{
 			Id:          uuid.New().String(),
-			Name:        "staff",
-			Description: stringPtr("Cinema staff member"),
+			Name:        "manager_staff",
+			Description: stringPtr("Cinema manager staff"),
+			CreatedAt:   time.Now(),
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "ticket_staff",
+			Description: stringPtr("Cinema ticket staff"),
 			CreatedAt:   time.Now(),
 		},
 		{
@@ -46,44 +52,86 @@ func SeedPermissions(ctx context.Context, db *bun.DB) error {
 	permissions := []*models.Permission{
 		{
 			Id:          uuid.New().String(),
-			Name:        "Manage Movies",
-			Code:        "manage_movies",
+			Name:        "Movie Manage",
+			Code:        "movie_manage",
 			Description: stringPtr("Manage movies (create, update, delete)"),
 			CreatedAt:   time.Now(),
 		},
 		{
 			Id:          uuid.New().String(),
-			Name:        "Manage Rooms",
-			Code:        "manage_rooms",
-			Description: stringPtr("Manage cinema rooms"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Manage Showtimes",
-			Code:        "manage_showtimes",
+			Name:        "Showtime Manage",
+			Code:        "showtime_manage",
 			Description: stringPtr("Manage movie showtimes"),
 			CreatedAt:   time.Now(),
 		},
 		{
 			Id:          uuid.New().String(),
-			Name:        "Manage Users",
-			Code:        "manage_users",
-			Description: stringPtr("Manage user accounts"),
+			Name:        "Seat Manage",
+			Code:        "seat_manage",
+			Description: stringPtr("Manage cinema seats"),
 			CreatedAt:   time.Now(),
 		},
 		{
 			Id:          uuid.New().String(),
-			Name:        "Book Tickets",
-			Code:        "book_tickets",
-			Description: stringPtr("Book movie tickets"),
+			Name:        "Report View",
+			Code:        "report_view",
+			Description: stringPtr("View analytics and operational reports"),
 			CreatedAt:   time.Now(),
 		},
 		{
 			Id:          uuid.New().String(),
-			Name:        "View Reports",
-			Code:        "view_reports",
-			Description: stringPtr("View cinema reports and analytics"),
+			Name:        "Profile View",
+			Code:        "profile_view",
+			Description: stringPtr("View profile details"),
+			CreatedAt:   time.Now(),
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Profile Update",
+			Code:        "profile_update",
+			Description: stringPtr("Update profile details"),
+			CreatedAt:   time.Now(),
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Booking Create",
+			Code:        "booking_create",
+			Description: stringPtr("Create bookings"),
+			CreatedAt:   time.Now(),
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Booking Manage",
+			Code:        "booking_manage",
+			Description: stringPtr("Manage bookings"),
+			CreatedAt:   time.Now(),
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Ticket Issue",
+			Code:        "ticket_issue",
+			Description: stringPtr("Issue or print tickets"),
+			CreatedAt:   time.Now(),
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Payment Process",
+			Code:        "payment_process",
+			Description: stringPtr("Handle payments for bookings"),
+			CreatedAt:   time.Now(),
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Ticket View",
+			Code:        "ticket_view",
+			Description: stringPtr("View tickets"),
+			CreatedAt:   time.Now(),
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Staff Manage",
+			Code:        "staff_manage",
+			Description: stringPtr("Manage staff accounts"),
 			CreatedAt:   time.Now(),
 		},
 	}
@@ -94,6 +142,117 @@ func SeedPermissions(ctx context.Context, db *bun.DB) error {
 	}
 
 	fmt.Println("Permissions seeded successfully!")
+	return nil
+}
+
+func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
+	// Fetch roles
+	var roles []models.Role
+	if err := db.NewSelect().Model(&roles).Scan(ctx); err != nil {
+		return fmt.Errorf("failed to get roles: %w", err)
+	}
+
+	// Fetch permissions
+	var permissions []models.Permission
+	if err := db.NewSelect().Model(&permissions).Scan(ctx); err != nil {
+		return fmt.Errorf("failed to get permissions: %w", err)
+	}
+
+	if len(roles) == 0 || len(permissions) == 0 {
+		return fmt.Errorf("roles or permissions missing; seed roles and permissions first")
+	}
+
+	// Build lookup maps
+	roleNameToId := map[string]string{}
+	for _, r := range roles {
+		roleNameToId[r.Name] = r.Id
+	}
+
+	permCodeToId := map[string]string{}
+	for _, p := range permissions {
+		permCodeToId[p.Code] = p.Id
+	}
+
+	// Group permissions per role per the specification
+	allCodes := []string{}
+	for code := range permCodeToId {
+		allCodes = append(allCodes, code)
+	}
+
+	managerStaffCodes := []string{
+		"movie_manage",
+		"showtime_manage",
+		"seat_manage",
+		"report_view",
+		"profile_view",
+		"profile_update",
+	}
+
+	ticketStaffCodes := []string{
+		"booking_create",
+		"booking_manage",
+		"ticket_issue",
+		"payment_process",
+		"ticket_view",
+		"profile_view",
+		"profile_update",
+	}
+
+	customerCodes := []string{
+		"booking_create",
+		"booking_manage",
+		"ticket_view",
+		"profile_view",
+		"profile_update",
+	}
+
+	var rolePerms []*models.RolePermission
+
+	// Admin -> all permissions
+	if adminId, ok := roleNameToId["admin"]; ok {
+		for _, code := range allCodes {
+			if pid, ok := permCodeToId[code]; ok {
+				rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: adminId, PermissionId: pid, CreatedAt: time.Now()})
+			}
+		}
+	}
+
+	// Manager staff
+	if rid, ok := roleNameToId["manager_staff"]; ok {
+		for _, code := range managerStaffCodes {
+			if pid, ok := permCodeToId[code]; ok {
+				rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: rid, PermissionId: pid, CreatedAt: time.Now()})
+			}
+		}
+	}
+
+	// Ticket staff
+	if rid, ok := roleNameToId["ticket_staff"]; ok {
+		for _, code := range ticketStaffCodes {
+			if pid, ok := permCodeToId[code]; ok {
+				rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: rid, PermissionId: pid, CreatedAt: time.Now()})
+			}
+		}
+	}
+
+	// Customer
+	if rid, ok := roleNameToId["customer"]; ok {
+		for _, code := range customerCodes {
+			if pid, ok := permCodeToId[code]; ok {
+				rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: rid, PermissionId: pid, CreatedAt: time.Now()})
+			}
+		}
+	}
+
+	if len(rolePerms) == 0 {
+		return fmt.Errorf("no role-permission mappings to insert; check roles/permissions")
+	}
+
+	if _, err := db.NewInsert().Model(&rolePerms).Exec(ctx); err != nil {
+		return fmt.Errorf("failed to seed role_permissions: %w", err)
+	}
+
+	fmt.Println("Role permissions seeded successfully!")
 	return nil
 }
 
@@ -251,13 +410,15 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 		return fmt.Errorf("no roles found, please seed roles first")
 	}
 
-	var adminRoleId, staffRoleId, customerRoleId string
+	var adminRoleId, managerStaffRoleId, ticketStaffRoleId, customerRoleId string
 	for _, role := range roles {
 		switch role.Name {
 		case "admin":
 			adminRoleId = role.Id
-		case "staff":
-			staffRoleId = role.Id
+		case "manager_staff":
+			managerStaffRoleId = role.Id
+		case "ticket_staff":
+			ticketStaffRoleId = role.Id
 		case "customer":
 			customerRoleId = role.Id
 		}
@@ -277,12 +438,24 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 		},
 		{
 			Id:          uuid.New().String(),
-			Name:        "John Staff",
-			Email:       "john.staff@cinema.com",
+			Name:        "Manager Staff",
+			Email:       "manager@cinema.com",
 			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
 			PhoneNumber: stringPtr("+1234567891"),
-			RoleId:      &staffRoleId,
-			Address:     stringPtr("123 Staff Street"),
+			RoleId:      &managerStaffRoleId,
+			Address:     stringPtr("123 Manager Street"),
+			Status:      "active",
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Ticket Staff",
+			Email:       "ticket@cinema.com",
+			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+			PhoneNumber: stringPtr("+1234567892"),
+			RoleId:      &ticketStaffRoleId,
+			Address:     stringPtr("123 Ticket Street"),
+			Status:      "active",
 			CreatedAt:   now,
 		},
 		{
@@ -290,8 +463,9 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			Name:        "Alice Customer",
 			Email:       "alice@email.com",
 			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
-			PhoneNumber: stringPtr("+1234567892"),
+			PhoneNumber: stringPtr("+1234567893"),
 			RoleId:      &customerRoleId,
+			Status:      "active",
 			CreatedAt:   now,
 		},
 		{

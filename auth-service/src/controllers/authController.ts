@@ -8,6 +8,7 @@ import {v4 as uuidv4} from 'uuid';
 import {CustomerProfile, sequelize, User} from '../models/index.js';
 import { userClient } from '../services/userGrpcClient.js';
 import {redisClient, redisPubSubClient} from '../config/redis.js';
+import { PermissionService } from '../services/permissionService.js';
 import {
   ErrorMessages,
   HttpStatus,
@@ -24,7 +25,6 @@ import {
 } from '../types/index.js';
 
 class AuthController {
-  // Constants
   static readonly ALLOWED_DISCRIMINATOR = 'Customer';
   static readonly BCRYPT_SALT_ROUNDS = 10;
   static readonly OTP_MIN = 100000;
@@ -34,7 +34,6 @@ class AuthController {
     EMAIL_VERIFY: 'email_verify'
   } as const;
 
-  // Helper methods
   static generateOTP(): string {
     return Math.floor(this.OTP_MIN + Math.random() * (this.OTP_MAX - this.OTP_MIN + 1)).toString();
   }
@@ -56,13 +55,11 @@ class AuthController {
     const CACHE_KEY = 'customer_role_id';
     
     try {
-      // Try to get from Redis cache first
       const cachedRoleId = await redisClient.get(CACHE_KEY);
       if (cachedRoleId) {
         return cachedRoleId;
       }
 
-      // If not in cache, query database
       const roleResult = await sequelize.query(
         "SELECT id FROM roles WHERE name = 'customer' LIMIT 1",
         { type: QueryTypes.SELECT }
@@ -74,7 +71,6 @@ class AuthController {
 
       const customerRoleId = roleResult[0].id;
       
-      // Cache for 1 hour (3600 seconds)
       await redisClient.setEx(CACHE_KEY, 3600, customerRoleId);
       
       return customerRoleId;
@@ -111,9 +107,17 @@ class AuthController {
     return this.getRoleIdByName('staff', 'staff_role_id');
   }
 
+  static async getManagerStaffRoleId(): Promise<string> {
+    return this.getRoleIdByName('manager_staff', 'manager_staff_role_id');
+  }
+
+  static async getTicketStaffRoleId(): Promise<string> {
+    return this.getRoleIdByName('ticket_staff', 'ticket_staff_role_id');
+  }
+
   static async saveOTPToCache(email: string, otp: string): Promise<void> {
     const OTP_CACHE_KEY = `otp:${email}`;
-    const OTP_TTL = 300; // 5 minutes
+    const OTP_TTL = 300; 
     
     const otpData: IOtpData = {
       otp: otp,
@@ -141,7 +145,6 @@ class AuthController {
       
       const otpData: IOtpData = JSON.parse(cachedData);
       
-      // Check if max attempts reached
       if (otpData.count >= MAX_ATTEMPTS) {
         return {
           success: false,
@@ -150,12 +153,9 @@ class AuthController {
         };
       }
       
-      // Increment attempt count
       otpData.count++;
       
-      // Check if OTP matches
       if (otpData.otp === inputOtp) {
-        // OTP is correct, delete from cache
         await redisClient.del(OTP_CACHE_KEY);
         return {
           success: true,
@@ -163,7 +163,6 @@ class AuthController {
           attempts: otpData.count
         };
       } else {
-        // OTP is incorrect, update count in cache
         const remainingTTL = await redisClient.ttl(OTP_CACHE_KEY);
         await redisClient.setEx(OTP_CACHE_KEY, remainingTTL, JSON.stringify(otpData));
         
@@ -180,7 +179,6 @@ class AuthController {
     }
   }
 
-  // Validation schemas
   static registerSchema = Joi.object({
     email: Joi.string().email().required(),
     password: Joi.string().min(6).required(),
@@ -209,13 +207,10 @@ class AuthController {
       const data = await AuthController.registerSchema.validateAsync(req.body) as IRegisterRequest;
       const { email, password, firstName, lastName, address } = data;
 
-      // Get customer role ID from cache or database
       const customerRoleId = await AuthController.getCustomerRoleId();
 
-      // Hash password
       const hashed = await bcrypt.hash(password, AuthController.BCRYPT_SALT_ROUNDS);
 
-      // Ensure user row is pending in user-service via gRPC
       const name = `${firstName} ${lastName}`;
       let userId = '';
       await new Promise<void>((resolve, reject) => {
@@ -226,14 +221,12 @@ class AuthController {
         });
       });
 
-      // Generate verify code and URL
       const verifyCode = AuthController.generateOTP();
       const verifyUrl = AuthController.createVerifyUrl(email, verifyCode);
       const msg = AuthController.createEmailVerifyMessage(userId, email, verifyCode, verifyUrl);
 
       await redisPubSubClient.publish(AuthController.REDIS_TOPICS.EMAIL_VERIFY, JSON.stringify(msg));
 
-      // Save OTP to Redis cache for verification
       await AuthController.saveOTPToCache(email, verifyCode);
 
       res.status(HttpStatus.CREATED).json({ message: ErrorMessages.REGISTRATION_SUCCESS });
@@ -256,7 +249,6 @@ class AuthController {
   static login: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { email, password } = await AuthController.loginSchema.validateAsync(req.body) as ILoginRequest;
-      // Fetch user via gRPC
       const userResp: any = await new Promise((resolve, reject) => {
         userClient.GetUserByEmail({ email }, (err: any, resp: any) => {
           if (err) return reject(err);
@@ -268,14 +260,12 @@ class AuthController {
         return;
       }
 
-      // Validate password first
       const valid = await bcrypt.compare(password, userResp.user.password);
       if (!valid) {
         res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.INVALID_CREDENTIALS });
         return;
       }
 
-      // Check if user account is active - only after valid credentials
       if (userResp.user.status !== UserStatus.ACTIVE) {
         res.status(HttpStatus.BAD_REQUEST).json({ 
           message: 'Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email để xác thực OTP.',
@@ -285,7 +275,6 @@ class AuthController {
         return;
       }
 
-      // Get user role information
       const userWithRole = await sequelize.query(
         `SELECT u.id, u.email, u.name, r.name as role_name 
          FROM users u 
@@ -298,7 +287,6 @@ class AuthController {
       ) as Array<{ id: string; email: string; name: string; role_name: string }>;
       const userRole = userWithRole[0]?.role_name || 'customer';
 
-      // Only allow customer to login via customer endpoint
       if (userRole !== 'customer') {
         res.status(HttpStatus.FORBIDDEN).json({ message: 'Tài khoản không thuộc khách hàng. Vui lòng đăng nhập tại trang quản trị.' });
         return;
@@ -337,7 +325,6 @@ class AuthController {
   static loginAdmin: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { email, password } = await AuthController.loginSchema.validateAsync(req.body) as ILoginRequest;
-      // Fetch user via gRPC
       const userResp: any = await new Promise((resolve, reject) => {
         userClient.GetUserByEmail({ email }, (err: any, resp: any) => {
           if (err) return reject(err);
@@ -365,7 +352,7 @@ class AuthController {
       }
 
       const userWithRole = await sequelize.query(
-        `SELECT u.id, u.email, u.name, r.name as role_name 
+        `SELECT u.id, u.email, u.name, r.name as role_name, u.role_id
          FROM users u 
          JOIN roles r ON u.role_id = r.id 
          WHERE u.email = :email`,
@@ -373,20 +360,31 @@ class AuthController {
           replacements: { email },
           type: QueryTypes.SELECT
         }
-      ) as Array<{ id: string; email: string; name: string; role_name: string }>;
+      ) as Array<{ id: string; email: string; name: string; role_name: string; role_id: string }>;
       const userRole = userWithRole[0]?.role_name || 'customer';
+      const userRoleId = userWithRole[0]?.role_id;
 
-      // Only allow admin or staff via admin endpoint
-      if (userRole !== 'admin' && userRole !== 'staff') {
+      if (userRole !== 'admin' && userRole !== 'manager_staff' && userRole !== 'ticket_staff') {
         res.status(HttpStatus.FORBIDDEN).json({ message: 'Bạn không có quyền truy cập vào hệ thống quản trị' });
         return;
+      }
+
+      let permissions: string[] = [];
+      if (userRoleId) {
+        try {
+          const userPermissions = await PermissionService.getPermissionsByRoleId(userRoleId);
+          permissions = userPermissions.map(p => p.code);
+        } catch (error) {
+          console.error('Error fetching permissions:', error);
+        }
       }
 
       const token = jwt.sign(
         { 
           userId: userResp.user.id, 
           email: userResp.user.email,
-          role: userRole
+          role: userRole,
+          roleId: userRoleId
         }, 
         (process.env.JWT_SECRET || 'your-secret-key') as string,
       );
@@ -397,7 +395,8 @@ class AuthController {
           id: userResp.user.id, 
           email: userResp.user.email, 
           name: userResp.user.name,
-          role: userRole
+          role: userRole,
+          permissions: permissions
         }
       };
 
@@ -451,7 +450,6 @@ class AuthController {
     try {
       const { email } = await AuthController.resendOtpSchema.validateAsync(req.body);
       
-      // Check if user exists and is still pending
       const user = await User.findOne({ where: { email } });
       if (!user) {
         res.status(HttpStatus.BAD_REQUEST).json({ message: 'Email không tồn tại trong hệ thống' });
@@ -463,7 +461,6 @@ class AuthController {
         return;
       }
 
-      // Generate new OTP and send
       const verifyCode = AuthController.generateOTP();
       const verifyUrl = AuthController.createVerifyUrl(email, verifyCode);
       const msg = AuthController.createEmailVerifyMessage(user.dataValues.id, email, verifyCode, verifyUrl);
@@ -482,9 +479,48 @@ class AuthController {
     }
   };
 
+  static getPermissions: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const authHeader = req.headers.authorization || '';
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+      if (!token) {
+        res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Thiếu token xác thực' });
+        return;
+      }
+      
+      let decoded: any;
+      try {
+        decoded = jwt.verify(token, (process.env.JWT_SECRET || 'your-secret-key') as string);
+      } catch {
+        res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Token không hợp lệ' });
+        return;
+      }
+
+      const { roleId } = decoded;
+      if (!roleId) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: 'Không tìm thấy thông tin vai trò' });
+        return;
+      }
+
+      const permissions = await PermissionService.getPermissionsByRoleId(roleId);
+
+      res.json({
+        success: true,
+        permissions: permissions.map(p => ({
+          id: p.id,
+          name: p.name,
+          code: p.code,
+          description: p.description
+        }))
+      });
+    } catch (err) {
+      console.error('Get permissions error:', err);
+      next(err);
+    }
+  };
+
   static createStaff: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      // Require admin JWT
       const authHeader = req.headers.authorization || '';
       const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
       if (!token) {
@@ -507,24 +543,30 @@ class AuthController {
         email: Joi.string().email().required(),
         password: Joi.string().min(6).required(),
         name: Joi.string().required(),
-        address: Joi.string().allow('', null)
+        address: Joi.string().allow('', null),
+        role: Joi.string().valid('manager_staff', 'ticket_staff').required()
       });
 
-      const { email, password, name, address } = await schema.validateAsync(req.body);
+      const { email, password, name, address, role } = await schema.validateAsync(req.body);
 
-      // Get staff role ID
-      const staffRoleId = await AuthController.getStaffRoleId();
+      let roleId: string;
+      if (role === 'manager_staff') {
+        roleId = await AuthController.getManagerStaffRoleId();
+      } else if (role === 'ticket_staff') {
+        roleId = await AuthController.getTicketStaffRoleId();
+      } else {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: 'Vai trò không hợp lệ' });
+        return;
+      }
 
-      // Hash password
       const hashed = await bcrypt.hash(password, AuthController.BCRYPT_SALT_ROUNDS);
 
-      // Call user-service gRPC to create staff
       const result: any = await new Promise((resolve, reject) => {
         userClient.CreateStaff({ 
           email, 
           name, 
           password: hashed, 
-          role_id: staffRoleId, 
+          role_id: roleId, 
           address 
         }, (err: any, resp: any) => {
           if (err) return reject(err);
@@ -538,7 +580,7 @@ class AuthController {
           id: result.id, 
           email, 
           name, 
-          role: 'staff', 
+          role: role, 
           status: 'active' 
         }
       });
@@ -553,11 +595,12 @@ class AuthController {
   };
 }
 
-// Export static methods for backward compatibility
 export const register = AuthController.register.bind(AuthController);
 export const login = AuthController.login.bind(AuthController);
 export const verifyOtp = AuthController.verifyOtp.bind(AuthController);
 export const resendOtp = AuthController.resendOtp.bind(AuthController);
 export const loginAdmin = AuthController.loginAdmin.bind(AuthController);
+export const getPermissions = AuthController.getPermissions.bind(AuthController);
+export const createStaff = AuthController.createStaff.bind(AuthController);
 
 export default AuthController;

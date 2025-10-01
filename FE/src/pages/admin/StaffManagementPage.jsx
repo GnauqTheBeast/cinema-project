@@ -9,7 +9,8 @@ export default function StaffManagementPage() {
     name: '',
     email: '',
     password: '',
-    address: ''
+    address: '',
+    role: 'manager_staff'
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,7 +35,7 @@ export default function StaffManagementPage() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setSuccess('Tạo tài khoản nhân viên thành công');
-      setForm({ name: '', email: '', password: '', address: '' });
+      setForm({ name: '', email: '', password: '', address: '', role: 'manager_staff' });
     } catch (e) {
       setError(e.response?.data?.message || 'Không thể tạo tài khoản nhân viên');
     } finally {
@@ -61,6 +62,13 @@ export default function StaffManagementPage() {
             <input type="password" name="password" value={form.password} onChange={handleChange} className="w-full border rounded px-3 py-2" />
           </div>
           <div>
+            <label className="block text-sm text-gray-600 mb-1">Vai trò</label>
+            <select name="role" value={form.role} onChange={handleChange} className="w-full border rounded px-3 py-2">
+              <option value="manager_staff">Quản lý rạp chiếu</option>
+              <option value="ticket_staff">Nhân viên bán vé</option>
+            </select>
+          </div>
+          <div className="md:col-span-2">
             <label className="block text-sm text-gray-600 mb-1">Địa chỉ (tuỳ chọn)</label>
             <input name="address" value={form.address} onChange={handleChange} className="w-full border rounded px-3 py-2" />
           </div>

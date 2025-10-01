@@ -7,6 +7,7 @@ service UserService {
   rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
   rpc ActivateUser(ActivateUserRequest) returns (ActivateUserResponse);
   rpc CreateStaff(CreateStaffRequest) returns (CreateStaffResponse);
+  rpc GetPermissionsByRoleId(GetPermissionsByRoleIdRequest) returns (GetPermissionsByRoleIdResponse);
 }
 
 message EnsurePendingRequest {
@@ -52,6 +53,23 @@ message CreateStaffRequest {
 message CreateStaffResponse {
   string id = 1;
   bool created = 2;
+  string message = 3;
+}
+
+message GetPermissionsByRoleIdRequest {
+  string role_id = 1;
+}
+
+message Permission {
+  string id = 1;
+  string name = 2;
+  string code = 3;
+  string description = 4;
+}
+
+message GetPermissionsByRoleIdResponse {
+  repeated Permission permissions = 1;
+  bool success = 2;
   string message = 3;
 }
 

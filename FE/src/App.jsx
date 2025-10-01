@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AppRouter from './routes/AppRouter';
 import ChatBot from './components/ChatBot';
+import { PermissionProvider } from './contexts/PermissionContext';
 
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem('token'));
@@ -25,10 +26,10 @@ function App() {
   }, []);
 
   return (
-    <>
+    <PermissionProvider>
       <AppRouter token={token} setToken={setToken} adminToken={adminToken} setAdminToken={setAdminToken} />
       <ChatBot />
-    </>
+    </PermissionProvider>
   );
 }
 

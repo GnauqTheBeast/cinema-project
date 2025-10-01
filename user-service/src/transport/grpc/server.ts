@@ -3,6 +3,7 @@ import * as protoLoader from '@grpc/proto-loader';
 import path from 'path';
 import { Models } from '../../storage/models.js';
 import { v4 as uuidv4 } from 'uuid';
+import { QueryTypes } from 'sequelize';
 
 const PROTO_PATH = path.resolve(process.cwd(), 'proto', 'user.proto');
 
@@ -89,7 +90,7 @@ export async function startGrpcServer(models: GrpcModels): Promise<void> {
     ) => {
       try {
         const { email, name, password, role_id, address } = call.request;
-        
+
         // Check if user already exists
         const existing = await models.User.findOne({ where: { email } });
         let id = existing?.get('id') as string | undefined;
@@ -107,7 +108,7 @@ export async function startGrpcServer(models: GrpcModels): Promise<void> {
             address: address || null,
             status: 'active' // Staff accounts are active immediately
           } as any);
-          
+
           // Create customer profile for staff (they can also be customers)
           await models.CustomerProfile.create({
             id: uuidv4(),
@@ -116,11 +117,11 @@ export async function startGrpcServer(models: GrpcModels): Promise<void> {
             point: 0,
             onchain_wallet_address: ''
           } as any);
-          
+
           created = true;
         } else {
           // Update existing user to active and staff role
-          await (existing as any).update({ 
+          await (existing as any).update({
             status: 'active',
             role_id: role_id || existing.get('role_id'),
             name: name || existing.get('name'),
@@ -129,11 +130,50 @@ export async function startGrpcServer(models: GrpcModels): Promise<void> {
           id = existing.get('id') as string;
         }
 
-        const message = created 
-          ? 'Tạo tài khoản nhân viên thành công' 
+        const message = created
+          ? 'Tạo tài khoản nhân viên thành công'
           : 'Tài khoản đã tồn tại, đã cập nhật trạng thái active';
 
         callback(null, { id, created, message });
+      } catch (e: any) {
+        callback({ code: grpc.status.INTERNAL, message: e.message } as any);
+      }
+    },
+    getPermissionsByRoleId: async (
+      call: grpc.ServerUnaryCall<any, any>,
+      callback: grpc.sendUnaryData<any>
+    ) => {
+      try {
+        const { role_id } = call.request;
+
+        if (!role_id) {
+          return callback({ code: grpc.status.INVALID_ARGUMENT, message: 'role_id is required' } as any);
+        }
+
+        // Query permissions for the role using raw SQL
+        const permissions = await models.sequelize.query<
+          { id: string; name: string; code: string; description: string }
+        >(
+          `SELECT p.id, p.name, p.code, p.description
+       FROM permissions p
+       JOIN role_permissions rp ON p.id = rp.permission_id
+       WHERE rp.role_id = :role_id`,
+          {
+            replacements: { role_id },
+            type: QueryTypes.SELECT
+          }
+        );
+
+        callback(null, {
+          permissions: permissions.map(p => ({
+            id: p.id,
+            name: p.name,
+            code: p.code,
+            description: p.description
+          })),
+          success: true,
+          message: 'Permissions retrieved successfully'
+        });
       } catch (e: any) {
         callback({ code: grpc.status.INTERNAL, message: e.message } as any);
       }
