@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import AppRouter from './routes/AppRouter';
+import React, { useEffect, useState } from 'react';
 import ChatBot from './components/ChatBot';
+import NotificationComponent from './components/NotificationComponent';
 import { PermissionProvider } from './contexts/PermissionContext';
+import AppRouter from './routes/AppRouter';
+import websocketService from './services/websocketService';
 
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem('token'));
@@ -25,10 +27,32 @@ function App() {
     return () => window.removeEventListener('tokenChange', handler);
   }, []);
 
+  // WebSocket connection management
+  useEffect(() => {
+    const user = localStorage.getItem('user');
+    if (token && user) {
+      try {
+        const userData = JSON.parse(user);
+        if (userData.id) {
+          websocketService.connect(userData.id.toString());
+        }
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    } else {
+      websocketService.disconnect();
+    }
+
+    return () => {
+      websocketService.disconnect();
+    };
+  }, [token]);
+
   return (
     <PermissionProvider>
       <AppRouter token={token} setToken={setToken} adminToken={adminToken} setAdminToken={setAdminToken} />
       <ChatBot />
+            {token && <NotificationComponent />}
     </PermissionProvider>
   );
 }

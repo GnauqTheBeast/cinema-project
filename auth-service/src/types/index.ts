@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
 
 export interface IUser {
   id: string;
@@ -47,7 +47,7 @@ export interface IAuthResponse {
     name: string;
     role: string;
     permissions?: string[];
-  };
+  }
 }
 
 export interface IController {

@@ -84,8 +84,6 @@ func (wsc *WSConnection) Start() {
 	}()
 
 	wg.Wait()
-
-	return
 }
 
 func (wsc *WSConnection) Context() context.Context {

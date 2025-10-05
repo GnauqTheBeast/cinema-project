@@ -596,7 +596,7 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 	}{
 		"standard": {
 			rows:        []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"},
-			seatsPerRow: 10,
+			seatsPerRow: 8,
 			regularRows: []string{"A", "B", "C", "D", "E"},
 			vipRows:     []string{"F", "G", "H", "I", "J", "K", "L"},
 			coupleRows:  []string{},
@@ -769,17 +769,17 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 
 		for _, movie := range movies {
 			for _, room := range rooms {
-				formats := []string{"2d"}
-				if room.RoomType == "imax" {
+				formats := make([]string, 0)
+				switch room.RoomType {
+				case "imax":
 					formats = []string{"2d", "3d", "imax"}
-				} else if room.RoomType == "4dx" {
+				case "4dx":
 					formats = []string{"4dx"}
-				} else if room.RoomType == "standard" || room.RoomType == "vip" {
+				case "standard", "vip":
 					formats = []string{"2d", "3d"}
 				}
 
 				for _, format := range formats {
-					// Not all movies in all formats every day - add some variety
 					if day%2 == 0 && format == "3d" {
 						continue
 					}
@@ -789,22 +789,18 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 
 					for period, times := range timeSlots {
 						for _, timeStr := range times {
-							// Parse time
 							startTime, err := time.Parse("15:04", timeStr)
 							if err != nil {
 								continue
 							}
 
-							// Create full datetime
 							showtimeStart := time.Date(
 								currentDate.Year(), currentDate.Month(), currentDate.Day(),
 								startTime.Hour(), startTime.Minute(), 0, 0, currentDate.Location(),
 							)
 
-							// Calculate end time based on movie duration + 30 min buffer
 							showtimeEnd := showtimeStart.Add(time.Duration(movie.Duration+30) * time.Minute)
 
-							// Get base price
 							basePrice := priceConfig[room.RoomType][period]
 
 							switch format {

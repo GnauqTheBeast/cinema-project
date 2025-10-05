@@ -117,16 +117,6 @@ func (e *EmailService) SubscribeEmailVerifyQueue(ctx context.Context) error {
 				}
 
 				go func() {
-					if err = e.pubsub.Publish(ctx, &pubsub.Message{
-						Topic: fmt.Sprintf("email_verify_%s", receiveMsg.UserId),
-						Data:  emailVerify,
-					}); err != nil {
-						logrus.Warnf("Error publishing message to topic %s: %v\n", fmt.Sprintf("email_verify_%s", receiveMsg.UserId), err)
-					}
-					logrus.Info("Email verify sent for user: ", receiveMsg.To)
-				}()
-
-				go func() {
 					if err = datastore.CreateNotification(ctx, e.db, noti); err != nil {
 						logrus.Warnf("Error creating notification: %v\n", err)
 					}

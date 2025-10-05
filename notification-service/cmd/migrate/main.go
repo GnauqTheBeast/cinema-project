@@ -117,7 +117,7 @@ func seedMockData(db *bun.DB) error {
 		notifications = append(notifications, &models.Notification{
 			Id:        uuid.New().String(),
 			UserId:    strings.TrimSpace(segments[0]),
-			Title:     strings.TrimSpace(segments[1]),
+			Title:     models.NotificationTitle(strings.TrimSpace(segments[1])),
 			Content:   strings.TrimSpace(segments[2]),
 			Status:    models.NotificationStatus(strings.ToUpper(strings.TrimSpace(segments[3]))),
 			CreatedAt: &t,
