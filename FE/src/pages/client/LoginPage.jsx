@@ -19,7 +19,11 @@ export default function LoginPage({ onLogin }) {
    e.preventDefault();
    setError('');
    try {
-     const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+    const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+    if (res.data?.user?.role && res.data.user.role !== 'customer') {
+      setError('Tài khoản không thuộc khách hàng. Vui lòng đăng nhập tại trang quản trị.');
+      return;
+    }
      localStorage.setItem('token', res.data.token);
      localStorage.setItem('user', JSON.stringify(res.data.user));
      
@@ -29,7 +33,7 @@ export default function LoginPage({ onLogin }) {
      }
      
      if (onLogin) onLogin();
-     navigate('/dashboard');
+    navigate('/');
    } catch (err) {
      const errorData = err.response?.data;
      if (errorData?.requireVerification) {

@@ -18,6 +18,8 @@ import SeatsPage from '../pages/admin/SeatsPage';
 import SeatFormPage from '../pages/admin/SeatFormPage';
 import ShowtimesPage from '../pages/admin/ShowtimesPage';
 import ShowtimeFormPage from '../pages/admin/ShowtimeFormPage';
+import StaffManagementPage from '../pages/admin/StaffManagementPage';
+import PermissionTest from '../components/admin/PermissionTest';
 
 const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
   const ProtectedRoute = ({ children }) => {
@@ -30,7 +32,7 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
     }
 
     const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
-    if (adminUser.role !== 'admin' && adminUser.role !== 'staff') {
+    if (adminUser.role !== 'admin' && adminUser.role !== 'manager_staff' && adminUser.role !== 'ticket_staff') {
       return <Navigate to="/admin/login" replace />;
     }
 
@@ -199,6 +201,24 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
         element={
           <AdminRoute>
             <RevenueStatsPage />
+          </AdminRoute>
+        } 
+      />
+
+      {/* Staff Management */}
+      <Route 
+        path="/admin/staff" 
+        element={
+          <AdminRoute>
+            <StaffManagementPage />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/permissions" 
+        element={
+          <AdminRoute>
+            <PermissionTest />
           </AdminRoute>
         } 
       />

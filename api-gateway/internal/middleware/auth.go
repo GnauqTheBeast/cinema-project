@@ -8,6 +8,7 @@ import (
 	"api-gateway/internal/pkg/auth"
 	"api-gateway/internal/pkg/logger"
 	"api-gateway/internal/pkg/response"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -64,7 +65,7 @@ func (a *AuthMiddleware) Authenticate() gin.HandlerFunc {
 		}
 
 		// Check admin paths
-		if a.isAdminPath(path) && claims.Role != "admin" {
+		if a.isAdminPath(path) && claims.Role != "admin" && claims.Role != "manager_staff" && claims.Role != "ticket_staff" {
 			a.logger.Warn("Authorization failed - insufficient permissions",
 				"path", path,
 				"method", method,

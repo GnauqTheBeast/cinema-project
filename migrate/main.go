@@ -114,6 +114,7 @@ func SeedAll(ctx context.Context, db *bun.DB) error {
 	seedFuncs := []func(context.Context, *bun.DB) error{
 		datastore.SeedRoles,
 		datastore.SeedPermissions,
+		datastore.SeedRolePermissions,
 		datastore.SeedMovies,
 		datastore.SeedRooms,
 		datastore.SeedSeats,

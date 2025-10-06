@@ -23,17 +23,14 @@ class RedisManager implements IRedisManager {
   }
 
   private initializeClients(): void {
-    // Main Redis client for caching
     RedisManager.redisClient = createClient({
       url: `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || '6379'}`
     });
 
-    // Redis client for pub/sub operations
     RedisManager.redisPubSubClient = createClient({
       url: process.env.REDIS_PUBSUB_URL || `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || '6379'}`
     });
 
-    // Error handlers
     RedisManager.redisClient.on('error', (err: Error) => {
       console.error('Redis Client Error:', err);
     });
@@ -42,7 +39,6 @@ class RedisManager implements IRedisManager {
       console.error('Redis PubSub Client Error:', err);
     });
 
-    // Connection handlers
     RedisManager.redisClient.on('connect', () => {
       console.log('Redis client connected successfully');
     });
@@ -125,12 +121,10 @@ class RedisManager implements IRedisManager {
   }
 }
 
-// Initialize and connect
 const redisManager = RedisManager.getInstance();
 await redisManager.connect();
 
-// Export for backward compatibility
 export const redisClient = RedisManager.getClient();
 export const redisPubSubClient = RedisManager.getPubSubClient();
 export { redisClient as default };
-export { RedisManager };
+export { RedisManager }

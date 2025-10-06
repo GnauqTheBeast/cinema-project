@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package auth;
+
+service AuthService {
+  rpc VerifyOtpAndActivate(VerifyOtpRequest) returns (VerifyOtpResponse);
+}
+
+message VerifyOtpRequest {
+  string email = 1;
+  string otp = 2;
+}
+
+message VerifyOtpResponse {
+  bool verified = 1;
+  string message = 2;
+}
+
+

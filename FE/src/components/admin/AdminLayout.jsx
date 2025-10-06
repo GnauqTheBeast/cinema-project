@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { usePermissions } from '../../contexts/PermissionContext';
 import { 
   FaChartBar, 
   FaFilm, 
@@ -18,6 +19,7 @@ export default function AdminLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { hasPermission } = usePermissions();
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
@@ -31,12 +33,54 @@ export default function AdminLayout({ children }) {
   };
 
   const navItems = [
-    { path: '/admin/dashboard', label: 'Dashboard', icon: FaChartBar },
-    { path: '/admin/movies', label: 'Quản lý phim', icon: FaFilm },
-    { path: '/admin/rooms', label: 'Phòng chiếu', icon: FaDoorOpen },
-    { path: '/admin/seats', label: 'Ghế ngồi', icon: FaCouch },
-    { path: '/admin/showtimes', label: 'Lịch chiếu', icon: FaClock },
-    { path: '/admin/revenue', label: 'Doanh thu', icon: FaMoneyBillWave },
+    { 
+      path: '/admin/dashboard', 
+      label: 'Dashboard', 
+      icon: FaChartBar,
+      permission: 'profile_view' // Basic permission for dashboard
+    },
+    { 
+      path: '/admin/movies', 
+      label: 'Quản lý phim', 
+      icon: FaFilm,
+      permission: 'movie_manage'
+    },
+    { 
+      path: '/admin/rooms', 
+      label: 'Phòng chiếu', 
+      icon: FaDoorOpen,
+      permission: 'seat_manage' // Room management is part of seat management
+    },
+    { 
+      path: '/admin/seats', 
+      label: 'Ghế ngồi', 
+      icon: FaCouch,
+      permission: 'seat_manage'
+    },
+    { 
+      path: '/admin/showtimes', 
+      label: 'Lịch chiếu', 
+      icon: FaClock,
+      permission: 'showtime_manage'
+    },
+    { 
+      path: '/admin/revenue', 
+      label: 'Doanh thu', 
+      icon: FaMoneyBillWave,
+      permission: 'report_view'
+    },
+    { 
+      path: '/admin/staff', 
+      label: 'Nhân viên', 
+      icon: FaUser,
+      permission: 'staff_manage' // This permission needs to be added to the database
+    },
+    { 
+      path: '/admin/permissions', 
+      label: 'Test Quyền', 
+      icon: FaUser,
+      permission: 'profile_view' // Basic permission for testing
+    },
   ];
 
   return (
@@ -109,6 +153,11 @@ export default function AdminLayout({ children }) {
               {navItems.map((item) => {
                 const IconComponent = item.icon;
                 const isActive = isActiveRoute(item.path);
+                
+                // Check if user has permission for this menu item
+                if (!hasPermission(item.permission)) {
+                  return null;
+                }
                 
                 return (
                   <button

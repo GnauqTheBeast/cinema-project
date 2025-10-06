@@ -105,7 +105,6 @@ class DatabaseManager implements IDatabaseManager {
       updatedAt: 'updated_at'
     }) as UserModel;
 
-    // Define CustomerProfile model
     DatabaseManager.CustomerProfile = DatabaseManager.sequelize.define<Model<ICustomerProfile, ICustomerProfileCreationAttributes>>('CustomerProfile', {
       id: {
         type: DataTypes.STRING,
@@ -191,10 +190,8 @@ class DatabaseManager implements IDatabaseManager {
   }
 }
 
-// Initialize database manager
 const databaseManager = DatabaseManager.getInstance();
 
-// Export for backward compatibility
 export const sequelize = DatabaseManager.getSequelize();
 export const User = DatabaseManager.getUser();
 export const CustomerProfile = DatabaseManager.getCustomerProfile();

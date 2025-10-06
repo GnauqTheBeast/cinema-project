@@ -16,14 +16,15 @@ class AuthRoutes {
   }
 
   private initializeRoutes(): void {
-    // Authentication routes
     this.router.post('/register', this.handleAsync(AuthController.register));
     this.router.post('/login', this.handleAsync(AuthController.login));
+    this.router.post('/admin/login', this.handleAsync(AuthController.loginAdmin));
     this.router.post('/verify-otp', this.handleAsync(AuthController.verifyOtp));
     this.router.post('/resend-otp', this.handleAsync(AuthController.resendOtp));
+    this.router.post('/staff', this.handleAsync(AuthController.createStaff));
+    this.router.get('/permissions', this.handleAsync(AuthController.getPermissions));
   }
 
-  // Async error handler wrapper
   private handleAsync(fn: IController) {
     return (req: Request, res: Response, next: NextFunction): void => {
       Promise.resolve(fn(req, res, next)).catch(next);
@@ -34,13 +35,11 @@ class AuthRoutes {
     return this.router;
   }
 
-  // Method to add custom middleware
   public addMiddleware(middleware: express.RequestHandler): AuthRoutes {
     this.router.use(middleware);
     return this;
   }
 
-  // Method to add custom route
   public addRoute(method: string, path: string, handler: IController): AuthRoutes {
     const routeMethod = method.toLowerCase() as keyof Router;
     if (typeof this.router[routeMethod] === 'function') {
@@ -49,7 +48,6 @@ class AuthRoutes {
     return this;
   }
 
-  // Get all registered routes for debugging
   public getRegisteredRoutes(): IRoute[] {
     return this.router.stack.map(layer => ({
       method: Object.keys((layer.route as any)?.methods || {})[0]?.toUpperCase() || 'UNKNOWN',
@@ -57,24 +55,19 @@ class AuthRoutes {
     }));
   }
 
-  // Method to add validation middleware for specific routes
   public addValidation(path: string, validationMiddleware: express.RequestHandler): AuthRoutes {
     this.router.use(path, validationMiddleware);
     return this;
   }
 
-  // Method to add rate limiting for specific routes
   public addRateLimit(path: string, rateLimitMiddleware: express.RequestHandler): AuthRoutes {
     this.router.use(path, rateLimitMiddleware);
     return this;
   }
 }
 
-// Create and export router instance
 const authRoutes = new AuthRoutes();
 
-// Export router for Express app
 export default authRoutes.getRouter();
 
-// Export class for potential extension
 export { AuthRoutes };

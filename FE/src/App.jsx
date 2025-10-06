@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import AppRouter from './routes/AppRouter';
+import React, { useEffect, useState } from 'react';
 import ChatBot from './components/ChatBot';
 import NotificationComponent from './components/NotificationComponent';
+import { PermissionProvider } from './contexts/PermissionContext';
+import AppRouter from './routes/AppRouter';
 import websocketService from './services/websocketService';
 
 function App() {
@@ -48,11 +49,11 @@ function App() {
   }, [token]);
 
   return (
-    <>
+    <PermissionProvider>
       <AppRouter token={token} setToken={setToken} adminToken={adminToken} setAdminToken={setAdminToken} />
       <ChatBot />
-      {token && <NotificationComponent />}
-    </>
+            {token && <NotificationComponent />}
+    </PermissionProvider>
   );
 }
 
