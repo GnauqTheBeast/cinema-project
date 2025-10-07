@@ -1,80 +1,84 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { movieService } from '../../services/movieApi';
-import AdminLayout from '../../components/admin/AdminLayout';
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import AdminLayout from '../../components/admin/AdminLayout'
+import { movieService } from '../../services/movieApi'
 
 export default function MovieDetailPage() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [movie, setMovie] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [updating, setUpdating] = useState(false);
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const [movie, setMovie] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [updating, setUpdating] = useState(false)
 
   useEffect(() => {
-    fetchMovie();
-  }, [id]);
+    fetchMovie()
+  }, [id])
 
   const fetchMovie = async () => {
     try {
-      setLoading(true);
-      const data = await movieService.getMovieById(id);
-      setMovie(data.data);
-      setError('');
+      setLoading(true)
+      const data = await movieService.getMovieById(id)
+      setMovie(data.data)
+      setError('')
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load movie');
-      console.error('Error fetching movie:', err);
+      setError(err.response?.data?.message || 'Failed to load movie')
+      console.error('Error fetching movie:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleStatusChange = async (newStatus) => {
     try {
-      setUpdating(true);
-      await movieService.updateMovieStatus(id, newStatus);
-      setMovie({ ...movie, status: newStatus });
+      setUpdating(true)
+      await movieService.updateMovieStatus(id, newStatus)
+      setMovie({ ...movie, status: newStatus })
     } catch (err) {
-      alert('Failed to update movie status: ' + (err.response?.data?.message || err.message));
+      alert('Failed to update movie status: ' + (err.response?.data?.message || err.message))
     } finally {
-      setUpdating(false);
+      setUpdating(false)
     }
-  };
+  }
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this movie?')) return;
+    if (!window.confirm('Are you sure you want to delete this movie?')) return
 
     try {
-      await movieService.deleteMovie(id);
-      navigate('/admin/movies');
+      await movieService.deleteMovie(id)
+      navigate('/admin/movies')
     } catch (err) {
-      alert('Failed to delete movie: ' + (err.response?.data?.message || err.message));
+      alert('Failed to delete movie: ' + (err.response?.data?.message || err.message))
     }
-  };
+  }
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'upcoming': return '#ff9800';
-      case 'showing': return '#4caf50';
-      case 'ended': return '#f44336';
-      default: return '#757575';
+      case 'upcoming':
+        return '#ff9800'
+      case 'showing':
+        return '#4caf50'
+      case 'ended':
+        return '#f44336'
+      default:
+        return '#757575'
     }
-  };
+  }
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'TBA';
+    if (!dateString) return 'TBA'
     return new Date(dateString).toLocaleDateString('vi-VN', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
-    });
-  };
+      day: 'numeric',
+    })
+  }
 
   const formatDuration = (minutes) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
-  };
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return `${hours}h ${mins}m`
+  }
 
   if (loading) {
     return (
@@ -83,20 +87,22 @@ export default function MovieDetailPage() {
           <div>Loading movie...</div>
         </div>
       </AdminLayout>
-    );
+    )
   }
 
   if (error || !movie) {
     return (
       <AdminLayout>
         <div>
-          <div style={{
-            backgroundColor: '#ffebee',
-            color: '#c62828',
-            padding: '16px',
-            borderRadius: '4px',
-            marginBottom: '24px'
-          }}>
+          <div
+            style={{
+              backgroundColor: '#ffebee',
+              color: '#c62828',
+              padding: '16px',
+              borderRadius: '4px',
+              marginBottom: '24px',
+            }}
+          >
             {error || 'Movie not found'}
           </div>
           <button
@@ -107,14 +113,14 @@ export default function MovieDetailPage() {
               border: 'none',
               padding: '12px 24px',
               borderRadius: '4px',
-              cursor: 'pointer'
+              cursor: 'pointer',
             }}
           >
             Back to Movies
           </button>
         </div>
       </AdminLayout>
-    );
+    )
   }
 
   return (
@@ -130,7 +136,7 @@ export default function MovieDetailPage() {
               padding: '8px 16px',
               borderRadius: '4px',
               cursor: 'pointer',
-              marginRight: '16px'
+              marginRight: '16px',
             }}
           >
             ← Back to Movies
@@ -144,7 +150,7 @@ export default function MovieDetailPage() {
               padding: '8px 16px',
               borderRadius: '4px',
               cursor: 'pointer',
-              marginRight: '16px'
+              marginRight: '16px',
             }}
           >
             Edit Movie
@@ -157,19 +163,21 @@ export default function MovieDetailPage() {
               border: 'none',
               padding: '8px 16px',
               borderRadius: '4px',
-              cursor: 'pointer'
+              cursor: 'pointer',
             }}
           >
             Delete Movie
           </button>
         </div>
 
-        <div style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          padding: '32px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}>
+        <div
+          style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '32px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          }}
+        >
           <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
             {/* Poster */}
             {movie.poster_url && (
@@ -181,7 +189,7 @@ export default function MovieDetailPage() {
                     width: '100%',
                     height: 'auto',
                     borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
                   }}
                 />
               </div>
@@ -203,7 +211,7 @@ export default function MovieDetailPage() {
                     borderRadius: '16px',
                     fontSize: '14px',
                     fontWeight: 'bold',
-                    textTransform: 'uppercase'
+                    textTransform: 'uppercase',
                   }}
                 >
                   {movie.status?.replace('_', ' ')}
@@ -233,7 +241,7 @@ export default function MovieDetailPage() {
               <div style={{ marginBottom: '24px' }}>
                 <strong>Thay đổi trạng thái:</strong>
                 <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {['upcoming', 'showing', 'ended'].map(status => (
+                  {['upcoming', 'showing', 'ended'].map((status) => (
                     <button
                       key={status}
                       onClick={() => handleStatusChange(status)}
@@ -246,7 +254,7 @@ export default function MovieDetailPage() {
                         borderRadius: '4px',
                         cursor: updating || movie.status === status ? 'not-allowed' : 'pointer',
                         opacity: updating || movie.status === status ? 0.6 : 1,
-                        textTransform: 'capitalize'
+                        textTransform: 'capitalize',
                       }}
                     >
                       {status.replace('_', ' ')}
@@ -261,9 +269,7 @@ export default function MovieDetailPage() {
           {movie.description && (
             <div style={{ marginTop: '32px' }}>
               <h3 style={{ marginBottom: '12px' }}>Thông tin</h3>
-              <p style={{ lineHeight: '1.6', color: '#666' }}>
-                {movie.description}
-              </p>
+              <p style={{ lineHeight: '1.6', color: '#666' }}>{movie.description}</p>
             </div>
           )}
 
@@ -278,7 +284,7 @@ export default function MovieDetailPage() {
                 style={{
                   color: '#1976d2',
                   textDecoration: 'none',
-                  fontSize: '16px'
+                  fontSize: '16px',
                 }}
               >
                 🎬 Watch Trailer
@@ -287,13 +293,15 @@ export default function MovieDetailPage() {
           )}
 
           {/* Timestamps */}
-          <div style={{
-            marginTop: '32px',
-            paddingTop: '24px',
-            borderTop: '1px solid #eee',
-            fontSize: '14px',
-            color: '#999'
-          }}>
+          <div
+            style={{
+              marginTop: '32px',
+              paddingTop: '24px',
+              borderTop: '1px solid #eee',
+              fontSize: '14px',
+              color: '#999',
+            }}
+          >
             <div>Ngày tạo: {formatDate(movie.created_at)}</div>
             {movie.updated_at && movie.updated_at !== movie.created_at && (
               <div>Ngày chỉnh sửa: {formatDate(movie.updated_at)}</div>
@@ -302,5 +310,5 @@ export default function MovieDetailPage() {
         </div>
       </div>
     </AdminLayout>
-  );
-} 
+  )
+}

@@ -1,102 +1,97 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaSearch } from 'react-icons/fa';
-import AdminLayout from '../../components/admin/AdminLayout';
-import { roomService } from '../../services/roomApi';
+import { useEffect, useState } from 'react'
+import { FaEdit, FaEye, FaPlus, FaSearch, FaTrash } from 'react-icons/fa'
+import { Link } from 'react-router-dom'
+import AdminLayout from '../../components/admin/AdminLayout'
+import { roomService } from '../../services/roomApi'
 
 const RoomsPage = () => {
-  const [rooms, setRooms] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [search, setSearch] = useState('');
-  const [selectedRoomType, setSelectedRoomType] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
+  const [rooms, setRooms] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [search, setSearch] = useState('')
+  const [selectedRoomType, setSelectedRoomType] = useState('')
+  const [selectedStatus, setSelectedStatus] = useState('')
 
-  const roomTypes = roomService.getRoomTypes();
-  const roomStatuses = roomService.getRoomStatuses();
+  const roomTypes = roomService.getRoomTypes()
+  const roomStatuses = roomService.getRoomStatuses()
 
   const fetchRooms = async () => {
     try {
-      setLoading(true);
+      setLoading(true)
       const response = await roomService.getRooms(
         currentPage,
         10,
         search,
         selectedRoomType,
-        selectedStatus
-      );
-      
+        selectedStatus,
+      )
+
       if (response.success) {
-        setRooms(response.data.data || []);
-        setTotalPages(response.data.paging?.total_pages || 1);
+        setRooms(response.data.data || [])
+        setTotalPages(response.data.paging?.total_pages || 1)
       } else {
-        setError('Không thể tải danh sách phòng');
+        setError('Không thể tải danh sách phòng')
       }
     } catch (err) {
-      setError('Có lỗi xảy ra khi tải dữ liệu');
-      console.error('Error fetching rooms:', err);
+      setError('Có lỗi xảy ra khi tải dữ liệu')
+      console.error('Error fetching rooms:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchRooms();
-  }, [currentPage, search, selectedRoomType, selectedStatus]);
+    fetchRooms()
+  }, [currentPage, search, selectedRoomType, selectedStatus])
 
   const handleSearch = (e) => {
-    setSearch(e.target.value);
-    setCurrentPage(1);
-  };
+    setSearch(e.target.value)
+    setCurrentPage(1)
+  }
 
   const handleDelete = async (id) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa phòng này?')) {
-      return;
+      return
     }
 
     try {
-      await roomService.deleteRoom(id);
-      fetchRooms();
+      await roomService.deleteRoom(id)
+      fetchRooms()
     } catch (err) {
-      alert('Có lỗi xảy ra khi xóa phòng');
-      console.error('Error deleting room:', err);
+      alert('Có lỗi xảy ra khi xóa phòng')
+      console.error('Error deleting room:', err)
     }
-  };
+  }
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      await roomService.updateRoomStatus(id, newStatus);
-      fetchRooms();
+      await roomService.updateRoomStatus(id, newStatus)
+      fetchRooms()
     } catch (err) {
-      alert('Có lỗi xảy ra khi cập nhật trạng thái');
-      console.error('Error updating status:', err);
+      alert('Có lỗi xảy ra khi cập nhật trạng thái')
+      console.error('Error updating status:', err)
     }
-  };
+  }
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'active':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800'
       case 'inactive':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800'
       case 'maintenance':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800'
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800'
     }
-  };
+  }
 
   const getRoomTypeLabel = (type) => {
-    const roomType = roomTypes.find(rt => rt.value === type);
-    return roomType ? roomType.label : type;
-  };
-
-  const getStatusLabel = (status) => {
-    const statusObj = roomStatuses.find(s => s.value === status);
-    return statusObj ? statusObj.label : status;
-  };
+    const roomType = roomTypes.find((rt) => rt.value === type)
+    return roomType ? roomType.label : type
+  }
 
   return (
     <AdminLayout>
@@ -129,17 +124,17 @@ const RoomsPage = () => {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            
+
             <select
               value={selectedRoomType}
               onChange={(e) => {
-                setSelectedRoomType(e.target.value);
-                setCurrentPage(1);
+                setSelectedRoomType(e.target.value)
+                setCurrentPage(1)
               }}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Tất cả loại phòng</option>
-              {roomTypes.map(type => (
+              {roomTypes.map((type) => (
                 <option key={type.value} value={type.value}>
                   {type.label}
                 </option>
@@ -149,13 +144,13 @@ const RoomsPage = () => {
             <select
               value={selectedStatus}
               onChange={(e) => {
-                setSelectedStatus(e.target.value);
-                setCurrentPage(1);
+                setSelectedStatus(e.target.value)
+                setCurrentPage(1)
               }}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Tất cả trạng thái</option>
-              {roomStatuses.map(status => (
+              {roomStatuses.map((status) => (
                 <option key={status.value} value={status.value}>
                   {status.label}
                 </option>
@@ -214,9 +209,7 @@ const RoomsPage = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {room.capacity} ghế
-                        </div>
+                        <div className="text-sm text-gray-900">{room.capacity} ghế</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <select
@@ -224,7 +217,7 @@ const RoomsPage = () => {
                           onChange={(e) => handleStatusChange(room.id, e.target.value)}
                           className={`text-xs px-2 py-1 rounded-full ${getStatusColor(room.status)} border-0`}
                         >
-                          {roomStatuses.map(status => (
+                          {roomStatuses.map((status) => (
                             <option key={status.value} value={status.value}>
                               {status.label}
                             </option>
@@ -276,14 +269,14 @@ const RoomsPage = () => {
               <div className="flex justify-center">
                 <nav className="flex space-x-2">
                   <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
                     className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Trước
                   </button>
-                  
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
@@ -296,9 +289,9 @@ const RoomsPage = () => {
                       {page}
                     </button>
                   ))}
-                  
+
                   <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
                     className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -311,7 +304,7 @@ const RoomsPage = () => {
         )}
       </div>
     </AdminLayout>
-  );
-};
+  )
+}
 
-export default RoomsPage; 
+export default RoomsPage

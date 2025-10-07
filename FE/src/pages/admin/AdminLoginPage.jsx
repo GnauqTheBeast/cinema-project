@@ -1,54 +1,54 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { FaEye, FaEyeSlash, FaUser, FaLock, FaShieldAlt } from 'react-icons/fa';
-import axios from 'axios';
+import axios from 'axios'
+import { useState } from 'react'
+import { FaEye, FaEyeSlash, FaLock, FaShieldAlt, FaUser } from 'react-icons/fa'
+import { Link, useNavigate } from 'react-router-dom'
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1'
 
 export default function AdminLoginPage() {
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
+    password: '',
+  })
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const navigate = useNavigate()
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
-    });
+      [e.target.name]: e.target.value,
+    })
 
-    if (error) setError('');
-  };
+    if (error) setError('')
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+    e.preventDefault()
+    setLoading(true)
+    setError('')
 
     try {
-      const response = await axios.post(`${API_URL}/auth/admin/login`, formData);
+      const response = await axios.post(`${API_URL}/auth/admin/login`, formData)
 
       // Backend already restricts roles; no client-side bypass
 
-      localStorage.setItem('adminToken', response.data.token);
-      localStorage.setItem('adminUser', JSON.stringify(response.data.user));
-      window.dispatchEvent(new Event('tokenChange'));
+      localStorage.setItem('adminToken', response.data.token)
+      localStorage.setItem('adminUser', JSON.stringify(response.data.user))
+      window.dispatchEvent(new Event('tokenChange'))
 
-      navigate('/admin/dashboard');
+      navigate('/admin/dashboard')
     } catch (err) {
       if (err.response?.data?.message) {
-        setError(err.response.data.message);
+        setError(err.response.data.message)
       } else {
-        setError('Đăng nhập thất bại. Vui lòng thử lại.');
+        setError('Đăng nhập thất bại. Vui lòng thử lại.')
       }
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-4">
@@ -58,12 +58,8 @@ export default function AdminLoginPage() {
           <div className="mx-auto h-16 w-16 bg-gradient-to-r from-red-600 to-red-800 rounded-full flex items-center justify-center shadow-lg mb-6">
             <FaShieldAlt className="h-8 w-8 text-white" />
           </div>
-          <h2 className="text-3xl font-bold text-white mb-2">
-            Quản trị viên
-          </h2>
-          <p className="text-gray-400">
-            Đăng nhập vào hệ thống quản lý HQ Cinema
-          </p>
+          <h2 className="text-3xl font-bold text-white mb-2">Quản trị viên</h2>
+          <p className="text-gray-400">Đăng nhập vào hệ thống quản lý HQ Cinema</p>
         </div>
 
         {/* Form */}
@@ -162,7 +158,7 @@ export default function AdminLoginPage() {
 
             {/* Customer Login Link */}
             <div className="text-center">
-              <Link 
+              <Link
                 to="/login"
                 className="text-red-400 hover:text-red-300 transition-colors duration-300"
               >
@@ -174,11 +170,9 @@ export default function AdminLoginPage() {
 
         {/* Footer */}
         <div className="text-center">
-          <p className="text-gray-400 text-sm">
-            © 2024 HQ Cinema. Hệ thống quản trị nội bộ.
-          </p>
+          <p className="text-gray-400 text-sm">© 2025 HQ Cinema. Hệ thống quản trị nội bộ.</p>
         </div>
       </div>
     </div>
-  );
+  )
 }

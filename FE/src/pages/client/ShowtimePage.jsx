@@ -1,94 +1,111 @@
-import React, { useState, useEffect } from 'react';
-import { FaCalendarAlt, FaClock, FaFilter, FaSearch, FaMapMarkerAlt, FaTicketAlt, FaSpinner, FaPlay } from 'react-icons/fa';
-import Header from '../../components/Header';
-import { showtimeService } from '../../services/showtimeApi';
-import { movieService } from '../../services/movieService';
+import { useEffect, useState } from 'react'
+import {
+  FaCalendarAlt,
+  FaClock,
+  FaFilter,
+  FaPlay,
+  FaSearch,
+  FaSpinner,
+  FaTicketAlt,
+} from 'react-icons/fa'
+import Header from '../../components/Header'
+import { movieService } from '../../services/movieService'
+import { showtimeService } from '../../services/showtimeApi'
 
 export default function ShowtimePage() {
-  const [showtimes, setShowtimes] = useState([]);
-  const [movies, setMovies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedMovie, setSelectedMovie] = useState('');
-  const [selectedFormat, setSelectedFormat] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showtimes, setShowtimes] = useState([])
+  const [movies, setMovies] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [selectedMovie, setSelectedMovie] = useState('')
+  const [selectedFormat, setSelectedFormat] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
 
   // Get today and next 7 days for date selection
   const getAvailableDates = () => {
-    const dates = [];
-    const today = new Date();
+    const dates = []
+    const today = new Date()
     for (let i = 0; i < 7; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
+      const date = new Date(today)
+      date.setDate(today.getDate() + i)
       dates.push({
         value: date.toISOString().split('T')[0],
-        label: i === 0 ? 'Hôm nay' : i === 1 ? 'Ngày mai' : date.toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' })
-      });
+        label:
+          i === 0
+            ? 'Hôm nay'
+            : i === 1
+              ? 'Ngày mai'
+              : date.toLocaleDateString('vi-VN', {
+                  weekday: 'short',
+                  day: '2-digit',
+                  month: '2-digit',
+                }),
+      })
     }
-    return dates;
-  };
+    return dates
+  }
 
   const formatTime = (dateTimeString) => {
-    return new Date(dateTimeString).toLocaleTimeString('vi-VN', { 
-      hour: '2-digit', 
+    return new Date(dateTimeString).toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: false
-    });
-  };
+      hour12: false,
+    })
+  }
 
   const formatDate = (dateTimeString) => {
-    return new Date(dateTimeString).toLocaleDateString('vi-VN');
-  };
+    return new Date(dateTimeString).toLocaleDateString('vi-VN')
+  }
 
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN', { 
-      style: 'currency', 
-      currency: 'VND' 
-    }).format(price);
-  };
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(price)
+  }
 
   const getFormatLabel = (format) => {
     const formatMap = {
       '2d': '2D',
       '3d': '3D',
-      'imax': 'IMAX',
-      '4dx': '4DX'
-    };
-    return formatMap[format] || format;
-  };
+      imax: 'IMAX',
+      '4dx': '4DX',
+    }
+    return formatMap[format] || format
+  }
 
   const getStatusColor = (status) => {
     const statusColors = {
-      'scheduled': 'bg-blue-600',
-      'ongoing': 'bg-green-600',
-      'completed': 'bg-gray-600',
-      'canceled': 'bg-red-600'
-    };
-    return statusColors[status] || 'bg-gray-600';
-  };
+      scheduled: 'bg-blue-600',
+      ongoing: 'bg-green-600',
+      completed: 'bg-gray-600',
+      canceled: 'bg-red-600',
+    }
+    return statusColors[status] || 'bg-gray-600'
+  }
 
   const getStatusLabel = (status) => {
     const statusLabels = {
-      'scheduled': 'Đã lên lịch',
-      'ongoing': 'Đang chiếu',
-      'completed': 'Hoàn thành',
-      'canceled': 'Đã hủy'
-    };
-    return statusLabels[status] || status;
-  };
+      scheduled: 'Đã lên lịch',
+      ongoing: 'Đang chiếu',
+      completed: 'Hoàn thành',
+      canceled: 'Đã hủy',
+    }
+    return statusLabels[status] || status
+  }
 
   const fetchShowtimes = async () => {
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
+      setError(null)
 
-      const dateTo = new Date(selectedDate);
-      dateTo.setDate(dateTo.getDate() + 1);
-      
+      const dateTo = new Date(selectedDate)
+      dateTo.setDate(dateTo.getDate() + 1)
+
       const response = await showtimeService.getShowtimes(
         currentPage,
         12, // Show 12 showtimes per page
@@ -98,79 +115,79 @@ export default function ShowtimePage() {
         selectedFormat,
         'scheduled', // Only show scheduled showtimes
         selectedDate,
-        dateTo.toISOString().split('T')[0]
-      );
+        dateTo.toISOString().split('T')[0],
+      )
 
       if (response.data) {
-        setShowtimes(response.data.data || []);
+        setShowtimes(response.data.data || [])
         if (response.data.paging) {
-          setTotalPages(Math.ceil(response.data.paging.total / response.data.paging.size));
+          setTotalPages(Math.ceil(response.data.paging.total / response.data.paging.size))
         }
       }
     } catch (err) {
-      console.error('Error fetching showtimes:', err);
-      setError('Không thể tải lịch chiếu. Vui lòng thử lại.');
+      console.error('Error fetching showtimes:', err)
+      setError('Không thể tải lịch chiếu. Vui lòng thử lại.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const fetchMovies = async () => {
     try {
-      const response = await movieService.getAllMovies();
+      const response = await movieService.getAllMovies()
       if (response.data?.movies) {
-        setMovies(response.data.movies);
+        setMovies(response.data.movies)
       }
     } catch (err) {
-      console.error('Error fetching movies:', err);
+      console.error('Error fetching movies:', err)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchMovies();
-  }, []);
+    fetchMovies()
+  }, [])
 
   useEffect(() => {
-    fetchShowtimes();
-  }, [currentPage, selectedDate, selectedMovie, selectedFormat, searchTerm]);
+    fetchShowtimes()
+  }, [currentPage, selectedDate, selectedMovie, selectedFormat, searchTerm])
 
   const handleDateChange = (date) => {
-    setSelectedDate(date);
-    setCurrentPage(1);
-  };
+    setSelectedDate(date)
+    setCurrentPage(1)
+  }
 
   const handleMovieChange = (movieId) => {
-    setSelectedMovie(movieId);
-    setCurrentPage(1);
-  };
+    setSelectedMovie(movieId)
+    setCurrentPage(1)
+  }
 
   const handleFormatChange = (format) => {
-    setSelectedFormat(format);
-    setCurrentPage(1);
-  };
+    setSelectedFormat(format)
+    setCurrentPage(1)
+  }
 
   const handleSearch = (term) => {
-    setSearchTerm(term);
-    setCurrentPage(1);
-  };
+    setSearchTerm(term)
+    setCurrentPage(1)
+  }
 
   const clearFilters = () => {
-    setSelectedMovie('');
-    setSelectedFormat('');
-    setSearchTerm('');
-    setCurrentPage(1);
-  };
+    setSelectedMovie('')
+    setSelectedFormat('')
+    setSearchTerm('')
+    setCurrentPage(1)
+  }
 
   const getMovieInfo = (movieId) => {
-    return movies.find(movie => movie.id === movieId);
-  };
+    return movies.find((movie) => movie.id === movieId)
+  }
 
-  const availableDates = getAvailableDates();
+  const availableDates = getAvailableDates()
 
   return (
     <div className="min-h-screen bg-black">
       <Header />
-      
+
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Page Header */}
         <div className="text-center mb-12">
@@ -281,7 +298,7 @@ export default function ShowtimePage() {
         {error && (
           <div className="text-center py-12">
             <p className="text-red-400 text-lg mb-4">{error}</p>
-            <button 
+            <button
               onClick={fetchShowtimes}
               className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors duration-300"
             >
@@ -300,9 +317,12 @@ export default function ShowtimePage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 {showtimes.map((showtime) => {
-                  const movie = getMovieInfo(showtime.movie_id);
+                  const movie = getMovieInfo(showtime.movie_id)
                   return (
-                    <div key={showtime.id} className="bg-gray-900 rounded-xl overflow-hidden hover:transform hover:scale-105 transition-all duration-300">
+                    <div
+                      key={showtime.id}
+                      className="bg-gray-900 rounded-xl overflow-hidden hover:transform hover:scale-105 transition-all duration-300"
+                    >
                       {/* Movie Poster & Info */}
                       <div className="relative">
                         {movie?.poster_url ? (
@@ -320,7 +340,9 @@ export default function ShowtimePage() {
                           </div>
                         )}
                         <div className="absolute top-2 right-2 flex space-x-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getStatusColor(showtime.status)}`}>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getStatusColor(showtime.status)}`}
+                          >
                             {getStatusLabel(showtime.status)}
                           </span>
                           <span className="bg-black/70 text-white px-2 py-1 rounded-full text-xs font-medium">
@@ -335,14 +357,16 @@ export default function ShowtimePage() {
                         <h3 className="text-xl font-semibold text-white mb-2 line-clamp-1">
                           {movie?.title || 'Unknown Movie'}
                         </h3>
-                        
+
                         <div className="space-y-3 mb-4">
                           {/* Time & Date */}
                           <div className="flex items-center text-gray-300">
                             <FaClock className="mr-2 text-red-600" />
-                            <span>{formatTime(showtime.start_time)} - {formatTime(showtime.end_time)}</span>
+                            <span>
+                              {formatTime(showtime.start_time)} - {formatTime(showtime.end_time)}
+                            </span>
                           </div>
-                          
+
                           {/* Date */}
                           <div className="flex items-center text-gray-300">
                             <FaCalendarAlt className="mr-2 text-red-600" />
@@ -377,7 +401,7 @@ export default function ShowtimePage() {
                         </div>
                       </div>
                     </div>
-                  );
+                  )
                 })}
               </div>
             )}
@@ -386,18 +410,18 @@ export default function ShowtimePage() {
             {totalPages > 1 && (
               <div className="flex justify-center items-center space-x-2">
                 <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
                   className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300"
                 >
                   Trước
                 </button>
-                
+
                 <div className="flex space-x-1">
                   {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                    const pageNum = Math.max(1, currentPage - 2) + i;
-                    if (pageNum > totalPages) return null;
-                    
+                    const pageNum = Math.max(1, currentPage - 2) + i
+                    if (pageNum > totalPages) return null
+
                     return (
                       <button
                         key={pageNum}
@@ -410,12 +434,12 @@ export default function ShowtimePage() {
                       >
                         {pageNum}
                       </button>
-                    );
+                    )
                   })}
                 </div>
-                
+
                 <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
                   className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300"
                 >
@@ -427,5 +451,5 @@ export default function ShowtimePage() {
         )}
       </div>
     </div>
-  );
+  )
 }

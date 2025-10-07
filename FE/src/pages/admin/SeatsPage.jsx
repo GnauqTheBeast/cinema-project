@@ -1,31 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaSearch, FaTh, FaList, FaCouch } from 'react-icons/fa';
-import AdminLayout from '../../components/admin/AdminLayout';
-import { seatService } from '../../services/seatApi';
-import { roomService } from '../../services/roomApi';
+import { useEffect, useState } from 'react'
+import { FaCouch, FaEdit, FaEye, FaList, FaPlus, FaSearch, FaTh, FaTrash } from 'react-icons/fa'
+import { Link } from 'react-router-dom'
+import AdminLayout from '../../components/admin/AdminLayout'
+import { roomService } from '../../services/roomApi'
+import { seatService } from '../../services/seatApi'
 
 const SeatsPage = () => {
-  const [seats, setSeats] = useState([]);
-  const [rooms, setRooms] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [search, setSearch] = useState('');
-  const [selectedRoom, setSelectedRoom] = useState('');
-  const [selectedSeatType, setSelectedSeatType] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
-  const [selectedRow, setSelectedRow] = useState('');
-  const [viewMode, setViewMode] = useState('grid');
-  const [roomSeats, setRoomSeats] = useState([]);
+  const [seats, setSeats] = useState([])
+  const [rooms, setRooms] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [search, setSearch] = useState('')
+  const [selectedRoom, setSelectedRoom] = useState('')
+  const [selectedSeatType, setSelectedSeatType] = useState('')
+  const [selectedStatus, setSelectedStatus] = useState('')
+  const [selectedRow, setSelectedRow] = useState('')
+  const [viewMode, setViewMode] = useState('grid')
+  const [roomSeats, setRoomSeats] = useState([])
 
-  const seatTypes = seatService.getSeatTypes();
-  const seatStatuses = seatService.getSeatStatuses();
+  const seatTypes = seatService.getSeatTypes()
+  const seatStatuses = seatService.getSeatStatuses()
 
   const fetchSeats = async () => {
     try {
-      setLoading(true);
+      setLoading(true)
       const response = await seatService.getSeats(
         currentPage,
         10,
@@ -33,232 +33,200 @@ const SeatsPage = () => {
         selectedRoom,
         selectedSeatType,
         selectedStatus,
-        selectedRow
-      );
-      
+        selectedRow,
+      )
+
       if (response.success) {
-        setSeats(response.data.data || []);
-        setTotalPages(response.data.paging?.total_pages || 1);
+        setSeats(response.data.data || [])
+        setTotalPages(response.data.paging?.total_pages || 1)
       } else {
-        setError('Không thể tải danh sách ghế');
+        setError('Không thể tải danh sách ghế')
       }
     } catch (err) {
-      setError('Có lỗi xảy ra khi tải dữ liệu');
-      console.error('Error fetching seats:', err);
+      setError('Có lỗi xảy ra khi tải dữ liệu')
+      console.error('Error fetching seats:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const fetchRooms = async () => {
     try {
-      const response = await roomService.getRooms(1, 100);
+      const response = await roomService.getRooms(1, 100)
       if (response.success) {
-        setRooms(response.data.data || []);
+        setRooms(response.data.data || [])
         // Set first room as default for grid view
         if (response.data.data && response.data.data.length > 0) {
-          setSelectedRoom(response.data.data[0].id);
+          setSelectedRoom(response.data.data[0].id)
         }
       }
     } catch (err) {
-      console.error('Error fetching rooms:', err);
+      console.error('Error fetching rooms:', err)
     }
-  };
+  }
 
   const fetchRoomSeats = async (roomId) => {
-    if (!roomId) return;
-    
+    if (!roomId) return
+
     try {
-      setLoading(true);
-      const response = await seatService.getSeatsByRoom(roomId);
-      console.log('Room seats response:', response); // Debug log
-      
-      let seats = [];
+      setLoading(true)
+      const response = await seatService.getSeatsByRoom(roomId)
+      console.log('Room seats response:', response) // Debug log
+
+      let seats = []
       if (response.success && response.data) {
-        seats = Array.isArray(response.data) ? response.data : response.data.data || [];
+        seats = Array.isArray(response.data) ? response.data : response.data.data || []
       } else if (Array.isArray(response)) {
-        seats = response;
+        seats = response
       } else if (response.data && Array.isArray(response.data)) {
-        seats = response.data;
+        seats = response.data
       }
-      
-      setRoomSeats(seats);
-      
+
+      setRoomSeats(seats)
+
       if (!response.success && response.message) {
-        setError(response.message);
+        setError(response.message)
       }
     } catch (err) {
-      setError('Có lỗi xảy ra khi tải dữ liệu');
-      console.error('Error fetching room seats:', err);
-      setRoomSeats([]);
+      setError('Có lỗi xảy ra khi tải dữ liệu')
+      console.error('Error fetching room seats:', err)
+      setRoomSeats([])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchRooms();
-  }, []);
+    fetchRooms()
+  }, [])
 
   useEffect(() => {
     if (viewMode === 'table') {
-      fetchSeats();
+      fetchSeats()
     } else if (viewMode === 'grid' && selectedRoom) {
-      fetchRoomSeats(selectedRoom);
+      fetchRoomSeats(selectedRoom)
     }
-  }, [currentPage, search, selectedRoom, selectedSeatType, selectedStatus, selectedRow, viewMode]);
+  }, [currentPage, search, selectedRoom, selectedSeatType, selectedStatus, selectedRow, viewMode])
 
   const handleSearch = (e) => {
-    setSearch(e.target.value);
-    setCurrentPage(1);
-  };
+    setSearch(e.target.value)
+    setCurrentPage(1)
+  }
 
   const handleDelete = async (id) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa ghế này?')) {
-      return;
+      return
     }
 
     try {
-      await seatService.deleteSeat(id);
-      fetchSeats();
+      await seatService.deleteSeat(id)
+      fetchSeats()
     } catch (err) {
-      alert('Có lỗi xảy ra khi xóa ghế');
-      console.error('Error deleting seat:', err);
+      alert('Có lỗi xảy ra khi xóa ghế')
+      console.error('Error deleting seat:', err)
     }
-  };
+  }
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      await seatService.updateSeatStatus(id, newStatus);
-      fetchSeats();
+      await seatService.updateSeatStatus(id, newStatus)
+      fetchSeats()
     } catch (err) {
-      alert('Có lỗi xảy ra khi cập nhật trạng thái');
-      console.error('Error updating status:', err);
+      alert('Có lỗi xảy ra khi cập nhật trạng thái')
+      console.error('Error updating status:', err)
     }
-  };
+  }
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'available':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800'
       case 'occupied':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800'
       case 'maintenance':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800'
       case 'blocked':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800'
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800'
     }
-  };
+  }
 
   const getSeatTypeLabel = (type) => {
-    const seatType = seatTypes.find(st => st.value === type);
-    return seatType ? seatType.label : type;
-  };
+    const seatType = seatTypes.find((st) => st.value === type)
+    return seatType ? seatType.label : type
+  }
 
   const getStatusLabel = (status) => {
-    const statusObj = seatStatuses.find(s => s.value === status);
-    return statusObj ? statusObj.label : status;
-  };
+    const statusObj = seatStatuses.find((s) => s.value === status)
+    return statusObj ? statusObj.label : status
+  }
 
   const getRoomName = (roomId) => {
-    const room = rooms.find(r => r.id === roomId);
-    return room ? `Phòng ${room.room_number}` : roomId;
-  };
+    const room = rooms.find((r) => r.id === roomId)
+    return room ? `Phòng ${room.room_number}` : roomId
+  }
 
   // Grid view functions
   const createSeatGrid = () => {
-    const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'];
-    const seatsPerRow = 16;
-    const grid = {};
+    const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O']
+    const seatsPerRow = 16
+    const grid = {}
 
     // Initialize empty grid
-    rows.forEach(row => {
-      grid[row] = {};
+    rows.forEach((row) => {
+      grid[row] = {}
       for (let i = 1; i <= seatsPerRow; i++) {
-        grid[row][i] = null;
+        grid[row][i] = null
       }
-    });
+    })
 
     // Populate with existing seats
     if (Array.isArray(roomSeats)) {
-      roomSeats.forEach(seat => {
-        if (grid[seat.row_number] && grid[seat.row_number][parseInt(seat.seat_number)] !== undefined) {
-          grid[seat.row_number][parseInt(seat.seat_number)] = seat;
+      roomSeats.forEach((seat) => {
+        if (
+          grid[seat.row_number] &&
+          grid[seat.row_number][parseInt(seat.seat_number)] !== undefined
+        ) {
+          grid[seat.row_number][parseInt(seat.seat_number)] = seat
         } else if (grid[seat.row_number]) {
-          grid[seat.row_number][parseInt(seat.seat_number)] = seat;
+          grid[seat.row_number][parseInt(seat.seat_number)] = seat
         }
-      });
+      })
     }
 
-    return grid;
-  };
-
-  const handleGridSeatClick = async (row, seatNumber) => {
-    const grid = createSeatGrid();
-    const existingSeat = grid[row][seatNumber];
-
-    if (existingSeat) {
-      // Remove seat
-      if (window.confirm(`Bạn có chắc chắn muốn xóa ghế ${row}${seatNumber.toString().padStart(2, '0')}?`)) {
-        try {
-          await seatService.deleteSeat(existingSeat.id);
-          fetchRoomSeats(selectedRoom);
-        } catch (err) {
-          alert('Có lỗi xảy ra khi xóa ghế');
-          console.error('Error deleting seat:', err);
-        }
-      }
-    } else {
-      // Add new seat with default type (regular)
-      try {
-        const newSeat = {
-          room_id: selectedRoom,
-          seat_number: seatNumber.toString().padStart(2, '0'),
-          row_number: row,
-          seat_type: 'regular', // Default type, can be changed later via edit
-          status: 'available'
-        };
-        
-        await seatService.createSeat(newSeat);
-        fetchRoomSeats(selectedRoom);
-      } catch (err) {
-        alert('Có lỗi xảy ra khi tạo ghế');
-        console.error('Error creating seat:', err);
-      }
-    }
-  };
+    return grid
+  }
 
   const getSeatColor = (seat) => {
     if (!seat) {
-      return 'bg-gray-100 border-gray-300 hover:bg-gray-200 cursor-pointer';
+      return 'bg-gray-100 border-gray-300 hover:bg-gray-200 cursor-pointer'
     }
 
     switch (seat.status) {
       case 'available':
         switch (seat.seat_type) {
           case 'regular':
-            return 'bg-green-200 border-green-400 text-green-800';
+            return 'bg-green-200 border-green-400 text-green-800'
           case 'vip':
-            return 'bg-yellow-200 border-yellow-400 text-yellow-800';
+            return 'bg-yellow-200 border-yellow-400 text-yellow-800'
           case 'couple':
-            return 'bg-pink-200 border-pink-400 text-pink-800';
+            return 'bg-pink-200 border-pink-400 text-pink-800'
           case '4dx':
-            return 'bg-purple-200 border-purple-400 text-purple-800';
+            return 'bg-purple-200 border-purple-400 text-purple-800'
           default:
-            return 'bg-green-200 border-green-400 text-green-800';
+            return 'bg-green-200 border-green-400 text-green-800'
         }
       case 'occupied':
-        return 'bg-red-200 border-red-400 text-red-800';
+        return 'bg-red-200 border-red-400 text-red-800'
       case 'maintenance':
-        return 'bg-orange-200 border-orange-400 text-orange-800';
+        return 'bg-orange-200 border-orange-400 text-orange-800'
       case 'blocked':
-        return 'bg-gray-300 border-gray-500 text-gray-700';
+        return 'bg-gray-300 border-gray-500 text-gray-700'
       default:
-        return 'bg-gray-200 border-gray-400 text-gray-700';
+        return 'bg-gray-200 border-gray-400 text-gray-700'
     }
-  };
+  }
 
   return (
     <AdminLayout>
@@ -295,7 +263,7 @@ const SeatsPage = () => {
                 Bảng
               </button>
             </div>
-            
+
             {viewMode === 'table' && (
               <Link
                 to="/admin/seats/new"
@@ -318,18 +286,18 @@ const SeatsPage = () => {
                 <select
                   value={selectedRoom}
                   onChange={(e) => {
-                    setSelectedRoom(e.target.value);
+                    setSelectedRoom(e.target.value)
                   }}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  {rooms.map(room => (
+                  {rooms.map((room) => (
                     <option key={room.id} value={room.id}>
                       Phòng {room.room_number} ({room.room_type})
                     </option>
                   ))}
                 </select>
               </div>
-              
+
               <div className="text-sm text-gray-600 ml-auto">
                 <span className="inline-block w-4 h-4 bg-gray-100 border border-gray-300 rounded mr-2"></span>
                 Trống
@@ -356,17 +324,17 @@ const SeatsPage = () => {
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-              
+
               <select
                 value={selectedRoom}
                 onChange={(e) => {
-                  setSelectedRoom(e.target.value);
-                  setCurrentPage(1);
+                  setSelectedRoom(e.target.value)
+                  setCurrentPage(1)
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Tất cả phòng</option>
-                {rooms.map(room => (
+                {rooms.map((room) => (
                   <option key={room.id} value={room.id}>
                     Phòng {room.room_number}
                   </option>
@@ -378,8 +346,8 @@ const SeatsPage = () => {
                 placeholder="Hàng ghế"
                 value={selectedRow}
                 onChange={(e) => {
-                  setSelectedRow(e.target.value);
-                  setCurrentPage(1);
+                  setSelectedRow(e.target.value)
+                  setCurrentPage(1)
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
@@ -387,13 +355,13 @@ const SeatsPage = () => {
               <select
                 value={selectedSeatType}
                 onChange={(e) => {
-                  setSelectedSeatType(e.target.value);
-                  setCurrentPage(1);
+                  setSelectedSeatType(e.target.value)
+                  setCurrentPage(1)
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Tất cả loại ghế</option>
-                {seatTypes.map(type => (
+                {seatTypes.map((type) => (
                   <option key={type.value} value={type.value}>
                     {type.label}
                   </option>
@@ -403,13 +371,13 @@ const SeatsPage = () => {
               <select
                 value={selectedStatus}
                 onChange={(e) => {
-                  setSelectedStatus(e.target.value);
-                  setCurrentPage(1);
+                  setSelectedStatus(e.target.value)
+                  setCurrentPage(1)
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Tất cả trạng thái</option>
-                {seatStatuses.map(status => (
+                {seatStatuses.map((status) => (
                   <option key={status.value} value={status.value}>
                     {status.label}
                   </option>
@@ -453,50 +421,55 @@ const SeatsPage = () => {
               {/* Seat Grid */}
               <div className="overflow-x-auto">
                 <div className="inline-block">
-                  {roomSeats && Object.entries(createSeatGrid()).map(([row, rowSeats]) => (
-                    <div key={row} className="flex items-center justify-center mb-3">
-                      {/* Row Label Left */}
-                      <div className="w-8 text-center text-sm font-bold text-gray-700 mr-4">
-                        {row}
-                      </div>
-                      
-                      {/* Seats */}
-                      <div className="flex gap-1">
-                        {Object.entries(rowSeats).map(([seatNumber, seat]) => {
-                          const seatNum = parseInt(seatNumber);
-                          
-                          return (
-                            <button
-                              key={`${row}-${seatNumber}`}
-                              // onClick={() => handleGridSeatClick(row, seatNum)}
-                              className={`w-8 h-8 border-2 rounded text-xs font-semibold transition-all hover:scale-110 ${getSeatColor(seat)}`}
-                              title={seat ? `${row}${seatNumber.padStart(2, '0')} - ${getSeatTypeLabel(seat.seat_type)} - ${getStatusLabel(seat.status)}` : `Tạo ghế ${row}${seatNumber.padStart(2, '0')}`}
-                            >
-                              {seat ? (
-                                seat.seat_type === 'couple' ? (
-                                  <div className="flex items-center justify-center">
-                                    <FaCouch className="w-3 h-3" />
-                                  </div>
+                  {roomSeats &&
+                    Object.entries(createSeatGrid()).map(([row, rowSeats]) => (
+                      <div key={row} className="flex items-center justify-center mb-3">
+                        {/* Row Label Left */}
+                        <div className="w-8 text-center text-sm font-bold text-gray-700 mr-4">
+                          {row}
+                        </div>
+
+                        {/* Seats */}
+                        <div className="flex gap-1">
+                          {Object.entries(rowSeats).map(([seatNumber, seat]) => {
+                            const seatNum = parseInt(seatNumber)
+
+                            return (
+                              <button
+                                key={`${row}-${seatNumber}`}
+                                // onClick={() => handleGridSeatClick(row, seatNum)}
+                                className={`w-8 h-8 border-2 rounded text-xs font-semibold transition-all hover:scale-110 ${getSeatColor(seat)}`}
+                                title={
+                                  seat
+                                    ? `${row}${seatNumber.padStart(2, '0')} - ${getSeatTypeLabel(seat.seat_type)} - ${getStatusLabel(seat.status)}`
+                                    : `Tạo ghế ${row}${seatNumber.padStart(2, '0')}`
+                                }
+                              >
+                                {seat ? (
+                                  seat.seat_type === 'couple' ? (
+                                    <div className="flex items-center justify-center">
+                                      <FaCouch className="w-3 h-3" />
+                                    </div>
+                                  ) : (
+                                    seatNumber.padStart(2, '0')
+                                  )
                                 ) : (
-                                  seatNumber.padStart(2, '0')
-                                )
-                              ) : (
-                                '+'
-                              )}
-                            </button>
-                          );
-                        })}
+                                  '+'
+                                )}
+                              </button>
+                            )
+                          })}
+                        </div>
+
+                        {/* Row Label Right */}
+                        <div className="w-8 text-center text-sm font-bold text-gray-700 ml-4">
+                          {row}
+                        </div>
                       </div>
-                      
-                      {/* Row Label Right */}
-                      <div className="w-8 text-center text-sm font-bold text-gray-700 ml-4">
-                        {row}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
-              
+
               {/* Entrance */}
               <div className="mt-8 text-center">
                 <div className="text-xs text-gray-500 mb-2">ENTRANCE</div>
@@ -508,9 +481,24 @@ const SeatsPage = () => {
             <div className="mt-6 pt-4 border-t border-gray-200">
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Tổng số ghế: {Array.isArray(roomSeats) ? roomSeats.length : 0}</span>
-                <span>Còn trống: {Array.isArray(roomSeats) ? roomSeats.filter(s => s.status === 'available').length : 0}</span>
-                <span>Đã đặt: {Array.isArray(roomSeats) ? roomSeats.filter(s => s.status === 'occupied').length : 0}</span>
-                <span>Bảo trì: {Array.isArray(roomSeats) ? roomSeats.filter(s => s.status === 'maintenance').length : 0}</span>
+                <span>
+                  Còn trống:{' '}
+                  {Array.isArray(roomSeats)
+                    ? roomSeats.filter((s) => s.status === 'available').length
+                    : 0}
+                </span>
+                <span>
+                  Đã đặt:{' '}
+                  {Array.isArray(roomSeats)
+                    ? roomSeats.filter((s) => s.status === 'occupied').length
+                    : 0}
+                </span>
+                <span>
+                  Bảo trì:{' '}
+                  {Array.isArray(roomSeats)
+                    ? roomSeats.filter((s) => s.status === 'maintenance').length
+                    : 0}
+                </span>
               </div>
             </div>
           </div>
@@ -551,7 +539,8 @@ const SeatsPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {seat.row_number}{seat.seat_number}
+                          {seat.row_number}
+                          {seat.seat_number}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -565,7 +554,7 @@ const SeatsPage = () => {
                           onChange={(e) => handleStatusChange(seat.id, e.target.value)}
                           className={`text-xs px-2 py-1 rounded-full ${getStatusColor(seat.status)} border-0`}
                         >
-                          {seatStatuses.map(status => (
+                          {seatStatuses.map((status) => (
                             <option key={status.value} value={status.value}>
                               {status.label}
                             </option>
@@ -617,14 +606,14 @@ const SeatsPage = () => {
               <div className="flex justify-center">
                 <nav className="flex space-x-2">
                   <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
                     className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Trước
                   </button>
-                  
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
@@ -637,9 +626,9 @@ const SeatsPage = () => {
                       {page}
                     </button>
                   ))}
-                  
+
                   <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
                     className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -652,7 +641,7 @@ const SeatsPage = () => {
         )}
       </div>
     </AdminLayout>
-  );
-};
+  )
+}
 
-export default SeatsPage; 
+export default SeatsPage

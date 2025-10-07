@@ -1,64 +1,64 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaSearch, FaFilm, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
-import { movieService } from '../../services/movieApi';
-import MovieCard from '../../components/admin/MovieCard';
-import AdminLayout from '../../components/admin/AdminLayout';
+import { useCallback, useEffect, useState } from 'react'
+import { FaExclamationTriangle, FaFilm, FaPlus, FaSearch, FaSpinner } from 'react-icons/fa'
+import { useNavigate } from 'react-router-dom'
+import AdminLayout from '../../components/admin/AdminLayout'
+import MovieCard from '../../components/admin/MovieCard'
+import { movieService } from '../../services/movieApi'
 
 export default function MoviesPage() {
-  const [movies, setMovies] = useState([]);
-  const [meta, setMeta] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searching, setSearching] = useState(false);
-  const navigate = useNavigate();
+  const [movies, setMovies] = useState([])
+  const [meta, setMeta] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searching, setSearching] = useState(false)
+  const navigate = useNavigate()
 
   const fetchMovies = useCallback(async (page = 1, size = 12, search = '') => {
     try {
-      setLoading(page === 1);
-      if (search) setSearching(true);
-      
-      const data = await movieService.getMovies(page, size, search);
-      setMovies(data.data?.movies || []);
-      setMeta(data.data?.meta || {});
-      setError('');
+      setLoading(page === 1)
+      if (search) setSearching(true)
+
+      const data = await movieService.getMovies(page, size, search)
+      setMovies(data.data?.movies || [])
+      setMeta(data.data?.meta || {})
+      setError('')
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load movies');
-      console.error('Error fetching movies:', err);
+      setError(err.response?.data?.message || 'Failed to load movies')
+      console.error('Error fetching movies:', err)
     } finally {
-      setLoading(false);
-      setSearching(false);
+      setLoading(false)
+      setSearching(false)
     }
-  }, []);
+  }, [])
 
   useEffect(() => {
-    fetchMovies();
-  }, [fetchMovies]);
+    fetchMovies()
+  }, [fetchMovies])
 
   const handleSearch = (e) => {
-    e.preventDefault();
-    fetchMovies(1, 12, searchQuery);
-  };
+    e.preventDefault()
+    fetchMovies(1, 12, searchQuery)
+  }
 
   const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    
+    const value = e.target.value
+    setSearchQuery(value)
+
     if (value === '') {
-      fetchMovies(1, 12, '');
+      fetchMovies(1, 12, '')
     }
-  };
+  }
 
   const handlePageChange = (newPage) => {
-    fetchMovies(newPage, meta.size, searchQuery);
-    window.scrollTo(0, 0);
-  };
+    fetchMovies(newPage, meta.size, searchQuery)
+    window.scrollTo(0, 0)
+  }
 
   const clearSearch = () => {
-    setSearchQuery('');
-    fetchMovies(1, 12, '');
-  };
+    setSearchQuery('')
+    fetchMovies(1, 12, '')
+  }
 
   if (loading && !searching) {
     return (
@@ -70,7 +70,7 @@ export default function MoviesPage() {
           </div>
         </div>
       </AdminLayout>
-    );
+    )
   }
 
   return (
@@ -88,7 +88,7 @@ export default function MoviesPage() {
                 <p className="text-gray-600">Quản lý danh sách phim trong hệ thống rạp</p>
               </div>
             </div>
-            
+
             <button
               onClick={() => navigate('/admin/movies/new')}
               className="flex items-center space-x-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
@@ -120,7 +120,12 @@ export default function MoviesPage() {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               )}
@@ -143,7 +148,7 @@ export default function MoviesPage() {
               )}
             </button>
           </form>
-          
+
           {searchQuery && (
             <div className="mt-3 text-sm text-gray-600">
               {searching ? (
@@ -186,10 +191,9 @@ export default function MoviesPage() {
                 {searchQuery ? 'Không tìm thấy phim nào' : 'Chưa có phim nào'}
               </h3>
               <p className="text-gray-500 mb-6">
-                {searchQuery 
+                {searchQuery
                   ? `Không có phim nào khớp với từ khóa "${searchQuery}"`
-                  : 'Hãy thêm phim đầu tiên vào hệ thống'
-                }
+                  : 'Hãy thêm phim đầu tiên vào hệ thống'}
               </p>
               {!searchQuery && (
                 <button
@@ -204,7 +208,7 @@ export default function MoviesPage() {
           ) : (
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {movies.map(movie => (
+                {movies.map((movie) => (
                   <MovieCard key={movie.id} movie={movie} />
                 ))}
               </div>
@@ -219,7 +223,7 @@ export default function MoviesPage() {
               <div className="text-sm text-gray-600">
                 Trang {meta.page} / {meta.total_pages} • Tổng {meta.total} phim
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => handlePageChange(meta.page - 1)}
@@ -228,12 +232,12 @@ export default function MoviesPage() {
                 >
                   ← Trước
                 </button>
-                
+
                 <div className="flex items-center space-x-1">
                   {Array.from({ length: Math.min(5, meta.total_pages) }, (_, i) => {
-                    const pageNum = Math.max(1, meta.page - 2) + i;
-                    if (pageNum > meta.total_pages) return null;
-                    
+                    const pageNum = Math.max(1, meta.page - 2) + i
+                    if (pageNum > meta.total_pages) return null
+
                     return (
                       <button
                         key={pageNum}
@@ -246,10 +250,10 @@ export default function MoviesPage() {
                       >
                         {pageNum}
                       </button>
-                    );
+                    )
                   })}
                 </div>
-                
+
                 <button
                   onClick={() => handlePageChange(meta.page + 1)}
                   disabled={meta.page >= meta.total_pages}
@@ -263,5 +267,5 @@ export default function MoviesPage() {
         )}
       </div>
     </AdminLayout>
-  );
-} 
+  )
+}

@@ -1,100 +1,109 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { FaPlay, FaCalendarAlt, FaClock, FaStar, FaMapMarkerAlt, FaTicketAlt, FaArrowRight, FaSpinner } from 'react-icons/fa';
-import Header from '../../components/Header';
-import { movieService } from '../../services/movieService';
+import { useEffect, useState } from 'react'
+import {
+  FaArrowRight,
+  FaCalendarAlt,
+  FaClock,
+  FaMapMarkerAlt,
+  FaPlay,
+  FaSpinner,
+  FaStar,
+  FaTicketAlt,
+} from 'react-icons/fa'
+import { Link } from 'react-router-dom'
+import Header from '../../components/Header'
+import { movieService } from '../../services/movieService'
 
 export default function HomePage() {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [nowShowingMovies, setNowShowingMovies] = useState([]);
-  const [comingSoonMovies, setComingSoonMovies] = useState([]);
-  const [heroMovies, setHeroMovies] = useState([]);
+  const [currentSlide, setCurrentSlide] = useState(0)
+  const [nowShowingMovies, setNowShowingMovies] = useState([])
+  const [comingSoonMovies, setComingSoonMovies] = useState([])
+  const [heroMovies, setHeroMovies] = useState([])
   const [loading, setLoading] = useState({
     nowShowing: true,
     comingSoon: true,
-    hero: true
-  });
+    hero: true,
+  })
   const [error, setError] = useState({
     nowShowing: null,
     comingSoon: null,
-    hero: null
-  });
+    hero: null,
+  })
 
   // Fetch data from APIs
   const fetchMovieData = async () => {
     try {
       // Fetch all movies first
-      const allMoviesResponse = await movieService.getAllMovies();
-      const allMovies = allMoviesResponse.data?.movies || [];
-      
+      const allMoviesResponse = await movieService.getAllMovies()
+      const allMovies = allMoviesResponse.data?.movies || []
+
       // Filter movies by status
-      const nowShowing = allMovies.filter(movie => movie.status === 'showing');
-      const upcoming = allMovies.filter(movie => movie.status === 'upcoming');
-      
-      setNowShowingMovies(nowShowing);
-      setLoading(prev => ({ ...prev, nowShowing: false }));
-      
+      const nowShowing = allMovies.filter((movie) => movie.status === 'showing')
+      const upcoming = allMovies.filter((movie) => movie.status === 'upcoming')
+
+      setNowShowingMovies(nowShowing)
+      setLoading((prev) => ({ ...prev, nowShowing: false }))
+
       // Use first 3 now showing movies for hero section, fallback to any movies
-      const heroData = nowShowing.length > 0 ? nowShowing.slice(0, 3) : allMovies.slice(0, 3);
-      setHeroMovies(heroData);
-      setLoading(prev => ({ ...prev, hero: false }));
-      
-      setComingSoonMovies(upcoming);
-      setLoading(prev => ({ ...prev, comingSoon: false }));
+      const heroData = nowShowing.length > 0 ? nowShowing.slice(0, 3) : allMovies.slice(0, 3)
+      setHeroMovies(heroData)
+      setLoading((prev) => ({ ...prev, hero: false }))
+
+      setComingSoonMovies(upcoming)
+      setLoading((prev) => ({ ...prev, comingSoon: false }))
     } catch (err) {
-      console.error('Error fetching movies:', err);
-      setError(prev => ({ 
-        ...prev, 
-        nowShowing: 'Không thể tải phim đang chiếu', 
+      console.error('Error fetching movies:', err)
+      setError((prev) => ({
+        ...prev,
+        nowShowing: 'Không thể tải phim đang chiếu',
         hero: 'Không thể tải dữ liệu hero',
-        comingSoon: 'Không thể tải phim sắp chiếu'
-      }));
-      setLoading(prev => ({ nowShowing: false, hero: false, comingSoon: false }));
+        comingSoon: 'Không thể tải phim sắp chiếu',
+      }))
+      setLoading((prev) => ({ nowShowing: false, hero: false, comingSoon: false }))
     }
-  };
+  }
 
   // Load data on component mount
   useEffect(() => {
-    fetchMovieData();
-  }, []);
+    fetchMovieData()
+  }, [])
 
   // Auto slide for hero section
   useEffect(() => {
     if (heroMovies.length > 0) {
       const timer = setInterval(() => {
-        setCurrentSlide((prev) => (prev + 1) % heroMovies.length);
-      }, 5000);
-      return () => clearInterval(timer);
+        setCurrentSlide((prev) => (prev + 1) % heroMovies.length)
+      }, 5000)
+      return () => clearInterval(timer)
     }
-  }, [heroMovies.length]);
+  }, [heroMovies.length])
 
   // Helper function to format date
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('vi-VN');
-  };
+    return new Date(dateString).toLocaleDateString('vi-VN')
+  }
 
   const LoadingSpinner = () => (
     <div className="flex justify-center items-center py-12">
       <FaSpinner className="animate-spin text-4xl text-red-600" />
     </div>
-  );
+  )
 
   const ErrorMessage = ({ message }) => (
     <div className="text-center py-12">
       <p className="text-red-400 text-lg">{message}</p>
-      <button 
+      <button
         onClick={fetchMovieData}
         className="mt-4 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors duration-300"
       >
         Thử lại
       </button>
     </div>
-  );
+  )
 
   return (
     <div className="min-h-screen bg-black">
       <Header />
-      
+
       {/* Hero Section */}
       <section className="relative h-[70vh] overflow-hidden">
         {loading.hero ? (
@@ -114,66 +123,66 @@ export default function HomePage() {
                   index === currentSlide ? 'translate-x-0' : 'translate-x-full'
                 }`}
               >
-                <img 
+                <img
                   src={movie.poster_url}
                   alt={movie.title}
                   className="absolute inset-0 w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/60"></div>
-              <div className="absolute inset-0 flex items-center">
-                <div className="max-w-7xl mx-auto px-4 w-full">
-                  <div className="max-w-2xl">
-                    <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 leading-tight">
-                      {movie.title}
-                    </h1>
-                    <p className="text-xl text-gray-200 mb-6">
-                      {movie.description}
-                    </p>
-                    <div className="flex items-center space-x-6 mb-8">
-                      <div className="flex items-center space-x-2">
-                        <FaStar className="text-yellow-400" />
-                        <span className="text-white font-medium">{movie.rating || 'N/A'}</span>
+                <div className="absolute inset-0 flex items-center">
+                  <div className="max-w-7xl mx-auto px-4 w-full">
+                    <div className="max-w-2xl">
+                      <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 leading-tight">
+                        {movie.title}
+                      </h1>
+                      <p className="text-xl text-gray-200 mb-6">{movie.description}</p>
+                      <div className="flex items-center space-x-6 mb-8">
+                        <div className="flex items-center space-x-2">
+                          <FaStar className="text-yellow-400" />
+                          <span className="text-white font-medium">{movie.rating || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <FaClock className="text-gray-400" />
+                          <span className="text-gray-300">
+                            {movie.duration ? `${movie.duration} phút` : 'N/A'}
+                          </span>
+                        </div>
+                        <span className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                          {movie.genre || 'Phim'}
+                        </span>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <FaClock className="text-gray-400" />
-                        <span className="text-gray-300">{movie.duration ? `${movie.duration} phút` : 'N/A'}</span>
-                      </div>
-                      <span className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                        {movie.genre || 'Phim'}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-4">
-                      <Link 
-                        to={`/movie/${movie.id}`}
-                        className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-2 transform hover:scale-105"
-                      >
-                        <FaTicketAlt />
-                        <span>Đặt vé ngay</span>
-                      </Link>
-                      {movie.trailer_url && (
-                        <a
-                          href={movie.trailer_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black px-8 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-2"
+                      <div className="flex flex-wrap gap-4">
+                        <Link
+                          to={`/movie/${movie.id}`}
+                          className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-2 transform hover:scale-105"
                         >
-                          <FaPlay />
-                          <span>Xem trailer</span>
-                        </a>
-                      )}
+                          <FaTicketAlt />
+                          <span>Đặt vé ngay</span>
+                        </Link>
+                        {movie.trailer_url && (
+                          <a
+                            href={movie.trailer_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black px-8 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-2"
+                          >
+                            <FaPlay />
+                            <span>Xem trailer</span>
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-            );
+            )
           })
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
             <p className="text-gray-400 text-xl">Không có phim nào để hiển thị</p>
           </div>
         )}
-        
+
         {/* Slide indicators */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3">
           {heroMovies.map((_, index) => (
@@ -193,12 +202,15 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between mb-12">
             <h2 className="text-3xl font-bold text-white">Phim đang chiếu</h2>
-            <Link to="/movies" className="text-red-400 hover:text-red-300 font-medium flex items-center space-x-2 transition-colors duration-300">
+            <Link
+              to="/movies"
+              className="text-red-400 hover:text-red-300 font-medium flex items-center space-x-2 transition-colors duration-300"
+            >
               <span>Xem tất cả</span>
               <FaArrowRight />
             </Link>
           </div>
-          
+
           {loading.nowShowing ? (
             <LoadingSpinner />
           ) : error.nowShowing ? (
@@ -206,7 +218,10 @@ export default function HomePage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {nowShowingMovies.map((movie) => (
-                <div key={movie.id} className="bg-black/50 rounded-xl overflow-hidden hover:transform hover:scale-105 transition-all duration-300 group">
+                <div
+                  key={movie.id}
+                  className="bg-black/50 rounded-xl overflow-hidden hover:transform hover:scale-105 transition-all duration-300 group"
+                >
                   <div className="relative">
                     <img
                       src={movie.poster_url}
@@ -245,8 +260,10 @@ export default function HomePage() {
                     </h3>
                     <p className="text-gray-400 text-sm mb-4">{movie.genre || 'Phim'}</p>
                     <div className="space-y-2">
-                      <p className="text-gray-300 text-sm font-medium">Thời lượng: {movie.duration ? `${movie.duration} phút` : 'N/A'}</p>
-                      <Link 
+                      <p className="text-gray-300 text-sm font-medium">
+                        Thời lượng: {movie.duration ? `${movie.duration} phút` : 'N/A'}
+                      </p>
+                      <Link
                         to={`/movie/${movie.id}`}
                         className="block w-full bg-red-600 hover:bg-red-700 text-white text-center py-2 rounded-md text-sm font-medium transition-colors duration-300"
                       >
@@ -266,12 +283,15 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between mb-12">
             <h2 className="text-3xl font-bold text-white">Phim sắp chiếu</h2>
-            <Link to="/coming-soon" className="text-red-400 hover:text-red-300 font-medium flex items-center space-x-2 transition-colors duration-300">
+            <Link
+              to="/coming-soon"
+              className="text-red-400 hover:text-red-300 font-medium flex items-center space-x-2 transition-colors duration-300"
+            >
               <span>Xem tất cả</span>
               <FaArrowRight />
             </Link>
           </div>
-          
+
           {loading.comingSoon ? (
             <LoadingSpinner />
           ) : error.comingSoon ? (
@@ -279,7 +299,10 @@ export default function HomePage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {comingSoonMovies.map((movie) => (
-                <div key={movie.id} className="bg-gray-900 rounded-xl overflow-hidden hover:transform hover:scale-105 transition-all duration-300 group">
+                <div
+                  key={movie.id}
+                  className="bg-gray-900 rounded-xl overflow-hidden hover:transform hover:scale-105 transition-all duration-300 group"
+                >
                   <div className="relative">
                     <img
                       src={movie.poster_url}
@@ -288,9 +311,7 @@ export default function HomePage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
                     <div className="absolute bottom-4 left-4 right-4">
-                      <h3 className="text-2xl font-bold text-white mb-2">
-                        {movie.title}
-                      </h3>
+                      <h3 className="text-2xl font-bold text-white mb-2">{movie.title}</h3>
                       <div className="flex items-center justify-between">
                         <span className="text-gray-300 text-sm">{movie.genre || 'Phim'}</span>
                         <div className="flex items-center space-x-2 text-red-400">
@@ -312,28 +333,36 @@ export default function HomePage() {
       {/* Features Section */}
       <section className="py-16 bg-gray-900">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-white text-center mb-12">Tại sao chọn HQ Cinema?</h2>
+          <h2 className="text-3xl font-bold text-white text-center mb-12">
+            Tại sao chọn HQ Cinema?
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center group">
               <div className="w-16 h-16 bg-gradient-to-r from-red-600 to-red-800 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
                 <FaTicketAlt className="text-white text-2xl" />
               </div>
               <h3 className="text-xl font-semibold text-white mb-4">Đặt vé dễ dàng</h3>
-              <p className="text-gray-400">Đặt vé online nhanh chóng, tiện lợi với nhiều phương thức thanh toán</p>
+              <p className="text-gray-400">
+                Đặt vé online nhanh chóng, tiện lợi với nhiều phương thức thanh toán
+              </p>
             </div>
             <div className="text-center group">
               <div className="w-16 h-16 bg-gradient-to-r from-red-600 to-red-800 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
                 <FaMapMarkerAlt className="text-white text-2xl" />
               </div>
               <h3 className="text-xl font-semibold text-white mb-4">Hệ thống rạp rộng khắp</h3>
-              <p className="text-gray-400">Hơn 100 rạp chiếu phim trên toàn quốc với trang thiết bị hiện đại</p>
+              <p className="text-gray-400">
+                Hơn 100 rạp chiếu phim trên toàn quốc với trang thiết bị hiện đại
+              </p>
             </div>
             <div className="text-center group">
               <div className="w-16 h-16 bg-gradient-to-r from-red-600 to-red-800 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
                 <FaStar className="text-white text-2xl" />
               </div>
               <h3 className="text-xl font-semibold text-white mb-4">Chất lượng cao cấp</h3>
-              <p className="text-gray-400">Âm thanh Dolby Atmos, hình ảnh 4DX mang đến trải nghiệm điện ảnh tuyệt vời</p>
+              <p className="text-gray-400">
+                Âm thanh Dolby Atmos, hình ảnh 4DX mang đến trải nghiệm điện ảnh tuyệt vời
+              </p>
             </div>
           </div>
         </div>
@@ -351,41 +380,76 @@ export default function HomePage() {
                 <span className="text-white font-bold text-lg">Cinema</span>
               </div>
               <p className="text-gray-400 text-sm">
-                Hệ thống rạp chiếu phim hàng đầu Việt Nam, mang đến trải nghiệm điện ảnh tuyệt vời nhất.
+                Hệ thống rạp chiếu phim hàng đầu Việt Nam, mang đến trải nghiệm điện ảnh tuyệt vời
+                nhất.
               </p>
             </div>
             <div>
               <h4 className="text-white font-semibold mb-4">Phim</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><Link to="#" className="hover:text-red-400 transition-colors duration-300">Phim đang chiếu</Link></li>
-                <li><Link to="#" className="hover:text-red-400 transition-colors duration-300">Phim sắp chiếu</Link></li>
-                <li><Link to="#" className="hover:text-red-400 transition-colors duration-300">Suất chiếu đặc biệt</Link></li>
+                <li>
+                  <Link to="#" className="hover:text-red-400 transition-colors duration-300">
+                    Phim đang chiếu
+                  </Link>
+                </li>
+                <li>
+                  <Link to="#" className="hover:text-red-400 transition-colors duration-300">
+                    Phim sắp chiếu
+                  </Link>
+                </li>
+                <li>
+                  <Link to="#" className="hover:text-red-400 transition-colors duration-300">
+                    Suất chiếu đặc biệt
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-semibold mb-4">Rạp HQ Cinema</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><Link to="#" className="hover:text-red-400 transition-colors duration-300">Tất cả các rạp</Link></li>
-                <li><Link to="#" className="hover:text-red-400 transition-colors duration-300">Rạp đặc biệt</Link></li>
-                <li><Link to="#" className="hover:text-red-400 transition-colors duration-300">Sự kiện</Link></li>
+                <li>
+                  <Link to="#" className="hover:text-red-400 transition-colors duration-300">
+                    Tất cả các rạp
+                  </Link>
+                </li>
+                <li>
+                  <Link to="#" className="hover:text-red-400 transition-colors duration-300">
+                    Rạp đặc biệt
+                  </Link>
+                </li>
+                <li>
+                  <Link to="#" className="hover:text-red-400 transition-colors duration-300">
+                    Sự kiện
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-semibold mb-4">Hỗ trợ</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><Link to="#" className="hover:text-red-400 transition-colors duration-300">Liên hệ</Link></li>
-                <li><Link to="#" className="hover:text-red-400 transition-colors duration-300">Câu hỏi thường gặp</Link></li>
-                <li><Link to="#" className="hover:text-red-400 transition-colors duration-300">Chính sách</Link></li>
+                <li>
+                  <Link to="#" className="hover:text-red-400 transition-colors duration-300">
+                    Liên hệ
+                  </Link>
+                </li>
+                <li>
+                  <Link to="#" className="hover:text-red-400 transition-colors duration-300">
+                    Câu hỏi thường gặp
+                  </Link>
+                </li>
+                <li>
+                  <Link to="#" className="hover:text-red-400 transition-colors duration-300">
+                    Chính sách
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-            <p className="text-gray-400 text-sm">
-              © 2025 HQ Cinema. All rights reserved.
-            </p>
+            <p className="text-gray-400 text-sm">© 2025 HQ Cinema. All rights reserved.</p>
           </div>
         </div>
       </footer>
     </div>
-  );
+  )
 }

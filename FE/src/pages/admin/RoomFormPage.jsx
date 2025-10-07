@@ -1,114 +1,114 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { FaSave, FaArrowLeft } from 'react-icons/fa';
-import AdminLayout from '../../components/admin/AdminLayout';
-import { roomService } from '../../services/roomApi';
+import { useEffect, useState } from 'react'
+import { FaArrowLeft, FaSave } from 'react-icons/fa'
+import { useNavigate, useParams } from 'react-router-dom'
+import AdminLayout from '../../components/admin/AdminLayout'
+import { roomService } from '../../services/roomApi'
 
 const RoomFormPage = () => {
-  const navigate = useNavigate();
-  const { id } = useParams();
-  const isEditing = Boolean(id);
+  const navigate = useNavigate()
+  const { id } = useParams()
+  const isEditing = Boolean(id)
 
   const [formData, setFormData] = useState({
     room_number: '',
     capacity: '',
     room_type: 'standard',
-    status: 'active'
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+    status: 'active',
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const roomTypes = roomService.getRoomTypes();
-  const roomStatuses = roomService.getRoomStatuses();
+  const roomTypes = roomService.getRoomTypes()
+  const roomStatuses = roomService.getRoomStatuses()
 
   useEffect(() => {
     if (isEditing) {
-      fetchRoom();
+      fetchRoom()
     }
-  }, [id, isEditing]);
+  }, [id, isEditing])
 
   const fetchRoom = async () => {
     try {
-      setLoading(true);
-      const response = await roomService.getRoomById(id);
-      
+      setLoading(true)
+      const response = await roomService.getRoomById(id)
+
       if (response.success) {
-        const room = response.data;
+        const room = response.data
         setFormData({
           room_number: room.room_number.toString(),
           capacity: room.capacity.toString(),
           room_type: room.room_type,
-          status: room.status
-        });
+          status: room.status,
+        })
       } else {
-        setError('Không thể tải thông tin phòng');
+        setError('Không thể tải thông tin phòng')
       }
     } catch (err) {
-      setError('Có lỗi xảy ra khi tải dữ liệu');
-      console.error('Error fetching room:', err);
+      setError('Có lỗi xảy ra khi tải dữ liệu')
+      console.error('Error fetching room:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+    e.preventDefault()
+
     if (!formData.room_number || !formData.capacity) {
-      setError('Vui lòng điền đầy đủ thông tin bắt buộc');
-      return;
+      setError('Vui lòng điền đầy đủ thông tin bắt buộc')
+      return
     }
 
-    const roomNumber = parseInt(formData.room_number);
-    const capacity = parseInt(formData.capacity);
+    const roomNumber = parseInt(formData.room_number)
+    const capacity = parseInt(formData.capacity)
 
     if (roomNumber <= 0) {
-      setError('Số phòng phải lớn hơn 0');
-      return;
+      setError('Số phòng phải lớn hơn 0')
+      return
     }
 
     if (capacity <= 0) {
-      setError('Sức chứa phải lớn hơn 0');
-      return;
+      setError('Sức chứa phải lớn hơn 0')
+      return
     }
 
     try {
-      setLoading(true);
-      setError('');
+      setLoading(true)
+      setError('')
 
       const requestData = {
         room_number: roomNumber,
         capacity: capacity,
-        room_type: formData.room_type
-      };
+        room_type: formData.room_type,
+      }
 
       if (isEditing) {
-        requestData.status = formData.status;
-        await roomService.updateRoom(id, requestData);
+        requestData.status = formData.status
+        await roomService.updateRoom(id, requestData)
       } else {
-        await roomService.createRoom(requestData);
+        await roomService.createRoom(requestData)
       }
 
-      navigate('/admin/rooms');
+      navigate('/admin/rooms')
     } catch (err) {
       if (err.response?.data?.message?.includes('already exists')) {
-        setError('Số phòng này đã tồn tại');
+        setError('Số phòng này đã tồn tại')
       } else {
-        setError(isEditing ? 'Có lỗi xảy ra khi cập nhật phòng' : 'Có lỗi xảy ra khi tạo phòng');
+        setError(isEditing ? 'Có lỗi xảy ra khi cập nhật phòng' : 'Có lỗi xảy ra khi tạo phòng')
       }
-      console.error('Error saving room:', err);
+      console.error('Error saving room:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
+    const { name, value } = e.target
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
-    }));
-  };
+      [name]: value,
+    }))
+  }
 
   if (loading && isEditing) {
     return (
@@ -117,7 +117,7 @@ const RoomFormPage = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       </AdminLayout>
-    );
+    )
   }
 
   return (
@@ -136,7 +136,9 @@ const RoomFormPage = () => {
               {isEditing ? 'Chỉnh sửa phòng chiếu' : 'Thêm phòng chiếu mới'}
             </h1>
             <p className="text-gray-600">
-              {isEditing ? 'Cập nhật thông tin phòng chiếu' : 'Điền thông tin để tạo phòng chiếu mới'}
+              {isEditing
+                ? 'Cập nhật thông tin phòng chiếu'
+                : 'Điền thông tin để tạo phòng chiếu mới'}
             </p>
           </div>
         </div>
@@ -153,7 +155,10 @@ const RoomFormPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Room Number */}
               <div>
-                <label htmlFor="room_number" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="room_number"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Số phòng <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -200,7 +205,7 @@ const RoomFormPage = () => {
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  {roomTypes.map(type => (
+                  {roomTypes.map((type) => (
                     <option key={type.value} value={type.value}>
                       {type.label}
                     </option>
@@ -221,7 +226,7 @@ const RoomFormPage = () => {
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    {roomStatuses.map(status => (
+                    {roomStatuses.map((status) => (
                       <option key={status.value} value={status.value}>
                         {status.label}
                       </option>
@@ -257,7 +262,7 @@ const RoomFormPage = () => {
         </div>
       </div>
     </AdminLayout>
-  );
-};
+  )
+}
 
-export default RoomFormPage; 
+export default RoomFormPage
