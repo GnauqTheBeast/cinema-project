@@ -69,7 +69,7 @@ class WebSocketService {
       clearTimeout(this.reconnectTimeout)
     }
 
-    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000)
+    const delay = Math.min(1000 * 2 ** this.reconnectAttempts, 30000)
 
     this.reconnectTimeout = setTimeout(() => {
       console.log(

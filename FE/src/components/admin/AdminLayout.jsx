@@ -1,19 +1,19 @@
-import React, { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { usePermissions } from '../../contexts/PermissionContext'
+import { useState } from 'react'
 import {
+  FaBars,
   FaChartBar,
-  FaFilm,
-  FaDoorOpen,
-  FaCouch,
   FaClock,
+  FaCouch,
+  FaDoorOpen,
+  FaFilm,
+  FaHome,
   FaMoneyBillWave,
   FaSignOutAlt,
-  FaBars,
   FaTimes,
-  FaHome,
   FaUser,
 } from 'react-icons/fa'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { usePermissions } from '../../contexts/PermissionContext'
 
 export default function AdminLayout({ children }) {
   const navigate = useNavigate()
@@ -91,6 +91,7 @@ export default function AdminLayout({ children }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
+                type="button"
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 className="lg:hidden p-2 rounded-lg hover:bg-red-700 transition-colors duration-200"
               >
@@ -113,6 +114,7 @@ export default function AdminLayout({ children }) {
                 <span className="text-sm">Admin</span>
               </div>
               <button
+                type="button"
                 onClick={handleLogout}
                 className="flex items-center space-x-2 bg-red-700 hover:bg-red-800 px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
               >
@@ -134,6 +136,7 @@ export default function AdminLayout({ children }) {
           {/* Overlay for mobile */}
           {isSidebarOpen && (
             <div
+              type="onKeyPress"
               className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
               onClick={() => setIsSidebarOpen(false)}
             />
@@ -143,6 +146,7 @@ export default function AdminLayout({ children }) {
             <nav className="p-4 space-y-2">
               <div className="mb-6">
                 <button
+                  type="button"
                   onClick={() => navigate('/')}
                   className="flex items-center space-x-3 w-full p-3 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
                 >
@@ -162,6 +166,7 @@ export default function AdminLayout({ children }) {
 
                 return (
                   <button
+                    type="button"
                     key={item.path}
                     onClick={() => {
                       navigate(item.path)

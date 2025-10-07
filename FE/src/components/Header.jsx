@@ -62,7 +62,10 @@ export default function Header() {
           {/* Right Side - Search, Location, User */}
           <div className="flex items-center space-x-4">
             {/* Search */}
-            <button className="text-gray-300 hover:text-red-400 transition-colors duration-300 hidden sm:block">
+            <button
+              type="button"
+              className="text-gray-300 hover:text-red-400 transition-colors duration-300 hidden sm:block"
+            >
               <FaSearch className="w-5 h-5" />
             </button>
 
@@ -75,7 +78,10 @@ export default function Header() {
             {/* User Menu */}
             {token ? (
               <div className="relative group">
-                <button className="flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors duration-300">
+                <button
+                  type="button"
+                  className="flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors duration-300"
+                >
                   <FaUser className="w-5 h-5" />
                   <span className="hidden sm:block">{user.name || 'User'}</span>
                 </button>
@@ -96,6 +102,7 @@ export default function Header() {
                       Lịch sử đặt vé
                     </Link>
                     <button
+                      type="button"
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-2 text-gray-300 hover:text-red-400 hover:bg-red-900/20 transition-colors duration-300"
                     >
@@ -123,6 +130,7 @@ export default function Header() {
 
             {/* Mobile Menu Button */}
             <button
+              type="button"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden text-gray-300 hover:text-red-400 transition-colors duration-300"
             >

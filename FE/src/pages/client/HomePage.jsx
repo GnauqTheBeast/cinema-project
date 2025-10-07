@@ -55,7 +55,7 @@ export default function HomePage() {
       setError((prev) => ({
         ...prev,
         nowShowing: 'Không thể tải phim đang chiếu',
-        hero: 'Không thể tải dữ liệu hero',
+        hero: 'Không thể tải dữ liệu',
         comingSoon: 'Không thể tải phim sắp chiếu',
       }))
       setLoading((prev) => ({ nowShowing: false, hero: false, comingSoon: false }))
