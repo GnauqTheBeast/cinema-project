@@ -1,48 +1,48 @@
-import React, { useState, useEffect } from 'react';
-import websocketService from '../services/websocketService';
+import { useEffect, useState } from 'react'
+import websocketService from '../services/websocketService'
 
 const NotificationComponent = () => {
-  const [notifications, setNotifications] = useState([]);
-  const [connectionStatus, setConnectionStatus] = useState(websocketService.getConnectionStatus());
+  const [notifications, setNotifications] = useState([])
+  const [connectionStatus, setConnectionStatus] = useState(websocketService.getConnectionStatus())
 
   useEffect(() => {
     // Update connection status periodically
     const statusInterval = setInterval(() => {
-      setConnectionStatus(websocketService.getConnectionStatus());
-    }, 1000);
+      setConnectionStatus(websocketService.getConnectionStatus())
+    }, 1000)
 
     // Listen for notifications
     const handleNotification = (notification) => {
-      console.log('Received notification:', notification);
+      console.log('Received notification:', notification)
       const newNotification = {
         id: Date.now(),
         message: notification,
-        timestamp: new Date().toISOString()
-      };
-      
-      setNotifications(prev => [...prev, newNotification]);
-      
+        timestamp: new Date().toISOString(),
+      }
+
+      setNotifications((prev) => [...prev, newNotification])
+
       // Auto-remove notification after 3 seconds
       setTimeout(() => {
-        removeNotification(newNotification.id);
-      }, 3000);
-    };
+        removeNotification(newNotification.id)
+      }, 3000)
+    }
 
-    websocketService.onNotification(handleNotification);
+    websocketService.onNotification(handleNotification)
 
     return () => {
-      clearInterval(statusInterval);
-      websocketService.removeNotificationListener(handleNotification);
-    };
-  }, []);
+      clearInterval(statusInterval)
+      websocketService.removeNotificationListener(handleNotification)
+    }
+  }, [])
 
   const clearNotifications = () => {
-    setNotifications([]);
-  };
+    setNotifications([])
+  }
 
   const removeNotification = (id) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
-  };
+    setNotifications((prev) => prev.filter((notif) => notif.id !== id))
+  }
 
   return (
     <div className="fixed top-4 right-4 z-50 w-80">
@@ -56,9 +56,7 @@ const NotificationComponent = () => {
             >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900">
-                    New Notification
-                  </div>
+                  <div className="text-sm font-medium text-gray-900">New Notification</div>
                   <div className="text-xs text-gray-500 mt-1">
                     {new Date(notification.timestamp).toLocaleTimeString()}
                   </div>
@@ -75,7 +73,7 @@ const NotificationComponent = () => {
               </div>
             </div>
           ))}
-          
+
           {notifications.length > 0 && (
             <button
               onClick={clearNotifications}
@@ -87,7 +85,7 @@ const NotificationComponent = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default NotificationComponent;
+export default NotificationComponent

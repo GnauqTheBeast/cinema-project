@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { movieService } from '../../services/movieApi';
-import AdminLayout from '../../components/admin/AdminLayout';
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import AdminLayout from '../../components/admin/AdminLayout'
+import { movieService } from '../../services/movieApi'
 
 export default function MovieFormPage() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const isEditing = Boolean(id);
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const isEditing = Boolean(id)
 
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   const [formData, setFormData] = useState({
     title: '',
@@ -22,21 +22,21 @@ export default function MovieFormPage() {
     description: '',
     trailer_url: '',
     poster_url: '',
-    status: 'upcoming'
-  });
+    status: 'upcoming',
+  })
 
   useEffect(() => {
     if (isEditing) {
-      fetchMovie();
+      fetchMovie()
     }
-  }, [id, isEditing]);
+  }, [id, isEditing])
 
   const fetchMovie = async () => {
     try {
-      setLoading(true);
-      const data = await movieService.getMovieById(id);
-      const movie = data.data;
-      
+      setLoading(true)
+      const data = await movieService.getMovieById(id)
+      const movie = data.data
+
       setFormData({
         title: movie.title || '',
         director: movie.director || '',
@@ -47,64 +47,64 @@ export default function MovieFormPage() {
         description: movie.description || '',
         trailer_url: movie.trailer_url || '',
         poster_url: movie.poster_url || '',
-        status: movie.status || 'upcoming'
-      });
-      setError('');
+        status: movie.status || 'upcoming',
+      })
+      setError('')
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load movie');
-      console.error('Error fetching movie:', err);
+      setError(err.response?.data?.message || 'Failed to load movie')
+      console.error('Error fetching movie:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
+    const { name, value } = e.target
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
-    }));
-  };
+      [name]: value,
+    }))
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+    e.preventDefault()
+    setError('')
 
     if (!formData.title?.trim() || !formData.duration) {
-      setError('Title and duration are required');
-      return;
+      setError('Title and duration are required')
+      return
     }
 
     // Convert date to RFC3339 format if provided
-    let release_date = null;
+    let release_date = null
     if (formData.release_date) {
       // Convert YYYY-MM-DD to RFC3339 format (YYYY-MM-DDTHH:MM:SSZ)
-      release_date = new Date(formData.release_date + 'T00:00:00Z').toISOString();
+      release_date = new Date(formData.release_date + 'T00:00:00Z').toISOString()
     }
 
     const movieData = {
       ...formData,
       duration: parseInt(formData.duration, 10) || 0,
-      release_date: release_date
-    };
+      release_date: release_date,
+    }
 
     try {
-      setSaving(true);
-      
+      setSaving(true)
+
       if (isEditing) {
-        await movieService.updateMovie(id, movieData);
+        await movieService.updateMovie(id, movieData)
       } else {
-        await movieService.createMovie(movieData);
+        await movieService.createMovie(movieData)
       }
-      
-      navigate('/admin/movies');
+
+      navigate('/admin/movies')
     } catch (err) {
-      setError(err.response?.data?.message || `Failed to ${isEditing ? 'update' : 'create'} movie`);
-      console.error(`Error ${isEditing ? 'updating' : 'creating'} movie:`, err);
+      setError(err.response?.data?.message || `Failed to ${isEditing ? 'update' : 'create'} movie`)
+      console.error(`Error ${isEditing ? 'updating' : 'creating'} movie:`, err)
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   if (loading) {
     return (
@@ -113,7 +113,7 @@ export default function MovieFormPage() {
           <div>Loading movie...</div>
         </div>
       </AdminLayout>
-    );
+    )
   }
 
   return (
@@ -129,7 +129,7 @@ export default function MovieFormPage() {
               padding: '8px 16px',
               borderRadius: '4px',
               cursor: 'pointer',
-              marginBottom: '16px'
+              marginBottom: '16px',
             }}
           >
             ← Back to Movies
@@ -140,23 +140,27 @@ export default function MovieFormPage() {
         </div>
 
         {error && (
-          <div style={{
-            backgroundColor: '#ffebee',
-            color: '#c62828',
-            padding: '12px',
-            borderRadius: '4px',
-            marginBottom: '24px'
-          }}>
+          <div
+            style={{
+              backgroundColor: '#ffebee',
+              color: '#c62828',
+              padding: '12px',
+              borderRadius: '4px',
+              marginBottom: '24px',
+            }}
+          >
             {error}
           </div>
         )}
 
-        <div style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          padding: '32px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}>
+        <div
+          style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '32px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          }}
+        >
           <form onSubmit={handleSubmit}>
             {/* Title */}
             <div style={{ marginBottom: '20px' }}>
@@ -175,7 +179,7 @@ export default function MovieFormPage() {
                   border: '1px solid #ddd',
                   borderRadius: '4px',
                   fontSize: '16px',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
                 }}
                 placeholder="Enter movie title"
               />
@@ -197,7 +201,7 @@ export default function MovieFormPage() {
                   border: '1px solid #ddd',
                   borderRadius: '4px',
                   fontSize: '16px',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
                 }}
                 placeholder="Enter director name"
               />
@@ -219,7 +223,7 @@ export default function MovieFormPage() {
                   border: '1px solid #ddd',
                   borderRadius: '4px',
                   fontSize: '16px',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
                 }}
                 placeholder="Enter main cast (comma separated)"
               />
@@ -242,7 +246,7 @@ export default function MovieFormPage() {
                     border: '1px solid #ddd',
                     borderRadius: '4px',
                     fontSize: '16px',
-                    boxSizing: 'border-box'
+                    boxSizing: 'border-box',
                   }}
                   placeholder="e.g., Action, Drama, Comedy"
                 />
@@ -264,7 +268,7 @@ export default function MovieFormPage() {
                     border: '1px solid #ddd',
                     borderRadius: '4px',
                     fontSize: '16px',
-                    boxSizing: 'border-box'
+                    boxSizing: 'border-box',
                   }}
                   placeholder="120"
                 />
@@ -288,7 +292,7 @@ export default function MovieFormPage() {
                     border: '1px solid #ddd',
                     borderRadius: '4px',
                     fontSize: '16px',
-                    boxSizing: 'border-box'
+                    boxSizing: 'border-box',
                   }}
                 />
               </div>
@@ -306,7 +310,7 @@ export default function MovieFormPage() {
                     border: '1px solid #ddd',
                     borderRadius: '4px',
                     fontSize: '16px',
-                    boxSizing: 'border-box'
+                    boxSizing: 'border-box',
                   }}
                 >
                   <option value="upcoming">Upcoming</option>
@@ -332,7 +336,7 @@ export default function MovieFormPage() {
                   border: '1px solid #ddd',
                   borderRadius: '4px',
                   fontSize: '16px',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
                 }}
                 placeholder="https://example.com/poster.jpg"
               />
@@ -353,7 +357,7 @@ export default function MovieFormPage() {
                   border: '1px solid #ddd',
                   borderRadius: '4px',
                   fontSize: '16px',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
                 }}
                 placeholder="https://www.youtube.com/watch?v=..."
               />
@@ -377,7 +381,7 @@ export default function MovieFormPage() {
                   fontSize: '16px',
                   boxSizing: 'border-box',
                   resize: 'vertical',
-                  fontFamily: 'inherit'
+                  fontFamily: 'inherit',
                 }}
                 placeholder="Enter movie description..."
               />
@@ -395,7 +399,7 @@ export default function MovieFormPage() {
                   color: '#333',
                   borderRadius: '4px',
                   cursor: 'pointer',
-                  fontSize: '16px'
+                  fontSize: '16px',
                 }}
               >
                 Cancel
@@ -410,15 +414,15 @@ export default function MovieFormPage() {
                   color: 'white',
                   borderRadius: '4px',
                   cursor: saving ? 'not-allowed' : 'pointer',
-                  fontSize: '16px'
+                  fontSize: '16px',
                 }}
               >
-                {saving ? 'Saving...' : (isEditing ? 'Update Movie' : 'Create Movie')}
+                {saving ? 'Saving...' : isEditing ? 'Update Movie' : 'Create Movie'}
               </button>
             </div>
           </form>
         </div>
       </div>
     </AdminLayout>
-  );
-} 
+  )
+}

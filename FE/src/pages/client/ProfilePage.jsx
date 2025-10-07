@@ -1,12 +1,22 @@
-import React, { useState } from 'react';
-import { FaUser, FaEnvelope, FaPhone, FaCalendarAlt, FaMapMarkerAlt, FaEdit, FaSave, FaTimes, FaEye, FaEyeSlash } from 'react-icons/fa';
-import Header from '../../components/Header';
+import { useState } from 'react'
+import {
+  FaCalendarAlt,
+  FaEdit,
+  FaEnvelope,
+  FaEye,
+  FaEyeSlash,
+  FaMapMarkerAlt,
+  FaPhone,
+  FaSave,
+  FaTimes,
+  FaUser,
+} from 'react-icons/fa'
+import Header from '../../components/Header'
 
 export default function ProfilePage() {
-  const [isEditing, setIsEditing] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  
-  // Mock user data
+  const [isEditing, setIsEditing] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+
   const [userData, setUserData] = useState({
     id: 1,
     name: 'Nguyễn Ngọc Quang',
@@ -15,55 +25,59 @@ export default function ProfilePage() {
     birthDate: '1995-08-15',
     address: '123 Đường ABC, Quận 1, TP.HCM',
     gender: 'male',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+    avatar:
+      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
     joinDate: '2024-01-15',
     membershipType: 'VIP',
     totalBookings: 25,
-    favoriteGenres: ['Hành động', 'Khoa học viễn tưởng', 'Kinh dị']
-  });
+    favoriteGenres: ['Hành động', 'Khoa học viễn tưởng', 'Kinh dị'],
+  })
 
-  const [editForm, setEditForm] = useState({...userData});
+  const [editForm, setEditForm] = useState({ ...userData })
 
   const handleEdit = () => {
-    setIsEditing(true);
-    setEditForm({...userData});
-  };
+    setIsEditing(true)
+    setEditForm({ ...userData })
+  }
 
   const handleSave = () => {
-    setUserData({...editForm});
-    setIsEditing(false);
+    setUserData({ ...editForm })
+    setIsEditing(false)
     // TODO: Call API to update user data
-    console.log('Saving user data:', editForm);
-  };
+    console.log('Saving user data:', editForm)
+  }
 
   const handleCancel = () => {
-    setEditForm({...userData});
-    setIsEditing(false);
-  };
+    setEditForm({ ...userData })
+    setIsEditing(false)
+  }
 
   const handleInputChange = (field, value) => {
-    setEditForm(prev => ({
+    setEditForm((prev) => ({
       ...prev,
-      [field]: value
-    }));
-  };
+      [field]: value,
+    }))
+  }
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('vi-VN');
-  };
+    return new Date(dateString).toLocaleDateString('vi-VN')
+  }
 
   const getMembershipColor = (type) => {
     switch (type) {
-      case 'VIP': return 'bg-gradient-to-r from-yellow-400 to-yellow-600';
-      case 'Premium': return 'bg-gradient-to-r from-purple-400 to-purple-600';
-      default: return 'bg-gradient-to-r from-gray-400 to-gray-600';
+      case 'VIP':
+        return 'bg-gradient-to-r from-yellow-400 to-yellow-600'
+      case 'Premium':
+        return 'bg-gradient-to-r from-purple-400 to-purple-600'
+      default:
+        return 'bg-gradient-to-r from-gray-400 to-gray-600'
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-black">
       <Header />
-      
+
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Profile Header */}
         <div className="bg-gray-900 rounded-2xl p-8 mb-8">
@@ -75,7 +89,9 @@ export default function ProfilePage() {
                 alt="Avatar"
                 className="w-32 h-32 rounded-full object-cover border-4 border-red-600"
               />
-              <div className={`absolute -bottom-2 -right-2 px-3 py-1 rounded-full text-xs font-bold text-white ${getMembershipColor(userData.membershipType)}`}>
+              <div
+                className={`absolute -bottom-2 -right-2 px-3 py-1 rounded-full text-xs font-bold text-white ${getMembershipColor(userData.membershipType)}`}
+              >
                 {userData.membershipType}
               </div>
             </div>
@@ -224,7 +240,11 @@ export default function ProfilePage() {
                   </select>
                 ) : (
                   <p className="text-white">
-                    {userData.gender === 'male' ? 'Nam' : userData.gender === 'female' ? 'Nữ' : 'Khác'}
+                    {userData.gender === 'male'
+                      ? 'Nam'
+                      : userData.gender === 'female'
+                        ? 'Nữ'
+                        : 'Khác'}
                   </p>
                 )}
               </div>
@@ -241,7 +261,9 @@ export default function ProfilePage() {
               </h2>
 
               <div>
-                <label className="block text-gray-400 text-sm font-medium mb-2">Địa chỉ hiện tại</label>
+                <label className="block text-gray-400 text-sm font-medium mb-2">
+                  Địa chỉ hiện tại
+                </label>
                 {isEditing ? (
                   <textarea
                     value={editForm.address}
@@ -258,13 +280,13 @@ export default function ProfilePage() {
             {/* Security */}
             <div className="bg-gray-900 rounded-2xl p-6">
               <h2 className="text-xl font-bold text-white mb-6">Bảo mật</h2>
-              
+
               <div className="space-y-4">
                 <button className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center space-x-2">
                   <FaEyeSlash />
                   <span>Đổi mật khẩu</span>
                 </button>
-                
+
                 <button className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors duration-300">
                   Bảo mật hai lớp
                 </button>
@@ -291,7 +313,7 @@ export default function ProfilePage() {
                 cinema: 'HQ Cinema Landmark 81',
                 showtime: '2024-03-15 19:30',
                 seats: 'G7, G8',
-                status: 'Đã xem'
+                status: 'Đã xem',
               },
               {
                 id: 2,
@@ -299,7 +321,7 @@ export default function ProfilePage() {
                 cinema: 'HQ Cinema Vincom Center',
                 showtime: '2024-03-10 21:00',
                 seats: 'F5, F6',
-                status: 'Đã xem'
+                status: 'Đã xem',
               },
               {
                 id: 3,
@@ -307,8 +329,8 @@ export default function ProfilePage() {
                 cinema: 'HQ Cinema Times Square',
                 showtime: '2024-03-20 20:15',
                 seats: 'H10, H11',
-                status: 'Sắp diễn ra'
-              }
+                status: 'Sắp diễn ra',
+              },
             ].map((booking) => (
               <div key={booking.id} className="bg-black/50 rounded-lg p-4 border border-gray-700">
                 <div className="flex flex-col md:flex-row md:items-center justify-between">
@@ -320,11 +342,13 @@ export default function ProfilePage() {
                     </p>
                   </div>
                   <div className="mt-2 md:mt-0">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      booking.status === 'Đã xem' 
-                        ? 'bg-green-600/20 text-green-400' 
-                        : 'bg-blue-600/20 text-blue-400'
-                    }`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        booking.status === 'Đã xem'
+                          ? 'bg-green-600/20 text-green-400'
+                          : 'bg-blue-600/20 text-blue-400'
+                      }`}
+                    >
                       {booking.status}
                     </span>
                   </div>
@@ -335,5 +359,5 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,87 +1,87 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { usePermissions } from '../../contexts/PermissionContext';
-import { 
-  FaChartBar, 
-  FaFilm, 
-  FaDoorOpen, 
-  FaCouch, 
-  FaClock, 
+import React, { useState } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { usePermissions } from '../../contexts/PermissionContext'
+import {
+  FaChartBar,
+  FaFilm,
+  FaDoorOpen,
+  FaCouch,
+  FaClock,
   FaMoneyBillWave,
   FaSignOutAlt,
   FaBars,
   FaTimes,
   FaHome,
-  FaUser
-} from 'react-icons/fa';
+  FaUser,
+} from 'react-icons/fa'
 
 export default function AdminLayout({ children }) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const { hasPermission } = usePermissions();
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const { hasPermission } = usePermissions()
 
   const handleLogout = () => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminUser');
-    window.dispatchEvent(new Event('tokenChange'));
-    navigate('/admin/login');
-  };
+    localStorage.removeItem('adminToken')
+    localStorage.removeItem('adminUser')
+    window.dispatchEvent(new Event('tokenChange'))
+    navigate('/admin/login')
+  }
 
   const isActiveRoute = (path) => {
-    return location.pathname === path || location.pathname.startsWith(path + '/');
-  };
+    return location.pathname === path || location.pathname.startsWith(path + '/')
+  }
 
   const navItems = [
-    { 
-      path: '/admin/dashboard', 
-      label: 'Dashboard', 
+    {
+      path: '/admin/dashboard',
+      label: 'Dashboard',
       icon: FaChartBar,
-      permission: 'profile_view' // Basic permission for dashboard
+      permission: 'profile_view', // Basic permission for dashboard
     },
-    { 
-      path: '/admin/movies', 
-      label: 'Quản lý phim', 
+    {
+      path: '/admin/movies',
+      label: 'Quản lý phim',
       icon: FaFilm,
-      permission: 'movie_manage'
+      permission: 'movie_manage',
     },
-    { 
-      path: '/admin/rooms', 
-      label: 'Phòng chiếu', 
+    {
+      path: '/admin/rooms',
+      label: 'Phòng chiếu',
       icon: FaDoorOpen,
-      permission: 'seat_manage' // Room management is part of seat management
+      permission: 'seat_manage', // Room management is part of seat management
     },
-    { 
-      path: '/admin/seats', 
-      label: 'Ghế ngồi', 
+    {
+      path: '/admin/seats',
+      label: 'Ghế ngồi',
       icon: FaCouch,
-      permission: 'seat_manage'
+      permission: 'seat_manage',
     },
-    { 
-      path: '/admin/showtimes', 
-      label: 'Lịch chiếu', 
+    {
+      path: '/admin/showtimes',
+      label: 'Lịch chiếu',
       icon: FaClock,
-      permission: 'showtime_manage'
+      permission: 'showtime_manage',
     },
-    { 
-      path: '/admin/revenue', 
-      label: 'Doanh thu', 
+    {
+      path: '/admin/revenue',
+      label: 'Doanh thu',
       icon: FaMoneyBillWave,
-      permission: 'report_view'
+      permission: 'report_view',
     },
-    { 
-      path: '/admin/staff', 
-      label: 'Nhân viên', 
+    {
+      path: '/admin/staff',
+      label: 'Nhân viên',
       icon: FaUser,
-      permission: 'staff_manage' // This permission needs to be added to the database
+      permission: 'staff_manage', // This permission needs to be added to the database
     },
-    { 
-      path: '/admin/permissions', 
-      label: 'Test Quyền', 
+    {
+      path: '/admin/permissions',
+      label: 'Test Quyền',
       icon: FaUser,
-      permission: 'profile_view' // Basic permission for testing
+      permission: 'profile_view', // Basic permission for testing
     },
-  ];
+  ]
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -106,7 +106,7 @@ export default function AdminLayout({ children }) {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="hidden md:flex items-center space-x-2 text-red-100">
                 <FaUser className="text-sm" />
@@ -126,18 +126,19 @@ export default function AdminLayout({ children }) {
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className={`${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } fixed lg:static lg:translate-x-0 z-40 w-64 h-screen transition-transform duration-300 ease-in-out bg-white border-r border-gray-200 shadow-lg lg:shadow-none`}>
-          
+        <aside
+          className={`${
+            isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } fixed lg:static lg:translate-x-0 z-40 w-64 h-screen transition-transform duration-300 ease-in-out bg-white border-r border-gray-200 shadow-lg lg:shadow-none`}
+        >
           {/* Overlay for mobile */}
           {isSidebarOpen && (
-            <div 
+            <div
               className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
               onClick={() => setIsSidebarOpen(false)}
             />
           )}
-          
+
           <div className="relative z-40 h-full bg-white">
             <nav className="p-4 space-y-2">
               <div className="mb-6">
@@ -151,20 +152,20 @@ export default function AdminLayout({ children }) {
               </div>
 
               {navItems.map((item) => {
-                const IconComponent = item.icon;
-                const isActive = isActiveRoute(item.path);
-                
+                const IconComponent = item.icon
+                const isActive = isActiveRoute(item.path)
+
                 // Check if user has permission for this menu item
                 if (!hasPermission(item.permission)) {
-                  return null;
+                  return null
                 }
-                
+
                 return (
                   <button
                     key={item.path}
                     onClick={() => {
-                      navigate(item.path);
-                      setIsSidebarOpen(false);
+                      navigate(item.path)
+                      setIsSidebarOpen(false)
                     }}
                     className={`flex items-center space-x-3 w-full p-3 rounded-lg transition-all duration-200 ${
                       isActive
@@ -174,14 +175,12 @@ export default function AdminLayout({ children }) {
                   >
                     <IconComponent size={18} />
                     <span className="font-medium">{item.label}</span>
-                    {isActive && (
-                      <div className="ml-auto w-2 h-2 bg-white rounded-full" />
-                    )}
+                    {isActive && <div className="ml-auto w-2 h-2 bg-white rounded-full" />}
                   </button>
-                );
+                )
               })}
             </nav>
-            
+
             {/* Sidebar Footer */}
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gray-50 border-t border-gray-200">
               <div className="text-center text-xs text-gray-500">
@@ -195,12 +194,10 @@ export default function AdminLayout({ children }) {
         {/* Main Content */}
         <main className="flex-1 min-h-screen bg-gray-50">
           <div className="p-6 lg:p-8">
-            <div className="max-w-7xl mx-auto">
-              {children}
-            </div>
+            <div className="max-w-7xl mx-auto">{children}</div>
           </div>
         </main>
       </div>
     </div>
-  );
-} 
+  )
+}

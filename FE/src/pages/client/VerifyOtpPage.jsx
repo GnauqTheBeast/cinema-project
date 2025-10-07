@@ -1,73 +1,73 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
-import { FaKey, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
+import axios from 'axios'
+import { useEffect, useState } from 'react'
+import { FaCheckCircle, FaExclamationTriangle, FaKey } from 'react-icons/fa'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1'
 
 export default function VerifyOtpPage() {
-  const [otp, setOtp] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const [otp, setOtp] = useState('')
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
 
-  const email = searchParams.get('email');
-  const code = searchParams.get('code');
+  const email = searchParams.get('email')
+  const code = searchParams.get('code')
 
   useEffect(() => {
     // If we have a code from URL, auto-fill it
     if (code) {
-      setOtp(code);
+      setOtp(code)
     }
-  }, [code]);
+  }, [code])
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!email) {
-      setError('Email không hợp lệ');
-      return;
+      setError('Email không hợp lệ')
+      return
     }
-    
-    setError('');
-    setSuccess('');
-    setLoading(true);
+
+    setError('')
+    setSuccess('')
+    setLoading(true)
 
     try {
       const response = await axios.post(`${API_URL}/auth/verify-otp`, {
         email: email,
-        otp: otp
-      });
+        otp: otp,
+      })
 
-      setSuccess('Xác thực thành công! Đang chuyển hướng...');
+      setSuccess('Xác thực thành công! Đang chuyển hướng...')
       setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+        navigate('/login')
+      }, 2000)
     } catch (err) {
-      setError(err.response?.data?.message || 'Xác thực thất bại');
+      setError(err.response?.data?.message || 'Xác thực thất bại')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleResendOtp = async () => {
     if (!email) {
-      setError('Email không hợp lệ');
-      return;
+      setError('Email không hợp lệ')
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
     try {
-      await axios.post(`${API_URL}/auth/resend-otp`, { email });
-      setSuccess('OTP mới đã được gửi đến email của bạn');
-      setError('');
+      await axios.post(`${API_URL}/auth/resend-otp`, { email })
+      setSuccess('OTP mới đã được gửi đến email của bạn')
+      setError('')
     } catch (err) {
-      setError(err.response?.data?.message || 'Không thể gửi lại OTP');
+      setError(err.response?.data?.message || 'Không thể gửi lại OTP')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   if (!email) {
     return (
@@ -86,7 +86,7 @@ export default function VerifyOtpPage() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -101,7 +101,7 @@ export default function VerifyOtpPage() {
             <p className="text-gray-400 text-sm">Nhập mã OTP được gửi đến:</p>
             <p className="text-red-400 text-sm font-medium">{email}</p>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-gray-300 text-sm font-medium mb-2">Mã OTP</label>
@@ -112,7 +112,7 @@ export default function VerifyOtpPage() {
                 <input
                   type="text"
                   value={otp}
-                  onChange={e => setOtp(e.target.value)}
+                  onChange={(e) => setOtp(e.target.value)}
                   maxLength="6"
                   required
                   className="w-full pl-10 pr-3 py-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-300 text-center text-lg tracking-widest"
@@ -120,20 +120,20 @@ export default function VerifyOtpPage() {
                 />
               </div>
             </div>
-            
+
             {error && (
               <div className="bg-red-900/50 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg text-sm">
                 {error}
               </div>
             )}
-            
+
             {success && (
               <div className="bg-green-900/50 border border-green-500/50 text-green-300 px-4 py-3 rounded-lg text-sm flex items-center">
                 <FaCheckCircle className="mr-2" />
                 {success}
               </div>
             )}
-            
+
             <button
               type="submit"
               disabled={loading || otp.length !== 6}
@@ -142,7 +142,7 @@ export default function VerifyOtpPage() {
               {loading ? 'Đang xác thực...' : 'Xác thực'}
             </button>
           </form>
-          
+
           <div className="mt-8 text-center">
             <p className="text-gray-400 text-sm mb-4">Không nhận được OTP?</p>
             <button
@@ -153,7 +153,7 @@ export default function VerifyOtpPage() {
               Gửi lại OTP
             </button>
           </div>
-          
+
           <div className="mt-6 text-center">
             <button
               onClick={() => navigate('/login')}
@@ -165,5 +165,5 @@ export default function VerifyOtpPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

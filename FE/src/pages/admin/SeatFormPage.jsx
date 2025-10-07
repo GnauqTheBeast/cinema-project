@@ -1,118 +1,118 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { FaSave, FaArrowLeft } from 'react-icons/fa';
-import AdminLayout from '../../components/admin/AdminLayout';
-import { seatService } from '../../services/seatApi';
-import { roomService } from '../../services/roomApi';
+import { useEffect, useState } from 'react'
+import { FaArrowLeft, FaSave } from 'react-icons/fa'
+import { useNavigate, useParams } from 'react-router-dom'
+import AdminLayout from '../../components/admin/AdminLayout'
+import { roomService } from '../../services/roomApi'
+import { seatService } from '../../services/seatApi'
 
 const SeatFormPage = () => {
-  const navigate = useNavigate();
-  const { id } = useParams();
-  const isEditing = Boolean(id);
+  const navigate = useNavigate()
+  const { id } = useParams()
+  const isEditing = Boolean(id)
 
   const [formData, setFormData] = useState({
     room_id: '',
     seat_number: '',
     row_number: '',
     seat_type: 'regular',
-    status: 'available'
-  });
-  const [rooms, setRooms] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+    status: 'available',
+  })
+  const [rooms, setRooms] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const seatTypes = seatService.getSeatTypes();
-  const seatStatuses = seatService.getSeatStatuses();
+  const seatTypes = seatService.getSeatTypes()
+  const seatStatuses = seatService.getSeatStatuses()
 
   useEffect(() => {
-    fetchRooms();
+    fetchRooms()
     if (isEditing) {
-      fetchSeat();
+      fetchSeat()
     }
-  }, [id, isEditing]);
+  }, [id, isEditing])
 
   const fetchRooms = async () => {
     try {
-      const response = await roomService.getRooms(1, 100);
+      const response = await roomService.getRooms(1, 100)
       if (response.success) {
-        setRooms(response.data.data || []);
+        setRooms(response.data.data || [])
       }
     } catch (err) {
-      console.error('Error fetching rooms:', err);
+      console.error('Error fetching rooms:', err)
     }
-  };
+  }
 
   const fetchSeat = async () => {
     try {
-      setLoading(true);
-      const response = await seatService.getSeatById(id);
-      
+      setLoading(true)
+      const response = await seatService.getSeatById(id)
+
       if (response.success) {
-        const seat = response.data;
+        const seat = response.data
         setFormData({
           room_id: seat.room_id,
           seat_number: seat.seat_number,
           row_number: seat.row_number,
           seat_type: seat.seat_type,
-          status: seat.status
-        });
+          status: seat.status,
+        })
       } else {
-        setError('Không thể tải thông tin ghế');
+        setError('Không thể tải thông tin ghế')
       }
     } catch (err) {
-      setError('Có lỗi xảy ra khi tải dữ liệu');
-      console.error('Error fetching seat:', err);
+      setError('Có lỗi xảy ra khi tải dữ liệu')
+      console.error('Error fetching seat:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+    e.preventDefault()
+
     if (!formData.room_id || !formData.seat_number || !formData.row_number) {
-      setError('Vui lòng điền đầy đủ thông tin bắt buộc');
-      return;
+      setError('Vui lòng điền đầy đủ thông tin bắt buộc')
+      return
     }
 
     try {
-      setLoading(true);
-      setError('');
+      setLoading(true)
+      setError('')
 
       const requestData = {
         room_id: formData.room_id,
         seat_number: formData.seat_number,
         row_number: formData.row_number,
-        seat_type: formData.seat_type
-      };
+        seat_type: formData.seat_type,
+      }
 
       if (isEditing) {
-        requestData.status = formData.status;
-        await seatService.updateSeat(id, requestData);
+        requestData.status = formData.status
+        await seatService.updateSeat(id, requestData)
       } else {
-        await seatService.createSeat(requestData);
+        await seatService.createSeat(requestData)
       }
 
-      navigate('/admin/seats');
+      navigate('/admin/seats')
     } catch (err) {
       if (err.response?.data?.message?.includes('already exists')) {
-        setError('Vị trí ghế này đã tồn tại trong phòng');
+        setError('Vị trí ghế này đã tồn tại trong phòng')
       } else {
-        setError(isEditing ? 'Có lỗi xảy ra khi cập nhật ghế' : 'Có lỗi xảy ra khi tạo ghế');
+        setError(isEditing ? 'Có lỗi xảy ra khi cập nhật ghế' : 'Có lỗi xảy ra khi tạo ghế')
       }
-      console.error('Error saving seat:', err);
+      console.error('Error saving seat:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
+    const { name, value } = e.target
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
-    }));
-  };
+      [name]: value,
+    }))
+  }
 
   if (loading && isEditing) {
     return (
@@ -121,7 +121,7 @@ const SeatFormPage = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       </AdminLayout>
-    );
+    )
   }
 
   return (
@@ -169,7 +169,7 @@ const SeatFormPage = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Chọn phòng</option>
-                  {rooms.map(room => (
+                  {rooms.map((room) => (
                     <option key={room.id} value={room.id}>
                       Phòng {room.room_number} ({room.room_type.toUpperCase()})
                     </option>
@@ -179,7 +179,10 @@ const SeatFormPage = () => {
 
               {/* Row Number */}
               <div>
-                <label htmlFor="row_number" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="row_number"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Hàng ghế <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -196,7 +199,10 @@ const SeatFormPage = () => {
 
               {/* Seat Number */}
               <div>
-                <label htmlFor="seat_number" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="seat_number"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Số ghế <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -224,7 +230,7 @@ const SeatFormPage = () => {
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  {seatTypes.map(type => (
+                  {seatTypes.map((type) => (
                     <option key={type.value} value={type.value}>
                       {type.label}
                     </option>
@@ -245,7 +251,7 @@ const SeatFormPage = () => {
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    {seatStatuses.map(status => (
+                    {seatStatuses.map((status) => (
                       <option key={status.value} value={status.value}>
                         {status.label}
                       </option>
@@ -260,11 +266,14 @@ const SeatFormPage = () => {
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Xem trước:</h3>
                 <div className="text-lg font-medium text-gray-900">
-                  Ghế {formData.row_number}{formData.seat_number} - {rooms.find(r => r.id === formData.room_id)?.room_number ? 
-                    `Phòng ${rooms.find(r => r.id === formData.room_id).room_number}` : 'Phòng chưa chọn'}
+                  Ghế {formData.row_number}
+                  {formData.seat_number} -{' '}
+                  {rooms.find((r) => r.id === formData.room_id)?.room_number
+                    ? `Phòng ${rooms.find((r) => r.id === formData.room_id).room_number}`
+                    : 'Phòng chưa chọn'}
                 </div>
                 <div className="text-sm text-gray-600">
-                  Loại: {seatTypes.find(t => t.value === formData.seat_type)?.label}
+                  Loại: {seatTypes.find((t) => t.value === formData.seat_type)?.label}
                 </div>
               </div>
             )}
@@ -295,7 +304,7 @@ const SeatFormPage = () => {
         </div>
       </div>
     </AdminLayout>
-  );
-};
+  )
+}
 
-export default SeatFormPage; 
+export default SeatFormPage

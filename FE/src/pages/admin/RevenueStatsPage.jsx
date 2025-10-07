@@ -1,74 +1,76 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react'
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  ResponsiveContainer
-} from 'recharts';
-import AdminLayout from '../../components/admin/AdminLayout';
-import { mockDataService } from '../../services/mockData';
+} from 'recharts'
+import AdminLayout from '../../components/admin/AdminLayout'
+import { mockDataService } from '../../services/mockData'
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D']
 
 export default function RevenueStatsPage() {
-  const [monthlyData, setMonthlyData] = useState([]);
-  const [movieData, setMovieData] = useState([]);
-  const [genreData, setGenreData] = useState([]);
-  const [overallStats, setOverallStats] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [monthlyData, setMonthlyData] = useState([])
+  const [movieData, setMovieData] = useState([])
+  const [genreData, setGenreData] = useState([])
+  const [overallStats, setOverallStats] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('overview')
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        setLoading(true);
-        
-        const monthly = mockDataService.getRevenueByMonth();
-        const movies = mockDataService.getRevenueByMovie();
-        const genres = mockDataService.getRevenueByGenre();
-        const stats = mockDataService.getOverallStats();
+        setLoading(true)
 
-        setMonthlyData(monthly);
-        setMovieData(movies.slice(0, 10)); // Top 10 movies
-        setGenreData(genres);
-        setOverallStats(stats);
+        const monthly = mockDataService.getRevenueByMonth()
+        const movies = mockDataService.getRevenueByMovie()
+        const genres = mockDataService.getRevenueByGenre()
+        const stats = mockDataService.getOverallStats()
+
+        setMonthlyData(monthly)
+        setMovieData(movies.slice(0, 10)) // Top 10 movies
+        setGenreData(genres)
+        setOverallStats(stats)
       } catch (error) {
-        console.error('Error loading revenue data:', error);
+        console.error('Error loading revenue data:', error)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    loadData();
-  }, []);
+    loadData()
+  }, [])
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
-      minimumFractionDigits: 0
-    }).format(value);
-  };
+      minimumFractionDigits: 0,
+    }).format(value)
+  }
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div style={{
-          backgroundColor: 'white',
-          padding: '10px',
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}>
+        <div
+          style={{
+            backgroundColor: 'white',
+            padding: '10px',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          }}
+        >
           <p style={{ margin: '0 0 5px 0', fontWeight: 'bold' }}>{label}</p>
           {payload.map((entry, index) => (
             <p key={index} style={{ margin: '0', color: entry.color }}>
@@ -76,17 +78,17 @@ export default function RevenueStatsPage() {
             </p>
           ))}
         </div>
-      );
+      )
     }
-    return null;
-  };
+    return null
+  }
 
   const tabs = [
     { id: 'overview', label: '📊 Overview', icon: '📊' },
     { id: 'monthly', label: '📅 Monthly', icon: '📅' },
     { id: 'movies', label: '🎬 By Movies', icon: '🎬' },
-    { id: 'genres', label: '🎭 By Genres', icon: '🎭' }
-  ];
+    { id: 'genres', label: '🎭 By Genres', icon: '🎭' },
+  ]
 
   if (loading) {
     return (
@@ -95,7 +97,7 @@ export default function RevenueStatsPage() {
           <div>Loading revenue statistics...</div>
         </div>
       </AdminLayout>
-    );
+    )
   }
 
   return (
@@ -106,22 +108,22 @@ export default function RevenueStatsPage() {
           <h2 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: 'bold' }}>
             Revenue Statistics
           </h2>
-          <p style={{ margin: 0, color: '#666' }}>
-            Comprehensive revenue analysis and insights
-          </p>
+          <p style={{ margin: 0, color: '#666' }}>Comprehensive revenue analysis and insights</p>
         </div>
 
         {/* Tabs */}
-        <div style={{
-          display: 'flex',
-          gap: '8px',
-          marginBottom: '24px',
-          borderBottom: '1px solid #e0e0e0',
-          backgroundColor: 'white',
-          padding: '16px',
-          borderRadius: '8px 8px 0 0'
-        }}>
-          {tabs.map(tab => (
+        <div
+          style={{
+            display: 'flex',
+            gap: '8px',
+            marginBottom: '24px',
+            borderBottom: '1px solid #e0e0e0',
+            backgroundColor: 'white',
+            padding: '16px',
+            borderRadius: '8px 8px 0 0',
+          }}
+        >
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -134,7 +136,7 @@ export default function RevenueStatsPage() {
                 cursor: 'pointer',
                 fontSize: '14px',
                 fontWeight: activeTab === tab.id ? 'bold' : 'normal',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
               }}
             >
               {tab.label}
@@ -146,58 +148,68 @@ export default function RevenueStatsPage() {
         {activeTab === 'overview' && (
           <div>
             {/* Stats Cards */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: '16px',
-              marginBottom: '32px'
-            }}>
-              <div style={{
-                backgroundColor: 'white',
-                padding: '24px',
-                borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                borderLeft: '4px solid #4caf50'
-              }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                gap: '16px',
+                marginBottom: '32px',
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: 'white',
+                  padding: '24px',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  borderLeft: '4px solid #4caf50',
+                }}
+              >
                 <h3 style={{ margin: '0 0 8px 0', color: '#4caf50' }}>Total Revenue</h3>
                 <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
                   {overallStats.totalRevenueFormatted}
                 </p>
               </div>
 
-              <div style={{
-                backgroundColor: 'white',
-                padding: '24px',
-                borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                borderLeft: '4px solid #2196f3'
-              }}>
+              <div
+                style={{
+                  backgroundColor: 'white',
+                  padding: '24px',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  borderLeft: '4px solid #2196f3',
+                }}
+              >
                 <h3 style={{ margin: '0 0 8px 0', color: '#2196f3' }}>Total Tickets</h3>
                 <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
                   {overallStats.totalTickets?.toLocaleString()}
                 </p>
               </div>
 
-              <div style={{
-                backgroundColor: 'white',
-                padding: '24px',
-                borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                borderLeft: '4px solid #ff9800'
-              }}>
+              <div
+                style={{
+                  backgroundColor: 'white',
+                  padding: '24px',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  borderLeft: '4px solid #ff9800',
+                }}
+              >
                 <h3 style={{ margin: '0 0 8px 0', color: '#ff9800' }}>Avg Ticket Price</h3>
                 <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
                   {overallStats.averageTicketPriceFormatted}
                 </p>
               </div>
 
-              <div style={{
-                backgroundColor: 'white',
-                padding: '24px',
-                borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                borderLeft: '4px solid #9c27b0'
-              }}>
+              <div
+                style={{
+                  backgroundColor: 'white',
+                  padding: '24px',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  borderLeft: '4px solid #9c27b0',
+                }}
+              >
                 <h3 style={{ margin: '0 0 8px 0', color: '#9c27b0' }}>Total Bookings</h3>
                 <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
                   {overallStats.totalBookings?.toLocaleString()}
@@ -207,12 +219,14 @@ export default function RevenueStatsPage() {
 
             {/* Quick Charts */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div style={{
-                backgroundColor: 'white',
-                padding: '24px',
-                borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-              }}>
+              <div
+                style={{
+                  backgroundColor: 'white',
+                  padding: '24px',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                }}
+              >
                 <h3 style={{ margin: '0 0 16px 0' }}>Revenue by Genre</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
@@ -235,12 +249,14 @@ export default function RevenueStatsPage() {
                 </ResponsiveContainer>
               </div>
 
-              <div style={{
-                backgroundColor: 'white',
-                padding: '24px',
-                borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-              }}>
+              <div
+                style={{
+                  backgroundColor: 'white',
+                  padding: '24px',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                }}
+              >
                 <h3 style={{ margin: '0 0 16px 0' }}>Monthly Trend</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={monthlyData}>
@@ -248,10 +264,10 @@ export default function RevenueStatsPage() {
                     <XAxis dataKey="monthName" />
                     <YAxis tickFormatter={formatCurrency} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Line 
-                      type="monotone" 
-                      dataKey="revenue" 
-                      stroke="#1976d2" 
+                    <Line
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#1976d2"
                       strokeWidth={3}
                       dot={{ fill: '#1976d2', strokeWidth: 2, r: 4 }}
                     />
@@ -264,12 +280,14 @@ export default function RevenueStatsPage() {
 
         {/* Monthly Tab */}
         {activeTab === 'monthly' && (
-          <div style={{
-            backgroundColor: 'white',
-            padding: '24px',
-            borderRadius: '0 0 8px 8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}>
+          <div
+            style={{
+              backgroundColor: 'white',
+              padding: '24px',
+              borderRadius: '0 0 8px 8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            }}
+          >
             <h3 style={{ margin: '0 0 16px 0' }}>Monthly Revenue Breakdown</h3>
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={monthlyData}>
@@ -286,12 +304,14 @@ export default function RevenueStatsPage() {
 
         {/* Movies Tab */}
         {activeTab === 'movies' && (
-          <div style={{
-            backgroundColor: 'white',
-            padding: '24px',
-            borderRadius: '0 0 8px 8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}>
+          <div
+            style={{
+              backgroundColor: 'white',
+              padding: '24px',
+              borderRadius: '0 0 8px 8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            }}
+          >
             <h3 style={{ margin: '0 0 16px 0' }}>Top 10 Movies by Revenue</h3>
             <ResponsiveContainer width="100%" height={500}>
               <BarChart data={movieData} layout="horizontal">
@@ -310,10 +330,18 @@ export default function RevenueStatsPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#f5f5f5' }}>
-                      <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Movie</th>
-                      <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Genre</th>
-                      <th style={{ padding: '12px', textAlign: 'right', border: '1px solid #ddd' }}>Revenue</th>
-                      <th style={{ padding: '12px', textAlign: 'right', border: '1px solid #ddd' }}>Tickets Sold</th>
+                      <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>
+                        Movie
+                      </th>
+                      <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>
+                        Genre
+                      </th>
+                      <th style={{ padding: '12px', textAlign: 'right', border: '1px solid #ddd' }}>
+                        Revenue
+                      </th>
+                      <th style={{ padding: '12px', textAlign: 'right', border: '1px solid #ddd' }}>
+                        Tickets Sold
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -321,10 +349,14 @@ export default function RevenueStatsPage() {
                       <tr key={index}>
                         <td style={{ padding: '12px', border: '1px solid #ddd' }}>{movie.title}</td>
                         <td style={{ padding: '12px', border: '1px solid #ddd' }}>{movie.genre}</td>
-                        <td style={{ padding: '12px', textAlign: 'right', border: '1px solid #ddd' }}>
+                        <td
+                          style={{ padding: '12px', textAlign: 'right', border: '1px solid #ddd' }}
+                        >
                           {movie.revenueFormatted}
                         </td>
-                        <td style={{ padding: '12px', textAlign: 'right', border: '1px solid #ddd' }}>
+                        <td
+                          style={{ padding: '12px', textAlign: 'right', border: '1px solid #ddd' }}
+                        >
                           {movie.ticketsSold.toLocaleString()}
                         </td>
                       </tr>
@@ -338,12 +370,14 @@ export default function RevenueStatsPage() {
 
         {/* Genres Tab */}
         {activeTab === 'genres' && (
-          <div style={{
-            backgroundColor: 'white',
-            padding: '24px',
-            borderRadius: '0 0 8px 8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}>
+          <div
+            style={{
+              backgroundColor: 'white',
+              padding: '24px',
+              borderRadius: '0 0 8px 8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            }}
+          >
             <h3 style={{ margin: '0 0 16px 0' }}>Revenue by Genre</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
               <ResponsiveContainer width="100%" height={400}>
@@ -353,7 +387,9 @@ export default function RevenueStatsPage() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ genre, revenue }) => `${genre}: ${((revenue / overallStats.totalRevenue) * 100).toFixed(1)}%`}
+                    label={({ genre, revenue }) =>
+                      `${genre}: ${((revenue / overallStats.totalRevenue) * 100).toFixed(1)}%`
+                    }
                     outerRadius={120}
                     fill="#8884d8"
                     dataKey="revenue"
@@ -370,22 +406,27 @@ export default function RevenueStatsPage() {
               <div>
                 <h4>Genre Breakdown</h4>
                 {genreData.map((genre, index) => (
-                  <div key={index} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px',
-                    marginBottom: '8px',
-                    backgroundColor: '#f9f9f9',
-                    borderRadius: '4px'
-                  }}>
+                  <div
+                    key={index}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '12px',
+                      marginBottom: '8px',
+                      backgroundColor: '#f9f9f9',
+                      borderRadius: '4px',
+                    }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{
-                        width: '16px',
-                        height: '16px',
-                        backgroundColor: COLORS[index % COLORS.length],
-                        borderRadius: '50%'
-                      }}></div>
+                      <div
+                        style={{
+                          width: '16px',
+                          height: '16px',
+                          backgroundColor: COLORS[index % COLORS.length],
+                          borderRadius: '50%',
+                        }}
+                      ></div>
                       <span style={{ fontWeight: 'bold' }}>{genre.genre}</span>
                     </div>
                     <div style={{ textAlign: 'right' }}>
@@ -402,5 +443,5 @@ export default function RevenueStatsPage() {
         )}
       </div>
     </AdminLayout>
-  );
-} 
+  )
+}

@@ -1,15 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { FaSave, FaArrowLeft, FaExclamationTriangle, FaClock, FaFilm, FaDoorOpen, FaCalendarAlt, FaMoneyBillWave, FaTags } from 'react-icons/fa';
-import AdminLayout from '../../components/admin/AdminLayout';
-import { showtimeService } from '../../services/showtimeApi';
-import { roomService } from '../../services/roomApi';
-import { movieService } from '../../services/movieApi';
+import { useEffect, useState } from 'react'
+import {
+  FaArrowLeft,
+  FaCalendarAlt,
+  FaClock,
+  FaDoorOpen,
+  FaExclamationTriangle,
+  FaFilm,
+  FaMoneyBillWave,
+  FaSave,
+  FaTags,
+} from 'react-icons/fa'
+import { useNavigate, useParams } from 'react-router-dom'
+import AdminLayout from '../../components/admin/AdminLayout'
+import { movieService } from '../../services/movieApi'
+import { roomService } from '../../services/roomApi'
+import { showtimeService } from '../../services/showtimeApi'
 
 const ShowtimeFormPage = () => {
-  const navigate = useNavigate();
-  const { id } = useParams();
-  const isEditing = Boolean(id);
+  const navigate = useNavigate()
+  const { id } = useParams()
+  const isEditing = Boolean(id)
 
   const [formData, setFormData] = useState({
     movie_id: '',
@@ -18,75 +28,75 @@ const ShowtimeFormPage = () => {
     end_time: '',
     format: '2d',
     base_price: '',
-    status: 'scheduled'
-  });
-  const [rooms, setRooms] = useState([]);
-  const [movies, setMovies] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [conflictWarning, setConflictWarning] = useState('');
-  const [timeInfo, setTimeInfo] = useState('');
-  const [selectedMovie, setSelectedMovie] = useState(null);
+    status: 'scheduled',
+  })
+  const [rooms, setRooms] = useState([])
+  const [movies, setMovies] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [conflictWarning, setConflictWarning] = useState('')
+  const [timeInfo, setTimeInfo] = useState('')
+  const [selectedMovie, setSelectedMovie] = useState(null)
 
-  const showtimeFormats = showtimeService.getShowtimeFormats();
-  const showtimeStatuses = showtimeService.getShowtimeStatuses();
+  const showtimeFormats = showtimeService.getShowtimeFormats()
+  const showtimeStatuses = showtimeService.getShowtimeStatuses()
 
   useEffect(() => {
-    fetchRooms();
-    fetchMovies();
+    fetchRooms()
+    fetchMovies()
     if (isEditing) {
-      fetchShowtime();
+      fetchShowtime()
     }
-  }, [id, isEditing]);
+  }, [id, isEditing])
 
   useEffect(() => {
     if (formData.start_time) {
-      checkTimeInfo();
+      checkTimeInfo()
     }
-  }, [formData.start_time, formData.end_time, selectedMovie]);
+  }, [formData.start_time, formData.end_time, selectedMovie])
 
   useEffect(() => {
     if (formData.movie_id) {
-      const movie = movies.find(m => m.id === formData.movie_id);
-      setSelectedMovie(movie);
+      const movie = movies.find((m) => m.id === formData.movie_id)
+      setSelectedMovie(movie)
     }
-  }, [formData.movie_id, movies]);
+  }, [formData.movie_id, movies])
 
   useEffect(() => {
     if (formData.room_id && formData.start_time && formData.end_time) {
-      checkTimeConflict();
+      checkTimeConflict()
     }
-  }, [formData.room_id, formData.start_time, formData.end_time]);
+  }, [formData.room_id, formData.start_time, formData.end_time])
 
   const fetchRooms = async () => {
     try {
-      const response = await roomService.getRooms(1, 100);
+      const response = await roomService.getRooms(1, 100)
       if (response.success) {
-        setRooms(response.data.data || []);
+        setRooms(response.data.data || [])
       }
     } catch (err) {
-      console.error('Error fetching rooms:', err);
+      console.error('Error fetching rooms:', err)
     }
-  };
+  }
 
   const fetchMovies = async () => {
     try {
-      const response = await movieService.getMovies(1, 100);
+      const response = await movieService.getMovies(1, 100)
       if (response.success) {
-        setMovies(response.data.movies || []);
+        setMovies(response.data.movies || [])
       }
     } catch (err) {
-      console.error('Error fetching movies:', err);
+      console.error('Error fetching movies:', err)
     }
-  };
+  }
 
   const fetchShowtime = async () => {
     try {
-      setLoading(true);
-      const response = await showtimeService.getShowtimeById(id);
-      
+      setLoading(true)
+      const response = await showtimeService.getShowtimeById(id)
+
       if (response.success) {
-        const showtime = response.data;
+        const showtime = response.data
         setFormData({
           movie_id: showtime.movie_id,
           room_id: showtime.room_id,
@@ -94,115 +104,122 @@ const ShowtimeFormPage = () => {
           end_time: new Date(showtime.end_time).toISOString().slice(0, 16),
           format: showtime.format,
           base_price: showtime.base_price.toString(),
-          status: showtime.status
-        });
+          status: showtime.status,
+        })
       } else {
-        setError('Không thể tải thông tin lịch chiếu');
+        setError('Không thể tải thông tin lịch chiếu')
       }
     } catch (err) {
-      setError('Có lỗi xảy ra khi tải dữ liệu');
-      console.error('Error fetching showtime:', err);
+      setError('Có lỗi xảy ra khi tải dữ liệu')
+      console.error('Error fetching showtime:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const checkTimeInfo = () => {
-    if (!formData.start_time) return;
+    if (!formData.start_time) return
 
-    const startTime = new Date(formData.start_time);
-    
-    let info = '';
+    const startTime = new Date(formData.start_time)
+
+    let info = ''
 
     if (formData.end_time) {
-      const endTime = new Date(formData.end_time);
-      const scheduledDuration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
-      
-      info += `Thời lượng lịch chiếu: ${Math.floor(scheduledDuration / 60)}h ${scheduledDuration % 60}m`;
+      const endTime = new Date(formData.end_time)
+      const scheduledDuration = (endTime.getTime() - startTime.getTime()) / (1000 * 60)
+
+      info += `Thời lượng lịch chiếu: ${Math.floor(scheduledDuration / 60)}h ${scheduledDuration % 60}m`
 
       // Add movie duration validation
       if (selectedMovie && selectedMovie.duration) {
-        const movieDuration = selectedMovie.duration;
-        info += '\n';
-        info += `Thời lượng phim: ${Math.floor(movieDuration / 60)}h ${movieDuration % 60}m`;
-        
+        const movieDuration = selectedMovie.duration
+        info += '\n'
+        info += `Thời lượng phim: ${Math.floor(movieDuration / 60)}h ${movieDuration % 60}m`
+
         if (scheduledDuration < movieDuration) {
-          info += '\n';
-          info += `⚠️ CẢNH BÁO: Thời lượng lịch chiếu (${Math.floor(scheduledDuration / 60)}h ${scheduledDuration % 60}m) ngắn hơn thời lượng phim (${Math.floor(movieDuration / 60)}h ${movieDuration % 60}m)`;
+          info += '\n'
+          info += `⚠️ CẢNH BÁO: Thời lượng lịch chiếu (${Math.floor(scheduledDuration / 60)}h ${scheduledDuration % 60}m) ngắn hơn thời lượng phim (${Math.floor(movieDuration / 60)}h ${movieDuration % 60}m)`
         } else if (scheduledDuration > movieDuration + 30) {
-          const bufferTime = scheduledDuration - movieDuration;
-          info += '\n';
-          info += `✅ Thời gian dự phòng: ${Math.floor(bufferTime / 60)}h ${bufferTime % 60}m (bao gồm dọn dẹp, quảng cáo)`;
+          const bufferTime = scheduledDuration - movieDuration
+          info += '\n'
+          info += `✅ Thời gian dự phòng: ${Math.floor(bufferTime / 60)}h ${bufferTime % 60}m (bao gồm dọn dẹp, quảng cáo)`
         }
       }
     }
 
-    setTimeInfo(info);
-  };
+    setTimeInfo(info)
+  }
 
   const checkTimeConflict = async () => {
     try {
-      const startTime = new Date(formData.start_time).toISOString();
-      const endTime = new Date(formData.end_time).toISOString();
-      
+      const startTime = new Date(formData.start_time).toISOString()
+      const endTime = new Date(formData.end_time).toISOString()
+
       const response = await showtimeService.checkTimeConflict(
         formData.room_id,
         startTime,
         endTime,
-        isEditing ? id : ''
-      );
+        isEditing ? id : '',
+      )
 
       if (response.success && response.data.has_conflict) {
-        setConflictWarning('⚠️ Thời gian này đã có lịch chiếu khác trong phòng!');
+        setConflictWarning('⚠️ Thời gian này đã có lịch chiếu khác trong phòng!')
       } else {
-        setConflictWarning('');
+        setConflictWarning('')
       }
     } catch (err) {
-      console.error('Error checking time conflict:', err);
+      console.error('Error checking time conflict:', err)
     }
-  };
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.movie_id || !formData.room_id || !formData.start_time || 
-        !formData.end_time || !formData.base_price) {
-      setError('Vui lòng điền đầy đủ thông tin bắt buộc');
-      return;
+    e.preventDefault()
+
+    if (
+      !formData.movie_id ||
+      !formData.room_id ||
+      !formData.start_time ||
+      !formData.end_time ||
+      !formData.base_price
+    ) {
+      setError('Vui lòng điền đầy đủ thông tin bắt buộc')
+      return
     }
 
-    const basePrice = parseFloat(formData.base_price);
+    const basePrice = parseFloat(formData.base_price)
     if (basePrice <= 0) {
-      setError('Giá vé phải lớn hơn 0');
-      return;
+      setError('Giá vé phải lớn hơn 0')
+      return
     }
 
-    const startTime = new Date(formData.start_time);
-    const endTime = new Date(formData.end_time);
+    const startTime = new Date(formData.start_time)
+    const endTime = new Date(formData.end_time)
 
     if (endTime <= startTime) {
-      setError('Thời gian kết thúc phải sau thời gian bắt đầu');
-      return;
+      setError('Thời gian kết thúc phải sau thời gian bắt đầu')
+      return
     }
 
     if (startTime < new Date()) {
-      setError('Không thể tạo lịch chiếu trong quá khứ');
-      return;
+      setError('Không thể tạo lịch chiếu trong quá khứ')
+      return
     }
 
     // Validate movie duration
     if (selectedMovie && selectedMovie.duration) {
-      const scheduledDuration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
-      
+      const scheduledDuration = (endTime.getTime() - startTime.getTime()) / (1000 * 60)
+
       if (scheduledDuration < selectedMovie.duration) {
-        setError(`Thời lượng lịch chiếu (${Math.floor(scheduledDuration / 60)}h ${scheduledDuration % 60}m) phải lớn hơn hoặc bằng thời lượng phim (${Math.floor(selectedMovie.duration / 60)}h ${selectedMovie.duration % 60}m)`);
-        return;
+        setError(
+          `Thời lượng lịch chiếu (${Math.floor(scheduledDuration / 60)}h ${scheduledDuration % 60}m) phải lớn hơn hoặc bằng thời lượng phim (${Math.floor(selectedMovie.duration / 60)}h ${selectedMovie.duration % 60}m)`,
+        )
+        return
       }
     }
 
     try {
-      setLoading(true);
-      setError('');
+      setLoading(true)
+      setError('')
 
       const requestData = {
         movie_id: formData.movie_id,
@@ -210,98 +227,100 @@ const ShowtimeFormPage = () => {
         start_time: new Date(formData.start_time).toISOString(),
         end_time: new Date(formData.end_time).toISOString(),
         format: formData.format,
-        base_price: basePrice
-      };
+        base_price: basePrice,
+      }
 
       if (isEditing) {
-        requestData.status = formData.status;
-        await showtimeService.updateShowtime(id, requestData);
+        requestData.status = formData.status
+        await showtimeService.updateShowtime(id, requestData)
       } else {
-        await showtimeService.createShowtime(requestData);
+        await showtimeService.createShowtime(requestData)
       }
 
-      navigate('/admin/showtimes');
+      navigate('/admin/showtimes')
     } catch (err) {
       if (err.response?.data?.message?.includes('conflicts')) {
-        setError('Lịch chiếu bị trung với lịch chiếu khác trong phòng');
+        setError('Lịch chiếu bị trung với lịch chiếu khác trong phòng')
       } else if (err.response?.data?.message?.includes('past')) {
-        setError('Không thể tạo lịch chiếu trong quá khứ');
+        setError('Không thể tạo lịch chiếu trong quá khứ')
       } else {
-        setError(isEditing ? 'Có lỗi xảy ra khi cập nhật lịch chiếu' : 'Có lỗi xảy ra khi tạo lịch chiếu');
+        setError(
+          isEditing ? 'Có lỗi xảy ra khi cập nhật lịch chiếu' : 'Có lỗi xảy ra khi tạo lịch chiếu',
+        )
       }
-      console.error('Error saving showtime:', err);
+      console.error('Error saving showtime:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
+    const { name, value } = e.target
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
-    }));
-  };
+      [name]: value,
+    }))
+  }
 
   const calculateEndTime = (startTime, movieDuration) => {
-    if (!startTime) return '';
-    
-    const durationMinutes = movieDuration || 120; // default 2 hours if no movie duration
-    
+    if (!startTime) return ''
+
+    const durationMinutes = movieDuration || 120 // default 2 hours if no movie duration
+
     // Create date object from datetime-local input format
-    const startDate = new Date(startTime);
-    
+    const startDate = new Date(startTime)
+
     // Add movie duration in minutes
-    const endDate = new Date(startDate.getTime() + durationMinutes * 60 * 1000);
-    
+    const endDate = new Date(startDate.getTime() + durationMinutes * 60 * 1000)
+
     console.log('calculateEndTime debug:', {
       startTime,
       durationMinutes,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
-      result: endDate.toISOString().slice(0, 16)
-    });
-    
+      result: endDate.toISOString().slice(0, 16),
+    })
+
     // Return in datetime-local format (YYYY-MM-DDTHH:mm)
-    return endDate.toISOString().slice(0, 16);
-  };
+    return endDate.toISOString().slice(0, 16)
+  }
 
   const handleStartTimeChange = (e) => {
-    const startTime = e.target.value;
-    let endTime = formData.end_time;
-    
+    const startTime = e.target.value
+    let endTime = formData.end_time
+
     // Always auto-set end time when start time changes
     if (startTime) {
-      const movieDuration = selectedMovie?.duration;
-      endTime = calculateEndTime(startTime, movieDuration);
+      const movieDuration = selectedMovie?.duration
+      endTime = calculateEndTime(startTime, movieDuration)
     }
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
       start_time: startTime,
-      end_time: endTime
-    }));
-  };
+      end_time: endTime,
+    }))
+  }
 
   const handleMovieChange = (e) => {
-    const movieId = e.target.value;
-    const movie = movies.find(m => m.id === movieId);
-    
-    setFormData(prev => {
-      let newEndTime = prev.end_time;
-      
+    const movieId = e.target.value
+    const movie = movies.find((m) => m.id === movieId)
+
+    setFormData((prev) => {
+      let newEndTime = prev.end_time
+
       // Auto-adjust end time when movie changes and start time exists
       if (prev.start_time && movie?.duration) {
-        newEndTime = calculateEndTime(prev.start_time, movie.duration);
+        newEndTime = calculateEndTime(prev.start_time, movie.duration)
       }
-      
+
       return {
         ...prev,
         movie_id: movieId,
-        end_time: newEndTime
-      };
-    });
-  };
+        end_time: newEndTime,
+      }
+    })
+  }
 
   if (loading && isEditing) {
     return (
@@ -310,7 +329,7 @@ const ShowtimeFormPage = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       </AdminLayout>
-    );  
+    )
   }
 
   return (
@@ -335,7 +354,9 @@ const ShowtimeFormPage = () => {
                 </h1>
               </div>
               <p className="text-gray-600">
-                {isEditing ? 'Cập nhật thông tin lịch chiếu của phim' : 'Tạo lịch chiếu mới cho hệ thống rạp'}
+                {isEditing
+                  ? 'Cập nhật thông tin lịch chiếu của phim'
+                  : 'Tạo lịch chiếu mới cho hệ thống rạp'}
               </p>
             </div>
           </div>
@@ -382,7 +403,9 @@ const ShowtimeFormPage = () => {
                     </div>
                     <div className="ml-3">
                       <h3 className="text-sm font-medium text-blue-800">Thông tin thời gian</h3>
-                      <div className="mt-1 text-sm text-blue-700 whitespace-pre-line">{timeInfo}</div>
+                      <div className="mt-1 text-sm text-blue-700 whitespace-pre-line">
+                        {timeInfo}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -394,7 +417,10 @@ const ShowtimeFormPage = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Movie */}
                 <div className="space-y-2">
-                  <label htmlFor="movie_id" className="flex items-center text-sm font-semibold text-gray-900">
+                  <label
+                    htmlFor="movie_id"
+                    className="flex items-center text-sm font-semibold text-gray-900"
+                  >
                     <FaFilm className="mr-2 text-red-500" size={16} />
                     Chọn phim <span className="text-red-500 ml-1">*</span>
                   </label>
@@ -407,9 +433,12 @@ const ShowtimeFormPage = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                   >
                     <option value="">-- Chọn phim để chiếu --</option>
-                    {movies.map(movie => (
+                    {movies.map((movie) => (
                       <option key={movie.id} value={movie.id}>
-                        {movie.title} {movie.duration ? `(${Math.floor(movie.duration / 60)}h ${movie.duration % 60}m)` : ''}
+                        {movie.title}{' '}
+                        {movie.duration
+                          ? `(${Math.floor(movie.duration / 60)}h ${movie.duration % 60}m)`
+                          : ''}
                       </option>
                     ))}
                   </select>
@@ -417,7 +446,10 @@ const ShowtimeFormPage = () => {
 
                 {/* Room */}
                 <div className="space-y-2">
-                  <label htmlFor="room_id" className="flex items-center text-sm font-semibold text-gray-900">
+                  <label
+                    htmlFor="room_id"
+                    className="flex items-center text-sm font-semibold text-gray-900"
+                  >
                     <FaDoorOpen className="mr-2 text-red-500" size={16} />
                     Phòng chiếu <span className="text-red-500 ml-1">*</span>
                   </label>
@@ -430,7 +462,7 @@ const ShowtimeFormPage = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                   >
                     <option value="">-- Chọn phòng chiếu --</option>
-                    {rooms.map(room => (
+                    {rooms.map((room) => (
                       <option key={room.id} value={room.id}>
                         Phòng {room.room_number} ({room.room_type.toUpperCase()})
                       </option>
@@ -442,7 +474,10 @@ const ShowtimeFormPage = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Start Time */}
                 <div className="space-y-2">
-                  <label htmlFor="start_time" className="flex items-center text-sm font-semibold text-gray-900">
+                  <label
+                    htmlFor="start_time"
+                    className="flex items-center text-sm font-semibold text-gray-900"
+                  >
                     <FaCalendarAlt className="mr-2 text-red-500" size={16} />
                     Thời gian bắt đầu <span className="text-red-500 ml-1">*</span>
                   </label>
@@ -460,7 +495,10 @@ const ShowtimeFormPage = () => {
 
                 {/* End Time */}
                 <div className="space-y-2">
-                  <label htmlFor="end_time" className="flex items-center text-sm font-semibold text-gray-900">
+                  <label
+                    htmlFor="end_time"
+                    className="flex items-center text-sm font-semibold text-gray-900"
+                  >
                     <FaClock className="mr-2 text-red-500" size={16} />
                     Thời gian kết thúc <span className="text-red-500 ml-1">*</span>
                   </label>
@@ -480,7 +518,10 @@ const ShowtimeFormPage = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Format */}
                 <div className="space-y-2">
-                  <label htmlFor="format" className="flex items-center text-sm font-semibold text-gray-900">
+                  <label
+                    htmlFor="format"
+                    className="flex items-center text-sm font-semibold text-gray-900"
+                  >
                     <FaTags className="mr-2 text-red-500" size={16} />
                     Định dạng chiếu <span className="text-red-500 ml-1">*</span>
                   </label>
@@ -492,7 +533,7 @@ const ShowtimeFormPage = () => {
                     required
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                   >
-                    {showtimeFormats.map(format => (
+                    {showtimeFormats.map((format) => (
                       <option key={format.value} value={format.value}>
                         {format.label}
                       </option>
@@ -502,7 +543,10 @@ const ShowtimeFormPage = () => {
 
                 {/* Base Price */}
                 <div className="space-y-2">
-                  <label htmlFor="base_price" className="flex items-center text-sm font-semibold text-gray-900">
+                  <label
+                    htmlFor="base_price"
+                    className="flex items-center text-sm font-semibold text-gray-900"
+                  >
                     <FaMoneyBillWave className="mr-2 text-red-500" size={16} />
                     Giá vé cơ bản (VNĐ) <span className="text-red-500 ml-1">*</span>
                   </label>
@@ -524,7 +568,10 @@ const ShowtimeFormPage = () => {
               {/* Status (only for editing) */}
               {isEditing && (
                 <div className="space-y-2">
-                  <label htmlFor="status" className="flex items-center text-sm font-semibold text-gray-900">
+                  <label
+                    htmlFor="status"
+                    className="flex items-center text-sm font-semibold text-gray-900"
+                  >
                     <FaExclamationTriangle className="mr-2 text-red-500" size={16} />
                     Trạng thái lịch chiếu
                   </label>
@@ -535,7 +582,7 @@ const ShowtimeFormPage = () => {
                     onChange={handleChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                   >
-                    {showtimeStatuses.map(status => (
+                    {showtimeStatuses.map((status) => (
                       <option key={status.value} value={status.value}>
                         {status.label}
                       </option>
@@ -571,7 +618,7 @@ const ShowtimeFormPage = () => {
         </div>
       </div>
     </AdminLayout>
-  );
-};
+  )
+}
 
-export default ShowtimeFormPage; 
+export default ShowtimeFormPage
