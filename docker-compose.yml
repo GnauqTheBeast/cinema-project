@@ -1,0 +1,31 @@
+services:
+  postgres:
+    container_name: app_postgres
+    image: postgres:15-alpine
+    networks:
+      - app
+    environment:
+      POSTGRES_DB: cinema_app
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+
+  redis:
+    container_name: app_redis
+    image: redis:7.4-alpine
+    networks:
+      - app
+    volumes:
+      - ./redis-data:/data
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+
+networks:
+  app:

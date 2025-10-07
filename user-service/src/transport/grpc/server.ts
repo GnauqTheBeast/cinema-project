@@ -1,0 +1,194 @@
+import * as grpc from '@grpc/grpc-js';
+import * as protoLoader from '@grpc/proto-loader';
+import path from 'path';
+import { Models } from '../../storage/models.js';
+import { v4 as uuidv4 } from 'uuid';
+import { QueryTypes } from 'sequelize';
+
+const PROTO_PATH = path.resolve(process.cwd(), 'proto', 'user.proto');
+
+type GrpcModels = Models;
+
+export async function startGrpcServer(models: GrpcModels): Promise<void> {
+  const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+    keepCase: true,
+    longs: String,
+    enums: String,
+    defaults: true,
+    oneofs: true
+  });
+  const proto = grpc.loadPackageDefinition(packageDefinition) as any;
+  const svc = proto.user;
+
+  const server = new grpc.Server();
+
+  server.addService(svc.UserService.service, {
+    ensurePending: async (
+      call: grpc.ServerUnaryCall<any, any>,
+      callback: grpc.sendUnaryData<any>
+    ) => {
+      try {
+        const { email, name, password, role_id, address } = call.request;
+        const existing = await models.User.findOne({ where: { email } });
+        let id = existing?.get('id') as string | undefined;
+
+        if (!existing) {
+          id = uuidv4();
+          await models.User.create({
+            id,
+            email,
+            name,
+            password,
+            role_id: role_id || null,
+            address: address || null,
+            status: 'pending'
+          } as any);
+          await models.CustomerProfile.create({
+            id: uuidv4(),
+            user_id: id,
+            total_payment_amount: 0,
+            point: 0,
+            onchain_wallet_address: ''
+          } as any);
+        }
+        callback(null, { id, created: !existing });
+      } catch (e: any) {
+        callback({ code: grpc.status.INTERNAL, message: e.message } as any);
+      }
+    },
+    getUserByEmail: async (
+      call: grpc.ServerUnaryCall<any, any>,
+      callback: grpc.sendUnaryData<any>
+    ) => {
+      try {
+        const { email } = call.request;
+        const user = await models.User.findOne({ where: { email } });
+        if (!user) return callback(null, { found: false });
+        const data = user.toJSON() as any;
+        callback(null, { found: true, user: data });
+      } catch (e: any) {
+        callback({ code: grpc.status.INTERNAL, message: e.message } as any);
+      }
+    },
+    activateUser: async (
+      call: grpc.ServerUnaryCall<any, any>,
+      callback: grpc.sendUnaryData<any>
+    ) => {
+      try {
+        const { email } = call.request;
+        const user = await models.User.findOne({ where: { email } });
+        if (!user) return callback({ code: grpc.status.NOT_FOUND, message: 'user not found' } as any);
+        await (user as any).update({ status: 'active' });
+        callback(null, { success: true });
+      } catch (e: any) {
+        callback({ code: grpc.status.INTERNAL, message: e.message } as any);
+      }
+    },
+    createStaff: async (
+      call: grpc.ServerUnaryCall<any, any>,
+      callback: grpc.sendUnaryData<any>
+    ) => {
+      try {
+        const { email, name, password, role_id, address } = call.request;
+
+        // Check if user already exists
+        const existing = await models.User.findOne({ where: { email } });
+        let id = existing?.get('id') as string | undefined;
+        let created = false;
+
+        if (!existing) {
+          // Create new staff user with active status
+          id = uuidv4();
+          await models.User.create({
+            id,
+            email,
+            name,
+            password,
+            role_id: role_id || null,
+            address: address || null,
+            status: 'active' // Staff accounts are active immediately
+          } as any);
+
+          // Create customer profile for staff (they can also be customers)
+          await models.CustomerProfile.create({
+            id: uuidv4(),
+            user_id: id,
+            total_payment_amount: 0,
+            point: 0,
+            onchain_wallet_address: ''
+          } as any);
+
+          created = true;
+        } else {
+          // Update existing user to active and staff role
+          await (existing as any).update({
+            status: 'active',
+            role_id: role_id || existing.get('role_id'),
+            name: name || existing.get('name'),
+            address: address || existing.get('address')
+          });
+          id = existing.get('id') as string;
+        }
+
+        const message = created
+          ? 'Tạo tài khoản nhân viên thành công'
+          : 'Tài khoản đã tồn tại, đã cập nhật trạng thái active';
+
+        callback(null, { id, created, message });
+      } catch (e: any) {
+        callback({ code: grpc.status.INTERNAL, message: e.message } as any);
+      }
+    },
+    getPermissionsByRoleId: async (
+      call: grpc.ServerUnaryCall<any, any>,
+      callback: grpc.sendUnaryData<any>
+    ) => {
+      try {
+        const { role_id } = call.request;
+
+        if (!role_id) {
+          return callback({ code: grpc.status.INVALID_ARGUMENT, message: 'role_id is required' } as any);
+        }
+
+        // Query permissions for the role using raw SQL
+        const permissions = await models.sequelize.query<
+          { id: string; name: string; code: string; description: string }
+        >(
+          `SELECT p.id, p.name, p.code, p.description
+       FROM permissions p
+       JOIN role_permissions rp ON p.id = rp.permission_id
+       WHERE rp.role_id = :role_id`,
+          {
+            replacements: { role_id },
+            type: QueryTypes.SELECT
+          }
+        );
+
+        callback(null, {
+          permissions: permissions.map(p => ({
+            id: p.id,
+            name: p.name,
+            code: p.code,
+            description: p.description
+          })),
+          success: true,
+          message: 'Permissions retrieved successfully'
+        });
+      } catch (e: any) {
+        callback({ code: grpc.status.INTERNAL, message: e.message } as any);
+      }
+    }
+  });
+
+  const address = process.env.USER_GRPC_ADDRESS || '0.0.0.0:50051';
+  await new Promise<void>((resolve, reject) => {
+    server.bindAsync(address, grpc.ServerCredentials.createInsecure(), (err) => {
+      if (err) return reject(err);
+      server.start();
+      console.log(`user-service gRPC listening on ${address}`);
+      resolve();
+    });
+  });
+}
+
+
