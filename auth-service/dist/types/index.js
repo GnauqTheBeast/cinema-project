@@ -1,4 +1,3 @@
-// Constants
 export var HttpStatus;
 (function (HttpStatus) {
     HttpStatus[HttpStatus["OK"] = 200] = "OK";

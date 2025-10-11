@@ -2,12 +2,12 @@ import Joi from 'joi';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { QueryTypes } from 'sequelize';
-import { v4 as uuidv4 } from 'uuid';
-import { CustomerProfile, sequelize, User } from '../models/index.js';
+import { sequelize, User } from '../models/index.js';
+import { userClient } from '../services/userGrpcClient.js';
 import { redisClient, redisPubSubClient } from '../config/redis.js';
+import { PermissionService } from '../services/permissionService.js';
 import { ErrorMessages, HttpStatus, UserStatus } from '../types/index.js';
 class AuthController {
-    // Constants
     static ALLOWED_DISCRIMINATOR = 'Customer';
     static BCRYPT_SALT_ROUNDS = 10;
     static OTP_MIN = 100000;
@@ -16,7 +16,6 @@ class AuthController {
     static REDIS_TOPICS = {
         EMAIL_VERIFY: 'email_verify'
     };
-    // Helper methods
     static generateOTP() {
         return Math.floor(this.OTP_MIN + Math.random() * (this.OTP_MAX - this.OTP_MIN + 1)).toString();
     }
@@ -34,18 +33,15 @@ class AuthController {
     static async getCustomerRoleId() {
         const CACHE_KEY = 'customer_role_id';
         try {
-            // Try to get from Redis cache first
             const cachedRoleId = await redisClient.get(CACHE_KEY);
             if (cachedRoleId) {
                 return cachedRoleId;
             }
-            // If not in cache, query database
             const roleResult = await sequelize.query("SELECT id FROM roles WHERE name = 'customer' LIMIT 1", { type: QueryTypes.SELECT });
             if (roleResult.length === 0) {
                 throw new Error('Customer role not found in database');
             }
             const customerRoleId = roleResult[0].id;
-            // Cache for 1 hour (3600 seconds)
             await redisClient.setEx(CACHE_KEY, 3600, customerRoleId);
             return customerRoleId;
         }
@@ -54,9 +50,36 @@ class AuthController {
             throw error;
         }
     }
+    static async getRoleIdByName(roleName, cacheKey) {
+        try {
+            const cached = await redisClient.get(cacheKey);
+            if (cached)
+                return cached;
+            const roleResult = await sequelize.query('SELECT id FROM roles WHERE name = :name LIMIT 1', { replacements: { name: roleName }, type: QueryTypes.SELECT });
+            if (roleResult.length === 0) {
+                throw new Error(`${roleName} role not found in database`);
+            }
+            const roleId = roleResult[0].id;
+            await redisClient.setEx(cacheKey, 3600, roleId);
+            return roleId;
+        }
+        catch (error) {
+            console.error(`Error getting role ID for ${roleName}:`, error);
+            throw error;
+        }
+    }
+    static async getStaffRoleId() {
+        return this.getRoleIdByName('staff', 'staff_role_id');
+    }
+    static async getManagerStaffRoleId() {
+        return this.getRoleIdByName('manager_staff', 'manager_staff_role_id');
+    }
+    static async getTicketStaffRoleId() {
+        return this.getRoleIdByName('ticket_staff', 'ticket_staff_role_id');
+    }
     static async saveOTPToCache(email, otp) {
         const OTP_CACHE_KEY = `otp:${email}`;
-        const OTP_TTL = 300; // 5 minutes
+        const OTP_TTL = 300;
         const otpData = {
             otp: otp,
             count: 0,
@@ -77,7 +100,6 @@ class AuthController {
                 };
             }
             const otpData = JSON.parse(cachedData);
-            // Check if max attempts reached
             if (otpData.count >= MAX_ATTEMPTS) {
                 return {
                     success: false,
@@ -85,11 +107,8 @@ class AuthController {
                     attempts: otpData.count
                 };
             }
-            // Increment attempt count
             otpData.count++;
-            // Check if OTP matches
             if (otpData.otp === inputOtp) {
-                // OTP is correct, delete from cache
                 await redisClient.del(OTP_CACHE_KEY);
                 return {
                     success: true,
@@ -98,7 +117,6 @@ class AuthController {
                 };
             }
             else {
-                // OTP is incorrect, update count in cache
                 const remainingTTL = await redisClient.ttl(OTP_CACHE_KEY);
                 await redisClient.setEx(OTP_CACHE_KEY, remainingTTL, JSON.stringify(otpData));
                 return {
@@ -113,7 +131,6 @@ class AuthController {
             throw error;
         }
     }
-    // Validation schemas
     static registerSchema = Joi.object({
         email: Joi.string().email().required(),
         password: Joi.string().min(6).required(),
@@ -134,51 +151,29 @@ class AuthController {
         email: Joi.string().email().required()
     });
     static register = async (req, res, next) => {
-        const t = await sequelize.transaction();
         try {
             const data = await AuthController.registerSchema.validateAsync(req.body);
             const { email, password, firstName, lastName, address } = data;
-            // Check if email exists
-            const existUser = await User.findOne({ where: { email } });
-            if (existUser && existUser.dataValues.status !== UserStatus.PENDING)
-                throw new Error(ErrorMessages.EMAIL_EXISTS);
-            // Get customer role ID from cache or database
             const customerRoleId = await AuthController.getCustomerRoleId();
-            // Hash password
             const hashed = await bcrypt.hash(password, AuthController.BCRYPT_SALT_ROUNDS);
-            // Create User
-            let userId = existUser ? existUser.dataValues.id : uuidv4();
-            if (!existUser) {
-                const user = await User.create({
-                    id: userId,
-                    name: `${firstName} ${lastName}`,
-                    email,
-                    password: hashed,
-                    role_id: customerRoleId,
-                    address,
-                    status: UserStatus.PENDING
-                }, { transaction: t });
-                const customerProfileId = uuidv4();
-                await CustomerProfile.create({
-                    id: customerProfileId,
-                    user_id: userId,
-                    total_payment_amount: 0,
-                    point: 0,
-                    onchain_wallet_address: ""
-                }, { transaction: t });
-            }
-            // Generate verify code and URL
+            const name = `${firstName} ${lastName}`;
+            let userId = '';
+            await new Promise((resolve, reject) => {
+                userClient.EnsurePending({ email, name, password: hashed, role_id: customerRoleId, address }, (err, resp) => {
+                    if (err)
+                        return reject(err);
+                    userId = resp?.id || '';
+                    resolve();
+                });
+            });
             const verifyCode = AuthController.generateOTP();
             const verifyUrl = AuthController.createVerifyUrl(email, verifyCode);
             const msg = AuthController.createEmailVerifyMessage(userId, email, verifyCode, verifyUrl);
             await redisPubSubClient.publish(AuthController.REDIS_TOPICS.EMAIL_VERIFY, JSON.stringify(msg));
-            // Save OTP to Redis cache for verification
             await AuthController.saveOTPToCache(email, verifyCode);
-            await t.commit();
             res.status(HttpStatus.CREATED).json({ message: ErrorMessages.REGISTRATION_SUCCESS });
         }
         catch (err) {
-            await t.rollback();
             console.error('Registration error:', err);
             const error = err;
             if (error.isJoi) {
@@ -195,19 +190,23 @@ class AuthController {
     static login = async (req, res, next) => {
         try {
             const { email, password } = await AuthController.loginSchema.validateAsync(req.body);
-            const user = await User.findOne({ where: { email } });
-            if (!user) {
+            const userResp = await new Promise((resolve, reject) => {
+                userClient.GetUserByEmail({ email }, (err, resp) => {
+                    if (err)
+                        return reject(err);
+                    resolve(resp);
+                });
+            });
+            if (!userResp.found) {
                 res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.INVALID_CREDENTIALS });
                 return;
             }
-            // Validate password first
-            const valid = await bcrypt.compare(password, user.dataValues.password);
+            const valid = await bcrypt.compare(password, userResp.user.password);
             if (!valid) {
                 res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.INVALID_CREDENTIALS });
                 return;
             }
-            // Check if user account is active - only after valid credentials
-            if (user.dataValues.status !== UserStatus.ACTIVE) {
+            if (userResp.user.status !== UserStatus.ACTIVE) {
                 res.status(HttpStatus.BAD_REQUEST).json({
                     message: 'Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email để xác thực OTP.',
                     requireVerification: true,
@@ -215,26 +214,29 @@ class AuthController {
                 });
                 return;
             }
-            // Get user role information
-            const userWithRole = await sequelize.query(`SELECT u.*, r.name as role_name 
+            const userWithRole = await sequelize.query(`SELECT u.id, u.email, u.name, r.name as role_name 
          FROM users u 
          JOIN roles r ON u.role_id = r.id 
-         WHERE u.id = :userId`, {
-                replacements: { userId: user.dataValues.id },
+         WHERE u.email = :email`, {
+                replacements: { email },
                 type: QueryTypes.SELECT
             });
             const userRole = userWithRole[0]?.role_name || 'customer';
+            if (userRole !== 'customer') {
+                res.status(HttpStatus.FORBIDDEN).json({ message: 'Tài khoản không thuộc khách hàng. Vui lòng đăng nhập tại trang quản trị.' });
+                return;
+            }
             const token = jwt.sign({
-                userId: user.dataValues.id,
-                email: user.dataValues.email,
+                userId: userResp.user.id,
+                email: userResp.user.email,
                 role: userRole
-            }, process.env.JWT_SECRET);
+            }, (process.env.JWT_SECRET || 'your-secret-key'));
             const response = {
                 token,
                 user: {
-                    id: user.dataValues.id,
-                    email: user.dataValues.email,
-                    name: user.dataValues.name,
+                    id: userResp.user.id,
+                    email: userResp.user.email,
+                    name: userResp.user.name,
                     role: userRole
                 }
             };
@@ -249,32 +251,101 @@ class AuthController {
             next(err);
         }
     };
+    static loginAdmin = async (req, res, next) => {
+        try {
+            const { email, password } = await AuthController.loginSchema.validateAsync(req.body);
+            const userResp = await new Promise((resolve, reject) => {
+                userClient.GetUserByEmail({ email }, (err, resp) => {
+                    if (err)
+                        return reject(err);
+                    resolve(resp);
+                });
+            });
+            if (!userResp.found) {
+                res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.INVALID_CREDENTIALS });
+                return;
+            }
+            const valid = await bcrypt.compare(password, userResp.user.password);
+            if (!valid) {
+                res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.INVALID_CREDENTIALS });
+                return;
+            }
+            if (userResp.user.status !== UserStatus.ACTIVE) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    message: 'Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email để xác thực OTP.',
+                    requireVerification: true,
+                    email: email
+                });
+                return;
+            }
+            const userWithRole = await sequelize.query(`SELECT u.id, u.email, u.name, r.name as role_name, u.role_id
+         FROM users u 
+         JOIN roles r ON u.role_id = r.id 
+         WHERE u.email = :email`, {
+                replacements: { email },
+                type: QueryTypes.SELECT
+            });
+            const userRole = userWithRole[0]?.role_name || 'customer';
+            const userRoleId = userWithRole[0]?.role_id;
+            if (userRole !== 'admin' && userRole !== 'manager_staff' && userRole !== 'ticket_staff') {
+                res.status(HttpStatus.FORBIDDEN).json({ message: 'Bạn không có quyền truy cập vào hệ thống quản trị' });
+                return;
+            }
+            let permissions = [];
+            if (userRoleId) {
+                try {
+                    const userPermissions = await PermissionService.getPermissionsByRoleId(userRoleId);
+                    permissions = userPermissions.map(p => p.code);
+                }
+                catch (error) {
+                    console.error('Error fetching permissions:', error);
+                }
+            }
+            const token = jwt.sign({
+                userId: userResp.user.id,
+                email: userResp.user.email,
+                role: userRole,
+                roleId: userRoleId
+            }, (process.env.JWT_SECRET || 'your-secret-key'));
+            const response = {
+                token,
+                user: {
+                    id: userResp.user.id,
+                    email: userResp.user.email,
+                    name: userResp.user.name,
+                    role: userRole,
+                    permissions: permissions
+                }
+            };
+            res.json(response);
+        }
+        catch (err) {
+            const error = err;
+            if (error.isJoi) {
+                res.status(HttpStatus.BAD_REQUEST).json({ message: error.details[0].message });
+                return;
+            }
+            next(err);
+        }
+    };
     static verifyOtp = async (req, res, next) => {
-        const t = await sequelize.transaction();
         try {
             const { email, otp } = await AuthController.verifyOtpSchema.validateAsync(req.body);
             const result = await AuthController.verifyOTPFromCache(email, otp);
             if (result.success) {
-                // Update user status to active
-                const user = await User.findOne({ where: { email } });
-                if (user) {
-                    await user.update({ status: UserStatus.ACTIVE }, { transaction: t });
-                    await t.commit();
-                    res.status(HttpStatus.OK).json({
-                        message: ErrorMessages.ACCOUNT_VERIFIED,
-                        verified: true
+                await new Promise((resolve, reject) => {
+                    userClient.ActivateUser({ email }, (err, resp) => {
+                        if (err)
+                            return reject(err);
+                        resolve();
                     });
-                }
-                else {
-                    await t.rollback();
-                    res.status(HttpStatus.BAD_REQUEST).json({
-                        message: 'User not found',
-                        verified: false
-                    });
-                }
+                });
+                res.status(HttpStatus.OK).json({
+                    message: ErrorMessages.ACCOUNT_VERIFIED,
+                    verified: true
+                });
             }
             else {
-                await t.rollback();
                 res.status(HttpStatus.BAD_REQUEST).json({
                     message: result.message,
                     verified: false,
@@ -283,7 +354,6 @@ class AuthController {
             }
         }
         catch (err) {
-            await t.rollback();
             const error = err;
             if (error.isJoi) {
                 res.status(HttpStatus.BAD_REQUEST).json({ message: error.details[0].message });
@@ -295,7 +365,6 @@ class AuthController {
     static resendOtp = async (req, res, next) => {
         try {
             const { email } = await AuthController.resendOtpSchema.validateAsync(req.body);
-            // Check if user exists and is still pending
             const user = await User.findOne({ where: { email } });
             if (!user) {
                 res.status(HttpStatus.BAD_REQUEST).json({ message: 'Email không tồn tại trong hệ thống' });
@@ -305,7 +374,6 @@ class AuthController {
                 res.status(HttpStatus.BAD_REQUEST).json({ message: 'Tài khoản đã được kích hoạt' });
                 return;
             }
-            // Generate new OTP and send
             const verifyCode = AuthController.generateOTP();
             const verifyUrl = AuthController.createVerifyUrl(email, verifyCode);
             const msg = AuthController.createEmailVerifyMessage(user.dataValues.id, email, verifyCode, verifyUrl);
@@ -322,11 +390,123 @@ class AuthController {
             next(err);
         }
     };
+    static getPermissions = async (req, res, next) => {
+        try {
+            const authHeader = req.headers.authorization || '';
+            const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+            if (!token) {
+                res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Thiếu token xác thực' });
+                return;
+            }
+            let decoded;
+            try {
+                decoded = jwt.verify(token, (process.env.JWT_SECRET || 'your-secret-key'));
+            }
+            catch {
+                res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Token không hợp lệ' });
+                return;
+            }
+            const { roleId } = decoded;
+            if (!roleId) {
+                res.status(HttpStatus.BAD_REQUEST).json({ message: 'Không tìm thấy thông tin vai trò' });
+                return;
+            }
+            const permissions = await PermissionService.getPermissionsByRoleId(roleId);
+            res.json({
+                success: true,
+                permissions: permissions.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    code: p.code,
+                    description: p.description
+                }))
+            });
+        }
+        catch (err) {
+            console.error('Get permissions error:', err);
+            next(err);
+        }
+    };
+    static createStaff = async (req, res, next) => {
+        try {
+            const authHeader = req.headers.authorization || '';
+            const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+            if (!token) {
+                res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Thiếu token xác thực' });
+                return;
+            }
+            let decoded;
+            try {
+                decoded = jwt.verify(token, (process.env.JWT_SECRET || 'your-secret-key'));
+            }
+            catch {
+                res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Token không hợp lệ' });
+                return;
+            }
+            if (!decoded?.role || decoded.role !== 'admin') {
+                res.status(HttpStatus.FORBIDDEN).json({ message: 'Chỉ quản trị viên mới được tạo tài khoản nhân viên' });
+                return;
+            }
+            const schema = Joi.object({
+                email: Joi.string().email().required(),
+                password: Joi.string().min(6).required(),
+                name: Joi.string().required(),
+                address: Joi.string().allow('', null),
+                role: Joi.string().valid('manager_staff', 'ticket_staff').required()
+            });
+            const { email, password, name, address, role } = await schema.validateAsync(req.body);
+            let roleId;
+            if (role === 'manager_staff') {
+                roleId = await AuthController.getManagerStaffRoleId();
+            }
+            else if (role === 'ticket_staff') {
+                roleId = await AuthController.getTicketStaffRoleId();
+            }
+            else {
+                res.status(HttpStatus.BAD_REQUEST).json({ message: 'Vai trò không hợp lệ' });
+                return;
+            }
+            const hashed = await bcrypt.hash(password, AuthController.BCRYPT_SALT_ROUNDS);
+            const result = await new Promise((resolve, reject) => {
+                userClient.CreateStaff({
+                    email,
+                    name,
+                    password: hashed,
+                    role_id: roleId,
+                    address
+                }, (err, resp) => {
+                    if (err)
+                        return reject(err);
+                    resolve(resp);
+                });
+            });
+            res.status(HttpStatus.CREATED).json({
+                message: result.message,
+                user: {
+                    id: result.id,
+                    email,
+                    name,
+                    role: role,
+                    status: 'active'
+                }
+            });
+        }
+        catch (err) {
+            const error = err;
+            if (error.isJoi) {
+                res.status(HttpStatus.BAD_REQUEST).json({ message: error.details[0].message });
+                return;
+            }
+            next(err);
+        }
+    };
 }
-// Export static methods for backward compatibility
 export const register = AuthController.register.bind(AuthController);
 export const login = AuthController.login.bind(AuthController);
 export const verifyOtp = AuthController.verifyOtp.bind(AuthController);
 export const resendOtp = AuthController.resendOtp.bind(AuthController);
+export const loginAdmin = AuthController.loginAdmin.bind(AuthController);
+export const getPermissions = AuthController.getPermissions.bind(AuthController);
+export const createStaff = AuthController.createStaff.bind(AuthController);
 export default AuthController;
 //# sourceMappingURL=authController.js.map

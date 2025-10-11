@@ -13,6 +13,10 @@ declare class AuthController {
     static createVerifyUrl(email: string, code: string): string;
     static createEmailVerifyMessage(userId: string, email: string, verifyCode: string, verifyUrl: string): IEmailVerifyMessage;
     static getCustomerRoleId(): Promise<string>;
+    static getRoleIdByName(roleName: string, cacheKey: string): Promise<string>;
+    static getStaffRoleId(): Promise<string>;
+    static getManagerStaffRoleId(): Promise<string>;
+    static getTicketStaffRoleId(): Promise<string>;
     static saveOTPToCache(email: string, otp: string): Promise<void>;
     static verifyOTPFromCache(email: string, inputOtp: string): Promise<IOtpVerifyResult>;
     static registerSchema: Joi.ObjectSchema<any>;
@@ -21,12 +25,18 @@ declare class AuthController {
     static resendOtpSchema: Joi.ObjectSchema<any>;
     static register: IController;
     static login: IController;
+    static loginAdmin: IController;
     static verifyOtp: IController;
     static resendOtp: IController;
+    static getPermissions: IController;
+    static createStaff: IController;
 }
 export declare const register: IController;
 export declare const login: IController;
 export declare const verifyOtp: IController;
 export declare const resendOtp: IController;
+export declare const loginAdmin: IController;
+export declare const getPermissions: IController;
+export declare const createStaff: IController;
 export default AuthController;
 //# sourceMappingURL=authController.d.ts.map

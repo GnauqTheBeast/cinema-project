@@ -35,11 +35,23 @@ export const userService = {
       throw error
     }
   },
+
+  // Update user by ID
+  updateUser: async (id, userData) => {
+    try {
+      const response = await userApi.put(`/v1/users/${id}`, userData)
+      return response.data
+    } catch (error) {
+      console.error(`Error updating user ${id}:`, error)
+      throw error
+    }
+  },
 }
 
 // Export individual functions for backward compatibility
 export const {
   getUserById,
+  updateUser,
 } = userService
 
 export default userService

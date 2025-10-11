@@ -84,7 +84,6 @@ class DatabaseManager {
             createdAt: 'created_at',
             updatedAt: 'updated_at'
         });
-        // Define CustomerProfile model
         DatabaseManager.CustomerProfile = DatabaseManager.sequelize.define('CustomerProfile', {
             id: {
                 type: DataTypes.STRING,
@@ -165,9 +164,7 @@ class DatabaseManager {
         }
     }
 }
-// Initialize database manager
 const databaseManager = DatabaseManager.getInstance();
-// Export for backward compatibility
 export const sequelize = DatabaseManager.getSequelize();
 export const User = DatabaseManager.getUser();
 export const CustomerProfile = DatabaseManager.getCustomerProfile();

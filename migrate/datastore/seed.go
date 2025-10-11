@@ -433,6 +433,8 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
 			PhoneNumber: stringPtr("+1234567890"),
 			RoleId:      &adminRoleId,
+			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
+			Gender:      "male",
 			Status:      "active",
 			CreatedAt:   now,
 		},
@@ -444,6 +446,8 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			PhoneNumber: stringPtr("+1234567891"),
 			RoleId:      &managerStaffRoleId,
 			Address:     stringPtr("123 Manager Street"),
+			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
+			Gender:      "male",
 			Status:      "active",
 			CreatedAt:   now,
 		},
@@ -455,26 +459,35 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			PhoneNumber: stringPtr("+1234567892"),
 			RoleId:      &ticketStaffRoleId,
 			Address:     stringPtr("123 Ticket Street"),
+			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
+			Gender:      "male",
 			Status:      "active",
 			CreatedAt:   now,
 		},
 		{
 			Id:          uuid.New().String(),
-			Name:        "Alice Customer",
+			Name:        "Alice",
 			Email:       "alice@email.com",
 			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+			Address:     stringPtr("123 Alice Street"),
 			PhoneNumber: stringPtr("+1234567893"),
 			RoleId:      &customerRoleId,
+			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
+			Gender:      "female",
 			Status:      "active",
 			CreatedAt:   now,
 		},
 		{
 			Id:          uuid.New().String(),
-			Name:        "Bob Customer",
+			Name:        "Bob",
 			Email:       "bob@email.com",
 			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
 			PhoneNumber: stringPtr("+1234567893"),
+			Address:     stringPtr("123 Bob Street"),
 			RoleId:      &customerRoleId,
+			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
+			Gender:      "male",
+			Status:      "active",
 			CreatedAt:   now,
 		},
 		{
@@ -484,6 +497,10 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
 			PhoneNumber: stringPtr("+1234567894"),
 			RoleId:      &customerRoleId,
+			Address:     stringPtr("123 Emma Street"),
+			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
+			Gender:      "female",
+			Status:      "active",
 			CreatedAt:   now,
 		},
 	}
@@ -498,7 +515,6 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 }
 
 func SeedNotifications(ctx context.Context, db *bun.DB) error {
-	// Get some user IDs first
 	var users []models.User
 	err := db.NewSelect().Model(&users).Limit(3).Scan(ctx)
 	if err != nil {

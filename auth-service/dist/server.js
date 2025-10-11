@@ -49,9 +49,9 @@ class AuthServer {
     }
     initializeRoutes() {
         // API routes
-        this.app.use('/api/auth', authRoutes);
+        this.app.use('/api/v1/auth', authRoutes);
         // Health check endpoint
-        this.app.get('/api/health', this.healthCheck.bind(this));
+        this.app.get('/api/v1/health', this.healthCheck.bind(this));
         // Root endpoint
         this.app.get('/', (req, res) => {
             res.json({
