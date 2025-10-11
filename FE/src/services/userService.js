@@ -49,9 +49,6 @@ export const userService = {
 }
 
 // Export individual functions for backward compatibility
-export const {
-  getUserById,
-  updateUser,
-} = userService
+export const { getUserById, updateUser } = userService
 
 export default userService

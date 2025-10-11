@@ -21,18 +21,18 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const user = JSON.parse(localStorage.getItem('user'));
+        const user = JSON.parse(localStorage.getItem('user'))
         if (user && user.id) {
-          const response = await userService.getUserById(user.id);
+          const response = await userService.getUserById(user.id)
           if (response.success) {
-            setUserData(response.data);
-            setEditForm(response.data);
+            setUserData(response.data)
+            setEditForm(response.data)
           } else {
-            console.error('Error fetching user data:', response.message);
+            console.error('Error fetching user data:', response.message)
           }
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        console.error('Error fetching user data:', error)
       }
     }
 
@@ -102,7 +102,10 @@ export default function ProfilePage() {
             {/* Avatar */}
             <div className="relative">
               <img
-                src={userData.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'}
+                src={
+                  userData.avatar ||
+                  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
+                }
                 alt="Avatar"
                 className="w-32 h-32 rounded-full object-cover border-4 border-red-600"
               />
@@ -151,15 +154,21 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-300">
                 <div className="text-center lg:text-left">
                   <p className="text-gray-400 text-sm">Tham gia từ</p>
-                  <p className="font-medium">{userData.joinDate ? formatDate(userData.joinDate) : 'N/A'}</p>
+                  <p className="font-medium">
+                    {userData.joinDate ? formatDate(userData.joinDate) : 'N/A'}
+                  </p>
                 </div>
                 <div className="text-center lg:text-left">
                   <p className="text-gray-400 text-sm">Tổng số vé đã đặt</p>
-                  <p className="font-medium text-red-400">{userData.totalBookings ? `${userData.totalBookings} vé` : 'N/A'}</p>
+                  <p className="font-medium text-red-400">
+                    {userData.totalBookings ? `${userData.totalBookings} vé` : 'N/A'}
+                  </p>
                 </div>
                 <div className="text-center lg:text-left">
                   <p className="text-gray-400 text-sm">Thể loại yêu thích</p>
-                  <p className="font-medium">{userData.favoriteGenres ? userData.favoriteGenres.join(', ') : 'N/A'}</p>
+                  <p className="font-medium">
+                    {userData.favoriteGenres ? userData.favoriteGenres.join(', ') : 'N/A'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -260,52 +269,52 @@ export default function ProfilePage() {
                   </p>
                 )}
               </div>
-                        </div>
-                      </div>
-            
-                      {/* Address & Security */}
-                      <div className="space-y-8">
-                        {/* Address Information */}
-                        <div className="bg-gray-900 rounded-2xl p-6">
-                          <h2 className="text-xl font-bold text-white mb-6 flex items-center space-x-2">
-                            <FaMapMarkerAlt className="text-red-600" />
-                            <span>Địa chỉ</span>
-                          </h2>
-            
-                          <div>
-                            <label className="block text-gray-400 text-sm font-medium mb-2">
-                              Địa chỉ hiện tại
-                            </label>
-                            {isEditing ? (
-                              <textarea
-                                value={editForm.address}
-                                onChange={(e) => handleInputChange('address', e.target.value)}
-                                rows="3"
-                                className="w-full bg-black border border-gray-600 text-white px-3 py-2 rounded-lg focus:outline-none focus:border-red-600 resize-none"
-                              />
-                            ) : (
-                              <p className="text-white">{userData.address}</p>
-                            )}
-                          </div>
-                        </div>
-            
-                        {/* Security */}
-                        <div className="bg-gray-900 rounded-2xl p-6">
-                          <h2 className="text-xl font-bold text-white mb-6">Bảo mật</h2>
-            
-                          <div className="space-y-4">
-                            <button className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center space-x-2">
-                              <FaEyeSlash />
-                              <span>Đổi mật khẩu</span>
-                            </button>
-            
-                            <button className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors duration-300">
-                              Bảo mật hai lớp
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+            </div>
+          </div>
+
+          {/* Address & Security */}
+          <div className="space-y-8">
+            {/* Address Information */}
+            <div className="bg-gray-900 rounded-2xl p-6">
+              <h2 className="text-xl font-bold text-white mb-6 flex items-center space-x-2">
+                <FaMapMarkerAlt className="text-red-600" />
+                <span>Địa chỉ</span>
+              </h2>
+
+              <div>
+                <label className="block text-gray-400 text-sm font-medium mb-2">
+                  Địa chỉ hiện tại
+                </label>
+                {isEditing ? (
+                  <textarea
+                    value={editForm.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    rows="3"
+                    className="w-full bg-black border border-gray-600 text-white px-3 py-2 rounded-lg focus:outline-none focus:border-red-600 resize-none"
+                  />
+                ) : (
+                  <p className="text-white">{userData.address}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Security */}
+            <div className="bg-gray-900 rounded-2xl p-6">
+              <h2 className="text-xl font-bold text-white mb-6">Bảo mật</h2>
+
+              <div className="space-y-4">
+                <button className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center space-x-2">
+                  <FaEyeSlash />
+                  <span>Đổi mật khẩu</span>
+                </button>
+
+                <button className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors duration-300">
+                  Bảo mật hai lớp
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
         {/* Booking History Preview */}
         <div className="bg-gray-900 rounded-2xl p-6 mt-8">
           <div className="flex items-center justify-between mb-6">
