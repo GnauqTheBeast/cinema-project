@@ -4,7 +4,7 @@ import { FaEnvelope, FaEye, FaEyeSlash, FaLock } from 'react-icons/fa'
 import { Link, useNavigate } from 'react-router-dom'
 import websocketService from '../../services/websocketService'
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1'
 
 export default function LoginPage({ onLogin }) {
   const [email, setEmail] = useState('')
@@ -18,7 +18,7 @@ export default function LoginPage({ onLogin }) {
     e.preventDefault()
     setError('')
     try {
-      const res = await axios.post(`${API_URL}/v1/auth/login`, { email, password })
+      const res = await axios.post(`${API_URL}/auth/login`, { email, password })
       if (res.data?.user?.role && res.data.user.role !== 'customer') {
         setError('Tài khoản không thuộc khách hàng. Vui lòng đăng nhập tại trang quản trị.')
         return

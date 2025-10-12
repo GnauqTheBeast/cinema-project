@@ -6,6 +6,7 @@ import { Server } from 'http';
 import DatabaseManager from './models/index.js';
 import { RedisManager } from './config/redis.js';
 import authRoutes from './routes/auth.js';
+import { startAuthGrpcServer } from './transport/grpc/server.js';
 import { IHealthCheck, IServerConfig, IApiError, IDatabaseManager, IRedisManager } from './types/index.js';
 
 class AuthServer {
@@ -184,12 +185,21 @@ class AuthServer {
         console.warn('Redis initialization failed, continuing without Redis cache');
       }
 
-      // Start server
+      // Start HTTP server
       const server = this.app.listen(this.port, () => {
         console.log(`🚀 Auth service running on port ${this.port}`);
-        console.log(`🏥 Health check available at http://localhost:${this.port}/api/health`);
+        console.log(`🏥 Health check available at http://localhost:${this.port}/api/v1/health`);
         console.log(`📝 API documentation: http://localhost:${this.port}/`);
       });
+
+      // Start gRPC server
+      try {
+        await startAuthGrpcServer();
+        console.log(`🔌 Auth gRPC server started successfully`);
+      } catch (error) {
+        console.error('Failed to start gRPC server:', error);
+        // Don't exit, continue with HTTP server only
+      }
 
       // Graceful shutdown handling
       this.setupGracefulShutdown(server);

@@ -9,6 +9,7 @@ import {CustomerProfile, sequelize, User} from '../models/index.js';
 import { userClient } from '../services/userGrpcClient.js';
 import {redisClient, redisPubSubClient} from '../config/redis.js';
 import { PermissionService } from '../services/permissionService.js';
+import { TokenService } from '../services/tokenService.js';
 import {
   ErrorMessages,
   HttpStatus,
@@ -593,6 +594,32 @@ class AuthController {
       next(err);
     }
   };
+
+  static verifyToken: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { token } = req.body;
+      const result = await TokenService.verifyToken(token);
+      
+      if (result.status === 200) {
+        res.status(HttpStatus.OK).json(result);
+      } else if (result.status === 400) {
+        res.status(HttpStatus.BAD_REQUEST).json(result);
+      } else if (result.status === 401) {
+        res.status(HttpStatus.UNAUTHORIZED).json(result);
+      } else {
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(result);
+      }
+    } catch (err) {
+      console.error('Token validation error:', err);
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        status: 500,
+        message: 'Internal server error',
+        id: '',
+        role: '',
+        permissions: []
+      });
+    }
+  };
 }
 
 export const register = AuthController.register.bind(AuthController);
@@ -602,5 +629,6 @@ export const resendOtp = AuthController.resendOtp.bind(AuthController);
 export const loginAdmin = AuthController.loginAdmin.bind(AuthController);
 export const getPermissions = AuthController.getPermissions.bind(AuthController);
 export const createStaff = AuthController.createStaff.bind(AuthController);
+export const verifyToken = AuthController.verifyToken.bind(AuthController);
 
 export default AuthController;
