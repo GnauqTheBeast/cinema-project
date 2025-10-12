@@ -28,7 +28,7 @@ services:
     load_balancer: []
 
   user_service:
-    url: "http://localhost:4001"
+    url: "http://localhost:8005"
     health_check_path: "/api/v1/health"
     timeout: 30
     retries: 3

@@ -14,7 +14,7 @@ RUN npm run build || yarn build
 
 ENV NODE_ENV=production
 
-EXPOSE 4001 50051
+EXPOSE 8005 50051
 
 CMD [ "sh", "-c", "node dist/server.js" ]
 

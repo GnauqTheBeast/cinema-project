@@ -589,6 +589,15 @@ func stringPtr(s string) *string {
 	return &s
 }
 
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
 func SeedSeats(ctx context.Context, db *bun.DB) error {
 	var rooms []models.Room
 	err := db.NewSelect().Model(&rooms).Scan(ctx)
@@ -647,7 +656,13 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 		}
 
 		for _, row := range config.rows {
-			for seatNum := 1; seatNum <= config.seatsPerRow; seatNum++ {
+			// Special handling for couple rows - only 7 seats per row
+			seatsPerRow := config.seatsPerRow
+			if contains(config.coupleRows, row) {
+				seatsPerRow = 7
+			}
+
+			for seatNum := 1; seatNum <= seatsPerRow; seatNum++ {
 				seatType := "regular"
 
 				for _, regularRow := range config.regularRows {
@@ -688,7 +703,7 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 
 				if seatType == "couple" && room.RoomType != "4dx" {
 					seatNum++
-					if seatNum <= config.seatsPerRow {
+					if seatNum <= seatsPerRow {
 						coupleSeat := &models.Seat{
 							Id:         uuid.New().String(),
 							RoomId:     room.Id,

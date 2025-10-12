@@ -33,7 +33,7 @@ class UserServer {
 
   private loadConfiguration(): IServerConfig {
     return {
-      port: parseInt(process.env.USER_SERVICE_PORT || '4001'),
+      port: parseInt(process.env.USER_SERVICE_PORT || '8005'),
       corsOrigin: process.env.CORS_ORIGIN || '*',
       jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
       jwtExpiresIn: process.env.JWT_EXPIRES_IN || '24h'

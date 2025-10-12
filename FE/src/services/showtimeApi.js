@@ -11,7 +11,7 @@ const showtimeApi = axios.create({
 
 showtimeApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('adminToken')
+    const token = localStorage.getItem('token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -111,7 +111,6 @@ export const showtimeService = {
     return response.data
   },
 
-  // Helper functions for time management
   truncateToHalfHour: (dateTime) => {
     const date = new Date(dateTime)
     const minutes = date.getMinutes()
@@ -127,7 +126,6 @@ export const showtimeService = {
     return new Date(dateTime).toISOString()
   },
 
-  // Showtime formats and statuses for form options
   getShowtimeFormats: () => [
     { value: '2d', label: '2D' },
     { value: '3d', label: '3D' },

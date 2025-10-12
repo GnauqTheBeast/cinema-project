@@ -1,6 +1,6 @@
 import { Sequelize } from 'sequelize';
 import { initModels, Models } from '../models/models.js';
-import { IDatabaseManager } from '../types/index.js';
+import { IDatabaseManager } from '../types';
 
 class DatabaseManager implements IDatabaseManager {
   private static instance: DatabaseManager | null = null;

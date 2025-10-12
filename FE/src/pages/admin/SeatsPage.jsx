@@ -170,12 +170,13 @@ const SeatsPage = () => {
   // Grid view functions
   const createSeatGrid = () => {
     const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O']
-    const seatsPerRow = 16
+    const coupleRows = ['M', 'N', 'O']
     const grid = {}
 
     // Initialize empty grid
     rows.forEach((row) => {
       grid[row] = {}
+      const seatsPerRow = coupleRows.includes(row) ? 5 : 16
       for (let i = 1; i <= seatsPerRow; i++) {
         grid[row][i] = null
       }
@@ -430,15 +431,18 @@ const SeatsPage = () => {
                         </div>
 
                         {/* Seats */}
-                        <div className="flex gap-1">
+                        <div className={`flex ${coupleRows.includes(row) ? 'gap-3' : 'gap-1'} justify-center`}>
                           {Object.entries(rowSeats).map(([seatNumber, seat]) => {
                             const seatNum = parseInt(seatNumber)
+                            const isCouple = seat && seat.seat_type === 'couple'
+                            const coupleRows = ['M', 'N', 'O']
+                            const isCoupleRow = coupleRows.includes(row)
 
                             return (
                               <button
                                 key={`${row}-${seatNumber}`}
                                 // onClick={() => handleGridSeatClick(row, seatNum)}
-                                className={`w-8 h-8 border-2 rounded text-xs font-semibold transition-all hover:scale-110 ${getSeatColor(seat)}`}
+                                className={`${isCouple ? 'w-12' : 'w-8'} h-8 border-2 rounded text-xs font-semibold transition-all hover:scale-110 ${getSeatColor(seat)}`}
                                 title={
                                   seat
                                     ? `${row}${seatNumber.padStart(2, '0')} - ${getSeatTypeLabel(seat.seat_type)} - ${getStatusLabel(seat.status)}`
@@ -446,7 +450,7 @@ const SeatsPage = () => {
                                 }
                               >
                                 {seat ? (
-                                  seat.seat_type === 'couple' ? (
+                                  isCouple ? (
                                     <div className="flex items-center justify-center">
                                       <FaCouch className="w-3 h-3" />
                                     </div>
