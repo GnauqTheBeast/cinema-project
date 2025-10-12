@@ -1,15 +1,17 @@
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import path from 'path';
-import { Models } from '../../storage/models.js';
+import { Models } from '../../models/models.js';
 import { v4 as uuidv4 } from 'uuid';
 import { QueryTypes } from 'sequelize';
+import DatabaseManager from '../../config/database.js';
 
 const PROTO_PATH = path.resolve(process.cwd(), 'proto', 'user.proto');
 
 type GrpcModels = Models;
 
-export async function startGrpcServer(models: GrpcModels): Promise<void> {
+export async function startGrpcServer(): Promise<void> {
+  const models = DatabaseManager.getInstance().getModels();
   const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
     keepCase: true,
     longs: String,
@@ -184,7 +186,6 @@ export async function startGrpcServer(models: GrpcModels): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     server.bindAsync(address, grpc.ServerCredentials.createInsecure(), (err) => {
       if (err) return reject(err);
-      server.start();
       console.log(`user-service gRPC listening on ${address}`);
       resolve();
     });
