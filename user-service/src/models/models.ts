@@ -7,6 +7,8 @@ export interface UserAttributes {
   password: string;
   phone_number?: string | null;
   status: string;
+  gender?: string | null;
+  dob?: Date | null;
   role_id?: string | null;
   address?: string | null;
   created_at?: Date;
@@ -43,6 +45,8 @@ export function initModels(sequelize: Sequelize): Models {
       password: { type: DataTypes.STRING, allowNull: false },
       phone_number: { type: DataTypes.STRING },
       status: { type: DataTypes.STRING, allowNull: false },
+      gender: { type: DataTypes.STRING },
+      dob: { type: DataTypes.DATE },
       role_id: { type: DataTypes.STRING },
       address: { type: DataTypes.STRING },
       created_at: { type: DataTypes.DATE },

@@ -28,6 +28,7 @@ type ServicesConfig struct {
 	AuthService         ServiceEndpoint `mapstructure:"auth_service"`
 	MovieService        ServiceEndpoint `mapstructure:"movie_service"`
 	NotificationService ServiceEndpoint `mapstructure:"notification_service"`
+	UserService         ServiceEndpoint `mapstructure:"user_service"`
 }
 
 type ServiceEndpoint struct {

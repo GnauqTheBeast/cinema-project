@@ -23,6 +23,7 @@ class AuthRoutes {
     this.router.post('/resend-otp', this.handleAsync(AuthController.resendOtp));
     this.router.post('/staff', this.handleAsync(AuthController.createStaff));
     this.router.get('/permissions', this.handleAsync(AuthController.getPermissions));
+    this.router.post('/verify-token', this.handleAsync(AuthController.verifyToken));
   }
 
   private handleAsync(fn: IController) {

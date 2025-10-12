@@ -1,9 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   FaCalendarAlt,
   FaEdit,
   FaEnvelope,
-  FaEye,
   FaEyeSlash,
   FaMapMarkerAlt,
   FaPhone,
@@ -12,39 +11,53 @@ import {
   FaUser,
 } from 'react-icons/fa'
 import Header from '../../components/Header'
+import { userService } from '../../services/userService'
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
+  const [userData, setUserData] = useState(null)
+  const [editForm, setEditForm] = useState(null)
 
-  const [userData, setUserData] = useState({
-    id: 1,
-    name: 'Nguyễn Ngọc Quang',
-    email: 'quangnguyenngoc314@gmail.com',
-    phone: '0123456789',
-    birthDate: '1995-08-15',
-    address: '123 Đường ABC, Quận 1, TP.HCM',
-    gender: 'male',
-    avatar:
-      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-    joinDate: '2024-01-15',
-    membershipType: 'VIP',
-    totalBookings: 25,
-    favoriteGenres: ['Hành động', 'Khoa học viễn tưởng', 'Kinh dị'],
-  })
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem('user'))
+        if (user && user.id) {
+          const response = await userService.getUserById(user.id)
+          if (response.success) {
+            setUserData(response.data)
+            setEditForm(response.data)
+          } else {
+            console.error('Error fetching user data:', response.message)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error)
+      }
+    }
 
-  const [editForm, setEditForm] = useState({ ...userData })
+    fetchUserData()
+  }, [])
 
   const handleEdit = () => {
     setIsEditing(true)
     setEditForm({ ...userData })
   }
 
-  const handleSave = () => {
-    setUserData({ ...editForm })
-    setIsEditing(false)
-    // TODO: Call API to update user data
-    console.log('Saving user data:', editForm)
+  const handleSave = async () => {
+    try {
+      const { email, ...updateData } = editForm
+      const response = await userService.updateUser(userData.id, updateData)
+      if (response.success) {
+        setUserData({ ...editForm })
+        setIsEditing(false)
+        console.log('User data updated successfully:', response.message)
+      } else {
+        console.error('Error updating user data:', response.message)
+      }
+    } catch (error) {
+      console.error('Error updating user data:', error)
+    }
   }
 
   const handleCancel = () => {
@@ -74,6 +87,10 @@ export default function ProfilePage() {
     }
   }
 
+  if (!userData) {
+    return <div>Loading...</div>
+  }
+
   return (
     <div className="min-h-screen bg-black">
       <Header />
@@ -85,7 +102,10 @@ export default function ProfilePage() {
             {/* Avatar */}
             <div className="relative">
               <img
-                src={userData.avatar}
+                src={
+                  userData.avatar ||
+                  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
+                }
                 alt="Avatar"
                 className="w-32 h-32 rounded-full object-cover border-4 border-red-600"
               />
@@ -102,6 +122,7 @@ export default function ProfilePage() {
                 <h1 className="text-3xl font-bold text-white mb-2 lg:mb-0">{userData.name}</h1>
                 {!isEditing ? (
                   <button
+                    type="button"
                     onClick={handleEdit}
                     className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors duration-300 flex items-center space-x-2 mx-auto lg:mx-0"
                   >
@@ -111,6 +132,7 @@ export default function ProfilePage() {
                 ) : (
                   <div className="flex space-x-2 mx-auto lg:mx-0">
                     <button
+                      type="button"
                       onClick={handleSave}
                       className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors duration-300 flex items-center space-x-2"
                     >
@@ -118,6 +140,7 @@ export default function ProfilePage() {
                       <span>Lưu</span>
                     </button>
                     <button
+                      type="button"
                       onClick={handleCancel}
                       className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors duration-300 flex items-center space-x-2"
                     >
@@ -131,15 +154,21 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-300">
                 <div className="text-center lg:text-left">
                   <p className="text-gray-400 text-sm">Tham gia từ</p>
-                  <p className="font-medium">{formatDate(userData.joinDate)}</p>
+                  <p className="font-medium">
+                    {userData.joinDate ? formatDate(userData.joinDate) : 'N/A'}
+                  </p>
                 </div>
                 <div className="text-center lg:text-left">
                   <p className="text-gray-400 text-sm">Tổng số vé đã đặt</p>
-                  <p className="font-medium text-red-400">{userData.totalBookings} vé</p>
+                  <p className="font-medium text-red-400">
+                    {userData.totalBookings ? `${userData.totalBookings} vé` : 'N/A'}
+                  </p>
                 </div>
                 <div className="text-center lg:text-left">
                   <p className="text-gray-400 text-sm">Thể loại yêu thích</p>
-                  <p className="font-medium">{userData.favoriteGenres.join(', ')}</p>
+                  <p className="font-medium">
+                    {userData.favoriteGenres ? userData.favoriteGenres.join(', ') : 'N/A'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -177,16 +206,8 @@ export default function ProfilePage() {
                   <FaEnvelope className="w-4 h-4" />
                   <span>Email</span>
                 </label>
-                {isEditing ? (
-                  <input
-                    type="email"
-                    value={editForm.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full bg-black border border-gray-600 text-white px-3 py-2 rounded-lg focus:outline-none focus:border-red-600"
-                  />
-                ) : (
-                  <p className="text-white">{userData.email}</p>
-                )}
+                <p className="text-white bg-gray-800 px-3 py-2 rounded-lg">{userData.email}</p>
+                <p className="text-gray-500 text-xs mt-1">Email không thể thay đổi</p>
               </div>
 
               {/* Phone */}
@@ -198,12 +219,12 @@ export default function ProfilePage() {
                 {isEditing ? (
                   <input
                     type="tel"
-                    value={editForm.phone}
+                    value={editForm.phone_number}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     className="w-full bg-black border border-gray-600 text-white px-3 py-2 rounded-lg focus:outline-none focus:border-red-600"
                   />
                 ) : (
-                  <p className="text-white">{userData.phone}</p>
+                  <p className="text-white">{userData.phone_number}</p>
                 )}
               </div>
 
@@ -216,12 +237,12 @@ export default function ProfilePage() {
                 {isEditing ? (
                   <input
                     type="date"
-                    value={editForm.birthDate}
-                    onChange={(e) => handleInputChange('birthDate', e.target.value)}
+                    value={editForm.dob}
+                    onChange={(e) => handleInputChange('dob', e.target.value)}
                     className="w-full bg-black border border-gray-600 text-white px-3 py-2 rounded-lg focus:outline-none focus:border-red-600"
                   />
                 ) : (
-                  <p className="text-white">{formatDate(userData.birthDate)}</p>
+                  <p className="text-white">{formatDate(userData.dob)}</p>
                 )}
               </div>
 
@@ -294,7 +315,6 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-
         {/* Booking History Preview */}
         <div className="bg-gray-900 rounded-2xl p-6 mt-8">
           <div className="flex items-center justify-between mb-6">

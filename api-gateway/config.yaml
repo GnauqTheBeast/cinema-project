@@ -8,7 +8,7 @@ server:
 services:
   auth_service:
     url: "http://localhost:3001"
-    health_check_path: "/api/health"
+    health_check_path: "/api/v1/health"
     timeout: 30
     retries: 3
     load_balancer: []
@@ -27,6 +27,13 @@ services:
     retries: 3
     load_balancer: []
 
+  user_service:
+    url: "http://localhost:4001"
+    health_check_path: "/api/v1/health"
+    timeout: 30
+    retries: 3
+    load_balancer: []
+
 redis:
   address: "localhost:6379"
   password: ""
@@ -37,8 +44,8 @@ auth:
   token_expiration: 3600
   public_paths:
     # Auth service endpoints
-    - "/api/auth/login"
-    - "/api/auth/register"
+    - "/api/v1/auth/login"
+    - "/api/v1/auth/register"
     
     # Movie service - public read endpoints
     - "/api/v1/health"
@@ -51,6 +58,9 @@ auth:
     - "/api/v1/rooms/*/seats"
     - "/api/v1/rooms/*/showtimes"
     
+    # User service - public endpoints
+    - "/api/v1/users/*"
+
     # Notification service - public endpoints  
     - "/api/v1/notifications/*/unread-count"
     - "/api/v1/notifications/ws"
