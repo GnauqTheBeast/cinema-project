@@ -15,6 +15,7 @@ import {
   FaCheckCircle,
   FaExclamationTriangle,
 } from 'react-icons/fa'
+import { ethers } from 'ethers'
 import Header from '../../components/Header'
 import { userService } from '../../services/userService'
 
@@ -52,11 +53,12 @@ export default function ProfilePage() {
   const checkWalletConnection = async () => {
     if (typeof window.ethereum !== 'undefined') {
       try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const accounts = await provider.listAccounts()
         if (accounts.length > 0) {
           setWalletConnected(true)
-          setWalletAddress(accounts[0])
-          await fetchWalletBalance(accounts[0])
+          setWalletAddress(accounts[0].address)
+          await fetchWalletBalance(accounts[0].address, provider)
         }
       } catch (error) {
         console.error('Error checking wallet connection:', error)
@@ -72,18 +74,16 @@ export default function ProfilePage() {
 
     setIsConnecting(true)
     try {
-      const accounts = await window.ethereum.request({ 
-        method: 'eth_requestAccounts' 
-      })
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const accounts = await provider.send('eth_requestAccounts', [])
       
       if (accounts.length > 0) {
         setWalletConnected(true)
         setWalletAddress(accounts[0])
-        await fetchWalletBalance(accounts[0])
+        await fetchWalletBalance(accounts[0], provider)
         alert('Kết nối ví thành công!')
       }
     } catch (error) {
-      console.error('Error connecting wallet:', error)
       alert('Không thể kết nối ví. Vui lòng thử lại.')
     } finally {
       setIsConnecting(false)
@@ -97,11 +97,14 @@ export default function ProfilePage() {
     alert('Đã ngắt kết nối ví')
   }
 
-  const fetchWalletBalance = async (address) => {
+  const fetchWalletBalance = async (address, provider) => {
     try {
-      // Simulate fetching balance for different cryptocurrencies
+      const balance = await provider.getBalance(address)
+      const ethBalance = ethers.formatEther(balance)
+      
+      // Simulate other token balances (in real app, you'd query token contracts)
       const balances = {
-        ETH: '0.5',
+        ETH: parseFloat(ethBalance).toFixed(4),
         BTC: '0.01',
         USDT: '1000'
       }
