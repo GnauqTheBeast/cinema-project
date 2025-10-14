@@ -277,7 +277,7 @@ class AuthController {
       }
 
       const userWithRole = await sequelize.query(
-        `SELECT u.id, u.email, u.name, r.name as role_name 
+        `SELECT u.id, u.email, u.name, r.name as role_name, u.role_id
          FROM users u 
          JOIN roles r ON u.role_id = r.id 
          WHERE u.email = :email`,
@@ -285,19 +285,32 @@ class AuthController {
           replacements: { email },
           type: QueryTypes.SELECT
         }
-      ) as Array<{ id: string; email: string; name: string; role_name: string }>;
+      ) as Array<{ id: string; email: string; name: string; role_name: string; role_id: string }>;
       const userRole = userWithRole[0]?.role_name || 'customer';
+      const userRoleId = userWithRole[0]?.role_id;
 
       if (userRole !== 'customer') {
         res.status(HttpStatus.FORBIDDEN).json({ message: 'Tài khoản không thuộc khách hàng. Vui lòng đăng nhập tại trang quản trị.' });
         return;
       }
 
+      let permissions: string[] = [];
+      if (userRoleId) {
+        try {
+          const userPermissions = await PermissionService.getPermissionsByRoleId(userRoleId);
+          permissions = userPermissions.map(p => p.code);
+        } catch (error) {
+          console.error('Error fetching permissions:', error);
+        }
+      }
+
       const token = jwt.sign(
         { 
           userId: userResp.user.id, 
           email: userResp.user.email,
-          role: userRole
+          role: userRole,
+          roleId: userRoleId,
+          permissions: permissions
         }, 
         (process.env.JWT_SECRET || 'your-secret-key') as string,
       );
@@ -308,7 +321,8 @@ class AuthController {
           id: userResp.user.id, 
           email: userResp.user.email, 
           name: userResp.user.name,
-          role: userRole
+          role: userRole,
+          permissions: permissions
         }
       };
 
@@ -385,7 +399,8 @@ class AuthController {
           userId: userResp.user.id, 
           email: userResp.user.email,
           role: userRole,
-          roleId: userRoleId
+          roleId: userRoleId,
+          permissions: permissions
         }, 
         (process.env.JWT_SECRET || 'your-secret-key') as string,
       );
@@ -482,28 +497,14 @@ class AuthController {
 
   static getPermissions: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const authHeader = req.headers.authorization || '';
-      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-      if (!token) {
-        res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Thiếu token xác thực' });
-        return;
-      }
-      
-      let decoded: any;
-      try {
-        decoded = jwt.verify(token, (process.env.JWT_SECRET || 'your-secret-key') as string);
-      } catch {
-        res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Token không hợp lệ' });
-        return;
-      }
-
-      const { roleId } = decoded;
-      if (!roleId) {
+      // User info is already available from authenticateToken middleware
+      const user = (req as any).user;
+      if (!user || !user.roleId) {
         res.status(HttpStatus.BAD_REQUEST).json({ message: 'Không tìm thấy thông tin vai trò' });
         return;
       }
 
-      const permissions = await PermissionService.getPermissionsByRoleId(roleId);
+      const permissions = await PermissionService.getPermissionsByRoleId(user.roleId);
 
       res.json({
         success: true,
@@ -522,23 +523,7 @@ class AuthController {
 
   static createStaff: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const authHeader = req.headers.authorization || '';
-      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-      if (!token) {
-        res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Thiếu token xác thực' });
-        return;
-      }
-      let decoded: any;
-      try {
-        decoded = jwt.verify(token, (process.env.JWT_SECRET || 'your-secret-key') as string);
-      } catch {
-        res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Token không hợp lệ' });
-        return;
-      }
-      if (!decoded?.role || decoded.role !== 'admin') {
-        res.status(HttpStatus.FORBIDDEN).json({ message: 'Chỉ quản trị viên mới được tạo tài khoản nhân viên' });
-        return;
-      }
+      // User info is already available from authenticateToken and requireAdmin middleware
 
       const schema = Joi.object({
         email: Joi.string().email().required(),
@@ -594,32 +579,6 @@ class AuthController {
       next(err);
     }
   };
-
-  static verifyToken: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const { token } = req.body;
-      const result = await TokenService.verifyToken(token);
-      
-      if (result.status === 200) {
-        res.status(HttpStatus.OK).json(result);
-      } else if (result.status === 400) {
-        res.status(HttpStatus.BAD_REQUEST).json(result);
-      } else if (result.status === 401) {
-        res.status(HttpStatus.UNAUTHORIZED).json(result);
-      } else {
-        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(result);
-      }
-    } catch (err) {
-      console.error('Token validation error:', err);
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-        status: 500,
-        message: 'Internal server error',
-        id: '',
-        role: '',
-        permissions: []
-      });
-    }
-  };
 }
 
 export const register = AuthController.register.bind(AuthController);
@@ -629,6 +588,5 @@ export const resendOtp = AuthController.resendOtp.bind(AuthController);
 export const loginAdmin = AuthController.loginAdmin.bind(AuthController);
 export const getPermissions = AuthController.getPermissions.bind(AuthController);
 export const createStaff = AuthController.createStaff.bind(AuthController);
-export const verifyToken = AuthController.verifyToken.bind(AuthController);
 
 export default AuthController;
