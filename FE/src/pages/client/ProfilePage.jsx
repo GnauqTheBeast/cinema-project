@@ -132,9 +132,7 @@ export default function ProfilePage() {
         setUserData({ ...editForm })
         setIsEditing(false)
         console.log('User data updated successfully:', response.message)
-      } else {
-        console.error('Error updating user data:', response.message)
-      }
+      } 
     } catch (error) {
       console.error('Error updating user data:', error)
     }
