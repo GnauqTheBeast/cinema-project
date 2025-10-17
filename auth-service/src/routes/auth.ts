@@ -25,8 +25,7 @@ class AuthRoutes {
     this.router.post('/resend-otp', this.handleAsync(AuthController.resendOtp));
     
     // Protected routes (authentication required)
-    this.router.post('/staff', authenticateToken, requireAdmin, this.handleAsync(AuthController.createStaff));
-    this.router.get('/permissions', authenticateToken, this.handleAsync(AuthController.getPermissions));
+    this.router.post('/staff', authenticateToken, requireAdmin, this.handleAsync(AuthController.registerInternalUser));  
   }
 
   private handleAsync(fn: IController) {

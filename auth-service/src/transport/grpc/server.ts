@@ -20,7 +20,7 @@ export async function startAuthGrpcServer(): Promise<void> {
   const server = new grpc.Server();
 
   server.addService(svc.AuthService.service, {
-    VerifyOtpAndActivate: async (
+    verifyOtpAndActivate: async (
       call: grpc.ServerUnaryCall<any, any>,
       callback: grpc.sendUnaryData<any>
     ) => {
@@ -38,7 +38,7 @@ export async function startAuthGrpcServer(): Promise<void> {
       }
     },
 
-    Validate: async (
+    validate: async (
       call: grpc.ServerUnaryCall<any, any>,
       callback: grpc.sendUnaryData<any>
     ) => {

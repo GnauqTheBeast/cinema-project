@@ -52,34 +52,6 @@ class AuthController {
     };
   }
 
-  static async getCustomerRoleId(): Promise<string> {
-    const CACHE_KEY = 'customer_role_id';
-    
-    try {
-      const cachedRoleId = await redisClient.get(CACHE_KEY);
-      if (cachedRoleId) {
-        return cachedRoleId;
-      }
-
-      const roleResult = await sequelize.query(
-        "SELECT id FROM roles WHERE name = 'customer' LIMIT 1",
-        { type: QueryTypes.SELECT }
-      ) as { id: string }[];
-
-      if (roleResult.length === 0) {
-        throw new Error('Customer role not found in database');
-      }
-
-      const customerRoleId = roleResult[0].id;
-      
-      await redisClient.setEx(CACHE_KEY, 3600, customerRoleId);
-      
-      return customerRoleId;
-    } catch (error) {
-      console.error('Error getting customer role ID:', error);
-      throw error;
-    }
-  }
 
   static async getRoleIdByName(roleName: string, cacheKey: string): Promise<string> {
     try {
@@ -114,6 +86,10 @@ class AuthController {
 
   static async getTicketStaffRoleId(): Promise<string> {
     return this.getRoleIdByName('ticket_staff', 'ticket_staff_role_id');
+  }
+
+  static async getCustomerRoleId(): Promise<string> {
+    return this.getRoleIdByName('customer', 'customer_role_id');
   }
 
   static async saveOTPToCache(email: string, otp: string): Promise<void> {
@@ -495,33 +471,8 @@ class AuthController {
     }
   };
 
-  static getPermissions: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      // User info is already available from authenticateToken middleware
-      const user = (req as any).user;
-      if (!user || !user.roleId) {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: 'Không tìm thấy thông tin vai trò' });
-        return;
-      }
 
-      const permissions = await PermissionService.getPermissionsByRoleId(user.roleId);
-
-      res.json({
-        success: true,
-        permissions: permissions.map(p => ({
-          id: p.id,
-          name: p.name,
-          code: p.code,
-          description: p.description
-        }))
-      });
-    } catch (err) {
-      console.error('Get permissions error:', err);
-      next(err);
-    }
-  };
-
-  static createStaff: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  static registerInternalUser: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       // User info is already available from authenticateToken and requireAdmin middleware
 
@@ -586,7 +537,6 @@ export const login = AuthController.login.bind(AuthController);
 export const verifyOtp = AuthController.verifyOtp.bind(AuthController);
 export const resendOtp = AuthController.resendOtp.bind(AuthController);
 export const loginAdmin = AuthController.loginAdmin.bind(AuthController);
-export const getPermissions = AuthController.getPermissions.bind(AuthController);
-export const createStaff = AuthController.createStaff.bind(AuthController);
+export const registerInternalUser = AuthController.registerInternalUser.bind(AuthController);
 
 export default AuthController;

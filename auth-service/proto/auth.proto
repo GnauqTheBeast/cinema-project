@@ -4,7 +4,7 @@ package auth;
 
 service AuthService {
   rpc VerifyOtpAndActivate(VerifyOtpRequest) returns (VerifyOtpResponse);
-  rpc validate (ValidateRequest) returns (ValidateResponse);
+  rpc Validate (ValidateRequest) returns (ValidateResponse);
 }
 
 message VerifyOtpRequest {
