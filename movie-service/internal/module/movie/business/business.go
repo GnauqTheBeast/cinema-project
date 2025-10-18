@@ -175,6 +175,7 @@ func (b *business) UpdateMovie(ctx context.Context, movie *entity.Movie) error {
 
 	if movie.Status != existingMovie.Status {
 		if !existingMovie.CanTransitionTo(movie.Status) {
+			fmt.Println("Invalid status transition:", existingMovie.Status, "->", movie.Status)
 			return ErrInvalidStatusTransition
 		}
 	}

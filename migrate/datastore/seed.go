@@ -266,6 +266,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 		{
 			Id:          uuid.New().String(),
 			Title:       "Avengers: Endgame",
+			Slug:        "avengers-endgame",
 			Director:    "Anthony Russo, Joe Russo",
 			Cast:        "Robert Downey Jr., Chris Evans, Mark Ruffalo, Chris Hemsworth",
 			Genre:       "Action, Adventure, Drama",
@@ -280,6 +281,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 		{
 			Id:          uuid.New().String(),
 			Title:       "Spider-Man: No Way Home",
+			Slug:        "spider-man-no-way-home",
 			Director:    "Jon Watts",
 			Cast:        "Tom Holland, Zendaya, Benedict Cumberbatch, Jacob Batalon",
 			Genre:       "Action, Adventure, Sci-Fi",
@@ -294,6 +296,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 		{
 			Id:          uuid.New().String(),
 			Title:       "Top Gun: Maverick",
+			Slug:        "top-gun-maverick",
 			Director:    "Joseph Kosinski",
 			Cast:        "Tom Cruise, Miles Teller, Jennifer Connelly, Jon Hamm",
 			Genre:       "Action, Drama",
@@ -308,6 +311,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 		{
 			Id:          uuid.New().String(),
 			Title:       "Dune",
+			Slug:        "dune",
 			Director:    "Denis Villeneuve",
 			Cast:        "Timothée Chalamet, Rebecca Ferguson, Oscar Isaac, Josh Brolin",
 			Genre:       "Action, Adventure, Drama, Sci-Fi",
@@ -322,6 +326,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 		{
 			Id:          uuid.New().String(),
 			Title:       "The Batman",
+			Slug:        "the-batman",
 			Director:    "Matt Reeves",
 			Cast:        "Robert Pattinson, Zoë Kravitz, Paul Dano, Jeffrey Wright",
 			Genre:       "Action, Crime, Drama",

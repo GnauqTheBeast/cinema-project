@@ -50,8 +50,11 @@ export interface IAuthResponse {
   }
 }
 
-export interface IController {
-  (req: Request, res: Response, next: NextFunction): Promise<void>;
+export interface IEmailVerifyMessage {
+  user_id: string;
+  to: string;
+  verify_code: string;
+  verify_url: string;
 }
 
 export interface IOtpData {
@@ -66,11 +69,38 @@ export interface IOtpVerifyResult {
   attempts: number;
 }
 
-export interface IEmailVerifyMessage {
-  user_id: string;
-  to: string;
-  verify_code: string;
-  verify_url: string;
+export interface IPermission {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+}
+
+export interface IApiError extends Error {
+  status?: number;
+  isJoi?: boolean;
+  details?: Array<{ message: string }>;
+}
+
+export interface IController {
+  (req: Request, res: Response, next: NextFunction): Promise<void>;
+}
+
+export interface IServerConfig {
+  port: number;
+  corsOrigin: string;
+  jwtSecret: string;
+  jwtExpiresIn: string;
+}
+
+export interface IDatabaseManager {
+  testConnection(): Promise<boolean>;
+  syncDatabase(): Promise<boolean>;
+}
+
+export interface IRedisManager {
+  isConnected(): Promise<boolean>;
+  disconnect(): Promise<boolean>;
 }
 
 export interface IHealthCheck {
@@ -84,29 +114,11 @@ export interface IHealthCheck {
   memory: NodeJS.MemoryUsage;
 }
 
-export interface IApiError extends Error {
-  status?: number;
-  isJoi?: boolean;
-  details?: any[];
-}
-
-export interface IDatabaseManager {
-  testConnection(): Promise<boolean>;
-  syncDatabase(): Promise<boolean>;
-}
-
-export interface IRedisManager {
-  connect(): Promise<boolean>;
-  disconnect(): Promise<boolean>;
-  isConnected(): Promise<boolean>;
-  flushAll(): Promise<boolean>;
-}
-
-export interface IServerConfig {
-  port: number;
-  corsOrigin: string;
-  jwtSecret: string;
-  jwtExpiresIn: string;
+export enum UserStatus {
+  PENDING = 'pending',
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  SUSPENDED = 'suspended'
 }
 
 export enum HttpStatus {
@@ -119,20 +131,12 @@ export enum HttpStatus {
   INTERNAL_SERVER_ERROR = 500
 }
 
-export enum UserStatus {
-  PENDING = 'pending',
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  SUSPENDED = 'suspended'
-}
-
 export enum ErrorMessages {
-  CUSTOMER_ONLY = 'Chỉ cho phép đăng ký tài khoản Customer.',
-  EMAIL_EXISTS = 'Email already exists',
-  INVALID_CREDENTIALS = 'Invalid email or password',
-  REGISTRATION_SUCCESS = 'Registered successfully. Please check your email to verify.',
-  OTP_EXPIRED = 'OTP expired or not found',
-  OTP_MAX_ATTEMPTS = 'Maximum OTP attempts exceeded. Please request a new OTP.',
-  OTP_VERIFIED = 'OTP verified successfully',
-  ACCOUNT_VERIFIED = 'Account verified and activated successfully'
+  EMAIL_EXISTS = 'Email đã tồn tại trong hệ thống',
+  INVALID_CREDENTIALS = 'Email hoặc mật khẩu không chính xác',
+  REGISTRATION_SUCCESS = 'Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản',
+  ACCOUNT_VERIFIED = 'Tài khoản đã được xác thực thành công',
+  OTP_EXPIRED = 'Mã OTP đã hết hạn',
+  OTP_MAX_ATTEMPTS = 'Bạn đã nhập sai OTP quá nhiều lần. Vui lòng thử lại sau',
+  OTP_VERIFIED = 'OTP đã được xác thực thành công'
 }

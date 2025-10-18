@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"movie-service/internal/module/seat/entity"
 	"movie-service/internal/pkg/paging"
 )
 
@@ -17,14 +18,11 @@ func redisSeatDetail(id string) string {
 	return fmt.Sprintf("seat:detail:%s", id)
 }
 
-func redisSeatsList(paging *paging.Paging, searchQuery string) string {
-	return fmt.Sprintf("seats:list:paging:page:%d:size%d:search:%s", paging.Limit, paging.Offset, searchQuery)
+func redisSeatsListWithFilters(paging *paging.Paging, searchQuery, roomId, rowNumber string, seatType entity.SeatType, status entity.SeatStatus) string {
+	return fmt.Sprintf("seats:list:paging:page:%d:size%d:search:%s:room:%s:row:%s:type:%s:status:%s",
+		paging.Limit, paging.Offset, searchQuery, roomId, rowNumber, seatType, status)
 }
 
 func redisRoomSeats(roomId string) string {
 	return fmt.Sprintf("room:seats:%s", roomId)
-}
-
-func redisSeatsSearch(search string) string {
-	return fmt.Sprintf("seats:search:%s", search)
 }
