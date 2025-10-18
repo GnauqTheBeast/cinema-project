@@ -208,7 +208,7 @@ export default function AdminLayout({ children }) {
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gray-50 border-t border-gray-200">
               <div className="text-center text-xs text-gray-500">
                 <p>HQ Cinema Admin v1.0</p>
-                <p className="mt-1">© 2024 All rights reserved</p>
+                <p className="mt-1">© 2025 All rights reserved</p>
               </div>
             </div>
           </div>
