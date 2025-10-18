@@ -278,3 +278,25 @@ func (r *Repository) CheckConflict(ctx context.Context, roomId string, startTime
 
 	return exists, nil
 }
+
+func (r *Repository) GetByIds(ctx context.Context, ids []string) ([]*entity.Showtime, error) {
+	if len(ids) == 0 {
+		return []*entity.Showtime{}, nil
+	}
+
+	showtimes := make([]*entity.Showtime, 0)
+
+	query := r.roDb.NewSelect().
+		Model(&showtimes).
+		Relation("Movie").
+		Relation("Room").
+		Where("st.id IN (?)", bun.In(ids)).
+		Order("st.start_time ASC")
+
+	err := query.Scan(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get showtimes by ids: %w", err)
+	}
+
+	return showtimes, nil
+}

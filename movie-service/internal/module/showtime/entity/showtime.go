@@ -6,6 +6,16 @@ import (
 	"github.com/uptrace/bun"
 )
 
+type Movie struct {
+	Id    string `bun:"id,pk" json:"id"`
+	Title string `bun:"title" json:"title"`
+}
+
+type Room struct {
+	Id         string `bun:"id,pk" json:"id"`
+	RoomNumber int    `bun:"room_number" json:"room_number"`
+}
+
 type ShowtimeStatus string
 
 const (
@@ -37,6 +47,10 @@ type Showtime struct {
 	Status    ShowtimeStatus `bun:"status,notnull,default:'scheduled'" json:"status"`
 	CreatedAt time.Time      `bun:"created_at,nullzero,default:current_timestamp" json:"created_at"`
 	UpdatedAt *time.Time     `bun:"updated_at" json:"updated_at,omitempty"`
+
+	// Relations
+	Movie *Movie `bun:"rel:belongs-to,join:movie_id=id" json:"movie,omitempty"`
+	Room  *Room  `bun:"rel:belongs-to,join:room_id=id" json:"room,omitempty"`
 }
 
 func TruncateToHalfHour(t time.Time) time.Time {

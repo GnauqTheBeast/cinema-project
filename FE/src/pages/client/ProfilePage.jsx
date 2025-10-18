@@ -16,10 +16,13 @@ import {
   FaExclamationTriangle,
 } from 'react-icons/fa'
 import { ethers } from 'ethers'
+import { useNavigate } from 'react-router-dom'
 import Header from '../../components/Header'
 import { userService } from '../../services/userService'
+import { bookingService } from '../../services/bookingService'
 
 export default function ProfilePage() {
+  const navigate = useNavigate()
   const [isEditing, setIsEditing] = useState(false)
   const [userData, setUserData] = useState(null)
   const [editForm, setEditForm] = useState(null)
@@ -27,6 +30,8 @@ export default function ProfilePage() {
   const [walletAddress, setWalletAddress] = useState('')
   const [walletBalance, setWalletBalance] = useState({})
   const [isConnecting, setIsConnecting] = useState(false)
+  const [recentBookings, setRecentBookings] = useState([])
+  const [loadingBookings, setLoadingBookings] = useState(false)
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -49,6 +54,12 @@ export default function ProfilePage() {
     fetchUserData()
     checkWalletConnection()
   }, [])
+
+  useEffect(() => {
+    if (userData && userData.id) {
+      fetchRecentBookings()
+    }
+  }, [userData])
 
   const checkWalletConnection = async () => {
     if (typeof window.ethereum !== 'undefined') {
@@ -114,6 +125,25 @@ export default function ProfilePage() {
     }
   }
 
+  const fetchRecentBookings = async () => {
+    if (!userData?.id) return
+    
+    setLoadingBookings(true)
+    try {
+      const response = await bookingService.getRecentBookings(userData.id, 3)
+      console.log('Booking response:', response)
+      if (response.code === 200) {
+        setRecentBookings(response.data.bookings || [])
+      } else {
+        console.error('Booking API error:', response.message)
+      }
+    } catch (error) {
+      console.error('Error fetching recent bookings:', error)
+    } finally {
+      setLoadingBookings(false)
+    }
+  }
+
   const formatAddress = (address) => {
     if (!address) return ''
     return `${address.slice(0, 6)}...${address.slice(-4)}`
@@ -163,6 +193,39 @@ export default function ProfilePage() {
       default:
         return 'bg-gradient-to-r from-gray-400 to-gray-600'
     }
+  }
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'confirmed':
+        return 'bg-green-600/20 text-green-400'
+      case 'pending':
+        return 'bg-yellow-600/20 text-yellow-400'
+      case 'cancelled':
+        return 'bg-red-600/20 text-red-400'
+      default:
+        return 'bg-gray-600/20 text-gray-400'
+    }
+  }
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'confirmed':
+        return 'Đã xác nhận'
+      case 'pending':
+        return 'Đang chờ'
+      case 'cancelled':
+        return 'Đã hủy'
+      default:
+        return status
+    }
+  }
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(price)
   }
 
   if (!userData) {
@@ -497,63 +560,48 @@ export default function ProfilePage() {
         <div className="bg-gray-900 rounded-2xl p-6 mt-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-white">Lịch sử đặt vé gần đây</h2>
-            <button className="text-red-400 hover:text-red-300 font-medium transition-colors duration-300">
+            <button 
+              onClick={() => navigate('/booking-history')}
+              className="text-red-400 hover:text-red-300 font-medium transition-colors duration-300"
+            >
               Xem tất cả
             </button>
           </div>
 
-          {/* Mock booking history */}
-          <div className="space-y-4">
-            {[
-              {
-                id: 1,
-                movieTitle: 'Spider-Man: No Way Home',
-                cinema: 'HQ Cinema Landmark 81',
-                showtime: '2024-03-15 19:30',
-                seats: 'G7, G8',
-                status: 'Đã xem',
-              },
-              {
-                id: 2,
-                movieTitle: 'The Batman',
-                cinema: 'HQ Cinema Vincom Center',
-                showtime: '2024-03-10 21:00',
-                seats: 'F5, F6',
-                status: 'Đã xem',
-              },
-              {
-                id: 3,
-                movieTitle: 'Dune: Part Two',
-                cinema: 'HQ Cinema Times Square',
-                showtime: '2024-03-20 20:15',
-                seats: 'H10, H11',
-                status: 'Sắp diễn ra',
-              },
-            ].map((booking) => (
-              <div key={booking.id} className="bg-black/50 rounded-lg p-4 border border-gray-700">
-                <div className="flex flex-col md:flex-row md:items-center justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-white font-semibold mb-1">{booking.movieTitle}</h3>
-                    <p className="text-gray-400 text-sm mb-1">{booking.cinema}</p>
-                    <p className="text-gray-400 text-sm">
-                      {formatDate(booking.showtime)} - Ghế {booking.seats}
-                    </p>
-                  </div>
-                  <div className="mt-2 md:mt-0">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        booking.status === 'Đã xem'
-                          ? 'bg-green-600/20 text-green-400'
-                          : 'bg-blue-600/20 text-blue-400'
-                      }`}
-                    >
-                      {booking.status}
-                    </span>
+          {loadingBookings ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+            </div>
+          ) : recentBookings.length > 0 ? (
+            <div className="space-y-4">
+              {recentBookings.map((booking) => (
+                <div key={booking.id} className="bg-black/50 rounded-lg p-4 border border-gray-700">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-white font-semibold mb-1">{booking.movie_title || 'Phim không xác định'}</h3>
+                      <p className="text-gray-400 text-sm mb-1">
+                        {booking.showtime_date ? formatDate(booking.showtime_date) : 'N/A'} - {booking.seat_numbers || 'Ghế không xác định'}
+                      </p>
+                      <p className="text-red-400 text-sm font-medium">
+                        {formatPrice(booking.total_amount || 0)}
+                      </p>
+                    </div>
+                    <div className="mt-2 md:mt-0">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}
+                      >
+                        {getStatusText(booking.status)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-400">Chưa có lịch sử đặt vé</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

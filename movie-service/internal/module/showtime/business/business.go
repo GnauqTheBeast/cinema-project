@@ -12,6 +12,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/samber/do"
+	"movie-service/proto/pb"
 )
 
 var (
@@ -25,6 +26,7 @@ var (
 
 type ShowtimeBiz interface {
 	GetShowtimeById(ctx context.Context, id string) (*entity.Showtime, error)
+	GetShowtimesByIds(ctx context.Context, ids []string) ([]*entity.Showtime, error)
 	GetShowtimes(ctx context.Context, page, size int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) ([]*entity.Showtime, int, error)
 	GetShowtimesByMovie(ctx context.Context, movieId string) ([]*entity.Showtime, error)
 	GetShowtimesByRoom(ctx context.Context, roomId string, date time.Time) ([]*entity.Showtime, error)
@@ -36,8 +38,18 @@ type ShowtimeBiz interface {
 	CheckTimeConflict(ctx context.Context, roomId string, startTime, endTime time.Time, excludeId string) (bool, error)
 }
 
+type MovieServiceServer struct {
+	pb.UnimplementedMovieServiceServer
+	business ShowtimeBiz
+}
+
+func NewMovieGRPCServer(business ShowtimeBiz) *MovieServiceServer {
+	return &MovieServiceServer{business: business}
+}
+
 type ShowtimeRepository interface {
 	GetByID(ctx context.Context, id string) (*entity.Showtime, error)
+	GetByIds(ctx context.Context, ids []string) ([]*entity.Showtime, error)
 	GetMany(ctx context.Context, limit, offset int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) ([]*entity.Showtime, error)
 	GetTotalCount(ctx context.Context, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) (int, error)
 	GetByMovie(ctx context.Context, movieId string) ([]*entity.Showtime, error)
@@ -103,6 +115,23 @@ func (b *business) GetShowtimeById(ctx context.Context, id string) (*entity.Show
 	}
 
 	return showtime, nil
+}
+
+func (b *business) GetShowtimesByIds(ctx context.Context, ids []string) ([]*entity.Showtime, error) {
+	if len(ids) == 0 {
+		return []*entity.Showtime{}, nil
+	}
+
+	callback := func() ([]*entity.Showtime, error) {
+		return b.repository.GetByIds(ctx, ids)
+	}
+
+	showtimes, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, redisShowtimesByIds(ids), CACHE_TTL_30_MINS, callback)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get showtimes by ids: %w", err)
+	}
+
+	return showtimes, nil
 }
 
 func (b *business) GetShowtimes(ctx context.Context, page, size int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) ([]*entity.Showtime, int, error) {

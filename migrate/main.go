@@ -123,6 +123,8 @@ func SeedAll(ctx context.Context, db *bun.DB) error {
 		datastore.SeedShowtimes,
 		datastore.SeedUsers,
 		datastore.SeedNotifications,
+		datastore.SeedBookings,
+		datastore.SeedTickets,
 	}
 
 	for _, seedFunc := range seedFuncs {

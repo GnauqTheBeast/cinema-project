@@ -519,6 +519,108 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 	return nil
 }
 
+func SeedBookings(ctx context.Context, db *bun.DB) error {
+	var users []models.User
+	err := db.NewSelect().Model(&users).Limit(3).Scan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get users: %w", err)
+	}
+
+	var showtimes []models.Showtime
+	err = db.NewSelect().Model(&showtimes).Limit(5).Scan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get showtimes: %w", err)
+	}
+
+	var seats []models.Seat
+	err = db.NewSelect().Model(&seats).Limit(10).Scan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get seats: %w", err)
+	}
+
+	bookings := []models.Booking{
+		{
+			Id:          uuid.New().String(),
+			UserId:      users[3].Id,
+			ShowtimeId:  showtimes[0].Id,
+			TotalAmount: 200000,
+			Status:      "confirmed",
+			CreatedAt:   time.Now().Add(-24 * time.Hour),
+		},
+		{
+			Id:          uuid.New().String(),
+			UserId:      users[3].Id,
+			ShowtimeId:  showtimes[1].Id,
+			TotalAmount: 100000,
+			Status:      "confirmed",
+			CreatedAt:   time.Now().Add(-48 * time.Hour),
+		},
+		{
+			Id:          uuid.New().String(),
+			UserId:      users[3].Id,
+			ShowtimeId:  showtimes[2].Id,
+			TotalAmount: 300000,
+			Status:      "pending",
+			CreatedAt:   time.Now().Add(-72 * time.Hour),
+		},
+		{
+			Id:          uuid.New().String(),
+			UserId:      users[1].Id,
+			ShowtimeId:  showtimes[0].Id,
+			TotalAmount: 150000,
+			Status:      "confirmed",
+			CreatedAt:   time.Now().Add(-96 * time.Hour),
+		},
+		{
+			Id:          uuid.New().String(),
+			UserId:      users[2].Id,
+			ShowtimeId:  showtimes[1].Id,
+			TotalAmount: 450000,
+			Status:      "cancelled",
+			CreatedAt:   time.Now().Add(-120 * time.Hour),
+		},
+	}
+
+	_, err = db.NewInsert().Model(&bookings).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to insert bookings: %w", err)
+	}
+
+	return nil
+}
+
+func SeedTickets(ctx context.Context, db *bun.DB) error {
+	var bookings []models.Booking
+	err := db.NewSelect().Model(&bookings).Scan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get bookings: %w", err)
+	}
+
+	var seats []models.Seat
+	err = db.NewSelect().Model(&seats).Scan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get seats: %w", err)
+	}
+
+	tickets := make([]models.Ticket, 0)
+	for i := 0; i < len(bookings); i++ {
+		tickets = append(tickets, models.Ticket{
+			Id:        uuid.New().String(),
+			BookingId: bookings[i].Id,
+			Status:    models.TicketStatusUsed,
+			SeatId:    seats[i%len(seats)].Id,
+			CreatedAt: time.Now(),
+		})
+	}
+
+	_, err = db.NewInsert().Model(&tickets).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to insert tickets: %w", err)
+	}
+
+	return nil
+}
+
 func SeedNotifications(ctx context.Context, db *bun.DB) error {
 	var users []models.User
 	err := db.NewSelect().Model(&users).Limit(3).Scan(ctx)

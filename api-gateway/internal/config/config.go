@@ -29,6 +29,7 @@ type ServicesConfig struct {
 	MovieService        ServiceEndpoint `mapstructure:"movie_service"`
 	NotificationService ServiceEndpoint `mapstructure:"notification_service"`
 	UserService         ServiceEndpoint `mapstructure:"user_service"`
+	BookingService      ServiceEndpoint `mapstructure:"booking_service"`
 }
 
 type ServiceEndpoint struct {
@@ -113,6 +114,11 @@ func setDefaults() {
 	viper.SetDefault("services.notification_service.health_check_path", "/api/v1")
 	viper.SetDefault("services.notification_service.timeout", 30)
 	viper.SetDefault("services.notification_service.retries", 3)
+
+	viper.SetDefault("services.booking_service.url", "http://localhost:8082")
+	viper.SetDefault("services.booking_service.health_check_path", "/api/health")
+	viper.SetDefault("services.booking_service.timeout", 30)
+	viper.SetDefault("services.booking_service.retries", 3)
 
 	// C defaults
 	viper.SetDefault("redis.address", "localhost:6379")

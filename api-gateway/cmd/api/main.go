@@ -18,6 +18,7 @@ import (
 	"api-gateway/internal/pkg/logger"
 	"api-gateway/internal/pkg/response"
 	"api-gateway/internal/proxy"
+
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
@@ -115,7 +116,7 @@ func main() {
 		response.Success(c, map[string]interface{}{
 			"name":     "Cinema API Gateway",
 			"version":  "1.0.0",
-			"services": []string{"auth-service", "movie-service", "notification-service"},
+			"services": []string{"auth-service", "movie-service", "notification-service", "booking-service"},
 		})
 	})
 

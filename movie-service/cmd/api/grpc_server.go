@@ -1,43 +1,43 @@
 package main
 
-//
-//import (
-//	"fmt"
-//	"github.com/samber/do"
-//	"github.com/uptrace/bun"
-//	"movie-service/internal/container"
-//	"movie-service/internal/module/movie/repository/postgres"
-//	"net"
-//
-//	"movie-service/internal/module/movie/business"
-//	"movie-service/internal/module/movie/transport/grpc"
-//
-//	"github.com/urfave/cli/v2"
-//	"google.golang.org/grpc"
-//)
-//
-//func ServeGRPC() *cli.Command {
-//	return &cli.Command{
-//		Name:  "grpc",
-//		Usage: "start the Grpc server",
-//		Action: func(c *cli.Context) error {
-//			s := grpc.NewServer()
-//
-//			i := container.NewContainer()
-//
-//			repo, _ := postgres.NewMovieRepository(i)
-//			biz, _ := business.NewBusiness(i)
-//			tourRpcService := grpc.NewTourServiceServer()
-//
-//			pb.RegisterTourServiceServer(s, tourRpcService)
-//
-//			lis, err := net.Listen("tcp", ":50051")
-//			if err != nil {
-//				return err
-//			}
-//
-//			fmt.Println("movie service listening on port 50051")
-//			return s.Serve(lis)
-//		},
-//	}
-//}
+import (
+	"fmt"
+	"net"
+
+	"movie-service/internal/container"
+	"movie-service/internal/module/movie/transport/grpc"
+	"movie-service/internal/module/showtime/business"
+
+	pb "movie-service/proto/pb"
+
+	"github.com/urfave/cli/v2"
+	grpc_server "google.golang.org/grpc"
+)
+
+func ServeGRPC() *cli.Command {
+	return &cli.Command{
+		Name:  "grpc",
+		Usage: "start the gRPC server",
+		Action: func(c *cli.Context) error {
+			i := container.NewContainer()
+
+			showtimeBiz, err := business.NewBusiness(i)
+			if err != nil {
+				return fmt.Errorf("failed to create showtime business: %w", err)
+			}
+
+			s := grpc_server.NewServer()
+
+			grpcServer := grpc.NewMovieGRPCServer(showtimeBiz)
+			pb.RegisterMovieServiceServer(s, grpcServer)
+
+			lis, err := net.Listen("tcp", ":50053")
+			if err != nil {
+				return err
+			}
+
+			fmt.Println("movie service gRPC listening on port 50053")
+			return s.Serve(lis)
+		},
+	}
+}
