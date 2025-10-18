@@ -43,7 +43,7 @@ func (h *handler) GetMovies(c *gin.Context) {
 
 	movies, total, err := h.biz.GetMovies(c.Request.Context(), query.Page, query.Size, query.Search)
 	if err != nil {
-		response.ErrorWithMessage(c, "Failed to get movies")
+		response.ErrorWithMessage(c, err.Error())
 		return
 	}
 
@@ -65,7 +65,7 @@ func (h *handler) GetMovieById(c *gin.Context) {
 			return
 		}
 
-		response.ErrorWithMessage(c, "Failed to get movie")
+		response.ErrorWithMessage(c, err.Error())
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *handler) CreateMovie(c *gin.Context) {
 			return
 		}
 
-		response.ErrorWithMessage(c, "Failed to create movie")
+		response.ErrorWithMessage(c, err.Error())
 		return
 	}
 
@@ -119,13 +119,13 @@ func (h *handler) UpdateMovie(c *gin.Context) {
 			return
 		}
 
-		response.ErrorWithMessage(c, "Failed to update movie")
+		response.ErrorWithMessage(c, err.Error())
 		return
 	}
 
 	updatedMovie, err := h.biz.GetMovieById(c.Request.Context(), id)
 	if err != nil {
-		response.ErrorWithMessage(c, "Failed to get updated movie")
+		response.ErrorWithMessage(c, err.Error())
 		return
 	}
 
@@ -146,7 +146,7 @@ func (h *handler) DeleteMovie(c *gin.Context) {
 			return
 		}
 
-		response.ErrorWithMessage(c, "Failed to delete movie")
+		response.ErrorWithMessage(c, err.Error())
 		return
 	}
 
@@ -176,13 +176,13 @@ func (h *handler) UpdateMovieStatus(c *gin.Context) {
 			return
 		}
 
-		response.ErrorWithMessage(c, "Failed to update movie status")
+		response.ErrorWithMessage(c, err.Error())
 		return
 	}
 
 	movie, err := h.biz.GetMovieById(c.Request.Context(), id)
 	if err != nil {
-		response.ErrorWithMessage(c, "Failed to get updated movie")
+		response.ErrorWithMessage(c, err.Error())
 		return
 	}
 
@@ -193,7 +193,7 @@ func (h *handler) UpdateMovieStatus(c *gin.Context) {
 func (h *handler) GetMovieStats(c *gin.Context) {
 	stats, err := h.biz.GetMovieStats(c.Request.Context())
 	if err != nil {
-		response.ErrorWithMessage(c, "Failed to get movie stats")
+		response.ErrorWithMessage(c, err.Error())
 		return
 	}
 

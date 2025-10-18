@@ -13,7 +13,7 @@ export class TokenService {
   private static readonly JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
   /**
-   * Verify JWT token and return user information
+   * Verify JWT token and return user information for gRPC services
    * @param token - JWT token to verify
    * @returns Promise<TokenValidationResult> - Token validation result with user info
    */
@@ -43,14 +43,14 @@ export class TokenService {
         };
       }
 
-      const { userId, email, role, roleId } = decoded;
+      const { userId, email, role, roleId, permissions } = decoded;
 
-      // Get user permissions
-      let permissions: string[] = [];
-      if (roleId) {
+      // Use permissions from token if available, otherwise fetch from database
+      let userPermissions: string[] = permissions || [];
+      if (!userPermissions.length && roleId) {
         try {
-          const userPermissions = await PermissionService.getPermissionsByRoleId(roleId);
-          permissions = userPermissions.map(p => p.code);
+          const dbPermissions = await PermissionService.getPermissionsByRoleId(roleId);
+          userPermissions = dbPermissions.map(p => p.code);
         } catch (error) {
           console.error('Error fetching permissions:', error);
           // Continue without permissions rather than failing
@@ -62,7 +62,7 @@ export class TokenService {
         message: 'Token is valid',
         id: userId,
         role: role || '',
-        permissions: permissions
+        permissions: userPermissions
       };
 
     } catch (error) {
@@ -77,19 +77,6 @@ export class TokenService {
     }
   }
 
-  /**
-   * Simple token verification that returns decoded payload
-   * @param token - JWT token to verify
-   * @returns Promise<object> - Decoded token payload
-   */
-  public static async verifyTokenAsync(token: string): Promise<string | JwtPayload> {
-    try {
-      const decoded = await jwt.verify(token, this.JWT_SECRET);
-      return decoded;
-    } catch (error) {
-      throw new Error(`Token verification failed: ${error}`);
-    }
-  }
 }
 
 export default TokenService;

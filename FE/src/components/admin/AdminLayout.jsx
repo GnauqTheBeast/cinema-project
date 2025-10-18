@@ -13,13 +13,38 @@ import {
   FaUser,
 } from 'react-icons/fa'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { usePermissions } from '../../contexts/PermissionContext'
 
 export default function AdminLayout({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-  const { hasPermission } = usePermissions()
+
+  // Read admin role from localStorage (set at login)
+  const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}')
+  const role = adminUser?.role || ''
+
+  // Visible menus by role
+  const visiblePathsByRole = {
+    admin: 'all',
+    manager_staff: new Set([
+      '/admin/dashboard',
+      '/admin/movies',
+      '/admin/rooms',
+      '/admin/seats',
+      '/admin/showtimes',
+    ]),
+    ticket_staff: new Set([
+      '/admin/dashboard',
+      '/admin/showtimes',
+    ]),
+  }
+
+  const isItemVisibleForRole = (path) => {
+    if (!role) return false
+    if (visiblePathsByRole[role] === 'all') return true
+    const allowed = visiblePathsByRole[role]
+    return allowed ? allowed.has(path) : false
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken')
@@ -37,7 +62,7 @@ export default function AdminLayout({ children }) {
       path: '/admin/dashboard',
       label: 'Dashboard',
       icon: FaChartBar,
-      permission: 'profile_view', // Basic permission for dashboard
+      permission: 'profile_view', // kept for reference (no longer used)
     },
     {
       path: '/admin/movies',
@@ -75,12 +100,7 @@ export default function AdminLayout({ children }) {
       icon: FaUser,
       permission: 'staff_manage', // This permission needs to be added to the database
     },
-    {
-      path: '/admin/permissions',
-      label: 'Test Quyền',
-      icon: FaUser,
-      permission: 'profile_view', // Basic permission for testing
-    },
+   
   ]
 
   return (
@@ -159,10 +179,8 @@ export default function AdminLayout({ children }) {
                 const IconComponent = item.icon
                 const isActive = isActiveRoute(item.path)
 
-                // Check if user has permission for this menu item
-                if (!hasPermission(item.permission)) {
-                  return null
-                }
+                // Role-based visibility (no API call)
+                if (!isItemVisibleForRole(item.path)) return null
 
                 return (
                   <button
@@ -190,7 +208,7 @@ export default function AdminLayout({ children }) {
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gray-50 border-t border-gray-200">
               <div className="text-center text-xs text-gray-500">
                 <p>HQ Cinema Admin v1.0</p>
-                <p className="mt-1">© 2024 All rights reserved</p>
+                <p className="mt-1">© 2025 All rights reserved</p>
               </div>
             </div>
           </div>

@@ -73,7 +73,8 @@ class AuthServer {
       res.json({ 
         message: 'Auth Service API',
         version: '1.0.0',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        note: 'Token verification now available via gRPC only'
       });
     });
 
@@ -140,9 +141,13 @@ class AuthServer {
       const connected = await this.databaseManager.testConnection();
       
       if (connected) {
-        await this.databaseManager.syncDatabase();
-        console.log('Database initialized successfully');
-        return true;
+        const synced = await this.databaseManager.syncDatabase();
+        if (synced) {
+          console.log('Database initialized successfully');
+          return true;
+        } else {
+          throw new Error('Database sync failed');
+        }
       } else {
         throw new Error('Database connection failed');
       }
@@ -171,7 +176,7 @@ class AuthServer {
 
   public async start(): Promise<Server> {
     try {
-      console.log('Starting Auth Service...');
+      console.log('Starting Auth Service (HTTP + gRPC)...');
 
       // Initialize database
       const dbInitialized = await this.initializeDatabase();
@@ -187,7 +192,7 @@ class AuthServer {
 
       // Start HTTP server
       const server = this.app.listen(this.port, () => {
-        console.log(`🚀 Auth service running on port ${this.port}`);
+        console.log(`🚀 Auth HTTP service running on port ${this.port}`);
         console.log(`🏥 Health check available at http://localhost:${this.port}/api/v1/health`);
         console.log(`📝 API documentation: http://localhost:${this.port}/`);
       });
@@ -231,8 +236,10 @@ class AuthServer {
         // Close Redis connections
         if (this.redisManager) {
           try {
-            await this.redisManager.disconnect();
-            console.log('Redis connections closed');
+            const disconnected = await this.redisManager.disconnect();
+            if (disconnected) {
+              console.log('Redis connections closed');
+            }
           } catch (error) {
             console.error('Error closing Redis:', error);
           }
