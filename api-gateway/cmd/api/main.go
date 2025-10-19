@@ -10,8 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/joho/godotenv"
-
 	"api-gateway/internal/config"
 	"api-gateway/internal/middleware"
 	"api-gateway/internal/pkg/auth"
@@ -24,25 +22,15 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func init() {
-	err := godotenv.Load()
-	if err != nil {
-		panic("Error loading .env file")
-	}
-}
-
 func main() {
-	// Load configuration
 	cfg, err := config.LoadConfig(".")
 	if err != nil {
 		panic(fmt.Sprintf("Failed to load config: %v", err))
 	}
 
-	// Initialize logger
 	log := logger.NewLogger(cfg.Logging.Level, cfg.Logging.Format)
 	log.Info("Starting API Gateway", "version", "1.0.0")
 
-	// Initialize Redis client
 	var redisClient *redis.Client
 	if cfg.Redis.Address != "" {
 		redisClient = redis.NewClient(&redis.Options{
@@ -50,29 +38,15 @@ func main() {
 			Password: cfg.Redis.Password,
 			DB:       cfg.Redis.DB,
 		})
-
-		// Test Redis connection
-		ctx := context.Background()
-		if err := redisClient.Ping(ctx).Err(); err != nil {
-			log.Warn("Failed to connect to Redis", "error", err)
-			redisClient = nil
-			return
-		}
-
-		log.Info("Connected to Redis successfully")
 	}
 
-	// Initialize JWT manager
 	jwtManager := auth.NewJWTManager(cfg.Auth.JWTSecret, cfg.Auth.TokenExpiration/3600)
 
-	// Initialize proxy
 	proxyHandler := proxy.NewProxy(cfg, log)
 
-	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(jwtManager, cfg, log)
 	rateLimiter := middleware.NewRateLimiter(cfg, redisClient, log)
 
-	// Setup Gin router
 	if cfg.Logging.Level != "debug" {
 		gin.SetMode(gin.ReleaseMode)
 	}

@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -65,9 +66,30 @@ type LoggingConfig struct {
 	Output string `mapstructure:"output"`
 }
 
-// LoadConfig loads configuration from file and environment variables
+func isDockerEnvironment() bool {
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		return true
+	}
+
+	if os.Getenv("CONTAINER") == "true" || os.Getenv("DOCKER") == "true" {
+		return true
+	}
+
+	if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
+		return true
+	}
+
+	return false
+}
+
 func LoadConfig(path string) (*Config, error) {
-	viper.SetConfigName("config")
+	// Detect environment: Docker vs Local
+	configName := "config"
+	if isDockerEnvironment() {
+		configName = "config.deploy"
+	}
+
+	viper.SetConfigName(configName)
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(path)
 	viper.AddConfigPath(".")
@@ -148,6 +170,6 @@ func setDefaults() {
 
 	// Logging defaults
 	viper.SetDefault("logging.level", "info")
-	viper.SetDefault("logging.format", "json")
+	viper.SetDefault("logging.format", "text")
 	viper.SetDefault("logging.output", "stdout")
 }

@@ -7,10 +7,9 @@ COPY . ./
 RUN --mount=type=cache,target=/root/.cache/go-build go build -ldflags "-s -w" -trimpath -o main ./cmd/api/*.go
 
 FROM alpine:latest
-RUN apk add ca-certificates multirun
+RUN apk add ca-certificates
 WORKDIR /app
 COPY --from=builder /app/. ./
 
-EXPOSE 8083
-EXPOSE 50053
-CMD ["multirun", "./main serve", "./main grpc"]
+EXPOSE 8082
+CMD ["./main", "serve"]

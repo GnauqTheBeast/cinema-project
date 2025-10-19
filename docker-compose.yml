@@ -1,31 +1,159 @@
+version: '3.8'
+
 services:
   postgres:
-    container_name: app_postgres
     image: postgres:15-alpine
-    networks:
-      - app
+    container_name: cinema-postgres
     environment:
-      POSTGRES_DB: cinema_app
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      PGDATA: /var/lib/postgresql/data
+      POSTGRES_DB: cinema_db
+      POSTGRES_USER: cinema_user
+      POSTGRES_PASSWORD: cinema_password
     volumes:
+      - postgres_data:/var/lib/postgresql/data
       - ./postgres-data:/var/lib/postgresql/data
-    restart: unless-stopped
     ports:
       - "5432:5432"
 
   redis:
-    container_name: app_redis
     image: redis:7.4-alpine
-    networks:
-      - app
-    volumes:
-      - ./redis-data:/data
-    restart: unless-stopped
+    container_name: cinema-redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis-data:/data
 
+  movie-service:
+    build:
+      context: ./movie-service
+      dockerfile: Dockerfile
+    container_name: cinema-movie-service
+    ports:
+      - "8083:8083"
+      - "50053:50053"
+    env_file:
+      - ./movie-service/.env
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+
+  # auth-service:
+  #   build:
+  #     context: ./auth-service
+  #     dockerfile: Dockerfile
+  #   container_name: cinema-auth-service
+  #   environment:
+  #     - DB_HOST=postgres
+  #     - DB_PORT=5432
+  #     - DB_USER=cinema_user
+  #     - DB_PASSWORD=cinema_password
+  #     - DB_NAME=cinema_db
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - REDIS_PASSWORD=
+  #     - USER_SERVICE_URL=http://user-service:3001
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     postgres:
+  #     redis:
+
+  #   build:
+  #     context: ./user-service
+  #     dockerfile: Dockerfile
+  #   container_name: cinema-user-service
+  #   environment:
+  #     - DB_HOST=postgres
+  #     - DB_PORT=5432
+  #     - DB_USER=cinema_user
+  #     - DB_PASSWORD=cinema_password
+  #     - DB_NAME=cinema_db
+  #   ports:
+  #     - "3001:3001"
+  #   depends_on:
+  #     postgres:
+
+  #   build:
+  #     context: ./notification-service
+  #     dockerfile: Dockerfile
+  #   container_name: cinema-notification-service
+  #   environment:
+  #     - DB_HOST=postgres
+  #     - DB_PORT=5432
+  #     - DB_USER=cinema_user
+  #     - DB_PASSWORD=cinema_password
+  #     - DB_NAME=cinema_db
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - REDIS_PASSWORD=
+  #   ports:
+  #     - "8082:8080"
+  #   depends_on:
+  #     postgres:
+  #     redis:
+
+  booking-service:
+    build:
+      context: ./booking-service
+      dockerfile: Dockerfile
+    container_name: cinema-booking-service
+    ports:
+      - "8082:8082"
+    env_file:
+      - ./booking-service/.env
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+      - movie-service
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: cinema-api-gateway
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - AUTH_SERVICE_URL=http://auth-service:3000
+      - USER_SERVICE_URL=http://user-service:3001
+      - MOVIE_SERVICE_URL=http://movie-service:8083
+      - BOOKING_SERVICE_URL=http://booking-service:8082
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8080
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    depends_on:
+      - movie-service
+      - booking-service
+      - redis
+  
+  # worker-service:
+  #   build:
+  #     context: ./worker-service
+  #     dockerfile: Dockerfile
+  #   container_name: cinema-worker-service
+  #   depends_on:
+  #     postgres:
+  #     redis:
+
+  frontend:
+    build:
+      context: ./FE
+      dockerfile: Dockerfile
+    container_name: cinema-frontend
+    env_file:
+      - ./FE/.env
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    depends_on:
+      - api-gateway
+
+volumes:
+  postgres_data:
+  redis_data:
 
 networks:
-  app:
+  default:
+    name: cinema-network

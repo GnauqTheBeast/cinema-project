@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const MOVIE_API_URL = process.env.REACT_APP_MOVIE_API_URL || 'http://localhost:8083/api/v1'
+const MOVIE_API_URL = process.env.REACT_APP_MOVIE_API_URL || 'http://localhost:8000/api/v1'
 
 const movieApi = axios.create({
   baseURL: MOVIE_API_URL,

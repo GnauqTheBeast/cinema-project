@@ -107,5 +107,5 @@ rate_limit:
 
 logging:
   level: "info"
-  format: "json"
+  format: "text"
   output: "stdout"

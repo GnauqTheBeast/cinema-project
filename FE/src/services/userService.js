@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
+const API_URL = process.env.REACT_APP_USER_API_URL || 'http://localhost:8000/api/v1'
 
 const userApi = axios.create({
   baseURL: API_URL,
@@ -28,7 +28,7 @@ export const userService = {
   // Get user by ID
   getUserById: async (id) => {
     try {
-      const response = await userApi.get(`/v1/users/${id}`)
+      const response = await userApi.get(`/users/${id}`)
       return response.data
     } catch (error) {
       console.error(`Error fetching user ${id}:`, error)
@@ -39,7 +39,7 @@ export const userService = {
   // Update user by ID
   updateUser: async (id, userData) => {
     try {
-      const response = await userApi.put(`/v1/users/${id}`, userData)
+      const response = await userApi.put(`/users/${id}`, userData)
       return response.data
     } catch (error) {
       console.error(`Error updating user ${id}:`, error)
