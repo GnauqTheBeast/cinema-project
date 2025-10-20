@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"booking-service/internal/datastore"
@@ -39,7 +40,12 @@ func NewBookingService(container *do.Injector) (*BookingService, error) {
 		return nil, err
 	}
 
-	movieClient, err := grpc.NewMovieClient("localhost:50053")
+	movieServiceUrl := os.Getenv("MOVIE_SERVICE_GRPC_URL")
+	if movieServiceUrl == "" {
+		movieServiceUrl = "localhost:50053"
+	}
+
+	movieClient, err := grpc.NewMovieClient(movieServiceUrl)
 	fmt.Println("movieClient", movieClient, err)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create movie client: %w", err)

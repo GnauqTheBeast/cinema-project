@@ -3,13 +3,11 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import {NextFunction, Request, Response} from 'express';
 import {QueryTypes} from 'sequelize';
-import {v4 as uuidv4} from 'uuid';
 
-import {CustomerProfile, sequelize, User} from '../models/index.js';
+import {sequelize, User} from '../models/index.js';
 import { userClient } from '../services/userGrpcClient.js';
 import {redisClient, redisPubSubClient} from '../config/redis.js';
 import { PermissionService } from '../services/permissionService.js';
-import { TokenService } from '../services/tokenService.js';
 import {
   ErrorMessages,
   HttpStatus,

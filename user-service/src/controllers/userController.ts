@@ -7,7 +7,7 @@ import {
   IUserResponse, 
   IUpdateUserRequest,
   IController 
-} from '../types';
+} from '../types/index.js';
 
 export class UserController {
   private models: Models;

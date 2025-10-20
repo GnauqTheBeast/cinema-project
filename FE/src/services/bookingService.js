@@ -12,7 +12,7 @@ export const bookingService = {
         params.append('status', status)
       }
 
-      const response = await apiClient.get(`/api/v1/bookings/${userId}?${params.toString()}`)
+      const response = await apiClient.get(`/bookings/${userId}?${params.toString()}`)
       return response.data
     } catch (error) {
       console.error('Error fetching user bookings:', error)

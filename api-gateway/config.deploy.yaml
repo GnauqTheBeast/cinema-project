@@ -7,7 +7,7 @@ server:
 
 services:
   auth_service:
-    url: "http://auth-service:3000"
+    url: "http://auth-service:3001"
     health_check_path: "/api/v1/health"
     timeout: 30
     retries: 3
@@ -28,7 +28,7 @@ services:
     load_balancer: []
     
   user_service:
-    url: "http://user-service:3001"
+    url: "http://user-service:8005"
     health_check_path: "/api/v1/health"
     timeout: 30
     retries: 3
@@ -42,8 +42,8 @@ services:
     load_balancer: []
 
 redis:
-  host: "cinema-redis"
-  address: "cinema-redis:6379"
+  host: "redis"
+  address: "redis:6379"
   password: ""
   db: 0
 
