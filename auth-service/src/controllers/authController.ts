@@ -279,21 +279,34 @@ class AuthController {
       }
 
       const token = jwt.sign(
-        { 
-          userId: userResp.user.id, 
+        {
+          userId: userResp.user.id,
           email: userResp.user.email,
           role: userRole,
           roleId: userRoleId,
           permissions: permissions
-        }, 
+        },
         (process.env.JWT_SECRET || 'your-secret-key') as string,
       );
 
+      // Cache token to Redis for faster subsequent requests
+      const userInfo = {
+        id: userResp.user.id,
+        email: userResp.user.email,
+        role: userRole,
+        roleId: userRoleId,
+        permissions: permissions,
+        cachedAt: new Date().toISOString()
+      };
+      TokenService.cacheUserInfo(token, userInfo).catch(error => {
+        console.error('Failed to cache user info after login:', error);
+      });
+
       const response: IAuthResponse = {
         token,
-        user: { 
-          id: userResp.user.id, 
-          email: userResp.user.email, 
+        user: {
+          id: userResp.user.id,
+          email: userResp.user.email,
           name: userResp.user.name,
           role: userRole,
           permissions: permissions
@@ -369,21 +382,34 @@ class AuthController {
       }
 
       const token = jwt.sign(
-        { 
-          userId: userResp.user.id, 
+        {
+          userId: userResp.user.id,
           email: userResp.user.email,
           role: userRole,
           roleId: userRoleId,
           permissions: permissions
-        }, 
+        },
         (process.env.JWT_SECRET || 'your-secret-key') as string,
       );
 
+      // Cache token to Redis for faster subsequent requests
+      const userInfo = {
+        id: userResp.user.id,
+        email: userResp.user.email,
+        role: userRole,
+        roleId: userRoleId,
+        permissions: permissions,
+        cachedAt: new Date().toISOString()
+      };
+      TokenService.cacheUserInfo(token, userInfo).catch(error => {
+        console.error('Failed to cache user info after login:', error);
+      });
+
       const response: IAuthResponse = {
         token,
-        user: { 
-          id: userResp.user.id, 
-          email: userResp.user.email, 
+        user: {
+          id: userResp.user.id,
+          email: userResp.user.email,
           name: userResp.user.name,
           role: userRole,
           permissions: permissions
