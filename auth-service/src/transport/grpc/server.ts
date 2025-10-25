@@ -44,7 +44,7 @@ export async function startAuthGrpcServer(): Promise<void> {
     ) => {
       try {
         const { token } = call.request;
-        const result = await TokenService.verifyToken(token);
+        const result = await TokenService.verifyTokenFromCache(token);
         callback(null, result);
       } catch (e: any) {
         callback({ code: grpc.status.INTERNAL, message: e.message } as any);
