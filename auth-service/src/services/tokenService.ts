@@ -24,11 +24,7 @@ export class TokenService {
   private static readonly REDIS_TOKEN_PREFIX = 'auth:token:';
   private static readonly TOKEN_CACHE_TTL = 3600; // 1 hour
 
-  /**
-   * Cache user information to Redis after successful token verification
-   * @param token - JWT token
-   * @param userInfo - User information to cache
-   */
+
   public static async cacheUserInfo(token: string, userInfo: CachedUserInfo): Promise<void> {
     try {
       const tokenKey = `${this.REDIS_TOKEN_PREFIX}${token}`;
@@ -36,15 +32,11 @@ export class TokenService {
       console.log(`Cached user info for token: ${token.substring(0, 10)}...`);
     } catch (error) {
       console.error('Error caching user info:', error);
-      // Don't throw error to avoid breaking the main flow
+  
     }
   }
 
-  /**
-   * Get cached user information from Redis
-   * @param token - JWT token
-   * @returns Promise<CachedUserInfo | null> - Cached user info or null if not found
-   */
+
   public static async getCachedUserInfo(token: string): Promise<CachedUserInfo | null> {
     try {
       const tokenKey = `${this.REDIS_TOKEN_PREFIX}${token}`;
@@ -61,10 +53,6 @@ export class TokenService {
     }
   }
 
-  /**
-   * Remove cached user information from Redis
-   * @param token - JWT token
-   */
   public static async removeCachedUserInfo(token: string): Promise<void> {
     try {
       const tokenKey = `${this.REDIS_TOKEN_PREFIX}${token}`;
@@ -75,11 +63,7 @@ export class TokenService {
     }
   }
 
-  /**
-   * Verify JWT token and return user information for gRPC services
-   * @param token - JWT token to verify
-   * @returns Promise<TokenValidationResult> - Token validation result with user info
-   */
+
   public static async verifyToken(token: string): Promise<TokenValidationResult> {
     try {
       if (!token) {
@@ -92,7 +76,6 @@ export class TokenService {
         };
       }
 
-      // Verify JWT token
       let decoded: any;
       try {
         decoded = jwt.verify(token, this.JWT_SECRET);
@@ -108,7 +91,7 @@ export class TokenService {
 
       const { userId, email, role, roleId, permissions } = decoded;
 
-      // Use permissions from token if available, otherwise fetch from database
+      // Use permissions from token if available
       let userPermissions: string[] = permissions || [];
       if (!userPermissions.length && roleId) {
         try {
@@ -120,7 +103,6 @@ export class TokenService {
         }
       }
 
-      // Cache user information to Redis for future use
       const userInfo: CachedUserInfo = {
         id: userId,
         email: email,
@@ -155,11 +137,7 @@ export class TokenService {
     }
   }
 
-  /**
-   * Fast token validation using Redis cache
-   * @param token - JWT token to validate
-   * @returns Promise<TokenValidationResult> - Token validation result with user info
-   */
+
   public static async verifyTokenFromCache(token: string): Promise<TokenValidationResult> {
     try {
       if (!token) {
