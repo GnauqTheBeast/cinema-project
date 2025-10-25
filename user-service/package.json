@@ -11,25 +11,25 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.9.12",
-    "@grpc/proto-loader": "^0.7.10",
+    "@grpc/grpc-js": "^1.14.0",
+    "@grpc/proto-loader": "^0.7.15",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "joi": "^17.9.2",
     "pg": "^8.11.1",
     "pg-hstore": "^2.3.4",
+    "redis": "^5.9.0",
     "sequelize": "^6.32.1",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
-  "@types/express": "^5.0.3",
-  "@types/node": "^20.10.0",
-  "@types/cors": "^2.8.12",
-  "@types/uuid": "^9.0.1",
-  "rimraf": "^5.0.5",
-  "tsx": "^4.7.0",
-  "typescript": "^5.3.3"
-}
-
+    "@types/cors": "^2.8.12",
+    "@types/express": "^5.0.3",
+    "@types/node": "^20.10.0",
+    "@types/uuid": "^9.0.1",
+    "rimraf": "^5.0.5",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
 }
