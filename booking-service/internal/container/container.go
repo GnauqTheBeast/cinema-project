@@ -3,6 +3,7 @@ package container
 import (
 	"os"
 
+	"booking-service/internal/pkg/caching"
 	"booking-service/internal/pkg/db"
 	"booking-service/internal/pkg/pubsub"
 	redisPubsub "booking-service/internal/pkg/pubsub/redis"
@@ -38,9 +39,13 @@ func NewContainer() *do.Injector {
 	do.ProvideNamed(injector, "readonly-db", provideReadonlyDatabase)
 
 	do.ProvideNamed(injector, "redis-db", provideRedisDb)
+	do.ProvideNamed(injector, "redis-cache-db", provideRedisCacheDb)
+	do.ProvideNamed(injector, "redis-cache-readonly-db", provideRedisReadOnlyCacheDb)
 	do.ProvideNamed(injector, "redis-pubsub-db", provideRedisPubsubDb)
 	do.ProvideNamed(injector, "redis-pubsub-readonly-db", provideRedisPubsubReadonlyDb)
 
+	do.Provide(injector, provideRedisCache)
+	do.Provide(injector, provideRedisCacheReadOnly)
 	do.Provide(injector, provideRedisPubsub)
 	do.Provide(injector, provideBookingService)
 
@@ -95,6 +100,36 @@ func provideRedisDb(_ *do.Injector) (redis.UniversalClient, error) {
 	})
 }
 
+func provideRedisCacheDb(_ *do.Injector) (redis.UniversalClient, error) {
+	clusterUrl := os.Getenv("REDIS_CACHE_CLUSTER_URL")
+	if clusterUrl != "" {
+		clusterOpts, err := redis.ParseClusterURL(clusterUrl)
+		if err != nil {
+			return nil, err
+		}
+		return redis.NewClusterClient(clusterOpts), nil
+	}
+
+	return db.NewRedis(&db.RedisConfig{
+		URL: os.Getenv("REDIS_CACHE_URL"),
+	})
+}
+
+func provideRedisReadOnlyCacheDb(_ *do.Injector) (redis.UniversalClient, error) {
+	clusterUrl := os.Getenv("REDIS_CACHE_READONLY_CLUSTER_URL")
+	if clusterUrl != "" {
+		clusterOpts, err := redis.ParseClusterURL(clusterUrl)
+		if err != nil {
+			return nil, err
+		}
+		return redis.NewClusterClient(clusterOpts), nil
+	}
+
+	return db.NewRedis(&db.RedisConfig{
+		URL: os.Getenv("REDIS_CACHE_READONLY_URL"),
+	})
+}
+
 func provideRedisPubsubDb(_ *do.Injector) (redis.UniversalClient, error) {
 	clusterUrl := os.Getenv("REDIS_PUBSUB_CLUSTER_URL")
 	if clusterUrl != "" {
@@ -137,6 +172,22 @@ func provideRedisPubsub(i *do.Injector) (pubsub.PubSub, error) {
 	}
 
 	return redisPubsub.NewRedisPubsub(pubsubReadonly, pubsub), nil
+}
+
+func provideRedisCache(i *do.Injector) (caching.Cache, error) {
+	redisCache, err := do.InvokeNamed[redis.UniversalClient](i, "redis-cache-db")
+	if err != nil {
+		return nil, err
+	}
+	return caching.NewRedisClient(redisCache, false)
+}
+
+func provideRedisCacheReadOnly(i *do.Injector) (caching.ReadOnlyCache, error) {
+	redisCacheReadOnly, err := do.InvokeNamed[redis.UniversalClient](i, "redis-cache-readonly-db")
+	if err != nil {
+		return nil, err
+	}
+	return caching.NewRedisClient(redisCacheReadOnly, true)
 }
 
 func provideBookingService(i *do.Injector) (*services.BookingService, error) {

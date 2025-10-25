@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package movie;
+package pb;
 
 option go_package = "booking-service/proto/pb";
 

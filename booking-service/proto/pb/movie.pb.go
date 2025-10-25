@@ -333,19 +333,19 @@ var File_movie_proto protoreflect.FileDescriptor
 
 const file_movie_proto_rawDesc = "" +
 	"\n" +
-	"\vmovie.proto\x12\x05movie\"$\n" +
+	"\vmovie.proto\x12\x02pb\"$\n" +
 	"\x12GetShowtimeRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"r\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"o\n" +
 	"\x13GetShowtimeResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x12'\n" +
-	"\x04data\x18\x03 \x01(\v2\x13.movie.ShowtimeDataR\x04data\"'\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12$\n" +
+	"\x04data\x18\x03 \x01(\v2\x10.pb.ShowtimeDataR\x04data\"'\n" +
 	"\x13GetShowtimesRequest\x12\x10\n" +
-	"\x03ids\x18\x01 \x03(\tR\x03ids\"s\n" +
+	"\x03ids\x18\x01 \x03(\tR\x03ids\"p\n" +
 	"\x14GetShowtimesResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x12'\n" +
-	"\x04data\x18\x03 \x03(\v2\x13.movie.ShowtimeDataR\x04data\"\x81\x02\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12$\n" +
+	"\x04data\x18\x03 \x03(\v2\x10.pb.ShowtimeDataR\x04data\"\x81\x02\n" +
 	"\fShowtimeData\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bmovie_id\x18\x02 \x01(\tR\amovieId\x12\x17\n" +
@@ -356,10 +356,10 @@ const file_movie_proto_rawDesc = "" +
 	"movieTitle\x12\x1f\n" +
 	"\vroom_number\x18\a \x01(\tR\n" +
 	"roomNumber\x12!\n" +
-	"\fseat_numbers\x18\b \x03(\tR\vseatNumbers2\x9d\x01\n" +
-	"\fMovieService\x12D\n" +
-	"\vGetShowtime\x12\x19.movie.GetShowtimeRequest\x1a\x1a.movie.GetShowtimeResponse\x12G\n" +
-	"\fGetShowtimes\x12\x1a.movie.GetShowtimesRequest\x1a\x1b.movie.GetShowtimesResponseB\x1aZ\x18booking-service/proto/pbb\x06proto3"
+	"\fseat_numbers\x18\b \x03(\tR\vseatNumbers2\x91\x01\n" +
+	"\fMovieService\x12>\n" +
+	"\vGetShowtime\x12\x16.pb.GetShowtimeRequest\x1a\x17.pb.GetShowtimeResponse\x12A\n" +
+	"\fGetShowtimes\x12\x17.pb.GetShowtimesRequest\x1a\x18.pb.GetShowtimesResponseB\x1aZ\x18booking-service/proto/pbb\x06proto3"
 
 var (
 	file_movie_proto_rawDescOnce sync.Once
@@ -375,19 +375,19 @@ func file_movie_proto_rawDescGZIP() []byte {
 
 var file_movie_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_movie_proto_goTypes = []any{
-	(*GetShowtimeRequest)(nil),   // 0: movie.GetShowtimeRequest
-	(*GetShowtimeResponse)(nil),  // 1: movie.GetShowtimeResponse
-	(*GetShowtimesRequest)(nil),  // 2: movie.GetShowtimesRequest
-	(*GetShowtimesResponse)(nil), // 3: movie.GetShowtimesResponse
-	(*ShowtimeData)(nil),         // 4: movie.ShowtimeData
+	(*GetShowtimeRequest)(nil),   // 0: pb.GetShowtimeRequest
+	(*GetShowtimeResponse)(nil),  // 1: pb.GetShowtimeResponse
+	(*GetShowtimesRequest)(nil),  // 2: pb.GetShowtimesRequest
+	(*GetShowtimesResponse)(nil), // 3: pb.GetShowtimesResponse
+	(*ShowtimeData)(nil),         // 4: pb.ShowtimeData
 }
 var file_movie_proto_depIdxs = []int32{
-	4, // 0: movie.GetShowtimeResponse.data:type_name -> movie.ShowtimeData
-	4, // 1: movie.GetShowtimesResponse.data:type_name -> movie.ShowtimeData
-	0, // 2: movie.MovieService.GetShowtime:input_type -> movie.GetShowtimeRequest
-	2, // 3: movie.MovieService.GetShowtimes:input_type -> movie.GetShowtimesRequest
-	1, // 4: movie.MovieService.GetShowtime:output_type -> movie.GetShowtimeResponse
-	3, // 5: movie.MovieService.GetShowtimes:output_type -> movie.GetShowtimesResponse
+	4, // 0: pb.GetShowtimeResponse.data:type_name -> pb.ShowtimeData
+	4, // 1: pb.GetShowtimesResponse.data:type_name -> pb.ShowtimeData
+	0, // 2: pb.MovieService.GetShowtime:input_type -> pb.GetShowtimeRequest
+	2, // 3: pb.MovieService.GetShowtimes:input_type -> pb.GetShowtimesRequest
+	1, // 4: pb.MovieService.GetShowtime:output_type -> pb.GetShowtimeResponse
+	3, // 5: pb.MovieService.GetShowtimes:output_type -> pb.GetShowtimesResponse
 	4, // [4:6] is the sub-list for method output_type
 	2, // [2:4] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name

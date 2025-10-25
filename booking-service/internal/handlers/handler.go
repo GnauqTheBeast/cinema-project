@@ -3,6 +3,10 @@ package handlers
 import (
 	"net/http"
 
+	"booking-service/internal/grpc"
+	internalMiddleware "booking-service/internal/middleware"
+	"booking-service/internal/pkg/caching"
+
 	"github.com/labstack/echo-contrib/pprof"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -29,13 +33,12 @@ func New(cfg *Config) (http.Handler, error) {
 		Format: "${time_rfc3339}\t${method}\t${uri}\t${status}\t${latency_human}\n",
 	}))
 	r.Use(middleware.Recover())
-	cors := middleware.CORSWithConfig(middleware.CORSConfig{
+	r.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     cfg.Origins,
 		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
 		AllowCredentials: true,
 		MaxAge:           60 * 60,
-	})
-	r.Use(cors)
+	}))
 
 	routesAPIv1 := r.Group("/api/v1")
 	{
@@ -44,10 +47,20 @@ func New(cfg *Config) (http.Handler, error) {
 			return nil, err
 		}
 
+		authClient, err := grpc.NewAuthClient()
+		if err != nil {
+			return nil, err
+		}
+
+		cacheService, err := do.Invoke[caching.Cache](cfg.Container)
+		if err != nil {
+			return nil, err
+		}
+
 		routesBooking := routesAPIv1.Group("/bookings")
 		{
-			// GET /api/v1/bookings/:userId - Get bookings with pagination
-			routesBooking.GET("/:userId", bookingHandler.GetBookings)
+			// GET /api/v1/bookings/me - Get current user's bookings with pagination
+			routesBooking.GET("/me", bookingHandler.GetBookings, internalMiddleware.RequireAuth(authClient, cacheService))
 		}
 	}
 

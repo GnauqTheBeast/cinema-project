@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"booking-service/proto/pb"
 
@@ -15,8 +16,13 @@ type MovieClient struct {
 	client pb.MovieServiceClient
 }
 
-func NewMovieClient(address string) (*MovieClient, error) {
-	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func NewMovieClient() (*MovieClient, error) {
+	movieServiceUrl := os.Getenv("MOVIE_SERVICE_GRPC_URL")
+	if movieServiceUrl == "" {
+		movieServiceUrl = "localhost:50053"
+	}
+
+	conn, err := grpc.NewClient(movieServiceUrl, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to movie service: %w", err)
 	}

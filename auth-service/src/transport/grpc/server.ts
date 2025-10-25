@@ -15,7 +15,7 @@ export async function startAuthGrpcServer(): Promise<void> {
   });
   
   const proto = grpc.loadPackageDefinition(packageDefinition) as any;
-  const svc = proto.auth;
+  const svc = proto.pb;
 
   const server = new grpc.Server();
 

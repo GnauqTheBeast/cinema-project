@@ -36,9 +36,9 @@ func (h *BookingHandler) GetBookings(c echo.Context) error {
 		return response.BadRequest(c, fmt.Sprintf("Invalid query parameters: %s", err.Error()))
 	}
 
-	userId := c.Param("userId")
+	userId := c.Get("user_id").(string)
 	if userId == "" {
-		return response.BadRequest(c, "User ID is required")
+		return response.Unauthorized(c, "User ID not found in token")
 	}
 
 	if query.Page == 0 {

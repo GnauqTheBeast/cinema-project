@@ -17,14 +17,6 @@ type OutboxEvent struct {
 	UpdatedAt time.Time `bun:"updated_at,notnull,default:now()" json:"updated_at"`
 }
 
-type OutboxEventStatus string
-
-const (
-	OutboxStatusPending OutboxEventStatus = "pending"
-	OutboxStatusSent    OutboxEventStatus = "sent"
-	OutboxStatusFailed  OutboxEventStatus = "failed"
-)
-
 type OutboxEventType string
 
 const (
@@ -33,4 +25,12 @@ const (
 	EventTypeSeatReserved     OutboxEventType = "SeatReserved"
 	EventTypeSeatReleased     OutboxEventType = "SeatReleased"
 	EventTypeNotificationSent OutboxEventType = "NotificationSent"
+)
+
+type OutboxEventStatus string
+
+const (
+	OutboxStatusPending OutboxEventStatus = "pending"
+	OutboxStatusSent    OutboxEventStatus = "sent"
+	OutboxStatusFailed  OutboxEventStatus = "failed"
 )

@@ -13,7 +13,7 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
 });
 
 const proto = grpc.loadPackageDefinition(packageDefinition) as any;
-const UserService = proto.user.UserService;
+const UserService = proto.pb.UserService;
 
 const address = process.env.USER_GRPC_ADDRESS || 'localhost:50051';
 

@@ -2,19 +2,23 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
+RUN apk add --no-cache git ca-certificates tzdata
+
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go build -o outbox-worker ./cmd/outbox
-RUN go build -o crawl-worker ./cmd/crawl
+
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main cmd/outbox/main.go
 
 FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates tzdata
+
 WORKDIR /root/
 
-COPY --from=builder /app/outbox-worker .
-COPY --from=builder /app/crawl-worker .
+COPY --from=builder /app/main .
 
-CMD ["./outbox-worker"]
+EXPOSE 8087
+
+CMD ["./main"]

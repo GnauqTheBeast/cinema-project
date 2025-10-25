@@ -130,12 +130,9 @@ export default function ProfilePage() {
     
     setLoadingBookings(true)
     try {
-      const response = await bookingService.getRecentBookings(userData.id, 3)
-      console.log('Booking response:', response)
+      const response = await bookingService.getUserBookings(1, 3)
       if (response.code === 200) {
         setRecentBookings(response.data.bookings || [])
-      } else {
-        console.error('Booking API error:', response.message)
       }
     } catch (error) {
       console.error('Error fetching recent bookings:', error)

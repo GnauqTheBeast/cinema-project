@@ -19,8 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MovieService_GetShowtime_FullMethodName  = "/movie.MovieService/GetShowtime"
-	MovieService_GetShowtimes_FullMethodName = "/movie.MovieService/GetShowtimes"
+	MovieService_GetShowtime_FullMethodName  = "/pb.MovieService/GetShowtime"
+	MovieService_GetShowtimes_FullMethodName = "/pb.MovieService/GetShowtimes"
 )
 
 // MovieServiceClient is the client API for MovieService service.
@@ -142,7 +142,7 @@ func _MovieService_GetShowtimes_Handler(srv interface{}, ctx context.Context, de
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var MovieService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "movie.MovieService",
+	ServiceName: "pb.MovieService",
 	HandlerType: (*MovieServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

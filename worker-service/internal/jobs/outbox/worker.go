@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"worker-service/internal/models"
+	"worker-service/internal/pkg/pubsub"
 
 	"github.com/samber/do"
 	"github.com/uptrace/bun"
@@ -15,6 +16,7 @@ import (
 type Worker struct {
 	db     *bun.DB
 	logger Logger
+	pubsub pubsub.PubSub
 }
 
 type Logger interface {
@@ -27,10 +29,12 @@ type Logger interface {
 func NewWorker(ctn *do.Injector) *Worker {
 	db := do.MustInvoke[*bun.DB](ctn)
 	logger := do.MustInvoke[Logger](ctn)
+	pubsub := do.MustInvoke[pubsub.PubSub](ctn)
 
 	return &Worker{
 		db:     db,
 		logger: logger,
+		pubsub: pubsub,
 	}
 }
 
@@ -62,7 +66,6 @@ func (w *Worker) processEvents(ctx context.Context) error {
 		Order("id ASC").
 		Limit(100).
 		Scan(ctx)
-
 	if err != nil {
 		return fmt.Errorf("failed to query outbox events: %w", err)
 	}
@@ -140,23 +143,43 @@ func (w *Worker) handlePaymentCompleted(ctx context.Context, event models.Outbox
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
-	bookingID, ok := data["booking_id"].(float64)
+	paymentID, ok := data["payment_id"].(string)
+	if !ok {
+		return fmt.Errorf("invalid payment_id in payload")
+	}
+
+	bookingID, ok := data["booking_id"].(string)
 	if !ok {
 		return fmt.Errorf("invalid booking_id in payload")
 	}
 
-	w.logger.Info("Handling payment completed event for booking ID: %.0f", bookingID)
+	amount, ok := data["amount"].(float64)
+	if !ok {
+		return fmt.Errorf("invalid amount in payload")
+	}
 
-	// Simulate processing time
-	time.Sleep(100 * time.Millisecond)
+	w.logger.Info("Handling payment completed event for payment ID: %s, booking ID: %s, amount: %.2f", paymentID, bookingID, amount)
 
-	// Here you would typically:
-	// 1. Update booking status to confirmed
-	// 2. Send confirmation email/SMS
-	// 3. Generate tickets
-	// 4. Update seat status
+	notificationMessage := map[string]interface{}{
+		"type":       "payment_completed",
+		"payment_id": paymentID,
+		"booking_id": bookingID,
+		"amount":     amount,
+		"status":     "completed",
+		"timestamp":  time.Now().Unix(),
+	}
 
-	w.logger.Info("Payment completed event processed successfully")
+	message := &pubsub.Message{
+		Topic: "payment.notifications",
+		Data:  notificationMessage,
+	}
+
+	err := w.pubsub.Publish(ctx, message)
+	if err != nil {
+		return fmt.Errorf("failed to publish notification message: %w", err)
+	}
+
+	w.logger.Info("Payment completed notification sent for payment ID: %s", paymentID)
 	return nil
 }
 

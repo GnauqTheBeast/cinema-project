@@ -1,7 +1,7 @@
 import apiClient from './apiClient'
 
 export const bookingService = {
-  getUserBookings: async (userId, page = 1, size = 10, status = '') => {
+  getUserBookings: async (page = 1, size = 10, status = '') => {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -12,21 +12,19 @@ export const bookingService = {
         params.append('status', status)
       }
 
-      const response = await apiClient.get(`/bookings/${userId}?${params.toString()}`)
+      const token = localStorage.getItem('token')
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      const response = await apiClient.get(`/bookings/me?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       return response.data
     } catch (error) {
       console.error('Error fetching user bookings:', error)
       throw error
     }
   },
-
-  getRecentBookings: async (userId, limit = 3) => {
-    try {
-      const response = await bookingService.getUserBookings(userId, 1, limit)
-      return response
-    } catch (error) {
-      console.error('Error fetching recent bookings:', error)
-      throw error
-    }
-  }
 }

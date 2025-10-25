@@ -27,13 +27,10 @@ export default function BookingHistoryPage() {
         return
       }
 
-      const response = await bookingService.getUserBookings(user.id, currentPage, 10, statusFilter)
-      console.log('Booking history response:', response)
+      const response = await bookingService.getUserBookings(currentPage, 10, statusFilter)
       if (response.code === 200) {
         setBookings(response.data.bookings || [])
         setTotalPages(Math.ceil((response.data.total || 0) / 10))
-      } else {
-        setError('Không thể tải lịch sử đặt vé')
       }
     } catch (err) {
       setError('Có lỗi xảy ra khi tải dữ liệu')
