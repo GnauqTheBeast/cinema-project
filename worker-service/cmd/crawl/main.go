@@ -8,32 +8,24 @@ import (
 	"syscall"
 	"time"
 
-	"worker-service/internal/config"
 	"worker-service/internal/container"
 	"worker-service/internal/jobs/crawl"
 )
 
 func main() {
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatal("Failed to load config:", err)
-	}
-
-	ctn, err := container.New(cfg)
-	if err != nil {
-		log.Fatal("Failed to create container:", err)
-	}
+	ctn := container.New()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	crawlWorker := crawl.NewWorker(ctn)
+	crawlWorker, err := crawl.NewWorker(ctn)
+	if err != nil {
+		log.Fatal("Failed to create crawl worker:", err)
+	}
 
-	go func() {
-		if err := crawlWorker.Start(ctx); err != nil {
-			log.Printf("Crawl worker error: %v", err)
-		}
-	}()
+	if err := crawlWorker.Start(ctx); err != nil {
+		log.Fatal("Failed to start crawl worker:", err)
+	}
 
 	log.Println("Crawl worker started...")
 

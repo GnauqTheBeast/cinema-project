@@ -61,6 +61,8 @@ func New(cfg *Config) (http.Handler, error) {
 		{
 			// GET /api/v1/bookings/me - Get current user's bookings with pagination
 			routesBooking.GET("/me", bookingHandler.GetBookings, internalMiddleware.RequireAuth(authClient, cacheService))
+			// POST /api/v1/bookings - Create new booking
+			routesBooking.POST("", bookingHandler.CreateBooking, internalMiddleware.RequireAuth(authClient, cacheService))
 		}
 	}
 

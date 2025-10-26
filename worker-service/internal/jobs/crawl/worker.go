@@ -20,14 +20,21 @@ type Logger interface {
 	Warn(msg string, args ...interface{})
 }
 
-func NewWorker(ctn *do.Injector) *Worker {
-	db := do.MustInvoke[*bun.DB](ctn)
-	logger := do.MustInvoke[Logger](ctn)
+func NewWorker(ctn *do.Injector) (*Worker, error) {
+	db, err := do.Invoke[*bun.DB](ctn)
+	if err != nil {
+		return nil, err
+	}
+
+	logger, err := do.Invoke[Logger](ctn)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Worker{
 		db:     db,
 		logger: logger,
-	}
+	}, nil
 }
 
 func (w *Worker) Start(ctx context.Context) error {

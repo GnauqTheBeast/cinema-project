@@ -10,9 +10,10 @@ import (
 	"movie-service/internal/module/showtime/entity"
 	"movie-service/internal/pkg/caching"
 
+	"movie-service/proto/pb"
+
 	"github.com/redis/go-redis/v9"
 	"github.com/samber/do"
-	"movie-service/proto/pb"
 )
 
 var (

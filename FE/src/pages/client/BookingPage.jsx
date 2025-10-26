@@ -15,6 +15,7 @@ const BookingPage = () => {
   const [showtime, setShowtime] = useState(null)
   const [room, setRoom] = useState(null)
   const [seats, setSeats] = useState([])
+  const [lockedSeats, setLockedSeats] = useState([])
   const [selectedSeats, setSelectedSeats] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -43,7 +44,9 @@ const BookingPage = () => {
         
         const seatsResponse = await clientSeatService.getSeatsByRoom(showtimeData.room_id)
         if (seatsResponse.success) {
-          setSeats(seatsResponse.data.data || seatsResponse.data)
+          const seatsData = seatsResponse.data.data || seatsResponse.data
+          setSeats(seatsData.seats || seatsData)
+          setLockedSeats(seatsData.locked_seats || [])
         }
       } else {
         setError('Không tìm thấy suất chiếu')
@@ -101,6 +104,11 @@ const BookingPage = () => {
       return 'bg-gray-700 border-gray-600 text-gray-400 cursor-not-allowed'
     }
 
+    const isLocked = lockedSeats && lockedSeats.some(lockedSeat => lockedSeat.id === seat.id)
+    if (isLocked) {
+      return 'bg-orange-600 border-orange-500 text-orange-200 cursor-not-allowed'
+    }
+
     switch (seat.seat_type) {
       case 'regular':
         return 'bg-green-600 border-green-500 text-white hover:bg-green-500 cursor-pointer'
@@ -117,6 +125,11 @@ const BookingPage = () => {
 
   const handleSeatClick = (seat) => {
     if (!seat || seat.status === 'occupied' || seat.status === 'maintenance' || seat.status === 'blocked') {
+      return
+    }
+
+    const isLocked = lockedSeats && lockedSeats.some(lockedSeat => lockedSeat.id === seat.id)
+    if (isLocked) {
       return
     }
 
@@ -156,34 +169,27 @@ const BookingPage = () => {
     }).format(price)
   }
 
-  const handleProceedToPayment = () => {
+  const handleProceedToPayment = async () => {
     if (selectedSeats.length === 0) {
       alert('Vui lòng chọn ít nhất một ghế')
       return
     }
     
-    // Generate booking ID and navigate to payment
-    const bookingId = `booking_${Date.now()}`
-    navigate(`/booking/${bookingId}/payment`)
-  }
-
-  const handleConfirmBooking = async () => {
     try {
       const bookingData = {
-        showtime_id: parseInt(showtimeId),
+        showtime_id: showtimeId,
         seat_ids: selectedSeats.map(seat => seat.id),
         total_amount: calculateTotal()
       }
 
       const response = await bookingService.createBooking(bookingData)
       if (response.success) {
-        alert('Đặt vé thành công!')
-        navigate('/profile')
+        navigate(`/booking/${response.data.id}/payment`)
       } else {
-        alert('Có lỗi xảy ra khi đặt vé')
+        alert('Có lỗi xảy ra khi tạo booking')
       }
     } catch (err) {
-      alert('Có lỗi xảy ra khi đặt vé')
+      alert('Có lỗi xảy ra khi tạo booking')
       console.error('Error creating booking:', err)
     }
   }
@@ -393,6 +399,10 @@ const BookingPage = () => {
                       <span className="inline-block w-4 h-4 bg-blue-600 border border-blue-500 rounded"></span>
                       Đã chọn
                     </div>
+                    <div className="flex items-center gap-2 text-gray-300">
+                      <span className="inline-block w-4 h-4 bg-orange-600 border border-orange-500 rounded"></span>
+                      Đang được đặt
+                    </div>
                   </div>
                 </div>
               </div>
@@ -435,7 +445,7 @@ const BookingPage = () => {
                       Quay lại
                     </button>
                     <button
-                      onClick={handleConfirmBooking}
+                      onClick={handleProceedToPayment}
                       className="flex-1 bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition-colors duration-300 flex items-center justify-center gap-2"
                     >
                       <FaCreditCard />

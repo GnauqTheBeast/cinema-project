@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"movie-service/internal/pkg/paging"
 
@@ -25,7 +26,7 @@ var (
 type SeatBiz interface {
 	GetSeatById(ctx context.Context, id string) (*entity.Seat, error)
 	GetSeats(ctx context.Context, page, size int, search, roomId, rowNumber string, seatType entity.SeatType, status entity.SeatStatus) ([]*entity.Seat, int, error)
-	GetSeatsByRoom(ctx context.Context, roomId string) ([]*entity.Seat, error)
+	GetSeatsByRoom(ctx context.Context, roomId string) (*entity.SeatsDetail, error)
 	CreateSeat(ctx context.Context, seat *entity.Seat) error
 	UpdateSeat(ctx context.Context, id string, updates *entity.UpdateSeatRequest) error
 	DeleteSeat(ctx context.Context, id string) error
@@ -132,7 +133,7 @@ func (b *business) GetSeats(ctx context.Context, page, size int, search, roomId,
 	return seats, total, nil
 }
 
-func (b *business) GetSeatsByRoom(ctx context.Context, roomId string) ([]*entity.Seat, error) {
+func (b *business) GetSeatsByRoom(ctx context.Context, roomId string) (*entity.SeatsDetail, error) {
 	if roomId == "" {
 		return nil, ErrInvalidSeatData
 	}
@@ -146,7 +147,46 @@ func (b *business) GetSeatsByRoom(ctx context.Context, roomId string) ([]*entity
 		return nil, fmt.Errorf("failed to get seats by room: %w", err)
 	}
 
-	return seats, nil
+	lockedSeats, err := b.getLockedSeats(ctx, roomId)
+	if err != nil {
+		fmt.Printf("Warning: failed to get locked seats: %v\n", err)
+		return &entity.SeatsDetail{
+			Seats:       seats,
+			LockedSeats: []*entity.Seat{},
+		}, nil
+	}
+
+	lockedSeatsList := make([]*entity.Seat, 0)
+	for _, seat := range seats {
+		if lockedSeats[seat.Id] {
+			seat.Status = entity.SeatStatusOccupied
+			lockedSeatsList = append(lockedSeatsList, seat)
+		}
+	}
+
+	return &entity.SeatsDetail{
+		Seats:       seats,
+		LockedSeats: lockedSeatsList,
+	}, nil
+}
+
+func (b *business) getLockedSeats(ctx context.Context, roomId string) (map[string]bool, error) {
+	pattern := fmt.Sprintf("seat_lock:%s:*", roomId)
+	keys, err := b.redisClient.Keys(ctx, pattern).Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get seat lock keys: %w", err)
+	}
+
+	lockedSeats := make(map[string]bool)
+	for _, key := range keys {
+		parts := strings.Split(key, ":")
+		if len(parts) == 2 {
+			seatId := parts[1]
+			lockedSeats[seatId] = true
+		}
+	}
+
+	return lockedSeats, nil
 }
 
 func (b *business) CreateSeat(ctx context.Context, seat *entity.Seat) error {

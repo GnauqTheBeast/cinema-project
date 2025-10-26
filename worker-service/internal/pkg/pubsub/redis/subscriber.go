@@ -2,7 +2,8 @@ package redis
 
 import (
 	"context"
-	"payment-service/internal/pkg/pubsub"
+
+	"worker-service/internal/pkg/pubsub"
 
 	"github.com/redis/go-redis/v9"
 )

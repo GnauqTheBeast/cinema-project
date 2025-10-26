@@ -11,6 +11,7 @@ import (
 	"booking-service/internal/types"
 	"booking-service/proto/pb"
 
+	"github.com/google/uuid"
 	"github.com/samber/do"
 	"github.com/uptrace/bun"
 )
@@ -164,4 +165,41 @@ func (s *BookingService) isValidStatus(status string) bool {
 	default:
 		return false
 	}
+}
+
+func (s *BookingService) CreateBooking(ctx context.Context, userId string, showtimeId string, seatIds []string, totalAmount int) (*models.Booking, error) {
+	if userId == "" || showtimeId == "" || len(seatIds) == 0 || totalAmount <= 0 {
+		return nil, ErrInvalidBookingData
+	}
+
+	booking := &models.Booking{
+		Id:          uuid.New().String(),
+		UserId:      userId,
+		ShowtimeId:  showtimeId,
+		TotalAmount: float64(totalAmount),
+		Status:      string(models.BookingStatusPending),
+		BookingType: "online",
+	}
+
+	err := datastore.CreateBooking(ctx, s.db, booking)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create booking: %w", err)
+	}
+
+	eventData := &models.BookingEventData{
+		BookingId:   booking.Id,
+		UserId:      booking.UserId,
+		ShowtimeId:  booking.ShowtimeId,
+		RoomId:      showtimeId,
+		SeatIds:     seatIds,
+		TotalAmount: booking.TotalAmount,
+		Status:      string(booking.Status),
+	}
+
+	err = datastore.CreateOutboxEvent(ctx, s.db, string(models.EventTypeBookingCreated), eventData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create outbox event: %w", err)
+	}
+
+	return booking, nil
 }

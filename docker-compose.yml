@@ -66,25 +66,18 @@ services:
       - postgres
       - redis
 
-    # notification-service:
-    # build:
-    #   context: ./notification-service
-    #   dockerfile: Dockerfile
-    # container_name: notification-service
-    # environment:
-    #   - DB_HOST=postgres
-    #   - DB_PORT=5432
-    #   - DB_USER=cinema_user
-    #   - DB_PASSWORD=cinema_password
-    #   - DB_NAME=cinema_db
-    #   - REDIS_HOST=redis
-    #   - REDIS_PORT=6379
-    #   - REDIS_PASSWORD=
-    # ports:
-    #   - "8082:8080"
-    # depends_on:
-    #   postgres:
-    #   redis:
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    env_file:
+      - ./notification-service/.env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
 
   booking-service:
     build:
@@ -130,19 +123,6 @@ services:
   #   depends_on:
   #     postgres:
   #     redis:
-
-  frontend:
-    build:
-      context: ./FE
-      dockerfile: Dockerfile
-    container_name: frontend
-    env_file:
-      - ./FE/.env
-    ports:
-      - "80:80"
-    restart: unless-stopped
-    depends_on:
-      - api-gateway
 
 volumes:
   postgres_data:

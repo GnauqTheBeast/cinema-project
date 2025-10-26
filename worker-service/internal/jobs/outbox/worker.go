@@ -9,14 +9,16 @@ import (
 	"worker-service/internal/models"
 	"worker-service/internal/pkg/pubsub"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/samber/do"
 	"github.com/uptrace/bun"
 )
 
 type Worker struct {
-	db     *bun.DB
-	logger Logger
-	pubsub pubsub.PubSub
+	db          *bun.DB
+	logger      Logger
+	pubsub      pubsub.PubSub
+	redisClient redis.UniversalClient
 }
 
 type Logger interface {
@@ -26,16 +28,33 @@ type Logger interface {
 	Warn(msg string, args ...interface{})
 }
 
-func NewWorker(ctn *do.Injector) *Worker {
-	db := do.MustInvoke[*bun.DB](ctn)
-	logger := do.MustInvoke[Logger](ctn)
-	pubsub := do.MustInvoke[pubsub.PubSub](ctn)
+func NewWorker(ctn *do.Injector) (*Worker, error) {
+	db, err := do.Invoke[*bun.DB](ctn)
+	if err != nil {
+		return nil, err
+	}
+
+	logger, err := do.Invoke[Logger](ctn)
+	if err != nil {
+		return nil, err
+	}
+
+	pubsub, err := do.Invoke[pubsub.PubSub](ctn)
+	if err != nil {
+		return nil, err
+	}
+
+	redisClient, err := do.InvokeNamed[redis.UniversalClient](ctn, "redis-mutex-db")
+	if err != nil {
+		return nil, err
+	}
 
 	return &Worker{
-		db:     db,
-		logger: logger,
-		pubsub: pubsub,
-	}
+		db:          db,
+		logger:      logger,
+		pubsub:      pubsub,
+		redisClient: redisClient,
+	}, nil
 }
 
 func (w *Worker) Start(ctx context.Context) error {
@@ -58,12 +77,12 @@ func (w *Worker) Start(ctx context.Context) error {
 }
 
 func (w *Worker) processEvents(ctx context.Context) error {
-	var events []models.OutboxEvent
+	events := make([]models.OutboxEvent, 0)
 
 	err := w.db.NewSelect().
 		Model(&events).
 		Where("status = ?", models.OutboxStatusPending).
-		Order("id ASC").
+		OrderExpr("id ASC").
 		Limit(100).
 		Scan(ctx)
 	if err != nil {
@@ -112,28 +131,37 @@ func (w *Worker) processEvent(ctx context.Context, event models.OutboxEvent) err
 }
 
 func (w *Worker) handleBookingCreated(ctx context.Context, event models.OutboxEvent) error {
-	var data map[string]interface{}
-	if err := json.Unmarshal([]byte(event.Payload), &data); err != nil {
+	data := new(models.BookingEventData)
+	if err := json.Unmarshal([]byte(event.Payload), data); err != nil {
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
-	bookingID, ok := data["booking_id"].(float64)
-	if !ok {
-		return fmt.Errorf("invalid booking_id in payload")
+	bookingID := data.BookingId
+	seatIds := data.SeatIds
+	roomId := data.RoomId
+
+	w.logger.Info("Handling booking created event for booking ID: %s", bookingID)
+
+	seatLockKeys := make([]string, len(seatIds))
+	for i, seatId := range seatIds {
+		seatLockKeys[i] = fmt.Sprintf("seat_lock:%s:%s", roomId, seatId)
 	}
 
-	w.logger.Info("Handling booking created event for booking ID: %.0f", bookingID)
+	acquiredLocks := make([]string, 0)
+	for _, lockKey := range seatLockKeys {
+		acquired, err := w.acquireSeatLock(ctx, lockKey, bookingID, 5*time.Minute)
+		if err != nil {
+			w.releaseSeatLocks(ctx, acquiredLocks)
+			return fmt.Errorf("failed to acquire seat lock %s: %w", lockKey, err)
+		}
+		if !acquired {
+			w.releaseSeatLocks(ctx, acquiredLocks)
+			return fmt.Errorf("seat %s is already locked", lockKey)
+		}
+		acquiredLocks = append(acquiredLocks, lockKey)
+	}
 
-	// Simulate processing time
-	time.Sleep(100 * time.Millisecond)
-
-	// Here you would typically:
-	// 1. Send notification to user
-	// 2. Update booking status
-	// 3. Trigger payment process
-	// 4. Send events to other services
-
-	w.logger.Info("Booking created event processed successfully")
+	w.logger.Info("Successfully locked %d seats for booking %s", len(seatIds), bookingID)
 	return nil
 }
 
@@ -225,4 +253,21 @@ func (w *Worker) markEventAsFailed(ctx context.Context, eventID int, err error) 
 	}
 
 	return updateErr
+}
+
+func (w *Worker) acquireSeatLock(ctx context.Context, lockKey, bookingID string, ttl time.Duration) (bool, error) {
+	result, err := w.redisClient.SetNX(ctx, lockKey, bookingID, ttl).Result()
+	if err != nil {
+		return false, fmt.Errorf("failed to acquire lock: %w", err)
+	}
+	return result, nil
+}
+
+func (w *Worker) releaseSeatLocks(ctx context.Context, lockKeys []string) {
+	for _, lockKey := range lockKeys {
+		err := w.redisClient.Del(ctx, lockKey).Err()
+		if err != nil {
+			w.logger.Error("Failed to release seat lock %s: %v", lockKey, err)
+		}
+	}
 }

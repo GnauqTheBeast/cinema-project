@@ -8,32 +8,24 @@ import (
 	"syscall"
 	"time"
 
-	"worker-service/internal/config"
 	"worker-service/internal/container"
 	"worker-service/internal/jobs/outbox"
 )
 
 func main() {
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatal("Failed to load config:", err)
-	}
-
-	ctn, err := container.New(cfg)
-	if err != nil {
-		log.Fatal("Failed to create container:", err)
-	}
+	ctn := container.New()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	outboxWorker := outbox.NewWorker(ctn)
+	outboxWorker, err := outbox.NewWorker(ctn)
+	if err != nil {
+		log.Fatal("Failed to create outbox worker:", err)
+	}
 
-	go func() {
-		if err := outboxWorker.Start(ctx); err != nil {
-			log.Printf("Outbox worker error: %v", err)
-		}
-	}()
+	if err = outboxWorker.Start(ctx); err != nil {
+		log.Printf("Outbox worker error: %v", err)
+	}
 
 	log.Println("Outbox worker started...")
 

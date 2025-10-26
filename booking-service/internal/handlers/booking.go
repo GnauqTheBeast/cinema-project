@@ -65,3 +65,35 @@ func (h *BookingHandler) GetBookings(c echo.Context) error {
 
 	return response.SuccessWithMessage(c, "Bookings fetched successfully", responseData)
 }
+
+func (h *BookingHandler) CreateBooking(c echo.Context) error {
+	bookingService, err := do.Invoke[*services.BookingService](h.container)
+	if err != nil {
+		return response.InternalServerError(c, "Failed to get booking service")
+	}
+
+	var request struct {
+		ShowtimeId  string   `json:"showtime_id" validate:"required,uuid"`
+		SeatIds     []string `json:"seat_ids" validate:"required,dive,uuid"`
+		TotalAmount int      `json:"total_amount" validate:"required,min=1"`
+	}
+
+	if err := c.Bind(&request); err != nil {
+		return response.BadRequest(c, "Invalid request data")
+	}
+
+	userId := c.Get("user_id").(string)
+	if userId == "" {
+		return response.Unauthorized(c, "User ID not found in token")
+	}
+
+	booking, err := bookingService.CreateBooking(c.Request().Context(), userId, request.ShowtimeId, request.SeatIds, request.TotalAmount)
+	if err != nil {
+		if errors.Is(err, services.ErrInvalidBookingData) {
+			return response.BadRequest(c, "Invalid booking data")
+		}
+		return response.ErrorWithMessage(c, "Failed to create booking")
+	}
+
+	return response.SuccessWithMessage(c, "Booking created successfully", booking)
+}

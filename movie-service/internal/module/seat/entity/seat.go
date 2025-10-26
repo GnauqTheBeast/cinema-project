@@ -57,3 +57,8 @@ func (s *Seat) CanChangeStatus(newStatus SeatStatus) bool {
 		return false
 	}
 }
+
+type SeatsDetail struct {
+	Seats       []*Seat `json:"seats"`
+	LockedSeats []*Seat `json:"locked_seats"`
+}

@@ -3,7 +3,8 @@ package redis
 import (
 	"context"
 	"encoding/json"
-	"payment-service/internal/pkg/pubsub"
+
+	"worker-service/internal/pkg/pubsub"
 
 	"github.com/redis/go-redis/v9"
 )

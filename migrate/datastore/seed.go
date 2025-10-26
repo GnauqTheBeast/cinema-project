@@ -521,7 +521,7 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 
 func SeedBookings(ctx context.Context, db *bun.DB) error {
 	var users []models.User
-	err := db.NewSelect().Model(&users).Limit(3).Scan(ctx)
+	err := db.NewSelect().Model(&users).Limit(5).Scan(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get users: %w", err)
 	}

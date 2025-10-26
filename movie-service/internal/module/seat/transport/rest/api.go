@@ -80,19 +80,25 @@ func (h *handler) GetSeatsByRoom(c *gin.Context) {
 		return
 	}
 
-	seats, err := h.biz.GetSeatsByRoom(c.Request.Context(), roomId)
+	seatsDetail, err := h.biz.GetSeatsByRoom(c.Request.Context(), roomId)
 	if err != nil {
 		response.ErrorWithMessage(c, "Failed to get seats by room")
 		return
 	}
 
-	responses := make([]*entity.SeatResponse, len(seats))
-	for i, seat := range seats {
+	responses := make([]*entity.SeatResponse, len(seatsDetail.Seats))
+	for i, seat := range seatsDetail.Seats {
 		responses[i] = entity.ToSeatResponse(seat)
 	}
 
+	lockedResponses := make([]*entity.SeatResponse, len(seatsDetail.LockedSeats))
+	for i, seat := range seatsDetail.LockedSeats {
+		lockedResponses[i] = entity.ToSeatResponse(seat)
+	}
+
 	response.Success(c, map[string]interface{}{
-		"data": responses,
+		"seats":        responses,
+		"locked_seats": lockedResponses,
 	})
 }
 

@@ -27,4 +27,24 @@ export const bookingService = {
       throw error
     }
   },
+
+  createBooking: async (bookingData) => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      
+      const response = await apiClient.post('/bookings', bookingData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error creating booking:', error)
+      throw error
+    }
+  },
 }
