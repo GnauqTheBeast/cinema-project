@@ -72,15 +72,18 @@ const SeatsPage = () => {
     try {
       setLoading(true)
       const response = await seatService.getSeatsByRoom(roomId)
-      console.log('Room seats response:', response) // Debug log
 
       let seats = []
       if (response.success && response.data) {
-        seats = Array.isArray(response.data) ? response.data : response.data.data || []
+        if (response.data.seats) {
+          seats = response.data.seats
+        } else if (Array.isArray(response.data)) {
+          seats = response.data
+        }
+      } else if (response.seats) {
+        seats = response.seats
       } else if (Array.isArray(response)) {
         seats = response
-      } else if (response.data && Array.isArray(response.data)) {
-        seats = response.data
       }
 
       setRoomSeats(seats)
@@ -195,6 +198,8 @@ const SeatsPage = () => {
           grid[seat.row_number][parseInt(seat.seat_number)] = seat
         }
       })
+    } else {
+      console.log('roomSeats is not an array:', roomSeats)
     }
 
     return grid
@@ -214,8 +219,6 @@ const SeatsPage = () => {
             return 'bg-yellow-200 border-yellow-400 text-yellow-800 hover:bg-yellow-300'
           case 'couple':
             return 'bg-pink-200 border-pink-400 text-pink-800 hover:bg-pink-300'
-          case '4dx':
-            return 'bg-purple-200 border-purple-400 text-purple-800 hover:bg-purple-300'
           default:
             return 'bg-green-200 border-green-400 text-green-800 hover:bg-green-300'
         }
@@ -302,16 +305,12 @@ const SeatsPage = () => {
               </div>
 
               <div className="text-sm text-gray-600 ml-auto">
-                <span className="inline-block w-4 h-4 bg-gray-100 border border-gray-300 rounded mr-2"></span>
-                Trống
-                <span className="inline-block w-4 h-4 bg-green-200 border border-green-400 rounded mr-2 ml-4"></span>
+                <span className="inline-block w-4 h-4 bg-green-200 border border-green-400 rounded mr-2"></span>
                 Thường
                 <span className="inline-block w-4 h-4 bg-yellow-200 border border-yellow-400 rounded mr-2 ml-4"></span>
                 VIP
                 <span className="inline-block w-4 h-4 bg-pink-200 border border-pink-400 rounded mr-2 ml-4"></span>
                 Đôi
-                <span className="inline-block w-4 h-4 bg-purple-200 border border-purple-400 rounded mr-2 ml-4"></span>
-                4DX
               </div>
             </div>
           ) : (
@@ -422,52 +421,52 @@ const SeatsPage = () => {
               {/* Seat Grid */}
               <div className="overflow-x-auto">
                 <div className="inline-block">
-                  {roomSeats &&
-                    Object.entries(createSeatGrid()).map(([row, rowSeats]) => (
-                      <div key={row} className="flex items-center justify-center mb-3">
-                        <div className="w-8 text-center text-sm font-bold text-gray-700 mr-4">
-                          {row}
-                        </div>
+                  {Array.isArray(roomSeats) && roomSeats.length > 0 ? (
+                    Object.entries(createSeatGrid())
+                      .filter(([_, rowSeats]) => {
+                        return Object.values(rowSeats).some(seat => seat !== null)
+                      })
+                      .map(([row, rowSeats]) => (
+                        <div key={row} className="flex items-center justify-center mb-3">
+                          <div className="w-8 text-center text-sm font-bold text-gray-700 mr-4">
+                            {row}
+                          </div>
 
-                        {/* Seats */}
-                        <div className={`flex ${coupleRows.includes(row) ? 'gap-3' : 'gap-1'} justify-center`}>
-                          {Object.entries(rowSeats).map(([seatNumber, seat]) => {
-                            const seatNum = parseInt(seatNumber)
-                            const isCouple = seat && seat.seat_type === 'couple'
-                            const isCoupleRow = coupleRows.includes(row)
+                          {/* Seats */}
+                          <div className={`flex ${coupleRows.includes(row) ? 'gap-3' : 'gap-1'} justify-center`}>
+                            {Object.entries(rowSeats)
+                              .filter(([_, seat]) => seat !== null)
+                              .map(([seatNumber, seat]) => {
+                                const isCouple = seat.seat_type === 'couple'
 
-                            return (
-                              <button
-                                key={`${row}-${seatNumber}`}
-                                // onClick={() => handleGridSeatClick(row, seatNum)}
-                                className={`${isCouple ? 'w-12' : 'w-8'} h-8 border-2 rounded text-xs font-semibold transition-all hover:scale-110 ${getSeatColor(seat)}`}
-                                title={
-                                  seat
-                                    ? `${row}${seatNumber.padStart(2, '0')} - ${getSeatTypeLabel(seat.seat_type)} - ${getStatusLabel(seat.status)}`
-                                    : `Tạo ghế ${row}${seatNumber.padStart(2, '0')}`
-                                }
-                              >
-                                {seat ? (
-                                  isCouple ? (
-                                    <div className="flex items-center justify-center">
-                                      <FaCouch className="w-3 h-3" />
-                                    </div>
-                                  ) : (
-                                    seatNumber.padStart(2, '0')
-                                  )
-                                ) : (
-                                  '+'
-                                )}
-                              </button>
-                            )
-                          })}
-                        </div>
+                                return (
+                                  <button
+                                    key={`${row}-${seatNumber}`}
+                                    className={`${isCouple ? 'w-12' : 'w-8'} h-8 border-2 rounded text-xs font-semibold transition-all hover:scale-110 ${getSeatColor(seat)}`}
+                                    title={`${row}${seatNumber.padStart(2, '0')} - ${getSeatTypeLabel(seat.seat_type)} - ${getStatusLabel(seat.status)}`}
+                                  >
+                                    {isCouple ? (
+                                      <div className="flex items-center justify-center">
+                                        <FaCouch className="w-3 h-3" />
+                                      </div>
+                                    ) : (
+                                      seatNumber.padStart(2, '0')
+                                    )}
+                                  </button>
+                                )
+                              })}
+                          </div>
 
-                        <div className="w-8 text-center text-sm font-bold text-gray-700 ml-4">
-                          {row}
+                          <div className="w-8 text-center text-sm font-bold text-gray-700 ml-4">
+                            {row}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">Không có dữ liệu ghế</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -483,10 +482,6 @@ const SeatsPage = () => {
               <h4 className="text-sm font-medium text-gray-900 mb-3">Chú thích:</h4>
               <div className="flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-2 text-gray-600">
-                  <span className="inline-block w-4 h-4 bg-gray-100 border border-gray-300 rounded"></span>
-                  Trống
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
                   <span className="inline-block w-4 h-4 bg-green-200 border border-green-400 rounded"></span>
                   Thường
                 </div>
@@ -497,10 +492,6 @@ const SeatsPage = () => {
                 <div className="flex items-center gap-2 text-gray-600">
                   <span className="inline-block w-4 h-4 bg-pink-200 border border-pink-400 rounded"></span>
                   Đôi
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="inline-block w-4 h-4 bg-purple-200 border border-purple-400 rounded"></span>
-                  4DX
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
                   <span className="inline-block w-4 h-4 bg-red-200 border border-red-400 rounded"></span>

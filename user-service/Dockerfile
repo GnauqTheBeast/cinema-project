@@ -25,6 +25,7 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/proto ./proto
+COPY .env .env
 
 EXPOSE 8005
 

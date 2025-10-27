@@ -115,14 +115,19 @@ services:
       - booking-service
       - redis
   
-  # worker-service:
-  #   build:
-  #     context: ./worker-service
-  #     dockerfile: Dockerfile
-  #   container_name: worker-service
-  #   depends_on:
-  #     postgres:
-  #     redis:
+  worker-service:
+    build:
+      context: ./worker-service
+      dockerfile: Dockerfile
+    container_name: worker-service
+    env_file:
+      - ./worker-service/.env
+    ports:
+      - "8087:8087"
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
 
 volumes:
   postgres_data:

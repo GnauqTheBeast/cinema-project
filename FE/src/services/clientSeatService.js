@@ -31,6 +31,16 @@ export const clientSeatService = {
     }
   },
 
+  getSeatsByShowtime: async (showtimeId) => {
+    try {
+      const response = await clientSeatApi.get(`/showtimes/${showtimeId}/seats`)
+      return response.data
+    } catch (error) {
+      console.error('Error fetching showtime seats:', error)
+      throw error
+    }
+  },
+
   getAvailableSeatsForShowtime: async (showtimeId) => {
     try {
       const response = await clientSeatApi.get(`/showtimes/${showtimeId}/seats`)
@@ -41,11 +51,26 @@ export const clientSeatService = {
     }
   },
 
-  getSeatTypes: () => [
-    { value: 'regular', label: 'Thường', price: 50000 },
-    { value: 'vip', label: 'VIP', price: 80000 },
-    { value: 'couple', label: 'Đôi', price: 100000 },
-    { value: '4dx', label: '4DX', price: 120000 },
+  // Get seat type multipliers (matches backend pricing)
+  getSeatTypeMultipliers: () => [
+    { value: 'regular', label: 'Thường', multiplier: 1.0 },
+    { value: 'vip', label: 'VIP', multiplier: 1.5 },
+    { value: 'couple', label: 'Đôi', multiplier: 2.5 },
+  ],
+
+  // Calculate seat price based on base price and seat type
+  calculateSeatPrice: (seatType, basePrice) => {
+    const multipliers = clientSeatService.getSeatTypeMultipliers()
+    const typeInfo = multipliers.find(t => t.value === seatType)
+    const multiplier = typeInfo ? typeInfo.multiplier : 1.0
+    return Math.round(basePrice * multiplier)
+  },
+
+  // Legacy function for backward compatibility (uses default base price)
+  getSeatTypes: (basePrice = 50000) => [
+    { value: 'regular', label: 'Thường', price: Math.round(basePrice * 1.0) },
+    { value: 'vip', label: 'VIP', price: Math.round(basePrice * 1.5) },
+    { value: 'couple', label: 'Đôi', price: Math.round(basePrice * 2.5) },
   ],
 
   getSeatStatuses: () => [

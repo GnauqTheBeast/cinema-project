@@ -102,6 +102,35 @@ func (h *handler) GetSeatsByRoom(c *gin.Context) {
 	})
 }
 
+func (h *handler) GetSeatsByShowtime(c *gin.Context) {
+	showtimeId := c.Param("id")
+	if showtimeId == "" {
+		response.BadRequest(c, "Showtime ID is required")
+		return
+	}
+
+	seatsDetail, err := h.biz.GetSeatsByShowtime(c.Request.Context(), showtimeId)
+	if err != nil {
+		response.ErrorWithMessage(c, "Failed to get seats by showtime")
+		return
+	}
+
+	responses := make([]*entity.SeatResponse, len(seatsDetail.Seats))
+	for i, seat := range seatsDetail.Seats {
+		responses[i] = entity.ToSeatResponse(seat)
+	}
+
+	lockedResponses := make([]*entity.SeatResponse, len(seatsDetail.LockedSeats))
+	for i, seat := range seatsDetail.LockedSeats {
+		lockedResponses[i] = entity.ToSeatResponse(seat)
+	}
+
+	response.Success(c, map[string]interface{}{
+		"seats":        responses,
+		"locked_seats": lockedResponses,
+	})
+}
+
 func (h *handler) CreateSeat(c *gin.Context) {
 	var req entity.CreateSeatRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

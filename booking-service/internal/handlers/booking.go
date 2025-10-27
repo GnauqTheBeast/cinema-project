@@ -92,7 +92,7 @@ func (h *BookingHandler) CreateBooking(c echo.Context) error {
 		if errors.Is(err, services.ErrInvalidBookingData) {
 			return response.BadRequest(c, "Invalid booking data")
 		}
-		return response.ErrorWithMessage(c, "Failed to create booking")
+		return response.ErrorWithMessage(c, fmt.Sprintf("Failed to create booking: %s", err.Error()))
 	}
 
 	return response.SuccessWithMessage(c, "Booking created successfully", booking)

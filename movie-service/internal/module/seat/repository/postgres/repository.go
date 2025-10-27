@@ -87,6 +87,23 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*entity.Seat, erro
 	return &seat, nil
 }
 
+func (r *Repository) GetByIDs(ctx context.Context, ids []string) ([]*entity.Seat, error) {
+	if len(ids) == 0 {
+		return []*entity.Seat{}, nil
+	}
+
+	var seats []*entity.Seat
+	err := r.roDb.NewSelect().
+		Model(&seats).
+		Where("id IN (?)", bun.In(ids)).
+		Scan(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get seats by IDs: %w", err)
+	}
+
+	return seats, nil
+}
+
 func (r *Repository) GetMany(ctx context.Context, limit, offset int, search, roomId, rowNumber string, seatType entity.SeatType, status entity.SeatStatus) ([]*entity.Seat, error) {
 	query := r.roDb.NewSelect().Model((*entity.Seat)(nil))
 

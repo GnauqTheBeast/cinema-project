@@ -329,6 +329,202 @@ func (x *ShowtimeData) GetSeatNumbers() []string {
 	return nil
 }
 
+type GetSeatsWithPriceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ShowtimeId    string                 `protobuf:"bytes,1,opt,name=showtime_id,json=showtimeId,proto3" json:"showtime_id,omitempty"`
+	SeatIds       []string               `protobuf:"bytes,2,rep,name=seat_ids,json=seatIds,proto3" json:"seat_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSeatsWithPriceRequest) Reset() {
+	*x = GetSeatsWithPriceRequest{}
+	mi := &file_movie_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSeatsWithPriceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSeatsWithPriceRequest) ProtoMessage() {}
+
+func (x *GetSeatsWithPriceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_movie_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSeatsWithPriceRequest.ProtoReflect.Descriptor instead.
+func (*GetSeatsWithPriceRequest) Descriptor() ([]byte, []int) {
+	return file_movie_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *GetSeatsWithPriceRequest) GetShowtimeId() string {
+	if x != nil {
+		return x.ShowtimeId
+	}
+	return ""
+}
+
+func (x *GetSeatsWithPriceRequest) GetSeatIds() []string {
+	if x != nil {
+		return x.SeatIds
+	}
+	return nil
+}
+
+type GetSeatsWithPriceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Data          []*SeatPriceData       `protobuf:"bytes,3,rep,name=data,proto3" json:"data,omitempty"`
+	TotalAmount   float64                `protobuf:"fixed64,4,opt,name=total_amount,json=totalAmount,proto3" json:"total_amount,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSeatsWithPriceResponse) Reset() {
+	*x = GetSeatsWithPriceResponse{}
+	mi := &file_movie_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSeatsWithPriceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSeatsWithPriceResponse) ProtoMessage() {}
+
+func (x *GetSeatsWithPriceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_movie_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSeatsWithPriceResponse.ProtoReflect.Descriptor instead.
+func (*GetSeatsWithPriceResponse) Descriptor() ([]byte, []int) {
+	return file_movie_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *GetSeatsWithPriceResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *GetSeatsWithPriceResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *GetSeatsWithPriceResponse) GetData() []*SeatPriceData {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *GetSeatsWithPriceResponse) GetTotalAmount() float64 {
+	if x != nil {
+		return x.TotalAmount
+	}
+	return 0
+}
+
+type SeatPriceData struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SeatId        string                 `protobuf:"bytes,1,opt,name=seat_id,json=seatId,proto3" json:"seat_id,omitempty"`
+	SeatNumber    string                 `protobuf:"bytes,2,opt,name=seat_number,json=seatNumber,proto3" json:"seat_number,omitempty"`
+	SeatType      string                 `protobuf:"bytes,3,opt,name=seat_type,json=seatType,proto3" json:"seat_type,omitempty"`
+	Price         float64                `protobuf:"fixed64,4,opt,name=price,proto3" json:"price,omitempty"`
+	Available     bool                   `protobuf:"varint,5,opt,name=available,proto3" json:"available,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SeatPriceData) Reset() {
+	*x = SeatPriceData{}
+	mi := &file_movie_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SeatPriceData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SeatPriceData) ProtoMessage() {}
+
+func (x *SeatPriceData) ProtoReflect() protoreflect.Message {
+	mi := &file_movie_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SeatPriceData.ProtoReflect.Descriptor instead.
+func (*SeatPriceData) Descriptor() ([]byte, []int) {
+	return file_movie_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *SeatPriceData) GetSeatId() string {
+	if x != nil {
+		return x.SeatId
+	}
+	return ""
+}
+
+func (x *SeatPriceData) GetSeatNumber() string {
+	if x != nil {
+		return x.SeatNumber
+	}
+	return ""
+}
+
+func (x *SeatPriceData) GetSeatType() string {
+	if x != nil {
+		return x.SeatType
+	}
+	return ""
+}
+
+func (x *SeatPriceData) GetPrice() float64 {
+	if x != nil {
+		return x.Price
+	}
+	return 0
+}
+
+func (x *SeatPriceData) GetAvailable() bool {
+	if x != nil {
+		return x.Available
+	}
+	return false
+}
+
 var File_movie_proto protoreflect.FileDescriptor
 
 const file_movie_proto_rawDesc = "" +
@@ -356,10 +552,27 @@ const file_movie_proto_rawDesc = "" +
 	"movieTitle\x12\x1f\n" +
 	"\vroom_number\x18\a \x01(\tR\n" +
 	"roomNumber\x12!\n" +
-	"\fseat_numbers\x18\b \x03(\tR\vseatNumbers2\x91\x01\n" +
+	"\fseat_numbers\x18\b \x03(\tR\vseatNumbers\"V\n" +
+	"\x18GetSeatsWithPriceRequest\x12\x1f\n" +
+	"\vshowtime_id\x18\x01 \x01(\tR\n" +
+	"showtimeId\x12\x19\n" +
+	"\bseat_ids\x18\x02 \x03(\tR\aseatIds\"\x99\x01\n" +
+	"\x19GetSeatsWithPriceResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12%\n" +
+	"\x04data\x18\x03 \x03(\v2\x11.pb.SeatPriceDataR\x04data\x12!\n" +
+	"\ftotal_amount\x18\x04 \x01(\x01R\vtotalAmount\"\x9a\x01\n" +
+	"\rSeatPriceData\x12\x17\n" +
+	"\aseat_id\x18\x01 \x01(\tR\x06seatId\x12\x1f\n" +
+	"\vseat_number\x18\x02 \x01(\tR\n" +
+	"seatNumber\x12\x1b\n" +
+	"\tseat_type\x18\x03 \x01(\tR\bseatType\x12\x14\n" +
+	"\x05price\x18\x04 \x01(\x01R\x05price\x12\x1c\n" +
+	"\tavailable\x18\x05 \x01(\bR\tavailable2\xe3\x01\n" +
 	"\fMovieService\x12>\n" +
 	"\vGetShowtime\x12\x16.pb.GetShowtimeRequest\x1a\x17.pb.GetShowtimeResponse\x12A\n" +
-	"\fGetShowtimes\x12\x17.pb.GetShowtimesRequest\x1a\x18.pb.GetShowtimesResponseB\x18Z\x16movie-service/proto/pbb\x06proto3"
+	"\fGetShowtimes\x12\x17.pb.GetShowtimesRequest\x1a\x18.pb.GetShowtimesResponse\x12P\n" +
+	"\x11GetSeatsWithPrice\x12\x1c.pb.GetSeatsWithPriceRequest\x1a\x1d.pb.GetSeatsWithPriceResponseB\x18Z\x16movie-service/proto/pbb\x06proto3"
 
 var (
 	file_movie_proto_rawDescOnce sync.Once
@@ -373,26 +586,32 @@ func file_movie_proto_rawDescGZIP() []byte {
 	return file_movie_proto_rawDescData
 }
 
-var file_movie_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_movie_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_movie_proto_goTypes = []any{
-	(*GetShowtimeRequest)(nil),   // 0: pb.GetShowtimeRequest
-	(*GetShowtimeResponse)(nil),  // 1: pb.GetShowtimeResponse
-	(*GetShowtimesRequest)(nil),  // 2: pb.GetShowtimesRequest
-	(*GetShowtimesResponse)(nil), // 3: pb.GetShowtimesResponse
-	(*ShowtimeData)(nil),         // 4: pb.ShowtimeData
+	(*GetShowtimeRequest)(nil),        // 0: pb.GetShowtimeRequest
+	(*GetShowtimeResponse)(nil),       // 1: pb.GetShowtimeResponse
+	(*GetShowtimesRequest)(nil),       // 2: pb.GetShowtimesRequest
+	(*GetShowtimesResponse)(nil),      // 3: pb.GetShowtimesResponse
+	(*ShowtimeData)(nil),              // 4: pb.ShowtimeData
+	(*GetSeatsWithPriceRequest)(nil),  // 5: pb.GetSeatsWithPriceRequest
+	(*GetSeatsWithPriceResponse)(nil), // 6: pb.GetSeatsWithPriceResponse
+	(*SeatPriceData)(nil),             // 7: pb.SeatPriceData
 }
 var file_movie_proto_depIdxs = []int32{
 	4, // 0: pb.GetShowtimeResponse.data:type_name -> pb.ShowtimeData
 	4, // 1: pb.GetShowtimesResponse.data:type_name -> pb.ShowtimeData
-	0, // 2: pb.MovieService.GetShowtime:input_type -> pb.GetShowtimeRequest
-	2, // 3: pb.MovieService.GetShowtimes:input_type -> pb.GetShowtimesRequest
-	1, // 4: pb.MovieService.GetShowtime:output_type -> pb.GetShowtimeResponse
-	3, // 5: pb.MovieService.GetShowtimes:output_type -> pb.GetShowtimesResponse
-	4, // [4:6] is the sub-list for method output_type
-	2, // [2:4] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	7, // 2: pb.GetSeatsWithPriceResponse.data:type_name -> pb.SeatPriceData
+	0, // 3: pb.MovieService.GetShowtime:input_type -> pb.GetShowtimeRequest
+	2, // 4: pb.MovieService.GetShowtimes:input_type -> pb.GetShowtimesRequest
+	5, // 5: pb.MovieService.GetSeatsWithPrice:input_type -> pb.GetSeatsWithPriceRequest
+	1, // 6: pb.MovieService.GetShowtime:output_type -> pb.GetShowtimeResponse
+	3, // 7: pb.MovieService.GetShowtimes:output_type -> pb.GetShowtimesResponse
+	6, // 8: pb.MovieService.GetSeatsWithPrice:output_type -> pb.GetSeatsWithPriceResponse
+	6, // [6:9] is the sub-list for method output_type
+	3, // [3:6] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_movie_proto_init() }
@@ -406,7 +625,7 @@ func file_movie_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_movie_proto_rawDesc), len(file_movie_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

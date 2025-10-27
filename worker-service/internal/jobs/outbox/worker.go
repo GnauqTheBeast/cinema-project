@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"worker-service/internal/models"
+	"worker-service/internal/pkg/logger"
 	"worker-service/internal/pkg/pubsub"
 
 	"github.com/redis/go-redis/v9"
@@ -16,16 +17,9 @@ import (
 
 type Worker struct {
 	db          *bun.DB
-	logger      Logger
+	logger      logger.Logger
 	pubsub      pubsub.PubSub
 	redisClient redis.UniversalClient
-}
-
-type Logger interface {
-	Info(msg string, args ...interface{})
-	Error(msg string, args ...interface{})
-	Debug(msg string, args ...interface{})
-	Warn(msg string, args ...interface{})
 }
 
 func NewWorker(ctn *do.Injector) (*Worker, error) {
@@ -34,7 +28,7 @@ func NewWorker(ctn *do.Injector) (*Worker, error) {
 		return nil, err
 	}
 
-	logger, err := do.Invoke[Logger](ctn)
+	log, err := do.Invoke[logger.Logger](ctn)
 	if err != nil {
 		return nil, err
 	}
@@ -44,14 +38,14 @@ func NewWorker(ctn *do.Injector) (*Worker, error) {
 		return nil, err
 	}
 
-	redisClient, err := do.InvokeNamed[redis.UniversalClient](ctn, "redis-mutex-db")
+	redisClient, err := do.InvokeNamed[redis.UniversalClient](ctn, "redis-db")
 	if err != nil {
 		return nil, err
 	}
 
 	return &Worker{
 		db:          db,
-		logger:      logger,
+		logger:      log,
 		pubsub:      pubsub,
 		redisClient: redisClient,
 	}, nil
@@ -114,15 +108,15 @@ func (w *Worker) processEvent(ctx context.Context, event models.OutboxEvent) err
 	w.logger.Debug("Processing event: %s - %s", event.EventType, event.Payload)
 
 	switch event.EventType {
-	case string(models.EventTypeBookingCreated):
+	case models.EventTypeBookingCreated:
 		return w.handleBookingCreated(ctx, event)
-	case string(models.EventTypePaymentCompleted):
+	case models.EventTypePaymentCompleted:
 		return w.handlePaymentCompleted(ctx, event)
-	case string(models.EventTypeSeatReserved):
+	case models.EventTypeSeatReserved:
 		return w.handleSeatReserved(ctx, event)
-	case string(models.EventTypeSeatReleased):
+	case models.EventTypeSeatReleased:
 		return w.handleSeatReleased(ctx, event)
-	case string(models.EventTypeNotificationSent):
+	case models.EventTypeNotificationSent:
 		return w.handleNotificationSent(ctx, event)
 	default:
 		w.logger.Warn("Unknown event type: %s", event.EventType)
@@ -138,13 +132,13 @@ func (w *Worker) handleBookingCreated(ctx context.Context, event models.OutboxEv
 
 	bookingID := data.BookingId
 	seatIds := data.SeatIds
-	roomId := data.RoomId
+	showtimeId := data.ShowtimeId
 
 	w.logger.Info("Handling booking created event for booking ID: %s", bookingID)
 
 	seatLockKeys := make([]string, len(seatIds))
 	for i, seatId := range seatIds {
-		seatLockKeys[i] = fmt.Sprintf("seat_lock:%s:%s", roomId, seatId)
+		seatLockKeys[i] = fmt.Sprintf("seat_lock:%s:%s", showtimeId, seatId)
 	}
 
 	acquiredLocks := make([]string, 0)

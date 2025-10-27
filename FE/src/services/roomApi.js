@@ -66,7 +66,6 @@ export const roomService = {
     { value: 'standard', label: 'Standard' },
     { value: 'vip', label: 'VIP' },
     { value: 'imax', label: 'IMAX' },
-    { value: '4dx', label: '4DX' },
   ],
 
   getRoomStatuses: () => [

@@ -4,30 +4,38 @@ import (
 	"context"
 	"fmt"
 
+	seatEntity "movie-service/internal/module/seat/entity"
 	"movie-service/internal/module/showtime/entity"
 	"movie-service/proto/pb"
 
 	"google.golang.org/grpc"
 )
 
-type Business interface {
+type ShowtimeBusiness interface {
 	GetShowtimeById(ctx context.Context, id string) (*entity.Showtime, error)
 	GetShowtimesByIds(ctx context.Context, ids []string) ([]*entity.Showtime, error)
 }
 
-type MovieServiceServer struct {
-	pb.UnimplementedMovieServiceServer
-	business Business
+type SeatBusiness interface {
+	GetSeatById(ctx context.Context, id string) (*seatEntity.Seat, error)
+	GetSeatsByIds(ctx context.Context, ids []string) ([]*seatEntity.Seat, error)
 }
 
-func NewMovieGRPCServer(business Business) *MovieServiceServer {
+type MovieServiceServer struct {
+	pb.UnimplementedMovieServiceServer
+	showtimeBiz ShowtimeBusiness
+	seatBiz     SeatBusiness
+}
+
+func NewMovieGRPCServer(showtimeBiz ShowtimeBusiness, seatBiz SeatBusiness) *MovieServiceServer {
 	return &MovieServiceServer{
-		business: business,
+		showtimeBiz: showtimeBiz,
+		seatBiz:     seatBiz,
 	}
 }
 
 func (s *MovieServiceServer) GetShowtime(ctx context.Context, req *pb.GetShowtimeRequest) (*pb.GetShowtimeResponse, error) {
-	showtime, err := s.business.GetShowtimeById(ctx, req.Id)
+	showtime, err := s.showtimeBiz.GetShowtimeById(ctx, req.Id)
 	if err != nil {
 		return &pb.GetShowtimeResponse{
 			Success: false,
@@ -54,7 +62,7 @@ func (s *MovieServiceServer) GetShowtime(ctx context.Context, req *pb.GetShowtim
 }
 
 func (s *MovieServiceServer) GetShowtimes(ctx context.Context, req *pb.GetShowtimesRequest) (*pb.GetShowtimesResponse, error) {
-	showtimes, err := s.business.GetShowtimesByIds(ctx, req.Ids)
+	showtimes, err := s.showtimeBiz.GetShowtimesByIds(ctx, req.Ids)
 	if err != nil {
 		return &pb.GetShowtimesResponse{
 			Success: false,
@@ -84,6 +92,66 @@ func (s *MovieServiceServer) GetShowtimes(ctx context.Context, req *pb.GetShowti
 	}, nil
 }
 
-func RegisterMovieServiceServer(s *grpc.Server, business Business) {
-	pb.RegisterMovieServiceServer(s, NewMovieGRPCServer(business))
+func (s *MovieServiceServer) GetSeatsWithPrice(ctx context.Context, req *pb.GetSeatsWithPriceRequest) (*pb.GetSeatsWithPriceResponse, error) {
+	// Validate input
+	if req.ShowtimeId == "" || len(req.SeatIds) == 0 {
+		return &pb.GetSeatsWithPriceResponse{
+			Success: false,
+			Message: "showtime_id and seat_ids are required",
+		}, nil
+	}
+
+	// Get showtime to retrieve base price
+	showtime, err := s.showtimeBiz.GetShowtimeById(ctx, req.ShowtimeId)
+	if err != nil {
+		return &pb.GetSeatsWithPriceResponse{
+			Success: false,
+			Message: fmt.Sprintf("Failed to get showtime: %v", err),
+		}, nil
+	}
+
+	// Get seats by IDs
+	seats, err := s.seatBiz.GetSeatsByIds(ctx, req.SeatIds)
+	if err != nil {
+		return &pb.GetSeatsWithPriceResponse{
+			Success: false,
+			Message: fmt.Sprintf("Failed to get seats: %v", err),
+		}, nil
+	}
+
+	// Check if all seats were found
+	if len(seats) != len(req.SeatIds) {
+		return &pb.GetSeatsWithPriceResponse{
+			Success: false,
+			Message: "One or more seats not found",
+		}, nil
+	}
+
+	// Calculate prices and build response
+	var seatPriceData []*pb.SeatPriceData
+	var totalAmount float64
+
+	for _, seat := range seats {
+		price := seat.CalculatePrice(showtime.BasePrice)
+		totalAmount += price
+
+		seatPriceData = append(seatPriceData, &pb.SeatPriceData{
+			SeatId:     seat.Id,
+			SeatNumber: seat.SeatNumber,
+			SeatType:   string(seat.SeatType),
+			Price:      price,
+			Available:  seat.Status == seatEntity.SeatStatusAvailable,
+		})
+	}
+
+	return &pb.GetSeatsWithPriceResponse{
+		Success:     true,
+		Message:     "Seats with prices retrieved successfully",
+		Data:        seatPriceData,
+		TotalAmount: totalAmount,
+	}, nil
+}
+
+func RegisterMovieServiceServer(s *grpc.Server, showtimeBiz ShowtimeBusiness, seatBiz SeatBusiness) {
+	pb.RegisterMovieServiceServer(s, NewMovieGRPCServer(showtimeBiz, seatBiz))
 }

@@ -10,6 +10,7 @@ import (
 	"movie-service/internal/pkg/paging"
 
 	"movie-service/internal/module/seat/entity"
+	showtimeBusiness "movie-service/internal/module/showtime/business"
 	"movie-service/internal/pkg/caching"
 
 	"github.com/redis/go-redis/v9"
@@ -25,8 +26,10 @@ var (
 
 type SeatBiz interface {
 	GetSeatById(ctx context.Context, id string) (*entity.Seat, error)
+	GetSeatsByIds(ctx context.Context, ids []string) ([]*entity.Seat, error)
 	GetSeats(ctx context.Context, page, size int, search, roomId, rowNumber string, seatType entity.SeatType, status entity.SeatStatus) ([]*entity.Seat, int, error)
 	GetSeatsByRoom(ctx context.Context, roomId string) (*entity.SeatsDetail, error)
+	GetSeatsByShowtime(ctx context.Context, showtimeId string) (*entity.SeatsDetail, error)
 	CreateSeat(ctx context.Context, seat *entity.Seat) error
 	UpdateSeat(ctx context.Context, id string, updates *entity.UpdateSeatRequest) error
 	DeleteSeat(ctx context.Context, id string) error
@@ -35,6 +38,7 @@ type SeatBiz interface {
 
 type SeatRepository interface {
 	GetByID(ctx context.Context, id string) (*entity.Seat, error)
+	GetByIDs(ctx context.Context, ids []string) ([]*entity.Seat, error)
 	GetMany(ctx context.Context, limit, offset int, search, roomId, rowNumber string, seatType entity.SeatType, status entity.SeatStatus) ([]*entity.Seat, error)
 	GetTotalCount(ctx context.Context, search, roomId, rowNumber string, seatType entity.SeatType, status entity.SeatStatus) (int, error)
 	GetByRoom(ctx context.Context, roomId string) ([]*entity.Seat, error)
@@ -45,10 +49,11 @@ type SeatRepository interface {
 }
 
 type business struct {
-	repository  SeatRepository
-	cache       caching.Cache
-	roCache     caching.ReadOnlyCache
-	redisClient redis.UniversalClient
+	repository   SeatRepository
+	cache        caching.Cache
+	roCache      caching.ReadOnlyCache
+	redisClient  redis.UniversalClient
+	showtimeBiz  showtimeBusiness.ShowtimeBiz
 }
 
 func NewBusiness(i *do.Injector) (SeatBiz, error) {
@@ -67,16 +72,22 @@ func NewBusiness(i *do.Injector) (SeatBiz, error) {
 		return nil, err
 	}
 
-	redisClient, err := do.InvokeNamed[redis.UniversalClient](i, "redis-cache-db")
+	redisClient, err := do.InvokeNamed[redis.UniversalClient](i, "redis-db")
+	if err != nil {
+		return nil, err
+	}
+
+	showtimeBiz, err := do.Invoke[showtimeBusiness.ShowtimeBiz](i)
 	if err != nil {
 		return nil, err
 	}
 
 	return &business{
-		repository:  repository,
-		cache:       cache,
-		roCache:     roCache,
-		redisClient: redisClient,
+		repository:   repository,
+		cache:        cache,
+		roCache:      roCache,
+		redisClient:  redisClient,
+		showtimeBiz:  showtimeBiz,
 	}, nil
 }
 
@@ -98,6 +109,19 @@ func (b *business) GetSeatById(ctx context.Context, id string) (*entity.Seat, er
 	}
 
 	return seat, nil
+}
+
+func (b *business) GetSeatsByIds(ctx context.Context, ids []string) ([]*entity.Seat, error) {
+	if len(ids) == 0 {
+		return nil, ErrInvalidSeatData
+	}
+
+	seats, err := b.repository.GetByIDs(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get seats by IDs: %w", err)
+	}
+
+	return seats, nil
 }
 
 func (b *business) GetSeats(ctx context.Context, page, size int, search, roomId, rowNumber string, seatType entity.SeatType, status entity.SeatStatus) ([]*entity.Seat, int, error) {
@@ -180,13 +204,76 @@ func (b *business) getLockedSeats(ctx context.Context, roomId string) (map[strin
 	lockedSeats := make(map[string]bool)
 	for _, key := range keys {
 		parts := strings.Split(key, ":")
-		if len(parts) == 2 {
-			seatId := parts[1]
+		if len(parts) == 3 {
+			seatId := parts[2]
 			lockedSeats[seatId] = true
 		}
 	}
 
 	return lockedSeats, nil
+}
+
+func (b *business) getLockedSeatsByShowtime(ctx context.Context, showtimeId string) (map[string]bool, error) {
+	pattern := fmt.Sprintf("seat_lock:%s:*", showtimeId)
+	keys, err := b.redisClient.Keys(ctx, pattern).Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get seat lock keys: %w", err)
+	}
+
+	lockedSeats := make(map[string]bool)
+	for _, key := range keys {
+		parts := strings.Split(key, ":")
+		if len(parts) == 3 {
+			seatId := parts[2]
+			lockedSeats[seatId] = true
+		}
+	}
+
+	return lockedSeats, nil
+}
+
+func (b *business) GetSeatsByShowtime(ctx context.Context, showtimeId string) (*entity.SeatsDetail, error) {
+	if showtimeId == "" {
+		return nil, ErrInvalidSeatData
+	}
+
+	showtime, err := b.showtimeBiz.GetShowtimeById(ctx, showtimeId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get showtime: %w", err)
+	}
+
+	roomId := showtime.RoomId
+
+	callback := func() ([]*entity.Seat, error) {
+		return b.repository.GetByRoom(ctx, roomId)
+	}
+
+	seats, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, redisRoomSeats(roomId), CACHE_TTL_30_MINS, callback)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get seats by room: %w", err)
+	}
+
+	lockedSeats, err := b.getLockedSeatsByShowtime(ctx, showtimeId)
+	if err != nil {
+		fmt.Printf("Warning: failed to get locked seats: %v\n", err)
+		return &entity.SeatsDetail{
+			Seats:       seats,
+			LockedSeats: []*entity.Seat{},
+		}, nil
+	}
+
+	lockedSeatsList := make([]*entity.Seat, 0)
+	for _, seat := range seats {
+		if lockedSeats[seat.Id] {
+			seat.Status = entity.SeatStatusOccupied
+			lockedSeatsList = append(lockedSeatsList, seat)
+		}
+	}
+
+	return &entity.SeatsDetail{
+		Seats:       seats,
+		LockedSeats: lockedSeatsList,
+	}, nil
 }
 
 func (b *business) CreateSeat(ctx context.Context, seat *entity.Seat) error {

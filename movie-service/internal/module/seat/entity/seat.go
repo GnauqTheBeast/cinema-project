@@ -62,3 +62,20 @@ type SeatsDetail struct {
 	Seats       []*Seat `json:"seats"`
 	LockedSeats []*Seat `json:"locked_seats"`
 }
+
+func GetSeatTypePriceMultiplier(seatType SeatType) float64 {
+	switch seatType {
+	case SeatTypeRegular:
+		return 1.0
+	case SeatTypeVIP:
+		return 1.5
+	case SeatTypeCouple:
+		return 2.5
+	default:
+		return 1.0
+	}
+}
+
+func (s *Seat) CalculatePrice(basePrice float64) float64 {
+	return basePrice * GetSeatTypePriceMultiplier(s.SeatType)
+}

@@ -6,7 +6,8 @@ import (
 
 	"movie-service/internal/container"
 	"movie-service/internal/module/movie/transport/grpc"
-	"movie-service/internal/module/showtime/business"
+	seatBiz "movie-service/internal/module/seat/business"
+	showTimeBiz "movie-service/internal/module/showtime/business"
 
 	pb "movie-service/proto/pb"
 
@@ -21,14 +22,19 @@ func ServeGRPC() *cli.Command {
 		Action: func(c *cli.Context) error {
 			i := container.NewContainer()
 
-			showtimeBiz, err := business.NewBusiness(i)
+			showtimeBiz, err := showTimeBiz.NewBusiness(i)
 			if err != nil {
 				return fmt.Errorf("failed to create showtime business: %w", err)
 			}
 
+			seatBiz, err := seatBiz.NewBusiness(i)
+			if err != nil {
+				return fmt.Errorf("failed to create seat business: %w", err)
+			}
+
 			s := grpc_server.NewServer()
 
-			grpcServer := grpc.NewMovieGRPCServer(showtimeBiz)
+			grpcServer := grpc.NewMovieGRPCServer(showtimeBiz, seatBiz)
 			pb.RegisterMovieServiceServer(s, grpcServer)
 
 			lis, err := net.Listen("tcp", ":50053")

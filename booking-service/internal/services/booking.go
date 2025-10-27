@@ -40,9 +40,9 @@ func NewBookingService(container *do.Injector) (*BookingService, error) {
 		return nil, err
 	}
 
-	movieClient, err := grpc.NewMovieClient()
+	movieClient, err := do.Invoke[*grpc.MovieClient](container)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create movie client: %w", err)
+		return nil, err
 	}
 
 	return &BookingService{
@@ -119,7 +119,6 @@ func (s *BookingService) enrichBookingsWithShowtimeData(ctx context.Context, boo
 	}
 
 	showtimes, err := s.movieClient.GetShowtimes(ctx, showtimeIds)
-	fmt.Println("showtimes", showtimes, err)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get showtime data: %w", err)
 	}
@@ -172,16 +171,36 @@ func (s *BookingService) CreateBooking(ctx context.Context, userId string, showt
 		return nil, ErrInvalidBookingData
 	}
 
+	seatsWithPrice, err := s.movieClient.GetSeatsWithPrice(ctx, showtimeId, seatIds)
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate seat prices: %w", err)
+	}
+
+	for _, seat := range seatsWithPrice.Data {
+		if !seat.Available {
+			return nil, fmt.Errorf("seat %s (%s) is not available", seat.SeatNumber, seat.SeatId)
+		}
+	}
+
+	expectedTotal := seatsWithPrice.TotalAmount
+	clientTotal := float64(totalAmount)
+
+	if clientTotal < expectedTotal-0.01 || clientTotal > expectedTotal+0.01 {
+		return nil, fmt.Errorf("invalid total amount: expected %.2f, got %.2f", expectedTotal, clientTotal)
+	}
+
 	booking := &models.Booking{
 		Id:          uuid.New().String(),
 		UserId:      userId,
 		ShowtimeId:  showtimeId,
-		TotalAmount: float64(totalAmount),
+		TotalAmount: expectedTotal,
 		Status:      string(models.BookingStatusPending),
 		BookingType: "online",
 	}
 
-	err := datastore.CreateBooking(ctx, s.db, booking)
+	fmt.Println("booking", booking)
+
+	err = datastore.CreateBooking(ctx, s.db, booking)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create booking: %w", err)
 	}
@@ -190,7 +209,6 @@ func (s *BookingService) CreateBooking(ctx context.Context, userId string, showt
 		BookingId:   booking.Id,
 		UserId:      booking.UserId,
 		ShowtimeId:  booking.ShowtimeId,
-		RoomId:      showtimeId,
 		SeatIds:     seatIds,
 		TotalAmount: booking.TotalAmount,
 		Status:      string(booking.Status),

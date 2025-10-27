@@ -69,9 +69,20 @@ func (c *MovieClient) GetShowtimes(ctx context.Context, showtimeIds []string) ([
 	return resp.Data, nil
 }
 
-func (c *MovieClient) Close() error {
-	if c.conn != nil {
-		return c.conn.Close()
+func (c *MovieClient) GetSeatsWithPrice(ctx context.Context, showtimeId string, seatIds []string) (*pb.GetSeatsWithPriceResponse, error) {
+	req := &pb.GetSeatsWithPriceRequest{
+		ShowtimeId: showtimeId,
+		SeatIds:    seatIds,
 	}
-	return nil
+
+	resp, err := c.client.GetSeatsWithPrice(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get seats with price: %w", err)
+	}
+
+	if !resp.Success {
+		return nil, fmt.Errorf("movie service error: %s", resp.Message)
+	}
+
+	return resp, nil
 }

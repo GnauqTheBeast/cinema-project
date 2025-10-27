@@ -44,21 +44,21 @@ func (h *handler) GetShowtimes(c *gin.Context) {
 
 	var dateFrom, dateTo *time.Time
 	if query.DateFrom != "" {
-		if parsed, err := time.Parse("2006-01-02", query.DateFrom); err == nil {
-			dateFrom = &parsed
-		} else {
+		parsed, err := time.Parse("2006-01-02", query.DateFrom)
+		if err != nil {
 			response.BadRequest(c, "Invalid date_from format, use YYYY-MM-DD")
 			return
 		}
+		dateFrom = &parsed
 	}
 
 	if query.DateTo != "" {
-		if parsed, err := time.Parse("2006-01-02", query.DateTo); err == nil {
-			dateTo = &parsed
-		} else {
+		parsed, err := time.Parse("2006-01-02", query.DateTo)
+		if err != nil {
 			response.BadRequest(c, "Invalid date_to format, use YYYY-MM-DD")
 			return
 		}
+		dateTo = &parsed
 	}
 
 	showtimes, total, err := h.biz.GetShowtimes(c.Request.Context(), query.Page, query.Size, query.Search, query.MovieId, query.RoomId, query.Format, query.Status, dateFrom, dateTo)

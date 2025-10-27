@@ -11,6 +11,21 @@ const BookingPage = () => {
   const { showtimeId } = useParams()
   const navigate = useNavigate()
   
+  const seatTypeMultipliers = {
+    'regular': 1.0,
+    'vip': 1.5,
+    'couple': 2.5
+  }
+
+  const getSeatTypeLabel = (type) => {
+    const labels = {
+      'regular': 'Ghế thường',
+      'vip': 'Ghế VIP',
+      'couple': 'Ghế đôi'
+    }
+    return labels[type] || type
+  }
+
   const [movie, setMovie] = useState(null)
   const [showtime, setShowtime] = useState(null)
   const [room, setRoom] = useState(null)
@@ -21,11 +36,40 @@ const BookingPage = () => {
   const [error, setError] = useState('')
   const [step, setStep] = useState(1)
 
-  const seatTypes = clientSeatService.getSeatTypes()
-
   useEffect(() => {
     fetchBookingData()
   }, [showtimeId])
+
+  useEffect(() => {
+    if (!showtimeId || step !== 1) {
+      return
+    }
+
+    const pollLockedSeats = async () => {
+      try {
+        const seatsResponse = await clientSeatService.getSeatsByShowtime(showtimeId)
+        if (seatsResponse.success) {
+          const seatsData = seatsResponse.data.data || seatsResponse.data
+          const newLockedSeats = seatsData.locked_seats || []
+          setLockedSeats(newLockedSeats)
+
+          if (selectedSeats.length > 0) {
+            const lockedSeatIds = newLockedSeats.map(s => s.id)
+            const updatedSelectedSeats = selectedSeats.filter(seat => !lockedSeatIds.includes(seat.id))
+            if (updatedSelectedSeats.length !== selectedSeats.length) {
+              setSelectedSeats(updatedSelectedSeats)
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error polling locked seats:', err)
+      }
+    }
+
+    const intervalId = setInterval(pollLockedSeats, 5000)
+
+    return () => clearInterval(intervalId)
+  }, [showtimeId, step, selectedSeats])
 
   const fetchBookingData = async () => {
     try {
@@ -41,8 +85,8 @@ const BookingPage = () => {
         if (movieResponse.success) {
           setMovie(movieResponse.data)
         }
-        
-        const seatsResponse = await clientSeatService.getSeatsByRoom(showtimeData.room_id)
+
+        const seatsResponse = await clientSeatService.getSeatsByShowtime(showtimeId)
         if (seatsResponse.success) {
           const seatsData = seatsResponse.data.data || seatsResponse.data
           setSeats(seatsData.seats || seatsData)
@@ -87,17 +131,13 @@ const BookingPage = () => {
   }
 
   const getSeatColor = (seat) => {
-    if (!seat) {
-      return 'bg-gray-600 border-gray-500 cursor-not-allowed'
-    }
-
     const isSelected = selectedSeats.some(s => s.id === seat.id)
     if (isSelected) {
       return 'bg-red-600 border-red-500 text-white'
     }
 
     if (seat.status === 'occupied') {
-      return 'bg-red-800 border-red-600 text-red-200 cursor-not-allowed'
+      return 'bg-gray-500 border-gray-400 text-gray-300 cursor-not-allowed'
     }
 
     if (seat.status === 'maintenance' || seat.status === 'blocked') {
@@ -116,8 +156,6 @@ const BookingPage = () => {
         return 'bg-yellow-600 border-yellow-500 text-white hover:bg-yellow-500 cursor-pointer'
       case 'couple':
         return 'bg-pink-600 border-pink-500 text-white hover:bg-pink-500 cursor-pointer'
-      case '4dx':
-        return 'bg-purple-600 border-purple-500 text-white hover:bg-purple-500 cursor-pointer'
       default:
         return 'bg-green-600 border-green-500 text-white hover:bg-green-500 cursor-pointer'
     }
@@ -146,14 +184,12 @@ const BookingPage = () => {
     }
   }
 
-  const getSeatTypeLabel = (type) => {
-    const seatType = seatTypes.find((st) => st.value === type)
-    return seatType ? seatType.label : type
-  }
-
-  const getSeatPrice = (type) => {
-    const seatType = seatTypes.find((st) => st.value === type)
-    return seatType ? seatType.price : 0
+  const getSeatPrice = (seatType) => {
+    if (!showtime || !showtime.base_price) {
+      return 0
+    }
+    const multiplier = seatTypeMultipliers[seatType] || 1.0
+    return showtime.base_price * multiplier
   }
 
   const calculateTotal = () => {
@@ -183,11 +219,9 @@ const BookingPage = () => {
       }
 
       const response = await bookingService.createBooking(bookingData)
-      if (response.success) {
+      if (response.code === 200) {
         navigate(`/booking/${response.data.id}/payment`)
-      } else {
-        alert('Có lỗi xảy ra khi tạo booking')
-      }
+      } 
     } catch (err) {
       alert('Có lỗi xảy ra khi tạo booking')
       console.error('Error creating booking:', err)
@@ -268,7 +302,7 @@ const BookingPage = () => {
             {showtime && room && (
               <div className="bg-gray-900 rounded-xl shadow-lg p-6 mb-6 border border-gray-800">
                 <h3 className="text-lg font-semibold text-white mb-4">Thông tin suất chiếu</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <p className="text-sm text-gray-400">Phòng chiếu</p>
                     <p className="font-medium text-white">Phòng {room.room_number} - {room.room_type}</p>
@@ -282,6 +316,31 @@ const BookingPage = () => {
                         minute: '2-digit' 
                       })}
                     </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400">Định dạng</p>
+                    <p className="font-medium text-white uppercase">{showtime.format}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400">Giá cơ bản</p>
+                    <p className="font-medium text-red-400">{formatPrice(showtime.base_price)}</p>
+                  </div>
+                </div>
+                <div className="border-t border-gray-700 pt-4">
+                  <p className="text-sm text-gray-400 mb-2">Bảng giá theo loại ghế:</p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Ghế thường:</span>
+                      <span className="text-white">{formatPrice(getSeatPrice('regular'))}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Ghế VIP:</span>
+                      <span className="text-white">{formatPrice(getSeatPrice('vip'))}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Ghế đôi:</span>
+                      <span className="text-white">{formatPrice(getSeatPrice('couple'))}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -306,52 +365,50 @@ const BookingPage = () => {
                     {/* Seat Grid */}
                     <div className="overflow-x-auto">
                       <div className="inline-block">
-                        {Object.entries(createSeatGrid()).map(([row, rowSeats]) => {
-                          const coupleRows = ['M', 'N', 'O']
-                          return (
-                          <div key={row} className="flex items-center justify-center mb-3">
-                            <div className="w-8 text-center text-sm font-bold text-gray-300 mr-4">
-                              {row}
-                            </div>
+                        {Object.entries(createSeatGrid())
+                          .filter(([_, rowSeats]) => {
+                            return Object.values(rowSeats).some(seat => seat !== null)
+                          })
+                          .map(([row, rowSeats]) => {
+                            const coupleRows = ['M', 'N', 'O']
+                            return (
+                            <div key={row} className="flex items-center justify-center mb-3">
+                              <div className="w-8 text-center text-sm font-bold text-gray-300 mr-4">
+                                {row}
+                              </div>
 
-                            {/* Seats */}
-                            <div className={`flex ${coupleRows.includes(row) ? 'gap-3' : 'gap-1'} justify-center`}>
-                              {Object.entries(rowSeats).map(([seatNumber, seat]) => {
-                                const isCouple = seat && seat.seat_type === 'couple'
-                                return (
-                                  <button
-                                    key={`${row}-${seatNumber}`}
-                                    onClick={() => handleSeatClick(seat)}
-                                    className={`${isCouple ? 'w-12' : 'w-8'} h-8 border-2 rounded text-xs font-semibold transition-all hover:scale-110 ${getSeatColor(seat)}`}
-                                    title={
-                                      seat
-                                        ? `${row}${seatNumber.padStart(2, '0')} - ${getSeatTypeLabel(seat.seat_type)} - ${formatPrice(getSeatPrice(seat.seat_type))}`
-                                        : `Ghế ${row}${seatNumber.padStart(2, '0')}`
-                                    }
-                                  >
-                                    {seat ? (
-                                      isCouple ? (
-                                        <div className="flex items-center justify-center">
-                                          <FaCouch className="w-3 h-3" />
-                                        </div>
-                                      ) : (
-                                        seatNumber.padStart(2, '0')
-                                      )
-                                    ) : (
-                                      ''
-                                    )}
-                                  </button>
-                                )
-                              })}
-                            </div>
+                              {/* Seats */}
+                              <div className={`flex ${coupleRows.includes(row) ? 'gap-3' : 'gap-1'} justify-center`}>
+                                {Object.entries(rowSeats)
+                                  .filter(([_, seat]) => seat !== null)
+                                  .map(([seatNumber, seat]) => {
+                                    const isCouple = seat.seat_type === 'couple'
+                                    return (
+                                      <button
+                                        key={`${row}-${seatNumber}`}
+                                        onClick={() => handleSeatClick(seat)}
+                                        className={`${isCouple ? 'w-12' : 'w-8'} h-8 border-2 rounded text-xs font-semibold transition-all hover:scale-110 ${getSeatColor(seat)}`}
+                                        title={`${row}${seatNumber.padStart(2, '0')} - ${getSeatTypeLabel(seat.seat_type)} - ${formatPrice(getSeatPrice(seat.seat_type))}`}
+                                      >
+                                        {isCouple ? (
+                                          <div className="flex items-center justify-center">
+                                            <FaCouch className="w-3 h-3" />
+                                          </div>
+                                        ) : (
+                                          seatNumber.padStart(2, '0')
+                                        )}
+                                      </button>
+                                    )
+                                  })}
+                              </div>
 
-                            {/* Row Label Right */}
-                            <div className="w-8 text-center text-sm font-bold text-gray-300 ml-4">
-                              {row}
+                              {/* Row Label Right */}
+                              <div className="w-8 text-center text-sm font-bold text-gray-300 ml-4">
+                                {row}
+                              </div>
                             </div>
-                          </div>
-                          )
-                        })}
+                            )
+                          })}
                       </div>
                     </div>
 
@@ -372,10 +429,6 @@ const BookingPage = () => {
                   <h4 className="text-sm font-medium text-white mb-3">Chú thích:</h4>
                   <div className="flex flex-wrap gap-4 text-sm">
                     <div className="flex items-center gap-2 text-gray-300">
-                      <span className="inline-block w-4 h-4 bg-gray-600 border border-gray-500 rounded"></span>
-                      Trống
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-300">
                       <span className="inline-block w-4 h-4 bg-green-600 border border-green-500 rounded"></span>
                       Thường
                     </div>
@@ -388,16 +441,12 @@ const BookingPage = () => {
                       Đôi
                     </div>
                     <div className="flex items-center gap-2 text-gray-300">
-                      <span className="inline-block w-4 h-4 bg-purple-600 border border-purple-500 rounded"></span>
-                      4DX
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-300">
                       <span className="inline-block w-4 h-4 bg-red-600 border border-red-500 rounded"></span>
-                      Đã đặt
+                      Đã chọn
                     </div>
                     <div className="flex items-center gap-2 text-gray-300">
-                      <span className="inline-block w-4 h-4 bg-blue-600 border border-blue-500 rounded"></span>
-                      Đã chọn
+                      <span className="inline-block w-4 h-4 bg-gray-500 border border-gray-400 rounded"></span>
+                      Đã đặt
                     </div>
                     <div className="flex items-center gap-2 text-gray-300">
                       <span className="inline-block w-4 h-4 bg-orange-600 border border-orange-500 rounded"></span>

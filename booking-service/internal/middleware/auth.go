@@ -45,7 +45,6 @@ func RequireAuth(auth AuthService, cacheService caching.Cache) echo.MiddlewareFu
 					c.Set("user_id", cachedData.UserID)
 					c.Set("userRole", cachedData.Role)
 					c.Set("userPermissions", cachedData.Permissions)
-					fmt.Println("cachedData", cachedData)
 					return next(c)
 				}
 				cacheService.Delete(c.Request().Context(), cacheKey)

@@ -3,6 +3,7 @@ package container
 import (
 	"os"
 
+	"booking-service/internal/grpc"
 	"booking-service/internal/pkg/caching"
 	"booking-service/internal/pkg/db"
 	"booking-service/internal/pkg/pubsub"
@@ -48,6 +49,8 @@ func NewContainer() *do.Injector {
 	do.Provide(injector, provideRedisCacheReadOnly)
 	do.Provide(injector, provideRedisPubsub)
 	do.Provide(injector, provideBookingService)
+	do.Provide(injector, provideMovieClient)
+	do.Provide(injector, provideAuthClient)
 
 	return injector
 }
@@ -192,4 +195,12 @@ func provideRedisCacheReadOnly(i *do.Injector) (caching.ReadOnlyCache, error) {
 
 func provideBookingService(i *do.Injector) (*services.BookingService, error) {
 	return services.NewBookingService(i)
+}
+
+func provideMovieClient(_ *do.Injector) (*grpc.MovieClient, error) {
+	return grpc.NewMovieClient()
+}
+
+func provideAuthClient(_ *do.Injector) (*grpc.AuthClient, error) {
+	return grpc.NewAuthClient()
 }

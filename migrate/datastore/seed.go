@@ -388,7 +388,7 @@ func SeedRooms(ctx context.Context, db *bun.DB) error {
 			Id:         uuid.New().String(),
 			RoomNumber: 5,
 			Capacity:   100,
-			RoomType:   "4dx",
+			RoomType:   "standard",
 			Status:     "active",
 			CreatedAt:  now,
 		},
@@ -747,13 +747,6 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 			vipRows:     []string{"D", "E", "F", "G", "H"},
 			coupleRows:  []string{"I", "J"},
 		},
-		"4dx": {
-			rows:        []string{"A", "B", "C", "D", "E", "F", "G", "H"},
-			seatsPerRow: 12,
-			regularRows: []string{},
-			vipRows:     []string{},
-			coupleRows:  []string{},
-		},
 	}
 
 	for _, room := range rooms {
@@ -793,10 +786,6 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 					}
 				}
 
-				if room.RoomType == "4dx" {
-					seatType = "4dx"
-				}
-
 				seat := &models.Seat{
 					Id:         uuid.New().String(),
 					RoomId:     room.Id,
@@ -808,7 +797,7 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 				}
 				seats = append(seats, seat)
 
-				if seatType == "couple" && room.RoomType != "4dx" {
+				if seatType == "couple" {
 					seatNum++
 					if seatNum <= seatsPerRow {
 						coupleSeat := &models.Seat{
@@ -888,11 +877,6 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 			"afternoon": 150000,
 			"evening":   180000,
 		},
-		"4dx": {
-			"morning":   200000,
-			"afternoon": 250000,
-			"evening":   300000,
-		},
 	}
 
 	// Time slots for different periods
@@ -911,8 +895,6 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 				switch room.RoomType {
 				case "imax":
 					formats = []string{"2d", "3d", "imax"}
-				case "4dx":
-					formats = []string{"4dx"}
 				case "standard", "vip":
 					formats = []string{"2d", "3d"}
 				}
@@ -946,8 +928,6 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 								basePrice += 20000
 							case "imax":
 								basePrice += 50000
-							case "4dx":
-								// 4dx price is already set in config
 							}
 
 							status := "scheduled"

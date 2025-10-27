@@ -105,6 +105,7 @@ func startRouteV1(group *gin.RouterGroup) {
 		showtimes.GET("/upcoming", showtimeApi.GetUpcomingShowtimes)
 		showtimes.GET("/conflict-check", showtimeApi.CheckTimeConflict)
 		showtimes.GET("/:id", showtimeApi.GetShowtimeById)
+		showtimes.GET("/:id/seats", seatApi.GetSeatsByShowtime)
 		showtimes.PUT("/:id", showtimeApi.UpdateShowtime)
 		showtimes.DELETE("/:id", showtimeApi.DeleteShowtime)
 		showtimes.PATCH("/:id/status", showtimeApi.UpdateShowtimeStatus)

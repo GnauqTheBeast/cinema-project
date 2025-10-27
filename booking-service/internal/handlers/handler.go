@@ -47,7 +47,7 @@ func New(cfg *Config) (http.Handler, error) {
 			return nil, err
 		}
 
-		authClient, err := grpc.NewAuthClient()
+		authClient, err := do.Invoke[*grpc.AuthClient](cfg.Container)
 		if err != nil {
 			return nil, err
 		}
