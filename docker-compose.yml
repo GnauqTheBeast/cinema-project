@@ -75,9 +75,9 @@ services:
       - ./notification-service/.env
     ports:
       - "8080:8080"
-    depends_on:
-      - postgres
-      - redis
+#    depends_on:
+#      - postgres
+#      - redis
 
   booking-service:
     build:
@@ -89,31 +89,40 @@ services:
     env_file:
       - ./booking-service/.env
     restart: unless-stopped
-    depends_on:
-      - postgres
-      - redis
-      - movie-service
-      - auth-service
+#    depends_on:
+#      - postgres
+#      - redis
+#      - movie-service
+#      - auth-service
 
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    container_name: payment-service
+    ports:
+      - "8086:8086"
+    env_file:
+      - ./payment-service/.env
+    restart: unless-stopped
+#    depends_on:
+#      - postgres
+#      - redis
+      
   api-gateway:
     build:
       context: ./api-gateway
       dockerfile: Dockerfile
+    env_file:
+      - ./api-gateway/.env
     container_name: api-gateway
-    environment:
-      - REDIS_URL=redis://redis:6379
-      - AUTH_SERVICE_URL=http://auth-service:3000
-      - USER_SERVICE_URL=http://user-service:3001
-      - MOVIE_SERVICE_URL=http://movie-service:8083
-      - BOOKING_SERVICE_URL=http://booking-service:8082
-      - NOTIFICATION_SERVICE_URL=http://notification-service:8080
     ports:
       - "8000:8000"
     restart: unless-stopped
-    depends_on:
-      - movie-service
-      - booking-service
-      - redis
+#    depends_on:
+#      - movie-service
+#      - booking-service
+#      - redis
   
   worker-service:
     build:
@@ -125,9 +134,9 @@ services:
     ports:
       - "8087:8087"
     restart: unless-stopped
-    depends_on:
-      - postgres
-      - redis
+#    depends_on:
+#      - postgres
+#      - redis
 
 volumes:
   postgres_data:
