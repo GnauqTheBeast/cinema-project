@@ -18,6 +18,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/samber/do"
+	"github.com/sirupsen/logrus"
 	"github.com/uptrace/bun"
 )
 
@@ -272,32 +273,86 @@ func (s *BookingService) GetBookingByID(ctx context.Context, bookingId string) (
 	return booking, nil
 }
 
-// checkSeatLocks checks if any of the given seats are already locked in Redis
-// Returns a map of seatId -> lockOwner (booking_id) for any locked seats
+// checkSeatLocks checks if any of the given seats are already locked in Redis or booked in DB
+// Returns a map of seatId -> lockOwner (booking_id) for any locked/booked seats
 func (s *BookingService) checkSeatLocks(ctx context.Context, showtimeId string, seatIds []string) (map[string]string, error) {
 	lockedSeats := make(map[string]string)
+	redisAvailable := true
 
 	for _, seatId := range seatIds {
 		lockKey := fmt.Sprintf("seat_lock:%s:%s", showtimeId, seatId)
 
-		// Check if lock exists
 		lockOwner, err := s.redisClient.Get(ctx, lockKey).Result()
 
-		// Lock doesn't exist, seat is available
 		if errors.Is(err, redis.Nil) {
 			continue
 		}
 
-		// Redis error (connection issue, etc.)
 		if err != nil {
-			return nil, fmt.Errorf("failed to check lock for seat %s: %w", seatId, err)
+			logrus.Warnf("Redis error checking lock for seat %s: %v, will fallback to DB", seatId, err)
+			redisAvailable = false
+			break
 		}
 
-		// Lock exists, seat is locked by another booking
 		lockedSeats[seatId] = lockOwner
 	}
 
+	if !redisAvailable {
+		bookedSeatsDB, err := datastore.GetBookedSeatsForShowtime(ctx, s.roDb, showtimeId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check booked seats in DB: %w", err)
+		}
+
+		for _, seatId := range seatIds {
+			if bookingId, exists := bookedSeatsDB[seatId]; exists {
+				lockedSeats[seatId] = bookingId
+			}
+		}
+
+		return lockedSeats, nil
+	}
+
+	for _, seatId := range seatIds {
+		if _, alreadyLocked := lockedSeats[seatId]; alreadyLocked {
+			continue
+		}
+
+		bookingId, exists := s.checkSeatInDB(ctx, showtimeId, seatId)
+		if !exists {
+			continue
+		}
+
+		lockedSeats[seatId] = bookingId
+
+		lockKey := fmt.Sprintf("seat_lock:%s:%s", showtimeId, seatId)
+		if err := s.redisClient.Set(ctx, lockKey, bookingId, 15*time.Minute).Err(); err != nil {
+			logrus.Warnf("Failed to sync seat lock to Redis for seat %s: %v", seatId, err)
+		}
+	}
+
 	return lockedSeats, nil
+}
+
+func (s *BookingService) checkSeatInDB(ctx context.Context, showtimeId, seatId string) (string, bool) {
+	var result struct {
+		BookingId string `bun:"booking_id"`
+	}
+
+	err := s.roDb.NewSelect().
+		TableExpr("tickets t").
+		Column("t.booking_id").
+		Join("INNER JOIN bookings b ON b.id = t.booking_id").
+		Where("b.showtime_id = ?", showtimeId).
+		Where("t.seat_id = ?", seatId).
+		Where("b.status IN (?, ?)", models.BookingStatusPending, models.BookingStatusConfirmed).
+		Limit(1).
+		Scan(ctx, &result)
+
+	if err != nil {
+		return "", false
+	}
+
+	return result.BookingId, true
 }
 
 func (s *BookingService) UpdateBookingStatus(ctx context.Context, bookingId string, status string) (string, error) {

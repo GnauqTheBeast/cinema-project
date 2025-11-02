@@ -79,7 +79,7 @@ var emailTemplates = map[string]emailTemplate{
 		Subject:     "Booking success",
 		BodyFunc:    bookingSuccessBody,
 		NotiTitle:   models.NotificationBookingSuccess,
-		NotiContent: "Scan the bar code below to get tickets",
+		NotiContent: "Scan the bar code to get tickets",
 	},
 }
 
@@ -202,13 +202,13 @@ func (e *EmailService) sendEmail(p types.EmailPayload) error {
 }
 
 func (e *EmailService) createNotificationAsync(ctx context.Context, userID string, title models.NotificationTitle, content string) {
-	noti := &models.Notification{
+	if err := datastore.CreateNotification(ctx, e.db, &models.Notification{
 		Id:      uuid.NewString(),
 		UserId:  userID,
 		Title:   title,
 		Content: content,
-	}
-	if err := datastore.CreateNotification(ctx, e.db, noti); err != nil {
+		Status:  models.NotificationStatusSent,
+	}); err != nil {
 		logrus.Warnf("create notification failed: %v", err)
 	}
 }

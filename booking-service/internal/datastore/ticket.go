@@ -66,3 +66,30 @@ func UpdateTicketStatus(ctx context.Context, db bun.IDB, ticketId string, status
 
 	return nil
 }
+
+// GetBookedSeatsForShowtime returns all seat IDs that are already booked for a showtime
+func GetBookedSeatsForShowtime(ctx context.Context, db bun.IDB, showtimeId string) (map[string]string, error) {
+	var results []struct {
+		SeatId    string `bun:"seat_id"`
+		BookingId string `bun:"booking_id"`
+	}
+
+	err := db.NewSelect().
+		TableExpr("tickets t").
+		Column("t.seat_id", "t.booking_id").
+		Join("INNER JOIN bookings b ON b.id = t.booking_id").
+		Where("b.showtime_id = ?", showtimeId).
+		Where("b.status IN (?, ?)", models.BookingStatusPending, models.BookingStatusConfirmed).
+		Scan(ctx, &results)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get booked seats: %w", err)
+	}
+
+	bookedSeats := make(map[string]string)
+	for _, r := range results {
+		bookedSeats[r.SeatId] = r.BookingId
+	}
+
+	return bookedSeats, nil
+}
