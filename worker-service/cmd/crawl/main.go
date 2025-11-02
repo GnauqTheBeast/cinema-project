@@ -10,7 +10,13 @@ import (
 
 	"worker-service/internal/container"
 	"worker-service/internal/jobs/crawl"
+
+	"github.com/joho/godotenv"
 )
+
+func init() {
+	godotenv.Load(".env")
+}
 
 func main() {
 	ctn := container.New()

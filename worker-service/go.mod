@@ -3,9 +3,12 @@ module worker-service
 go 1.24.3
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/hiendaovinh/toolkit v0.0.0-20250423031227-22a28c8b85cd
+	github.com/joho/godotenv v1.5.1
 	github.com/redis/go-redis/v9 v9.16.0
 	github.com/samber/do v1.6.0
+	github.com/sirupsen/logrus v1.9.3
 	github.com/uptrace/bun v1.1.16
 	github.com/uptrace/bun/dialect/pgdialect v1.1.16
 	github.com/uptrace/bun/driver/pgdriver v1.1.16
