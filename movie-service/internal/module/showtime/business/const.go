@@ -31,6 +31,6 @@ func redisUpcomingShowtimes() string {
 	return "showtimes:upcoming"
 }
 
-func redisShowtimesSearch(search string) string {
-	return fmt.Sprintf("showtimes:search:%s", search)
+func redisShowtimesByIds(ids []string) string {
+	return fmt.Sprintf("showtimes:ids:%v", ids)
 }

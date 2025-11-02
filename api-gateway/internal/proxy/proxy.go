@@ -180,6 +180,18 @@ func (p *Proxy) getTargetService(path string) (*ServiceInfo, string) {
 			Endpoint: p.config.Services.NotificationService,
 		}, path
 
+	case strings.HasPrefix(path, "/api/v1/bookings"):
+		return &ServiceInfo{
+			Name:     "booking-service",
+			Endpoint: p.config.Services.BookingService,
+		}, path
+
+	case strings.HasPrefix(path, "/api/v1/payments"):
+		return &ServiceInfo{
+			Name:     "payment-service",
+			Endpoint: p.config.Services.PaymentService,
+		}, path
+
 	default:
 		return nil, ""
 	}

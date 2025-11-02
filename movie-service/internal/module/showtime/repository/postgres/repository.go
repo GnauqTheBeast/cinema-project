@@ -75,16 +75,18 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 }
 
 func (r *Repository) GetByID(ctx context.Context, id string) (*entity.Showtime, error) {
-	var showtime entity.Showtime
+	showtime := new(entity.Showtime)
 	err := r.roDb.NewSelect().
-		Model(&showtime).
-		Where("id = ?", id).
+		Model(showtime).
+		Relation("Movie").
+		Relation("Room").
+		Where("st.id = ?", id).
 		Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return &showtime, nil
+	return showtime, nil
 }
 
 func (r *Repository) GetMany(ctx context.Context, limit, offset int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) ([]*entity.Showtime, error) {
@@ -277,4 +279,26 @@ func (r *Repository) CheckConflict(ctx context.Context, roomId string, startTime
 	}
 
 	return exists, nil
+}
+
+func (r *Repository) GetByIds(ctx context.Context, ids []string) ([]*entity.Showtime, error) {
+	if len(ids) == 0 {
+		return []*entity.Showtime{}, nil
+	}
+
+	showtimes := make([]*entity.Showtime, 0)
+
+	query := r.roDb.NewSelect().
+		Model(&showtimes).
+		Relation("Movie").
+		Relation("Room").
+		Where("st.id IN (?)", bun.In(ids)).
+		Order("st.start_time ASC")
+
+	err := query.Scan(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get showtimes by ids: %w", err)
+	}
+
+	return showtimes, nil
 }

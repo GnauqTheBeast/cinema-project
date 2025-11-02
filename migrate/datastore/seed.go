@@ -266,6 +266,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 		{
 			Id:          uuid.New().String(),
 			Title:       "Avengers: Endgame",
+			Slug:        "avengers-endgame",
 			Director:    "Anthony Russo, Joe Russo",
 			Cast:        "Robert Downey Jr., Chris Evans, Mark Ruffalo, Chris Hemsworth",
 			Genre:       "Action, Adventure, Drama",
@@ -280,6 +281,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 		{
 			Id:          uuid.New().String(),
 			Title:       "Spider-Man: No Way Home",
+			Slug:        "spider-man-no-way-home",
 			Director:    "Jon Watts",
 			Cast:        "Tom Holland, Zendaya, Benedict Cumberbatch, Jacob Batalon",
 			Genre:       "Action, Adventure, Sci-Fi",
@@ -294,6 +296,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 		{
 			Id:          uuid.New().String(),
 			Title:       "Top Gun: Maverick",
+			Slug:        "top-gun-maverick",
 			Director:    "Joseph Kosinski",
 			Cast:        "Tom Cruise, Miles Teller, Jennifer Connelly, Jon Hamm",
 			Genre:       "Action, Drama",
@@ -308,6 +311,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 		{
 			Id:          uuid.New().String(),
 			Title:       "Dune",
+			Slug:        "dune",
 			Director:    "Denis Villeneuve",
 			Cast:        "Timothée Chalamet, Rebecca Ferguson, Oscar Isaac, Josh Brolin",
 			Genre:       "Action, Adventure, Drama, Sci-Fi",
@@ -322,6 +326,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 		{
 			Id:          uuid.New().String(),
 			Title:       "The Batman",
+			Slug:        "the-batman",
 			Director:    "Matt Reeves",
 			Cast:        "Robert Pattinson, Zoë Kravitz, Paul Dano, Jeffrey Wright",
 			Genre:       "Action, Crime, Drama",
@@ -383,7 +388,7 @@ func SeedRooms(ctx context.Context, db *bun.DB) error {
 			Id:         uuid.New().String(),
 			RoomNumber: 5,
 			Capacity:   100,
-			RoomType:   "4dx",
+			RoomType:   "standard",
 			Status:     "active",
 			CreatedAt:  now,
 		},
@@ -514,6 +519,108 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 	return nil
 }
 
+func SeedBookings(ctx context.Context, db *bun.DB) error {
+	var users []models.User
+	err := db.NewSelect().Model(&users).Limit(5).Scan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get users: %w", err)
+	}
+
+	var showtimes []models.Showtime
+	err = db.NewSelect().Model(&showtimes).Limit(5).Scan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get showtimes: %w", err)
+	}
+
+	var seats []models.Seat
+	err = db.NewSelect().Model(&seats).Limit(10).Scan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get seats: %w", err)
+	}
+
+	bookings := []models.Booking{
+		{
+			Id:          uuid.New().String(),
+			UserId:      users[3].Id,
+			ShowtimeId:  showtimes[0].Id,
+			TotalAmount: 200000,
+			Status:      "confirmed",
+			CreatedAt:   time.Now().Add(-24 * time.Hour),
+		},
+		{
+			Id:          uuid.New().String(),
+			UserId:      users[3].Id,
+			ShowtimeId:  showtimes[1].Id,
+			TotalAmount: 100000,
+			Status:      "confirmed",
+			CreatedAt:   time.Now().Add(-48 * time.Hour),
+		},
+		{
+			Id:          uuid.New().String(),
+			UserId:      users[3].Id,
+			ShowtimeId:  showtimes[2].Id,
+			TotalAmount: 300000,
+			Status:      "pending",
+			CreatedAt:   time.Now().Add(-72 * time.Hour),
+		},
+		{
+			Id:          uuid.New().String(),
+			UserId:      users[1].Id,
+			ShowtimeId:  showtimes[0].Id,
+			TotalAmount: 150000,
+			Status:      "confirmed",
+			CreatedAt:   time.Now().Add(-96 * time.Hour),
+		},
+		{
+			Id:          uuid.New().String(),
+			UserId:      users[2].Id,
+			ShowtimeId:  showtimes[1].Id,
+			TotalAmount: 450000,
+			Status:      "cancelled",
+			CreatedAt:   time.Now().Add(-120 * time.Hour),
+		},
+	}
+
+	_, err = db.NewInsert().Model(&bookings).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to insert bookings: %w", err)
+	}
+
+	return nil
+}
+
+func SeedTickets(ctx context.Context, db *bun.DB) error {
+	var bookings []models.Booking
+	err := db.NewSelect().Model(&bookings).Scan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get bookings: %w", err)
+	}
+
+	var seats []models.Seat
+	err = db.NewSelect().Model(&seats).Scan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get seats: %w", err)
+	}
+
+	tickets := make([]models.Ticket, 0)
+	for i := 0; i < len(bookings); i++ {
+		tickets = append(tickets, models.Ticket{
+			Id:        uuid.New().String(),
+			BookingId: bookings[i].Id,
+			Status:    models.TicketStatusUsed,
+			SeatId:    seats[i%len(seats)].Id,
+			CreatedAt: time.Now(),
+		})
+	}
+
+	_, err = db.NewInsert().Model(&tickets).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to insert tickets: %w", err)
+	}
+
+	return nil
+}
+
 func SeedNotifications(ctx context.Context, db *bun.DB) error {
 	var users []models.User
 	err := db.NewSelect().Model(&users).Limit(3).Scan(ctx)
@@ -589,6 +696,15 @@ func stringPtr(s string) *string {
 	return &s
 }
 
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
 func SeedSeats(ctx context.Context, db *bun.DB) error {
 	var rooms []models.Room
 	err := db.NewSelect().Model(&rooms).Scan(ctx)
@@ -631,13 +747,6 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 			vipRows:     []string{"D", "E", "F", "G", "H"},
 			coupleRows:  []string{"I", "J"},
 		},
-		"4dx": {
-			rows:        []string{"A", "B", "C", "D", "E", "F", "G", "H"},
-			seatsPerRow: 12,
-			regularRows: []string{},
-			vipRows:     []string{},
-			coupleRows:  []string{},
-		},
 	}
 
 	for _, room := range rooms {
@@ -647,7 +756,13 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 		}
 
 		for _, row := range config.rows {
-			for seatNum := 1; seatNum <= config.seatsPerRow; seatNum++ {
+			// Special handling for couple rows - only 7 seats per row
+			seatsPerRow := config.seatsPerRow
+			if contains(config.coupleRows, row) {
+				seatsPerRow = 7
+			}
+
+			for seatNum := 1; seatNum <= seatsPerRow; seatNum++ {
 				seatType := "regular"
 
 				for _, regularRow := range config.regularRows {
@@ -671,10 +786,6 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 					}
 				}
 
-				if room.RoomType == "4dx" {
-					seatType = "4dx"
-				}
-
 				seat := &models.Seat{
 					Id:         uuid.New().String(),
 					RoomId:     room.Id,
@@ -686,9 +797,9 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 				}
 				seats = append(seats, seat)
 
-				if seatType == "couple" && room.RoomType != "4dx" {
+				if seatType == "couple" {
 					seatNum++
-					if seatNum <= config.seatsPerRow {
+					if seatNum <= seatsPerRow {
 						coupleSeat := &models.Seat{
 							Id:         uuid.New().String(),
 							RoomId:     room.Id,
@@ -766,11 +877,6 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 			"afternoon": 150000,
 			"evening":   180000,
 		},
-		"4dx": {
-			"morning":   200000,
-			"afternoon": 250000,
-			"evening":   300000,
-		},
 	}
 
 	// Time slots for different periods
@@ -789,8 +895,6 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 				switch room.RoomType {
 				case "imax":
 					formats = []string{"2d", "3d", "imax"}
-				case "4dx":
-					formats = []string{"4dx"}
 				case "standard", "vip":
 					formats = []string{"2d", "3d"}
 				}
@@ -824,8 +928,6 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 								basePrice += 20000
 							case "imax":
 								basePrice += 50000
-							case "4dx":
-								// 4dx price is already set in config
 							}
 
 							status := "scheduled"

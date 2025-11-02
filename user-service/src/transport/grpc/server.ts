@@ -20,7 +20,7 @@ export async function startGrpcServer(): Promise<void> {
     oneofs: true
   });
   const proto = grpc.loadPackageDefinition(packageDefinition) as any;
-  const svc = proto.user;
+  const svc = proto.pb;
 
   const server = new grpc.Server();
 

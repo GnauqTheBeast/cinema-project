@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -29,6 +30,8 @@ type ServicesConfig struct {
 	MovieService        ServiceEndpoint `mapstructure:"movie_service"`
 	NotificationService ServiceEndpoint `mapstructure:"notification_service"`
 	UserService         ServiceEndpoint `mapstructure:"user_service"`
+	BookingService      ServiceEndpoint `mapstructure:"booking_service"`
+	PaymentService      ServiceEndpoint `mapstructure:"payment_service"`
 }
 
 type ServiceEndpoint struct {
@@ -64,9 +67,30 @@ type LoggingConfig struct {
 	Output string `mapstructure:"output"`
 }
 
-// LoadConfig loads configuration from file and environment variables
+func isDockerEnvironment() bool {
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		return true
+	}
+
+	if os.Getenv("CONTAINER") == "true" || os.Getenv("DOCKER") == "true" {
+		return true
+	}
+
+	if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
+		return true
+	}
+
+	return false
+}
+
 func LoadConfig(path string) (*Config, error) {
-	viper.SetConfigName("config")
+	// Detect environment: Docker vs Local
+	configName := "config"
+	if isDockerEnvironment() {
+		configName = "config.deploy"
+	}
+
+	viper.SetConfigName(configName)
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(path)
 	viper.AddConfigPath(".")
@@ -114,6 +138,16 @@ func setDefaults() {
 	viper.SetDefault("services.notification_service.timeout", 30)
 	viper.SetDefault("services.notification_service.retries", 3)
 
+	viper.SetDefault("services.booking_service.url", "http://localhost:8082")
+	viper.SetDefault("services.booking_service.health_check_path", "/api/health")
+	viper.SetDefault("services.booking_service.timeout", 30)
+	viper.SetDefault("services.booking_service.retries", 3)
+
+	viper.SetDefault("services.payment_service.url", "http://localhost:8086")
+	viper.SetDefault("services.payment_service.health_check_path", "/api/v1/health")
+	viper.SetDefault("services.payment_service.timeout", 30)
+	viper.SetDefault("services.payment_service.retries", 3)
+
 	// C defaults
 	viper.SetDefault("redis.address", "localhost:6379")
 	viper.SetDefault("redis.password", "")
@@ -142,6 +176,6 @@ func setDefaults() {
 
 	// Logging defaults
 	viper.SetDefault("logging.level", "info")
-	viper.SetDefault("logging.format", "json")
+	viper.SetDefault("logging.format", "text")
 	viper.SetDefault("logging.output", "stdout")
 }

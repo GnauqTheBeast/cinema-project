@@ -56,16 +56,17 @@ func NewEmailService(i *do.Injector) (*EmailService, error) {
 	}, nil
 }
 
-func (e *EmailService) SubscribeEmailVerifyQueue(ctx context.Context) error {
-	topic := "email_verify"
+func (e *EmailService) SubscribeNotificationQueue(ctx context.Context) error {
+	emailVerifyTopic := "email_verify"
 	forgotPasswordTopic := "forgot_password"
+	bookingSuccessTopic := "booking_success"
 
-	subscriber, err := e.pubsub.Subscribe(ctx, []string{topic, forgotPasswordTopic}, types.UnmarshalEmailVerify)
+	subscriber, err := e.pubsub.Subscribe(ctx, []string{emailVerifyTopic, forgotPasswordTopic, bookingSuccessTopic}, types.UnmarshalEmailVerify)
 	if err != nil {
-		return fmt.Errorf("failed to subscribe to topic %s: %w", topic, err)
+		return fmt.Errorf("failed to subscribe to emailVerifyTopic %s: %w", emailVerifyTopic, err)
 	}
 
-	logrus.Printf("Subscribed to topics: %s, %s\n", topic, forgotPasswordTopic)
+	logrus.Printf("Subscribed to topics: %s, %s, %s\n", emailVerifyTopic, forgotPasswordTopic, bookingSuccessTopic)
 
 	go func() {
 		defer func() {
@@ -93,6 +94,7 @@ func (e *EmailService) SubscribeEmailVerifyQueue(ctx context.Context) error {
 					To:         receiveMsg.To,
 					VerifyCode: receiveMsg.VerifyCode,
 					VerifyURL:  receiveMsg.VerifyURL,
+					BookingId:  receiveMsg.BookingId,
 				}
 
 				noti := &models.Notification{
@@ -101,7 +103,7 @@ func (e *EmailService) SubscribeEmailVerifyQueue(ctx context.Context) error {
 				}
 
 				switch msg.Topic {
-				case topic:
+				case emailVerifyTopic:
 					emailVerify.Subject = "Verify your email"
 					noti.Title = models.NotificationEmailVerified
 					noti.Content = fmt.Sprintf("Please verify your email with code")
@@ -109,6 +111,10 @@ func (e *EmailService) SubscribeEmailVerifyQueue(ctx context.Context) error {
 					emailVerify.Subject = "Forgot your password?"
 					noti.Title = models.NotificationForgotPassword
 					noti.Content = fmt.Sprintf("Please reset your password with code")
+				case bookingSuccessTopic:
+					emailVerify.Subject = "Booking success"
+					noti.Title = models.NotificationBookingSuccess
+					noti.Content = fmt.Sprintf("Scan the bar code below to get tickets")
 				}
 
 				if err := e.SendEmail(emailVerify); err != nil {
@@ -132,9 +138,10 @@ func (e *EmailService) SendEmail(email *types.EmailVerify) error {
 	switch email.Subject {
 	case "Verify your email":
 		email.Body = defaultVerifyContent(email.VerifyCode, email.VerifyURL)
-
 	case "Forgot your password?":
 		email.Body = defaultForgotPasswordContent(email.VerifyCode, email.VerifyURL)
+	case "Booking success":
+		email.Body = defaultBookingSuccessContent(email.BookingId)
 	}
 
 	msg := fmt.Sprintf(
@@ -187,6 +194,46 @@ func defaultForgotPasswordContent(otp, resetUrl string) string {
       <a href="` + resetUrl + `" style="display: inline-block; padding: 12px 24px; background-color: #e50914; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset My Password</a>
 
       <p style="margin-top: 30px; color: #888;">If you did not request a password reset, you can safely ignore this email.</p>
+      <p>– The HQ Cinema Team</p>
+    </div>
+  </body>
+</html>`
+}
+
+func defaultBookingSuccessContent(bookingId string) string {
+	if len(bookingId) < 8 {
+		return ""
+	}
+	shortCode := bookingId[len(bookingId)-8:]
+	shortCode = fmt.Sprintf("%s", shortCode)
+
+	// Use free barcode API to generate barcode image
+	// Format: https://bwipjs-api.metafloor.com/?bcid=code128&text=YOUR_TEXT&scale=3&height=15&includetext
+	barcodeURL := fmt.Sprintf("https://bwipjs-api.metafloor.com/?bcid=code128&text=%s&scale=3&height=15&includetext", shortCode)
+
+	return `
+<html>
+  <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+    <div style="max-width: 600px; margin: auto; background: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+      <h2 style="color: #e50914;">🎬 Booking Confirmed!</h2>
+      <p>Hi there,</p>
+      <p>Your cinema booking has been confirmed! We're excited to see you at the theater.</p>
+
+      <div style="background: linear-gradient(135deg, #e50914 0%, #b20710 100%); padding: 20px; border-radius: 10px; margin: 30px 0; text-align: center;">
+        <h3 style="color: white; margin: 0 0 10px 0;">Your Booking Code</h3>
+        <p style="color: white; font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 4px;">` + shortCode + `</p>
+      </div>
+
+      <h3 style="color: #333; text-align: center;">📱 Show this barcode at the counter</h3>
+      <div style="text-align: center; background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <img src="` + barcodeURL + `" alt="Booking Barcode" style="max-width: 100%; height: auto;" />
+      </div>
+
+      <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
+        <p style="margin: 0; color: #856404;"><strong>💡 Important:</strong> Please arrive at least 15 minutes before the showtime. Show this barcode at the counter to collect your tickets.</p>
+      </div>
+
+      <p style="margin-top: 30px;">Enjoy your movie!</p>
       <p>– The HQ Cinema Team</p>
     </div>
   </body>

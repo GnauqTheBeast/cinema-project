@@ -3,8 +3,6 @@ package handlers
 import (
 	"net/http"
 
-	"notification-service/internal/types"
-
 	"github.com/labstack/echo-contrib/pprof"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -27,8 +25,6 @@ func New(cfg *Config) (http.Handler, error) {
 
 	r.IPExtractor = echo.ExtractIPFromXFFHeader()
 
-	// TODO: check if JSONSerializer needed on http request
-	/// r.JSONSerializer = httpx.SegmentJSONSerializer{}
 	r.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "${time_rfc3339}\t${method}\t${uri}\t${status}\t${latency_human}\n",
 	}))
@@ -41,15 +37,8 @@ func New(cfg *Config) (http.Handler, error) {
 	})
 	r.Use(cors)
 
-	// Health check endpoint
-	r.GET("/health", Hello)
-
 	routesAPIv1 := r.Group("/api/v1")
 	{
-		// Health check for service discovery
-		routesAPIv1.GET("/health", Hello)
-
-		// Initialize notification handler
 		notificationHandler, err := NewNotificationHandler(cfg.Container)
 		if err != nil {
 			return nil, err
@@ -85,12 +74,4 @@ func New(cfg *Config) (http.Handler, error) {
 	r.GET("/api/v1/notifications/ws", groupWebSocket.WebsocketHandleConnection)
 
 	return r, nil
-}
-
-func Hello(c echo.Context) error {
-	return types.ResponseWithMessage(c, &types.Body{
-		Code:    http.StatusOK,
-		Message: http.StatusText(http.StatusOK),
-		Data:    "Hello World!",
-	})
 }

@@ -96,7 +96,7 @@ export default function Header() {
                       Thông tin cá nhân
                     </Link>
                     <Link
-                      to="/bookings"
+                      to="/booking-history"
                       className="block px-4 py-2 text-gray-300 hover:text-red-400 hover:bg-red-900/20 transition-colors duration-300"
                     >
                       Lịch sử đặt vé

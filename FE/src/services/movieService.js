@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
+const API_URL = process.env.REACT_APP_MOVIE_API_URL || 'http://localhost:8000/api/v1'
 
 const movieApi = axios.create({
   baseURL: API_URL,
@@ -28,7 +28,8 @@ export const movieService = {
   // Get all movies (now showing)
   getAllMovies: async () => {
     try {
-      const response = await movieApi.get('/v1/movies')
+      const response = await movieApi.get('/movies')
+
       return response.data
     } catch (error) {
       console.error('Error fetching movies:', error)
@@ -39,7 +40,7 @@ export const movieService = {
   // Get now showing movies
   getNowShowingMovies: async () => {
     try {
-      const response = await movieApi.get('/v1/movies?status=showing')
+      const response = await movieApi.get('/movies?status=showing')
       return response.data
     } catch (error) {
       console.error('Error fetching now showing movies:', error)
@@ -50,7 +51,7 @@ export const movieService = {
   // Get coming soon movies
   getComingSoonMovies: async () => {
     try {
-      const response = await movieApi.get('/v1/movies?status=coming_soon')
+      const response = await movieApi.get('/movies?status=coming_soon')
       return response.data
     } catch (error) {
       console.error('Error fetching coming soon movies:', error)
@@ -61,7 +62,7 @@ export const movieService = {
   // Get movie by ID
   getMovieById: async (id) => {
     try {
-      const response = await movieApi.get(`/v1/movies/${id}`)
+      const response = await movieApi.get(`/movies/${id}`)
       return response.data
     } catch (error) {
       console.error(`Error fetching movie ${id}:`, error)
@@ -72,7 +73,7 @@ export const movieService = {
   // Get showtimes
   getShowtimes: async (movieId = null, roomId = null) => {
     try {
-      let url = '/v1/showtimes'
+      let url = '/showtimes'
       const params = new URLSearchParams()
 
       if (movieId) params.append('movie_id', movieId)
@@ -93,7 +94,7 @@ export const movieService = {
   // Get upcoming showtimes
   getUpcomingShowtimes: async () => {
     try {
-      const response = await movieApi.get('/v1/showtimes/upcoming')
+      const response = await movieApi.get('/showtimes/upcoming')
       return response.data
     } catch (error) {
       console.error('Error fetching upcoming showtimes:', error)
@@ -104,7 +105,7 @@ export const movieService = {
   // Get rooms
   getRooms: async () => {
     try {
-      const response = await movieApi.get('/v1/rooms')
+      const response = await movieApi.get('/rooms')
       return response.data
     } catch (error) {
       console.error('Error fetching rooms:', error)
@@ -115,7 +116,7 @@ export const movieService = {
   // Get room seats
   getRoomSeats: async (roomId) => {
     try {
-      const response = await movieApi.get(`/v1/rooms/${roomId}/seats`)
+      const response = await movieApi.get(`/rooms/${roomId}/seats`)
       return response.data
     } catch (error) {
       console.error(`Error fetching seats for room ${roomId}:`, error)
@@ -126,7 +127,7 @@ export const movieService = {
   // Get room showtimes
   getRoomShowtimes: async (roomId) => {
     try {
-      const response = await movieApi.get(`/v1/rooms/${roomId}/showtimes`)
+      const response = await movieApi.get(`/rooms/${roomId}/showtimes`)
       return response.data
     } catch (error) {
       console.error(`Error fetching showtimes for room ${roomId}:`, error)
@@ -137,7 +138,7 @@ export const movieService = {
   // Search movies
   searchMovies: async (query) => {
     try {
-      const response = await movieApi.get(`/v1/movies?search=${encodeURIComponent(query)}`)
+      const response = await movieApi.get(`/movies?search=${encodeURIComponent(query)}`)
       return response.data
     } catch (error) {
       console.error('Error searching movies:', error)
@@ -148,7 +149,7 @@ export const movieService = {
   // Get movies by genre
   getMoviesByGenre: async (genre) => {
     try {
-      const response = await movieApi.get(`/v1/movies?genre=${encodeURIComponent(genre)}`)
+      const response = await movieApi.get(`/movies?genre=${encodeURIComponent(genre)}`)
       return response.data
     } catch (error) {
       console.error(`Error fetching movies by genre ${genre}:`, error)

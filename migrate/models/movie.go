@@ -11,6 +11,7 @@ type Movie struct {
 
 	Id          string     `bun:"id,pk" json:"id"`
 	Title       string     `bun:"title,notnull" json:"title"`
+	Slug        string     `bun:"slug,notnull" json:"slug"`
 	Director    string     `bun:"director" json:"director"`
 	Cast        string     `bun:"cast" json:"cast"`
 	Genre       string     `bun:"genre" json:"genre"`

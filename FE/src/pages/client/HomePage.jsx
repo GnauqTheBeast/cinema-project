@@ -153,7 +153,7 @@ export default function HomePage() {
                       </div>
                       <div className="flex flex-wrap gap-4">
                         <Link
-                          to={`/movie/${movie.id}`}
+                          to="/showtimes"
                           className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-2 transform hover:scale-105"
                         >
                           <FaTicketAlt />

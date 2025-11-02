@@ -20,7 +20,6 @@ const (
 	RoomTypeStandard RoomType = "standard"
 	RoomTypeVIP      RoomType = "vip"
 	RoomTypeIMAX     RoomType = "imax"
-	RoomType4DX      RoomType = "4dx"
 )
 
 type Room struct {
