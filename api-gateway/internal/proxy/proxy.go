@@ -11,6 +11,7 @@ import (
 	"api-gateway/internal/config"
 	"api-gateway/internal/pkg/logger"
 	"api-gateway/internal/pkg/response"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-resty/resty/v2"
 )
@@ -152,7 +153,7 @@ type ServiceInfo struct {
 
 func (p *Proxy) getTargetService(path string) (*ServiceInfo, string) {
 	switch {
-	case strings.HasPrefix(path, "/api/auth"):
+	case strings.HasPrefix(path, "/api/v1/auth"):
 		return &ServiceInfo{
 			Name:     "auth-service",
 			Endpoint: p.config.Services.AuthService,
@@ -167,10 +168,28 @@ func (p *Proxy) getTargetService(path string) (*ServiceInfo, string) {
 			Endpoint: p.config.Services.MovieService,
 		}, path
 
+	case strings.HasPrefix(path, "/api/v1/users"):
+		return &ServiceInfo{
+			Name:     "user-service",
+			Endpoint: p.config.Services.UserService,
+		}, path
+
 	case strings.HasPrefix(path, "/api/v1/notifications"):
 		return &ServiceInfo{
 			Name:     "notification-service",
 			Endpoint: p.config.Services.NotificationService,
+		}, path
+
+	case strings.HasPrefix(path, "/api/v1/bookings"):
+		return &ServiceInfo{
+			Name:     "booking-service",
+			Endpoint: p.config.Services.BookingService,
+		}, path
+
+	case strings.HasPrefix(path, "/api/v1/payments"):
+		return &ServiceInfo{
+			Name:     "payment-service",
+			Endpoint: p.config.Services.PaymentService,
 		}, path
 
 	default:
@@ -215,6 +234,7 @@ func (p *Proxy) HealthCheck() map[string]bool {
 		"auth-service":         p.config.Services.AuthService,
 		"movie-service":        p.config.Services.MovieService,
 		"notification-service": p.config.Services.NotificationService,
+		"user-service":         p.config.Services.UserService,
 	}
 
 	results := make(map[string]bool)

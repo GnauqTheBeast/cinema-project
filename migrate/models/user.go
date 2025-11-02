@@ -12,6 +12,8 @@ type User struct {
 	Id          string     `bun:"id,pk" json:"id"`
 	Name        string     `bun:"name,notnull" json:"name"`
 	Email       string     `bun:"email,notnull,unique" json:"email"`
+	Dob         time.Time  `bun:"dob" json:"dob,omitempty"`
+	Gender      string     `bun:"gender" json:"gender,omitempty"`
 	Password    string     `bun:"password,notnull" json:"-"`
 	PhoneNumber *string    `bun:"phone_number" json:"phone_number,omitempty"`
 	Status      string     `bun:"status,notnull" json:"status"`

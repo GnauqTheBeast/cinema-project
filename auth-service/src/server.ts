@@ -6,6 +6,7 @@ import { Server } from 'http';
 import DatabaseManager from './models/index.js';
 import { RedisManager } from './config/redis.js';
 import authRoutes from './routes/auth.js';
+import { startAuthGrpcServer } from './transport/grpc/server.js';
 import { IHealthCheck, IServerConfig, IApiError, IDatabaseManager, IRedisManager } from './types/index.js';
 
 class AuthServer {
@@ -62,17 +63,18 @@ class AuthServer {
 
   private initializeRoutes(): void {
     // API routes
-    this.app.use('/api/auth', authRoutes);
+    this.app.use('/api/v1/auth', authRoutes);
 
     // Health check endpoint
-    this.app.get('/api/health', this.healthCheck.bind(this));
+    this.app.get('/api/v1/health', this.healthCheck.bind(this));
 
     // Root endpoint
     this.app.get('/', (req: Request, res: Response) => {
       res.json({ 
         message: 'Auth Service API',
         version: '1.0.0',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        note: 'Token verification now available via gRPC only'
       });
     });
 
@@ -139,9 +141,13 @@ class AuthServer {
       const connected = await this.databaseManager.testConnection();
       
       if (connected) {
-        await this.databaseManager.syncDatabase();
-        console.log('Database initialized successfully');
-        return true;
+        const synced = await this.databaseManager.syncDatabase();
+        if (synced) {
+          console.log('Database initialized successfully');
+          return true;
+        } else {
+          throw new Error('Database sync failed');
+        }
       } else {
         throw new Error('Database connection failed');
       }
@@ -170,7 +176,7 @@ class AuthServer {
 
   public async start(): Promise<Server> {
     try {
-      console.log('Starting Auth Service...');
+      console.log('Starting Auth Service (HTTP + gRPC)...');
 
       // Initialize database
       const dbInitialized = await this.initializeDatabase();
@@ -184,12 +190,21 @@ class AuthServer {
         console.warn('Redis initialization failed, continuing without Redis cache');
       }
 
-      // Start server
+      // Start HTTP server
       const server = this.app.listen(this.port, () => {
-        console.log(`🚀 Auth service running on port ${this.port}`);
-        console.log(`🏥 Health check available at http://localhost:${this.port}/api/health`);
+        console.log(`🚀 Auth HTTP service running on port ${this.port}`);
+        console.log(`🏥 Health check available at http://localhost:${this.port}/api/v1/health`);
         console.log(`📝 API documentation: http://localhost:${this.port}/`);
       });
+
+      // Start gRPC server
+      try {
+        await startAuthGrpcServer();
+        console.log(`🔌 Auth gRPC server started successfully`);
+      } catch (error) {
+        console.error('Failed to start gRPC server:', error);
+        // Don't exit, continue with HTTP server only
+      }
 
       // Graceful shutdown handling
       this.setupGracefulShutdown(server);
@@ -221,8 +236,10 @@ class AuthServer {
         // Close Redis connections
         if (this.redisManager) {
           try {
-            await this.redisManager.disconnect();
-            console.log('Redis connections closed');
+            const disconnected = await this.redisManager.disconnect();
+            if (disconnected) {
+              console.log('Redis connections closed');
+            }
           } catch (error) {
             console.error('Error closing Redis:', error);
           }

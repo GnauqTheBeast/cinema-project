@@ -26,7 +26,6 @@ export default function LoginPage({ onLogin }) {
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('user', JSON.stringify(res.data.user))
 
-      // Connect to WebSocket after successful login
       if (res.data.user && res.data.user.id) {
         websocketService.connect(res.data.user.id.toString())
       }
@@ -36,7 +35,6 @@ export default function LoginPage({ onLogin }) {
     } catch (err) {
       const errorData = err.response?.data
       if (errorData?.requireVerification) {
-        // Redirect to verify page with email
         navigate(`/verify?email=${encodeURIComponent(errorData.email)}`)
         return
       }

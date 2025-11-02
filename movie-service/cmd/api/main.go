@@ -23,7 +23,7 @@ func main() {
 		},
 		Commands: []*cli.Command{
 			ServeAPI(),
-			// ServeGRPC(),
+			ServeGRPC(),
 		},
 	}
 

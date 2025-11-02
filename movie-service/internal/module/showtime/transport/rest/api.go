@@ -44,21 +44,21 @@ func (h *handler) GetShowtimes(c *gin.Context) {
 
 	var dateFrom, dateTo *time.Time
 	if query.DateFrom != "" {
-		if parsed, err := time.Parse("2006-01-02", query.DateFrom); err == nil {
-			dateFrom = &parsed
-		} else {
+		parsed, err := time.Parse("2006-01-02", query.DateFrom)
+		if err != nil {
 			response.BadRequest(c, "Invalid date_from format, use YYYY-MM-DD")
 			return
 		}
+		dateFrom = &parsed
 	}
 
 	if query.DateTo != "" {
-		if parsed, err := time.Parse("2006-01-02", query.DateTo); err == nil {
-			dateTo = &parsed
-		} else {
+		parsed, err := time.Parse("2006-01-02", query.DateTo)
+		if err != nil {
 			response.BadRequest(c, "Invalid date_to format, use YYYY-MM-DD")
 			return
 		}
+		dateTo = &parsed
 	}
 
 	showtimes, total, err := h.biz.GetShowtimes(c.Request.Context(), query.Page, query.Size, query.Search, query.MovieId, query.RoomId, query.Format, query.Status, dateFrom, dateTo)
@@ -302,38 +302,4 @@ func (h *handler) UpdateShowtimeStatus(c *gin.Context) {
 
 	resp := entity.ToShowtimeResponse(showtime)
 	response.Success(c, resp)
-}
-
-func (h *handler) CheckTimeConflict(c *gin.Context) {
-	roomId := c.Query("room_id")
-	startTimeStr := c.Query("start_time")
-	endTimeStr := c.Query("end_time")
-	excludeId := c.Query("exclude_id")
-
-	if roomId == "" || startTimeStr == "" || endTimeStr == "" {
-		response.BadRequest(c, "room_id, start_time, and end_time are required")
-		return
-	}
-
-	startTime, err := time.Parse(time.RFC3339, startTimeStr)
-	if err != nil {
-		response.BadRequest(c, "Invalid start_time format, use RFC3339")
-		return
-	}
-
-	endTime, err := time.Parse(time.RFC3339, endTimeStr)
-	if err != nil {
-		response.BadRequest(c, "Invalid end_time format, use RFC3339")
-		return
-	}
-
-	hasConflict, err := h.biz.CheckTimeConflict(c.Request.Context(), roomId, startTime, endTime, excludeId)
-	if err != nil {
-		response.ErrorWithMessage(c, "Failed to check time conflict")
-		return
-	}
-
-	response.Success(c, map[string]interface{}{
-		"has_conflict": hasConflict,
-	})
 }

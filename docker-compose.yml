@@ -1,31 +1,147 @@
+version: '3.8'
+
 services:
   postgres:
-    container_name: app_postgres
     image: postgres:15-alpine
-    networks:
-      - app
+    container_name: postgres
     environment:
-      POSTGRES_DB: cinema_app
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      PGDATA: /var/lib/postgresql/data
+      POSTGRES_DB: cinema_db
+      POSTGRES_USER: cinema_user
+      POSTGRES_PASSWORD: cinema_password
     volumes:
+      - postgres_data:/var/lib/postgresql/data
       - ./postgres-data:/var/lib/postgresql/data
-    restart: unless-stopped
     ports:
       - "5432:5432"
 
   redis:
-    container_name: app_redis
     image: redis:7.4-alpine
-    networks:
-      - app
-    volumes:
-      - ./redis-data:/data
-    restart: unless-stopped
+    container_name: redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis-data:/data
 
+  movie-service:
+    build:
+      context: ./movie-service
+      dockerfile: Dockerfile
+    container_name: movie-service
+    ports:
+      - "8083:8083"
+      - "50053:50053"
+    env_file:
+      - ./movie-service/.env
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./auth-service/.env
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    env_file:
+      - ./user-service/.env
+    ports:
+      - "8005:8005"
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    env_file:
+      - ./notification-service/.env
+    ports:
+      - "8080:8080"
+#    depends_on:
+#      - postgres
+#      - redis
+
+  booking-service:
+    build:
+      context: ./booking-service
+      dockerfile: Dockerfile
+    container_name: booking-service
+    ports:
+      - "8082:8082"
+    env_file:
+      - ./booking-service/.env
+    restart: unless-stopped
+#    depends_on:
+#      - postgres
+#      - redis
+#      - movie-service
+#      - auth-service
+
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    container_name: payment-service
+    ports:
+      - "8086:8086"
+    env_file:
+      - ./payment-service/.env
+    restart: unless-stopped
+#    depends_on:
+#      - postgres
+#      - redis
+      
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    env_file:
+      - ./api-gateway/.env
+    container_name: api-gateway
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+#    depends_on:
+#      - movie-service
+#      - booking-service
+#      - redis
+  
+  worker-service:
+    build:
+      context: ./worker-service
+      dockerfile: Dockerfile
+    container_name: worker-service
+    env_file:
+      - ./worker-service/.env
+    ports:
+      - "8087:8087"
+    restart: unless-stopped
+#    depends_on:
+#      - postgres
+#      - redis
+
+volumes:
+  postgres_data:
+  redis_data:
 
 networks:
-  app:
+  default:
+    name: cinema-network

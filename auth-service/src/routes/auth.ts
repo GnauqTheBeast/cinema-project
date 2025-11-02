@@ -1,5 +1,6 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import AuthController from '../controllers/authController.js';
+import { authenticateToken, requireAdmin } from '../middleware/permissionMiddleware.js';
 import { IController } from '../types/index.js';
 
 interface IRoute {
@@ -16,13 +17,15 @@ class AuthRoutes {
   }
 
   private initializeRoutes(): void {
+    // Public routes (no authentication required)
     this.router.post('/register', this.handleAsync(AuthController.register));
     this.router.post('/login', this.handleAsync(AuthController.login));
     this.router.post('/admin/login', this.handleAsync(AuthController.loginAdmin));
     this.router.post('/verify-otp', this.handleAsync(AuthController.verifyOtp));
     this.router.post('/resend-otp', this.handleAsync(AuthController.resendOtp));
-    this.router.post('/staff', this.handleAsync(AuthController.createStaff));
-    this.router.get('/permissions', this.handleAsync(AuthController.getPermissions));
+    
+    // Protected routes (authentication required)
+    this.router.post('/staff', authenticateToken, requireAdmin, this.handleAsync(AuthController.registerInternalUser));  
   }
 
   private handleAsync(fn: IController) {

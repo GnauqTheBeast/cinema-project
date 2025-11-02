@@ -1,5 +1,4 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import PermissionTest from '../components/admin/PermissionTest'
 import AdminLoginPage from '../pages/admin/AdminLoginPage'
 import DashboardPage from '../pages/admin/DashboardPage'
 import MovieDetailPage from '../pages/admin/MovieDetailPage'
@@ -13,8 +12,11 @@ import SeatsPage from '../pages/admin/SeatsPage'
 import ShowtimeFormPage from '../pages/admin/ShowtimeFormPage'
 import ShowtimesPage from '../pages/admin/ShowtimesPage'
 import StaffManagementPage from '../pages/admin/StaffManagementPage'
+import BookingPage from '../pages/client/BookingPage'
+import BookingHistoryPage from '../pages/client/BookingHistoryPage'
 import HomePage from '../pages/client/HomePage'
 import LoginPage from '../pages/client/LoginPage'
+import PaymentPage from '../pages/client/PaymentPage'
 import ProfilePage from '../pages/client/ProfilePage'
 import RegisterPage from '../pages/client/RegisterPage'
 import ShowtimePage from '../pages/client/ShowtimePage'
@@ -70,9 +72,25 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
       <Route
         path="/profile"
         element={
-          <ProtectedRoute>
             <ProfilePage />
-          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/showtimes/:showtimeId/booking"
+        element={
+            <BookingPage />
+        }
+      />
+      <Route
+        path="/booking/:bookingId/payment"
+        element={
+            <PaymentPage />
+        }
+      />
+      <Route
+        path="/booking-history"
+        element={
+            <BookingHistoryPage />
         }
       />
 
@@ -214,14 +232,6 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
         element={
           <AdminRoute>
             <StaffManagementPage />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/admin/permissions"
-        element={
-          <AdminRoute>
-            <PermissionTest />
           </AdminRoute>
         }
       />

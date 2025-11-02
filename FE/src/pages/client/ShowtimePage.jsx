@@ -8,6 +8,7 @@ import {
   FaSpinner,
   FaTicketAlt,
 } from 'react-icons/fa'
+import { Link } from 'react-router-dom'
 import Header from '../../components/Header'
 import { movieService } from '../../services/movieService'
 import { showtimeService } from '../../services/showtimeApi'
@@ -384,10 +385,13 @@ export default function ShowtimePage() {
 
                         {/* Actions */}
                         <div className="flex space-x-2">
-                          <button className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-300 flex items-center justify-center space-x-2">
+                          <Link
+                            to={`/showtimes/${showtime.id}/booking`}
+                            className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-300 flex items-center justify-center space-x-2"
+                          >
                             <FaTicketAlt />
                             <span>Đặt vé</span>
-                          </button>
+                          </Link>
                           {movie?.trailer_url && (
                             <a
                               href={movie.trailer_url}

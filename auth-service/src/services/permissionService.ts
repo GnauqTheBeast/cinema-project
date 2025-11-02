@@ -12,11 +12,6 @@ export class PermissionService {
   private static readonly CACHE_TTL = 1800; // 30 minutes
   private static readonly CACHE_PREFIX = 'permissions:';
 
-  /**
-   * Get permissions for a role with Redis caching
-   * @param roleId - The role ID to get permissions for
-   * @returns Array of permissions
-   */
   static async getPermissionsByRoleId(roleId: string): Promise<Permission[]> {
     const cacheKey = `${this.CACHE_PREFIX}${roleId}`;
     
@@ -43,11 +38,6 @@ export class PermissionService {
     }
   }
 
-  /**
-   * Fetch permissions from user-service via gRPC
-   * @param roleId - The role ID to get permissions for
-   * @returns Array of permissions
-   */
   private static async fetchPermissionsFromUserService(roleId: string): Promise<Permission[]> {
     return new Promise((resolve, reject) => {
       userClient.GetPermissionsByRoleId({ role_id: roleId }, (err: any, response: any) => {
@@ -65,12 +55,7 @@ export class PermissionService {
     });
   }
 
-  /**
-   * Check if a user has a specific permission
-   * @param roleId - The role ID
-   * @param permissionCode - The permission code to check
-   * @returns True if user has permission, false otherwise
-   */
+
   static async hasPermission(roleId: string, permissionCode: string): Promise<boolean> {
     try {
       const permissions = await this.getPermissionsByRoleId(roleId);
@@ -81,19 +66,13 @@ export class PermissionService {
     }
   }
 
-  /**
-   * Clear permissions cache for a specific role
-   * @param roleId - The role ID to clear cache for
-   */
+
   static async clearPermissionsCache(roleId: string): Promise<void> {
     const cacheKey = `${this.CACHE_PREFIX}${roleId}`;
     await redisClient.del(cacheKey);
     console.log(`Permissions cache cleared for role: ${roleId}`);
   }
 
-  /**
-   * Clear all permissions cache
-   */
   static async clearAllPermissionsCache(): Promise<void> {
     const keys = await redisClient.keys(`${this.CACHE_PREFIX}*`);
     if (keys.length > 0) {

@@ -17,6 +17,7 @@ type NotificationTitle string
 const (
 	NotificationForgotPassword NotificationTitle = "Forgot Password"
 	NotificationEmailVerified  NotificationTitle = "Email Verified"
+	NotificationBookingSuccess NotificationTitle = "Booking Success"
 )
 
 type Notification struct {

@@ -11,12 +11,15 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
   defaults: true,
   oneofs: true
 });
+
 const proto = grpc.loadPackageDefinition(packageDefinition) as any;
+const UserService = proto.pb.UserService;
 
 const address = process.env.USER_GRPC_ADDRESS || 'localhost:50051';
 
-export const userClient = new proto.user.UserService(address, grpc.credentials.createInsecure());
+const userClient = new UserService(address, grpc.credentials.createInsecure());
 
+export { userClient };
 export type UserClient = typeof userClient;
 
 

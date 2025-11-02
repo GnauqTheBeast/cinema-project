@@ -6,14 +6,12 @@ import (
 
 	"github.com/samber/do"
 	"notification-service/internal/pkg/pubsub"
-	"notification-service/internal/services"
 	"notification-service/internal/types"
 )
 
 type WebSocketHandler struct {
-	containier   *do.Injector
-	pubsub       pubsub.PubSub
-	emailService *services.EmailService
+	containier *do.Injector
+	pubsub     pubsub.PubSub
 }
 
 func NewWebSocketHandler(container *do.Injector) (*WebSocketHandler, error) {
@@ -22,15 +20,9 @@ func NewWebSocketHandler(container *do.Injector) (*WebSocketHandler, error) {
 		return nil, err
 	}
 
-	emailService, err := do.Invoke[*services.EmailService](container)
-	if err != nil {
-		return nil, err
-	}
-
 	return &WebSocketHandler{
-		containier:   container,
-		pubsub:       pubsub,
-		emailService: emailService,
+		containier: container,
+		pubsub:     pubsub,
 	}, nil
 }
 
@@ -76,13 +68,13 @@ func (h *WebSocketHandler) notificatonHandler(ctx *WSContext, request *WSRequest
 			_ = subscriber.Unsubscribe(ctx.Context())
 		}()
 
-		channel := subscriber.MessageChan()
+		messageChan := subscriber.MessageChan()
 		for {
 			select {
 			case <-ctx.Context().Done():
 				fmt.Println("Context done, stopping subscriber")
 				return
-			case msg := <-channel:
+			case msg := <-messageChan:
 				if msg.Topic == notificationTopic(userId) {
 					ctx.WSConn.sendMessage(&WSResponse{
 						Id:     request.Id,
@@ -90,6 +82,8 @@ func (h *WebSocketHandler) notificatonHandler(ctx *WSContext, request *WSRequest
 						Error:  nil,
 					})
 				}
+
+				// TODO: handle booking_success here
 			}
 		}
 	}()

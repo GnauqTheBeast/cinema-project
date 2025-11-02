@@ -9,6 +9,7 @@ type EmailVerify struct {
 	Body       string `json:"body"`
 	VerifyCode string `json:"verify_code"`
 	VerifyURL  string `json:"verify_url"`
+	BookingId  string `json:"booking_id"`
 }
 
 type EmailVerifyMessage struct {
@@ -16,6 +17,7 @@ type EmailVerifyMessage struct {
 	To         string `json:"to"`
 	VerifyCode string `json:"verify_code"`
 	VerifyURL  string `json:"verify_url"`
+	BookingId  string `json:"booking_id"`
 }
 
 func UnmarshalEmailVerify(data []byte) (interface{}, error) {
