@@ -41,6 +41,13 @@ services:
     retries: 3
     load_balancer: []
 
+  payment_service:
+    url: "http://localhost:8086"
+    health_check_path: "/api/v1/health"
+    timeout: 30
+    retries: 3
+    load_balancer: []
+
 redis:
   address: "localhost:6379"
   password: ""
@@ -70,6 +77,10 @@ auth:
 
     # Booking service - public endpoints
     - "/api/v1/bookings/*"
+
+    # Payment service - public endpoints
+    - "/api/v1/payments"
+    - "/api/v1/payments/*"
 
     # Notification service - public endpoints  
     - "/api/v1/notifications/*/unread-count"

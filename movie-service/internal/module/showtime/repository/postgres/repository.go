@@ -75,16 +75,18 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 }
 
 func (r *Repository) GetByID(ctx context.Context, id string) (*entity.Showtime, error) {
-	var showtime entity.Showtime
+	showtime := new(entity.Showtime)
 	err := r.roDb.NewSelect().
-		Model(&showtime).
-		Where("id = ?", id).
+		Model(showtime).
+		Relation("Movie").
+		Relation("Room").
+		Where("st.id = ?", id).
 		Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return &showtime, nil
+	return showtime, nil
 }
 
 func (r *Repository) GetMany(ctx context.Context, limit, offset int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) ([]*entity.Showtime, error) {

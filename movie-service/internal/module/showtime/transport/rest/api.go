@@ -303,37 +303,3 @@ func (h *handler) UpdateShowtimeStatus(c *gin.Context) {
 	resp := entity.ToShowtimeResponse(showtime)
 	response.Success(c, resp)
 }
-
-func (h *handler) CheckTimeConflict(c *gin.Context) {
-	roomId := c.Query("room_id")
-	startTimeStr := c.Query("start_time")
-	endTimeStr := c.Query("end_time")
-	excludeId := c.Query("exclude_id")
-
-	if roomId == "" || startTimeStr == "" || endTimeStr == "" {
-		response.BadRequest(c, "room_id, start_time, and end_time are required")
-		return
-	}
-
-	startTime, err := time.Parse(time.RFC3339, startTimeStr)
-	if err != nil {
-		response.BadRequest(c, "Invalid start_time format, use RFC3339")
-		return
-	}
-
-	endTime, err := time.Parse(time.RFC3339, endTimeStr)
-	if err != nil {
-		response.BadRequest(c, "Invalid end_time format, use RFC3339")
-		return
-	}
-
-	hasConflict, err := h.biz.CheckTimeConflict(c.Request.Context(), roomId, startTime, endTime, excludeId)
-	if err != nil {
-		response.ErrorWithMessage(c, "Failed to check time conflict")
-		return
-	}
-
-	response.Success(c, map[string]interface{}{
-		"has_conflict": hasConflict,
-	})
-}

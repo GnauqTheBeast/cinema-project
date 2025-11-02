@@ -97,3 +97,25 @@ func (h *BookingHandler) CreateBooking(c echo.Context) error {
 
 	return response.SuccessWithMessage(c, "Booking created successfully", booking)
 }
+
+func (h *BookingHandler) GetBookingByID(c echo.Context) error {
+	bookingService, err := do.Invoke[*services.BookingService](h.container)
+	if err != nil {
+		return response.InternalServerError(c, "Failed to get booking service")
+	}
+
+	bookingId := c.Param("id")
+	if bookingId == "" {
+		return response.BadRequest(c, "Booking ID is required")
+	}
+
+	booking, err := bookingService.GetBookingByID(c.Request().Context(), bookingId)
+	if err != nil {
+		if errors.Is(err, services.ErrBookingNotFound) {
+			return response.NotFound(c, services.ErrBookingNotFound)
+		}
+		return response.ErrorWithMessage(c, "Failed to get booking")
+	}
+
+	return response.SuccessWithMessage(c, "Booking fetched successfully", booking)
+}

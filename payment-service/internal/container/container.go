@@ -4,17 +4,14 @@ import (
 	"os"
 
 	"payment-service/internal/module/payment/business"
-
+	"payment-service/internal/module/payment/repository/postgres"
 	"payment-service/internal/pkg/caching"
-
+	"payment-service/internal/pkg/db"
 	"payment-service/internal/pkg/pubsub"
 	redisPubsub "payment-service/internal/pkg/pubsub/redis"
-
-	"github.com/redis/go-redis/v9"
-
-	"payment-service/internal/pkg/db"
 	"payment-service/internal/utils/env"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/samber/do"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/extra/bundebug"
@@ -52,6 +49,7 @@ func NewContainer() *do.Injector {
 	do.Provide(injector, provideRedisPubsub)
 
 	// Payment module
+	do.Provide(injector, providePaymentRepository)
 	do.Provide(injector, providePaymentBusiness)
 
 	return injector
@@ -194,6 +192,14 @@ func provideRedisPubsub(i *do.Injector) (pubsub.PubSub, error) {
 	}
 
 	return redisPubsub.NewRedisPubsub(pubsubReadonly, pubsub), nil
+}
+
+func providePaymentRepository(i *do.Injector) (repository.PaymentRepository, error) {
+	db, err := do.Invoke[*bun.DB](i)
+	if err != nil {
+		return nil, err
+	}
+	return repository.NewPaymentRepository(db), nil
 }
 
 func providePaymentBusiness(i *do.Injector) (business.PaymentBiz, error) {

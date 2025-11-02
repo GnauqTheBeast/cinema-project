@@ -31,11 +31,23 @@ func ServeAPI() *cli.Command {
 func startRouteV1(group *gin.RouterGroup) {
 	i := container.NewContainer()
 
+	group.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "healthy",
+			"service": "payment-service",
+		})
+	})
+
 	paymentApi, err := rest.NewAPI(i)
 	if err != nil {
 		panic(err)
 	}
 
-	// SePay webhook endpoint
-	group.POST("/webhooks/sepay", paymentApi.SePayWebhook)
+	payments := group.Group("/payments")
+	{
+		payments.POST("", paymentApi.CreatePayment)
+		payments.GET("/booking/:bookingId", paymentApi.GetPaymentByBookingId)
+		payments.POST("/crypto/verify", paymentApi.VerifyCryptoPayment)
+		payments.POST("/webhooks/sepay", paymentApi.SePayWebhook)
+	}
 }

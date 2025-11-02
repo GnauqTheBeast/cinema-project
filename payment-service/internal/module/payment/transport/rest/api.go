@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"fmt"
 	"net/http"
 
 	"payment-service/internal/module/payment/business"
@@ -25,6 +26,60 @@ func NewAPI(i *do.Injector) (*handler, error) {
 	}, nil
 }
 
+func (h *handler) CreatePayment(c *gin.Context) {
+	var req struct {
+		BookingId string  `json:"booking_id" binding:"required"`
+		Amount    float64 `json:"amount" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid request payload",
+		})
+		return
+	}
+
+	payment, err := h.paymentBiz.CreatePayment(c.Request.Context(), req.BookingId, req.Amount)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Failed to create payment",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    payment,
+	})
+}
+
+func (h *handler) GetPaymentByBookingId(c *gin.Context) {
+	bookingId := c.Param("bookingId")
+	if bookingId == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Booking ID is required",
+		})
+		return
+	}
+
+	payment, err := h.paymentBiz.GetPaymentByBookingId(c.Request.Context(), bookingId)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"message": "Payment not found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    payment,
+	})
+}
+
 func (h *handler) SePayWebhook(c *gin.Context) {
 	webhook := new(entity.SePayWebhook)
 	if err := c.ShouldBindJSON(webhook); err != nil {
@@ -34,7 +89,6 @@ func (h *handler) SePayWebhook(c *gin.Context) {
 		return
 	}
 
-	// Validate required fields
 	if webhook.Id == 0 || webhook.Gateway == "" || webhook.TransferAmount == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Missing required fields",
@@ -42,7 +96,8 @@ func (h *handler) SePayWebhook(c *gin.Context) {
 		return
 	}
 
-	// Process webhook
+	fmt.Println("webhook data:", webhook)
+
 	err := h.paymentBiz.ProcessSePayWebhook(c.Request.Context(), webhook)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -53,5 +108,32 @@ func (h *handler) SePayWebhook(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": "success",
+	})
+}
+
+func (h *handler) VerifyCryptoPayment(c *gin.Context) {
+	var req entity.CryptoVerificationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid request payload",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	err := h.paymentBiz.VerifyCryptoPayment(c.Request.Context(), &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Failed to verify crypto payment",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Crypto payment verified successfully",
 	})
 }

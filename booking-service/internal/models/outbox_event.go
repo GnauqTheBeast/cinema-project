@@ -9,12 +9,12 @@ import (
 type OutboxEvent struct {
 	bun.BaseModel `bun:"table:outbox_events"`
 
-	ID        int       `bun:"id,pk,autoincrement" json:"id"`
-	EventType string    `bun:"event_type,notnull" json:"event_type"`
-	Payload   string    `bun:"payload,notnull" json:"payload"`
-	Status    string    `bun:"status,notnull,default:'pending'" json:"status"`
-	CreatedAt time.Time `bun:"created_at,notnull,default:now()" json:"created_at"`
-	UpdatedAt time.Time `bun:"updated_at,notnull,default:now()" json:"updated_at"`
+	ID        int               `bun:"id,pk,autoincrement" json:"id"`
+	EventType OutboxEventType   `bun:"event_type,notnull" json:"event_type"`
+	Payload   string            `bun:"payload,notnull" json:"payload"`
+	Status    OutboxEventStatus `bun:"status,notnull,default:'pending'" json:"status"`
+	CreatedAt time.Time         `bun:"created_at,notnull,default:now()" json:"created_at"`
+	UpdatedAt time.Time         `bun:"updated_at,notnull,default:now()" json:"updated_at"`
 }
 
 type OutboxEventStatus string

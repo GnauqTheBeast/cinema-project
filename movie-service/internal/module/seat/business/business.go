@@ -49,11 +49,11 @@ type SeatRepository interface {
 }
 
 type business struct {
-	repository   SeatRepository
-	cache        caching.Cache
-	roCache      caching.ReadOnlyCache
-	redisClient  redis.UniversalClient
-	showtimeBiz  showtimeBusiness.ShowtimeBiz
+	repository  SeatRepository
+	cache       caching.Cache
+	roCache     caching.ReadOnlyCache
+	redisClient redis.UniversalClient
+	showtimeBiz showtimeBusiness.ShowtimeBiz
 }
 
 func NewBusiness(i *do.Injector) (SeatBiz, error) {
@@ -83,11 +83,11 @@ func NewBusiness(i *do.Injector) (SeatBiz, error) {
 	}
 
 	return &business{
-		repository:   repository,
-		cache:        cache,
-		roCache:      roCache,
-		redisClient:  redisClient,
-		showtimeBiz:  showtimeBiz,
+		repository:  repository,
+		cache:       cache,
+		roCache:     roCache,
+		redisClient: redisClient,
+		showtimeBiz: showtimeBiz,
 	}, nil
 }
 

@@ -10,7 +10,7 @@ import (
 	"github.com/uptrace/bun"
 )
 
-func CreateOutboxEvent(ctx context.Context, db *bun.DB, eventType string, eventData interface{}) error {
+func CreateOutboxEvent(ctx context.Context, db bun.IDB, eventType models.OutboxEventType, eventData interface{}) error {
 	payload, err := json.Marshal(eventData)
 	if err != nil {
 		return fmt.Errorf("failed to marshal event data: %w", err)
@@ -19,7 +19,7 @@ func CreateOutboxEvent(ctx context.Context, db *bun.DB, eventType string, eventD
 	event := &models.OutboxEvent{
 		EventType: eventType,
 		Payload:   string(payload),
-		Status:    string(models.OutboxStatusPending),
+		Status:    models.OutboxStatusPending,
 	}
 
 	_, err = db.NewInsert().

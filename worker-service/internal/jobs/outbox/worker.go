@@ -90,9 +90,12 @@ func (w *Worker) processEvents(ctx context.Context) error {
 	w.logger.Debug("Processing %d outbox events", len(events))
 
 	for _, event := range events {
-		if err := w.processEvent(ctx, event); err != nil {
+		if err = w.processEvent(ctx, event); err != nil {
 			w.logger.Error("Failed to process event %d: %v", event.ID, err)
-			w.markEventAsFailed(ctx, event.ID, err)
+			err = w.markEventAsFailed(ctx, event.ID, err)
+			if err != nil {
+				return err
+			}
 			continue
 		}
 
@@ -110,8 +113,8 @@ func (w *Worker) processEvent(ctx context.Context, event models.OutboxEvent) err
 	switch event.EventType {
 	case models.EventTypeBookingCreated:
 		return w.handleBookingCreated(ctx, event)
-	case models.EventTypePaymentCompleted:
-		return w.handlePaymentCompleted(ctx, event)
+	// Payment completion is handled by PaymentSubscriber (real-time pub/sub)
+	// Not processed here to avoid duplicate processing
 	case models.EventTypeSeatReserved:
 		return w.handleSeatReserved(ctx, event)
 	case models.EventTypeSeatReleased:
@@ -156,52 +159,6 @@ func (w *Worker) handleBookingCreated(ctx context.Context, event models.OutboxEv
 	}
 
 	w.logger.Info("Successfully locked %d seats for booking %s", len(seatIds), bookingID)
-	return nil
-}
-
-func (w *Worker) handlePaymentCompleted(ctx context.Context, event models.OutboxEvent) error {
-	var data map[string]interface{}
-	if err := json.Unmarshal([]byte(event.Payload), &data); err != nil {
-		return fmt.Errorf("failed to unmarshal payload: %w", err)
-	}
-
-	paymentID, ok := data["payment_id"].(string)
-	if !ok {
-		return fmt.Errorf("invalid payment_id in payload")
-	}
-
-	bookingID, ok := data["booking_id"].(string)
-	if !ok {
-		return fmt.Errorf("invalid booking_id in payload")
-	}
-
-	amount, ok := data["amount"].(float64)
-	if !ok {
-		return fmt.Errorf("invalid amount in payload")
-	}
-
-	w.logger.Info("Handling payment completed event for payment ID: %s, booking ID: %s, amount: %.2f", paymentID, bookingID, amount)
-
-	notificationMessage := map[string]interface{}{
-		"type":       "payment_completed",
-		"payment_id": paymentID,
-		"booking_id": bookingID,
-		"amount":     amount,
-		"status":     "completed",
-		"timestamp":  time.Now().Unix(),
-	}
-
-	message := &pubsub.Message{
-		Topic: "payment.notifications",
-		Data:  notificationMessage,
-	}
-
-	err := w.pubsub.Publish(ctx, message)
-	if err != nil {
-		return fmt.Errorf("failed to publish notification message: %w", err)
-	}
-
-	w.logger.Info("Payment completed notification sent for payment ID: %s", paymentID)
 	return nil
 }
 

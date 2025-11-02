@@ -84,7 +84,7 @@ func GetBookingById(ctx context.Context, db *bun.DB, id string) (*models.Booking
 	return booking, nil
 }
 
-func CreateBooking(ctx context.Context, db *bun.DB, booking *models.Booking) error {
+func CreateBooking(ctx context.Context, db bun.IDB, booking *models.Booking) error {
 	_, err := db.NewInsert().
 		Model(booking).
 		Exec(ctx)
@@ -132,4 +132,17 @@ func GetTotalBookingsByUserId(ctx context.Context, db *bun.DB, userId string) (i
 	}
 
 	return count, nil
+}
+
+func UpdateBookingStatus(ctx context.Context, db *bun.DB, bookingId string, status models.BookingStatus) error {
+	_, err := db.NewUpdate().
+		Model((*models.Booking)(nil)).
+		Set("status = ?", status).
+		Where("id = ?", bookingId).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to update booking status: %w", err)
+	}
+
+	return nil
 }

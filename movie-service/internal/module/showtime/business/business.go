@@ -103,11 +103,9 @@ func (b *business) GetShowtimeById(ctx context.Context, id string) (*entity.Show
 		return nil, ErrInvalidShowtimeData
 	}
 
-	callback := func() (*entity.Showtime, error) {
+	showtime, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, redisShowtimeDetail(id), CACHE_TTL_1_HOUR, func() (*entity.Showtime, error) {
 		return b.repository.GetByID(ctx, id)
-	}
-
-	showtime, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, redisShowtimeDetail(id), CACHE_TTL_1_HOUR, callback)
+	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrShowtimeNotFound

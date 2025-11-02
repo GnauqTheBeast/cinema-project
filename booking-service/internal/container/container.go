@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"booking-service/internal/grpc"
+	"booking-service/internal/grpc_server"
 	"booking-service/internal/pkg/caching"
 	"booking-service/internal/pkg/db"
 	"booking-service/internal/pkg/pubsub"
@@ -51,6 +52,7 @@ func NewContainer() *do.Injector {
 	do.Provide(injector, provideBookingService)
 	do.Provide(injector, provideMovieClient)
 	do.Provide(injector, provideAuthClient)
+	do.Provide(injector, provideBookingServer)
 
 	return injector
 }
@@ -203,4 +205,8 @@ func provideMovieClient(_ *do.Injector) (*grpc.MovieClient, error) {
 
 func provideAuthClient(_ *do.Injector) (*grpc.AuthClient, error) {
 	return grpc.NewAuthClient()
+}
+
+func provideBookingServer(i *do.Injector) (*grpc_server.BookingServer, error) {
+	return grpc_server.NewBookingServer(i)
 }

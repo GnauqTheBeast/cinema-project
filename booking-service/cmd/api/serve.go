@@ -2,16 +2,21 @@ package main
 
 import (
 	"errors"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
 
 	"booking-service/internal/container"
+	grpcServer "booking-service/internal/grpc_server"
 	"booking-service/internal/handlers"
 	"booking-service/internal/utils/env"
+	"booking-service/proto/pb"
 
+	"github.com/samber/do"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+	"google.golang.org/grpc"
 )
 
 func commandServe() *cli.Command {
@@ -53,12 +58,39 @@ func serve(c *cli.Context) error {
 
 	wg := new(sync.WaitGroup)
 
+	// Start HTTP server
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		logrus.Printf("ListenAndServe: %s (%s)\n", c.String("addr"), vs["API_MODE"])
+		logrus.Printf("HTTP Server listening on %s (%s)\n", c.String("addr"), vs["API_MODE"])
 		if err = server.ListenAndServe(); err != nil && !errors.Is(http.ErrServerClosed, err) {
-			logrus.Fatalf("ListenAndServe: %v\n", err)
+			logrus.Fatalf("HTTP Server error: %v\n", err)
+		}
+	}()
+
+	// Start gRPC server
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		grpcPort := "50082"
+		lis, err := net.Listen("tcp", ":"+grpcPort)
+		if err != nil {
+			logrus.Fatalf("Failed to listen on gRPC port %s: %v", grpcPort, err)
+		}
+
+		grpcSrv := grpc.NewServer()
+
+		bookingServer, err := do.Invoke[*grpcServer.BookingServer](i)
+		if err != nil {
+			logrus.Fatalf("Failed to create booking gRPC server: %v", err)
+		}
+
+		pb.RegisterBookingServiceServer(grpcSrv, bookingServer)
+
+		logrus.Printf("gRPC Server listening on :%s\n", grpcPort)
+		if err := grpcSrv.Serve(lis); err != nil {
+			logrus.Fatalf("gRPC Server error: %v\n", err)
 		}
 	}()
 

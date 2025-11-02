@@ -1,126 +1,323 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { FaArrowLeft, FaCreditCard, FaMobile, FaQrcode, FaShieldAlt, FaCheckCircle, FaBitcoin } from 'react-icons/fa'
+import { FaArrowLeft, FaCopy, FaWallet, FaCheck } from 'react-icons/fa'
+import { ethers } from 'ethers'
 import Header from '../../components/Header'
+import { bookingService } from '../../services/bookingService'
+
+// Helper function to get booking code without hyphens (bank transfer compatible)
+const getBankTransferCode = (bookingId) => {
+  return bookingId.replace(/-/g, '').toUpperCase()
+}
 
 const PaymentPage = () => {
   const { bookingId } = useParams()
   const navigate = useNavigate()
-  
-  const [selectedMethod, setSelectedMethod] = useState('')
-  const [cardNumber, setCardNumber] = useState('')
-  const [expiryDate, setExpiryDate] = useState('')
-  const [cvv, setCvv] = useState('')
-  const [cardholderName, setCardholderName] = useState('')
-  const [phoneNumber, setPhoneNumber] = useState('')
-  const [cryptoAddress, setCryptoAddress] = useState('')
-  const [selectedCrypto, setSelectedCrypto] = useState('BTC')
-  const [isProcessing, setIsProcessing] = useState(false)
 
-  const paymentMethods = [
-    {
-      id: 'credit_card',
-      name: 'Thẻ tín dụng/ghi nợ',
-      icon: FaCreditCard,
-      description: 'Visa, Mastercard, JCB'
-    },
-    {
-      id: 'momo',
-      name: 'Ví MoMo',
-      icon: FaMobile,
-      description: 'Thanh toán qua ví điện tử'
-    },
-    {
-      id: 'qr_code',
-      name: 'Quét mã QR',
-      icon: FaQrcode,
-      description: 'Quét mã QR để thanh toán'
-    },
-    {
-      id: 'crypto',
-      name: 'Tiền điện tử',
-      icon: FaBitcoin,
-      description: 'Bitcoin, Ethereum, USDT'
+  const [booking, setBooking] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [qrCodeUrl, setQrCodeUrl] = useState('')
+
+  // Payment method state
+  const [paymentMethod, setPaymentMethod] = useState('vnd') // 'vnd' or 'crypto'
+
+  // Crypto state
+  const [walletAddress, setWalletAddress] = useState('')
+  const [isConnecting, setIsConnecting] = useState(false)
+  const [cryptoAmount, setCryptoAmount] = useState(0)
+  const [isPaying, setIsPaying] = useState(false)
+  const [paymentSuccess, setPaymentSuccess] = useState(false)
+  const [ethUsdPrice, setEthUsdPrice] = useState(0)
+  const [vndUsdRate, setVndUsdRate] = useState(0)
+  const [loadingPrice, setLoadingPrice] = useState(true)
+
+  // Contract config (replace with your actual contract)
+  const PAYMENT_RECEIVER = '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb' // Your wallet address
+
+  useEffect(() => {
+    fetchBooking()
+    fetchCryptoPrices()
+  }, [bookingId])
+
+  useEffect(() => {
+    // Check if wallet is already connected
+    checkWalletConnection()
+  }, [])
+
+  useEffect(() => {
+    // Recalculate crypto amount when prices are fetched
+    if (booking && ethUsdPrice && vndUsdRate) {
+      const usdAmount = booking.total_amount * vndUsdRate
+      const ethAmount = usdAmount / ethUsdPrice
+      setCryptoAmount(ethAmount)
+      console.log('Updated crypto amount:', ethAmount, 'ETH (Price:', ethUsdPrice, 'USD)')
     }
-  ]
+  }, [booking, ethUsdPrice, vndUsdRate])
 
-  const cryptoOptions = [
-    { id: 'BTC', name: 'Bitcoin', symbol: 'BTC', rate: 0.0000012 },
-    { id: 'ETH', name: 'Ethereum', symbol: 'ETH', rate: 0.000018 },
-    { id: 'USDT', name: 'Tether', symbol: 'USDT', rate: 1 }
-  ]
+  const fetchBooking = async () => {
+    try {
+      setLoading(true)
 
-  const formatCardNumber = (value) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '')
-    const matches = v.match(/\d{4,16}/g)
-    const match = matches && matches[0] || ''
-    const parts = []
-    for (let i = 0, len = match.length; i < len; i += 4) {
-      parts.push(match.substring(i, i + 4))
-    }
-    if (parts.length) {
-      return parts.join(' ')
-    } else {
-      return v
-    }
-  }
+      console.log('Fetching booking with ID:', bookingId)
 
-  const formatExpiryDate = (value) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '')
-    if (v.length >= 2) {
-      return v.substring(0, 2) + '/' + v.substring(2, 4)
-    }
-    return v
-  }
+      const bookingResponse = await bookingService.getBookingById(bookingId)
 
-  const handleCardNumberChange = (e) => {
-    const formatted = formatCardNumber(e.target.value)
-    setCardNumber(formatted)
-  }
+      console.log('Booking response:', bookingResponse)
 
-  const handleExpiryDateChange = (e) => {
-    const formatted = formatExpiryDate(e.target.value)
-    setExpiryDate(formatted)
-  }
-
-  const handleCvvChange = (e) => {
-    const value = e.target.value.replace(/[^0-9]/gi, '')
-    if (value.length <= 4) {
-      setCvv(value)
-    }
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!selectedMethod) {
-      alert('Vui lòng chọn phương thức thanh toán')
-      return
-    }
-
-    if (selectedMethod === 'crypto' && !cryptoAddress) {
-      alert('Vui lòng nhập địa chỉ ví của bạn')
-      return
-    }
-
-    setIsProcessing(true)
-    
-    // Simulate payment processing
-    setTimeout(() => {
-      setIsProcessing(false)
-      if (selectedMethod === 'crypto') {
-        alert('Yêu cầu thanh toán đã được gửi! Vui lòng chuyển tiền theo hướng dẫn và chờ xác nhận.')
-      } else {
-        alert('Thanh toán thành công!')
+      // Backend returns {code, message, data}, not {success, data}
+      if (!bookingResponse.data || bookingResponse.code !== 200) {
+        const errorMsg = bookingResponse.message || 'Không tìm thấy booking'
+        console.error('Booking not found:', errorMsg)
+        setError(errorMsg)
+        return
       }
-      navigate('/profile')
-    }, 3000)
+
+      setBooking(bookingResponse.data)
+
+      // IMPORTANT: Create payment record in database before showing QR code
+      // This ensures SePay webhook can find the payment when user completes transfer
+      try {
+        const paymentApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1'
+        const token = localStorage.getItem('token')
+
+        const paymentResponse = await fetch(`${paymentApiUrl}/payments`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            booking_id: bookingId,
+            amount: bookingResponse.data.total_amount,
+          }),
+        })
+
+        if (!paymentResponse.ok) {
+          throw new Error('Failed to create payment record')
+        }
+
+        const paymentData = await paymentResponse.json()
+        console.log('Payment record created:', paymentData)
+      } catch (paymentErr) {
+        console.error('Error creating payment:', paymentErr)
+        // Continue anyway - QR code will still work, but might need manual verification
+        alert('Cảnh báo: Không thể tạo payment record. Vui lòng liên hệ admin nếu thanh toán không được tự động xác nhận.')
+      }
+
+      // Generate QR code URL (client-side only, no API call needed)
+      const acc = '51020036688'
+      const bank = 'MBBANK'
+      const bankCode = getBankTransferCode(bookingId)
+      const des = `QH${bankCode}` // UUID without hyphens - bank transfer compatible
+      const amount = Math.round(bookingResponse.data.total_amount)
+      const qrUrl = `https://qr.sepay.vn/img?acc=${acc}&bank=${bank}&amount=${amount}&des=${des}`
+      setQrCodeUrl(qrUrl)
+
+      console.log('QR URL generated:', qrUrl)
+
+    } catch (err) {
+      console.error('Error fetching booking:', err)
+      console.error('Error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+      })
+
+      const errorMsg = err.response?.data?.message || err.message || 'Có lỗi xảy ra khi tải dữ liệu'
+      setError(`Lỗi: ${errorMsg}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchCryptoPrices = async () => {
+    try {
+      setLoadingPrice(true)
+
+      // Fetch ETH/USD price from CoinGecko
+      const ethResponse = await fetch(
+        'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'
+      )
+      const ethData = await ethResponse.json()
+      const ethPrice = ethData.ethereum.usd
+      setEthUsdPrice(ethPrice)
+
+      // Fetch VND/USD rate from Exchange Rate API
+      const vndResponse = await fetch(
+        'https://api.exchangerate-api.com/v4/latest/USD'
+      )
+      const vndData = await vndResponse.json()
+      const vndRate = 1 / vndData.rates.VND // USD per VND
+      setVndUsdRate(vndRate)
+
+      console.log('Fetched prices:', { ethPrice, vndRate })
+    } catch (err) {
+      console.error('Error fetching crypto prices:', err)
+      // Fallback to default values
+      setEthUsdPrice(2000)
+      setVndUsdRate(0.000040)
+    } finally {
+      setLoadingPrice(false)
+    }
+  }
+
+  const checkWalletConnection = async () => {
+    if (typeof window.ethereum !== 'undefined') {
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum)
+        const accounts = await provider.listAccounts()
+        if (accounts.length > 0) {
+          setWalletAddress(accounts[0].address)
+        }
+      } catch (err) {
+        console.error('Error checking wallet connection:', err)
+      }
+    }
+  }
+
+  const connectWallet = async () => {
+    if (typeof window.ethereum === 'undefined') {
+      alert('Please install MetaMask to use crypto payment!')
+      window.open('https://metamask.io/download/', '_blank')
+      return
+    }
+
+    try {
+      setIsConnecting(true)
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      await provider.send('eth_requestAccounts', [])
+      const signer = await provider.getSigner()
+      const address = await signer.getAddress()
+      setWalletAddress(address)
+      console.log('Wallet connected:', address)
+    } catch (err) {
+      console.error('Error connecting wallet:', err)
+      alert('Failed to connect wallet: ' + err.message)
+    } finally {
+      setIsConnecting(false)
+    }
+  }
+
+  const disconnectWallet = () => {
+    setWalletAddress('')
+  }
+
+  const handleCryptoPayment = async () => {
+    if (!walletAddress) {
+      alert('Please connect your wallet first!')
+      return
+    }
+
+    try {
+      setIsPaying(true)
+
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const signer = await provider.getSigner()
+
+      // Send transaction
+      const tx = await signer.sendTransaction({
+        to: PAYMENT_RECEIVER,
+        value: ethers.parseEther(cryptoAmount.toFixed(6)),
+        data: ethers.hexlify(ethers.toUtf8Bytes(`QH-${bookingId}`)),
+      })
+
+      console.log('Transaction sent:', tx.hash)
+      alert(`Transaction sent! Hash: ${tx.hash}`)
+
+      // Wait for confirmation
+      const receipt = await tx.wait()
+      console.log('Transaction confirmed:', receipt)
+
+      // Submit transaction to backend for verification
+      try {
+        const verifyResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1'}/payments/crypto/verify`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify({
+            booking_id: bookingId,
+            tx_hash: tx.hash,
+            from_address: walletAddress,
+            to_address: PAYMENT_RECEIVER,
+            amount_eth: cryptoAmount.toFixed(6),
+            amount_vnd: booking.total_amount,
+            network: 'ethereum',
+          }),
+        })
+
+        if (!verifyResponse.ok) {
+          throw new Error('Backend verification failed')
+        }
+
+        console.log('Backend verification successful')
+      } catch (verifyErr) {
+        console.error('Error verifying with backend:', verifyErr)
+        // Continue anyway - transaction was successful on chain
+      }
+
+      setPaymentSuccess(true)
+      alert('Payment successful! Transaction confirmed.')
+
+      // Redirect after 2 seconds
+      setTimeout(() => {
+        navigate('/booking-success')
+      }, 2000)
+
+    } catch (err) {
+      console.error('Error sending payment:', err)
+      alert('Payment failed: ' + err.message)
+    } finally {
+      setIsPaying(false)
+    }
+  }
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(price)
+  }
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text)
+    alert('Đã sao chép!')
+  }
+
+  const shortenAddress = (address) => {
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">{error}</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-300"
+          >
+            Quay lại
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-black">
       <Header />
-      
-      {/* Page Header */}
+
       <div className="bg-gray-900 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -138,301 +335,256 @@ const PaymentPage = () => {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Payment Form */}
-          <div className="lg:col-span-2">
-            <div className="bg-gray-900 rounded-xl shadow-lg p-6 border border-gray-800">
-              <h2 className="text-2xl font-bold text-white mb-6">Phương thức thanh toán</h2>
-              
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Payment Methods */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-white mb-4">Chọn phương thức thanh toán</h3>
-                  {paymentMethods.map((method) => {
-                    const Icon = method.icon
-                    return (
-                      <label
-                        key={method.id}
-                        className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all duration-300 ${
-                          selectedMethod === method.id
-                            ? 'border-red-500 bg-red-500/10'
-                            : 'border-gray-700 hover:border-gray-600'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          value={method.id}
-                          checked={selectedMethod === method.id}
-                          onChange={(e) => setSelectedMethod(e.target.value)}
-                          className="sr-only"
-                        />
-                        <div className="flex items-center space-x-4">
-                          <div className={`p-3 rounded-lg ${
-                            selectedMethod === method.id ? 'bg-red-600' : 'bg-gray-700'
-                          }`}>
-                            <Icon className="w-6 h-6 text-white" />
-                          </div>
-                          <div>
-                            <h4 className="text-white font-medium">{method.name}</h4>
-                            <p className="text-gray-400 text-sm">{method.description}</p>
-                          </div>
-                        </div>
-                      </label>
-                    )
-                  })}
-                </div>
+        {/* Payment Method Tabs */}
+        <div className="flex gap-4 mb-6">
+          <button
+            onClick={() => setPaymentMethod('vnd')}
+            className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-colors duration-300 ${
+              paymentMethod === 'vnd'
+                ? 'bg-red-600 text-white'
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+            }`}
+          >
+            Chuyển khoản VND
+          </button>
+          <button
+            onClick={() => setPaymentMethod('crypto')}
+            className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-colors duration-300 flex items-center justify-center gap-2 ${
+              paymentMethod === 'crypto'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+            }`}
+          >
+            <FaWallet /> Thanh toán Crypto
+          </button>
+        </div>
 
-                {/* Credit Card Form */}
-                {selectedMethod === 'credit_card' && (
-                  <div className="space-y-6 p-6 bg-gray-800 rounded-lg border border-gray-700">
-                    <h3 className="text-lg font-semibold text-white">Thông tin thẻ</h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Số thẻ
-                        </label>
-                        <input
-                          type="text"
-                          value={cardNumber}
-                          onChange={handleCardNumberChange}
-                          placeholder="1234 5678 9012 3456"
-                          maxLength={19}
-                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Ngày hết hạn
-                        </label>
-                        <input
-                          type="text"
-                          value={expiryDate}
-                          onChange={handleExpiryDateChange}
-                          placeholder="MM/YY"
-                          maxLength={5}
-                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          CVV
-                        </label>
-                        <input
-                          type="text"
-                          value={cvv}
-                          onChange={handleCvvChange}
-                          placeholder="123"
-                          maxLength={4}
-                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        />
-                      </div>
-                      
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Tên chủ thẻ
-                        </label>
-                        <input
-                          type="text"
-                          value={cardholderName}
-                          onChange={(e) => setCardholderName(e.target.value)}
-                          placeholder="NGUYEN VAN A"
-                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* MoMo Form */}
-                {selectedMethod === 'momo' && (
-                  <div className="space-y-6 p-6 bg-gray-800 rounded-lg border border-gray-700">
-                    <h3 className="text-lg font-semibold text-white">Thông tin ví MoMo</h3>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Số điện thoại
-                      </label>
-                      <input
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        placeholder="0123 456 789"
-                        className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* QR Code Form */}
-                {selectedMethod === 'qr_code' && (
-                  <div className="space-y-6 p-6 bg-gray-800 rounded-lg border border-gray-700 text-center">
-                    <h3 className="text-lg font-semibold text-white">Quét mã QR để thanh toán</h3>
-                    
-                    <div className="bg-white p-6 rounded-lg inline-block">
-                      <div className="w-48 h-48 bg-gray-200 rounded-lg flex items-center justify-center">
-                        <FaQrcode className="w-24 h-24 text-gray-400" />
-                      </div>
-                    </div>
-                    
-                    <p className="text-gray-400 text-sm">
-                      Sử dụng ứng dụng ngân hàng để quét mã QR và hoàn tất thanh toán
-                    </p>
-                  </div>
-                )}
-
-                {/* Crypto Form */}
-                {selectedMethod === 'crypto' && (
-                  <div className="space-y-6 p-6 bg-gray-800 rounded-lg border border-gray-700">
-                    <h3 className="text-lg font-semibold text-white">Thanh toán bằng tiền điện tử</h3>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Chọn loại tiền điện tử
-                        </label>
-                        <select
-                          value={selectedCrypto}
-                          onChange={(e) => setSelectedCrypto(e.target.value)}
-                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        >
-                          {cryptoOptions.map((crypto) => (
-                            <option key={crypto.id} value={crypto.id}>
-                              {crypto.name} ({crypto.symbol})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="bg-gray-700 p-4 rounded-lg">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-gray-300">Số tiền cần thanh toán:</span>
-                          <span className="text-white font-semibold">200.000₫</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-300">Tương đương:</span>
-                          <span className="text-red-400 font-semibold">
-                            {cryptoOptions.find(c => c.id === selectedCrypto)?.rate * 200000} {selectedCrypto}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Địa chỉ ví của bạn
-                        </label>
-                        <input
-                          type="text"
-                          value={cryptoAddress}
-                          onChange={(e) => setCryptoAddress(e.target.value)}
-                          placeholder="Nhập địa chỉ ví của bạn"
-                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        />
-                      </div>
-
-                      <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4">
-                        <h4 className="text-yellow-400 font-medium mb-2">Hướng dẫn thanh toán:</h4>
-                        <ol className="text-yellow-300 text-sm space-y-1 list-decimal list-inside">
-                          <li>Chuyển {cryptoOptions.find(c => c.id === selectedCrypto)?.rate * 200000} {selectedCrypto} đến địa chỉ: <code className="bg-gray-800 px-2 py-1 rounded text-xs">1A2B3C4D5E6F7G8H9I0J1K2L3M4N5O6P7Q8R9S0T</code></li>
-                          <li>Ghi chú giao dịch: {bookingId}</li>
-                          <li>Chờ xác nhận (thường mất 10-30 phút)</li>
-                          <li>Vé sẽ được gửi đến email của bạn</li>
-                        </ol>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Security Notice */}
-                <div className="flex items-start space-x-3 p-4 bg-blue-900/20 border border-blue-700 rounded-lg">
-                  <FaShieldAlt className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="text-blue-400 font-medium text-sm">Bảo mật thanh toán</h4>
-                    <p className="text-blue-300 text-sm mt-1">
-                      Thông tin thanh toán của bạn được mã hóa và bảo mật. Chúng tôi không lưu trữ thông tin thẻ của bạn.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={isProcessing}
-                  className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white py-4 px-6 rounded-lg font-semibold transition-colors duration-300 flex items-center justify-center space-x-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span>Đang xử lý...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FaCheckCircle />
-                      <span>Xác nhận thanh toán</span>
-                    </>
-                  )}
-                </button>
-              </form>
+        <div className="bg-gray-900 rounded-xl shadow-lg p-8 border border-gray-800">
+          {paymentSuccess && (
+            <div className="mb-6 p-4 bg-green-900/50 border border-green-600 rounded-lg flex items-center gap-3">
+              <FaCheck className="text-green-400 text-2xl" />
+              <div>
+                <p className="text-green-400 font-semibold">Thanh toán thành công!</p>
+                <p className="text-gray-300 text-sm">Đang chuyển hướng...</p>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-gray-900 rounded-xl shadow-lg p-6 sticky top-6 border border-gray-800">
-              <h3 className="text-lg font-semibold text-white mb-4">Tóm tắt đơn hàng</h3>
-              
-              {/* Movie Info */}
-              <div className="mb-4">
-                <img
-                  src="https://image.tmdb.org/t/p/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg"
-                  alt="Movie Poster"
-                  className="w-full h-48 object-cover rounded-lg mb-3"
-                />
-                <h4 className="font-medium text-white">Avengers: Endgame</h4>
-                <p className="text-gray-400 text-sm">Phòng 1 - 19:00, 15/01/2025</p>
+          {/* VND Payment */}
+          {paymentMethod === 'vnd' && (
+            <>
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-white mb-2">Quét mã QR để thanh toán</h2>
+                <p className="text-gray-400">Vui lòng chuyển khoản theo thông tin bên dưới</p>
               </div>
 
-              {/* Seats */}
-              <div className="space-y-2 mb-4">
-                <h4 className="font-medium text-white">Ghế đã chọn:</h4>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-300">A01 - Thường</span>
-                    <span className="text-red-400">50.000₫</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* QR Code */}
+                <div className="flex flex-col items-center">
+                  <h3 className="text-lg font-semibold text-white mb-4">Mã QR thanh toán</h3>
+                  <div className="bg-white p-4 rounded-lg">
+                    <img src={qrCodeUrl} alt="QR Code" className="w-64 h-64" />
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-300">A02 - Thường</span>
-                    <span className="text-red-400">50.000₫</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-300">M01 - Đôi</span>
-                    <span className="text-red-400">100.000₫</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Total */}
-              <div className="border-t border-gray-700 pt-4">
-                <div className="flex justify-between items-center text-lg font-bold">
-                  <span className="text-white">Tổng cộng:</span>
-                  <span className="text-red-400">200.000₫</span>
-                </div>
-              </div>
-
-              {/* Payment Method Display */}
-              {selectedMethod && (
-                <div className="mt-4 p-3 bg-gray-800 rounded-lg">
-                  <p className="text-sm text-gray-400">Phương thức thanh toán:</p>
-                  <p className="text-white font-medium">
-                    {paymentMethods.find(m => m.id === selectedMethod)?.name}
+                  <p className="text-sm text-gray-400 mt-4 text-center">
+                    Quét mã QR bằng app ngân hàng để thanh toán
                   </p>
                 </div>
-              )}
+
+                {/* Bank Transfer Info */}
+                <div className="flex flex-col justify-center">
+                  <h3 className="text-lg font-semibold text-white mb-4">Thông tin chuyển khoản</h3>
+                  <div className="space-y-4">
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                      <p className="text-sm text-gray-400 mb-1">Ngân hàng</p>
+                      <div className="flex justify-between items-center">
+                        <p className="text-white font-semibold">MB Bank (MBBANK)</p>
+                        <button
+                          onClick={() => copyToClipboard('MBBANK')}
+                          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                        >
+                          <FaCopy /> Sao chép
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                      <p className="text-sm text-gray-400 mb-1">Số tài khoản</p>
+                      <div className="flex justify-between items-center">
+                        <p className="text-white font-semibold">51020036688</p>
+                        <button
+                          onClick={() => copyToClipboard('51020036688')}
+                          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                        >
+                          <FaCopy /> Sao chép
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                      <p className="text-sm text-gray-400 mb-1">Số tiền</p>
+                      <div className="flex justify-between items-center">
+                        <p className="text-red-400 font-bold text-xl">
+                          {formatPrice(booking?.total_amount)}
+                        </p>
+                        <button
+                          onClick={() => copyToClipboard(Math.round(booking?.total_amount).toString())}
+                          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                        >
+                          <FaCopy /> Sao chép
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-800 p-4 rounded-lg border-2 border-yellow-600">
+                      <p className="text-sm text-gray-400 mb-1">Nội dung chuyển khoản</p>
+                      <div className="flex justify-between items-center">
+                        <p className="text-yellow-400 font-bold">QH{getBankTransferCode(bookingId)}</p>
+                        <button
+                          onClick={() => copyToClipboard(`QH${getBankTransferCode(bookingId)}`)}
+                          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                        >
+                          <FaCopy /> Sao chép
+                        </button>
+                      </div>
+                      <p className="text-xs text-yellow-500 mt-2">
+                        ⚠️ Vui lòng nhập chính xác nội dung để hệ thống tự động xác nhận thanh toán
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Crypto Payment */}
+          {paymentMethod === 'crypto' && (
+            <>
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-white mb-2">Thanh toán bằng Cryptocurrency</h2>
+                <p className="text-gray-400">Kết nối ví MetaMask để thanh toán</p>
+              </div>
+
+              <div className="max-w-2xl mx-auto space-y-6">
+                {/* Wallet Connection */}
+                {!walletAddress ? (
+                  <div className="text-center">
+                    <button
+                      onClick={connectWallet}
+                      disabled={isConnecting}
+                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white px-8 py-4 rounded-lg font-semibold text-lg flex items-center gap-3 mx-auto transition-colors duration-300"
+                    >
+                      <FaWallet className="text-2xl" />
+                      {isConnecting ? 'Đang kết nối...' : 'Kết nối ví MetaMask'}
+                    </button>
+                    <p className="text-gray-400 text-sm mt-4">
+                      Bạn cần cài đặt MetaMask extension để sử dụng tính năng này
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Connected Wallet */}
+                    <div className="bg-gray-800 p-6 rounded-lg">
+                      <div className="flex justify-between items-center mb-2">
+                        <p className="text-sm text-gray-400">Ví đã kết nối</p>
+                        <button
+                          onClick={disconnectWallet}
+                          className="text-xs text-red-400 hover:text-red-300"
+                        >
+                          Ngắt kết nối
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                          <FaWallet className="text-white" />
+                        </div>
+                        <div>
+                          <p className="text-white font-semibold">{shortenAddress(walletAddress)}</p>
+                          <p className="text-gray-400 text-xs">Ethereum Mainnet</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Payment Amount */}
+                    <div className="bg-gray-800 p-6 rounded-lg">
+                      <p className="text-sm text-gray-400 mb-2">Số tiền thanh toán</p>
+                      {loadingPrice ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                          <p className="text-gray-400">Đang tải giá...</p>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-baseline gap-3">
+                            <p className="text-3xl font-bold text-white">{cryptoAmount.toFixed(6)} ETH</p>
+                            <p className="text-gray-400">≈ {formatPrice(booking?.total_amount)}</p>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Tỷ giá: 1 ETH = ${ethUsdPrice.toLocaleString()}
+                          </p>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Payment Details */}
+                    <div className="bg-gray-800 p-6 rounded-lg space-y-3">
+                      <div className="flex justify-between">
+                        <p className="text-gray-400">Địa chỉ nhận</p>
+                        <p className="text-white font-mono text-sm">{shortenAddress(PAYMENT_RECEIVER)}</p>
+                      </div>
+                      <div className="flex justify-between">
+                        <p className="text-gray-400">Network</p>
+                        <p className="text-white">Ethereum Mainnet</p>
+                      </div>
+                      <div className="flex justify-between">
+                        <p className="text-gray-400">Transaction Data</p>
+                        <p className="text-yellow-400 font-semibold">QH-{bookingId}</p>
+                      </div>
+                    </div>
+
+                    {/* Pay Button */}
+                    <button
+                      onClick={handleCryptoPayment}
+                      disabled={isPaying || paymentSuccess}
+                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-700 disabled:to-gray-700 text-white py-4 rounded-lg font-bold text-lg transition-all duration-300"
+                    >
+                      {isPaying ? 'Đang xử lý...' : paymentSuccess ? 'Đã thanh toán' : 'Xác nhận thanh toán'}
+                    </button>
+
+                    <p className="text-center text-sm text-gray-400">
+                      ⚠️ Vui lòng kiểm tra kỹ thông tin trước khi thanh toán. Giao dịch blockchain không thể hoàn tác.
+                    </p>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Booking Info */}
+          {booking && (
+            <div className="mt-8 pt-8 border-t border-gray-700">
+              <h3 className="text-lg font-semibold text-white mb-4">Thông tin đặt vé</h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-400">Mã booking</p>
+                  <p className="text-white font-semibold">{booking.id}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Tổng tiền</p>
+                  <p className="text-red-400 font-bold">{formatPrice(booking.total_amount)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Trạng thái</p>
+                  <p className="text-yellow-400 font-semibold capitalize">{booking.status}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Thời gian tạo</p>
+                  <p className="text-white font-semibold">
+                    {new Date(booking.created_at).toLocaleString('vi-VN')}
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

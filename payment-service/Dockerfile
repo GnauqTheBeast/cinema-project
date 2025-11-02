@@ -4,7 +4,8 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/root/go/pkg/mod go mod download
 COPY . ./
-RUN --mount=type=cache,target=/root/.cache/go-build go build -ldflags "-s -w" -trimpath -o main ./cmd/api/*.go
+# Build API server
+RUN --mount=type=cache,target=/root/.cache/go-build go build -ldflags "-s -w" -trimpath -o api ./cmd/api/*.go
 
 FROM alpine:latest
 RUN apk add ca-certificates multirun
@@ -12,4 +13,4 @@ WORKDIR /app
 COPY --from=builder /app/. ./
 
 EXPOSE 8086
-CMD ["multirun", "./main serve"]
+CMD ["multirun", "./api serve"]
