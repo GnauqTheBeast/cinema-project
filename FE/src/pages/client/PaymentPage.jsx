@@ -263,7 +263,7 @@ const PaymentPage = () => {
 
       // Redirect after 2 seconds
       setTimeout(() => {
-        navigate('/booking-success')
+        navigate(`/booking-success?bookingId=${bookingId}`)
       }, 2000)
 
     } catch (err) {

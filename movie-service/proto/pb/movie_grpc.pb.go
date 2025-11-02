@@ -22,6 +22,7 @@ const (
 	MovieService_GetShowtime_FullMethodName       = "/pb.MovieService/GetShowtime"
 	MovieService_GetShowtimes_FullMethodName      = "/pb.MovieService/GetShowtimes"
 	MovieService_GetSeatsWithPrice_FullMethodName = "/pb.MovieService/GetSeatsWithPrice"
+	MovieService_GetSeatDetails_FullMethodName    = "/pb.MovieService/GetSeatDetails"
 )
 
 // MovieServiceClient is the client API for MovieService service.
@@ -31,6 +32,7 @@ type MovieServiceClient interface {
 	GetShowtime(ctx context.Context, in *GetShowtimeRequest, opts ...grpc.CallOption) (*GetShowtimeResponse, error)
 	GetShowtimes(ctx context.Context, in *GetShowtimesRequest, opts ...grpc.CallOption) (*GetShowtimesResponse, error)
 	GetSeatsWithPrice(ctx context.Context, in *GetSeatsWithPriceRequest, opts ...grpc.CallOption) (*GetSeatsWithPriceResponse, error)
+	GetSeatDetails(ctx context.Context, in *GetSeatDetailsRequest, opts ...grpc.CallOption) (*GetSeatDetailsResponse, error)
 }
 
 type movieServiceClient struct {
@@ -71,6 +73,16 @@ func (c *movieServiceClient) GetSeatsWithPrice(ctx context.Context, in *GetSeats
 	return out, nil
 }
 
+func (c *movieServiceClient) GetSeatDetails(ctx context.Context, in *GetSeatDetailsRequest, opts ...grpc.CallOption) (*GetSeatDetailsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSeatDetailsResponse)
+	err := c.cc.Invoke(ctx, MovieService_GetSeatDetails_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MovieServiceServer is the server API for MovieService service.
 // All implementations must embed UnimplementedMovieServiceServer
 // for forward compatibility.
@@ -78,6 +90,7 @@ type MovieServiceServer interface {
 	GetShowtime(context.Context, *GetShowtimeRequest) (*GetShowtimeResponse, error)
 	GetShowtimes(context.Context, *GetShowtimesRequest) (*GetShowtimesResponse, error)
 	GetSeatsWithPrice(context.Context, *GetSeatsWithPriceRequest) (*GetSeatsWithPriceResponse, error)
+	GetSeatDetails(context.Context, *GetSeatDetailsRequest) (*GetSeatDetailsResponse, error)
 	mustEmbedUnimplementedMovieServiceServer()
 }
 
@@ -96,6 +109,9 @@ func (UnimplementedMovieServiceServer) GetShowtimes(context.Context, *GetShowtim
 }
 func (UnimplementedMovieServiceServer) GetSeatsWithPrice(context.Context, *GetSeatsWithPriceRequest) (*GetSeatsWithPriceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSeatsWithPrice not implemented")
+}
+func (UnimplementedMovieServiceServer) GetSeatDetails(context.Context, *GetSeatDetailsRequest) (*GetSeatDetailsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSeatDetails not implemented")
 }
 func (UnimplementedMovieServiceServer) mustEmbedUnimplementedMovieServiceServer() {}
 func (UnimplementedMovieServiceServer) testEmbeddedByValue()                      {}
@@ -172,6 +188,24 @@ func _MovieService_GetSeatsWithPrice_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MovieService_GetSeatDetails_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSeatDetailsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MovieServiceServer).GetSeatDetails(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MovieService_GetSeatDetails_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MovieServiceServer).GetSeatDetails(ctx, req.(*GetSeatDetailsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MovieService_ServiceDesc is the grpc.ServiceDesc for MovieService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -190,6 +224,10 @@ var MovieService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSeatsWithPrice",
 			Handler:    _MovieService_GetSeatsWithPrice_Handler,
+		},
+		{
+			MethodName: "GetSeatDetails",
+			Handler:    _MovieService_GetSeatDetails_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

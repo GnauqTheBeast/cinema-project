@@ -152,6 +152,54 @@ func (s *MovieServiceServer) GetSeatsWithPrice(ctx context.Context, req *pb.GetS
 	}, nil
 }
 
+func (s *MovieServiceServer) GetSeatDetails(ctx context.Context, req *pb.GetSeatDetailsRequest) (*pb.GetSeatDetailsResponse, error) {
+	// Validate input
+	if len(req.SeatIds) == 0 {
+		return &pb.GetSeatDetailsResponse{
+			Success: false,
+			Message: "seat_ids are required",
+		}, nil
+	}
+
+	// Get seats by IDs
+	seats, err := s.seatBiz.GetSeatsByIds(ctx, req.SeatIds)
+	if err != nil {
+		return &pb.GetSeatDetailsResponse{
+			Success: false,
+			Message: fmt.Sprintf("Failed to get seats: %v", err),
+		}, nil
+	}
+
+	// Check if all seats were found
+	if len(seats) != len(req.SeatIds) {
+		return &pb.GetSeatDetailsResponse{
+			Success: false,
+			Message: "One or more seats not found",
+		}, nil
+	}
+
+	// Build response with seat details
+	var seatDetails []*pb.SeatDetailData
+	for _, seat := range seats {
+		// Parse seat_number to int32
+		seatNumber := int32(0)
+		fmt.Sscanf(seat.SeatNumber, "%d", &seatNumber)
+
+		seatDetails = append(seatDetails, &pb.SeatDetailData{
+			SeatId:     seat.Id,
+			SeatRow:    seat.RowNumber,
+			SeatNumber: seatNumber,
+			SeatType:   string(seat.SeatType),
+		})
+	}
+
+	return &pb.GetSeatDetailsResponse{
+		Success: true,
+		Message: "Seat details retrieved successfully",
+		Data:    seatDetails,
+	}, nil
+}
+
 func RegisterMovieServiceServer(s *grpc.Server, showtimeBiz ShowtimeBusiness, seatBiz SeatBusiness) {
 	pb.RegisterMovieServiceServer(s, NewMovieGRPCServer(showtimeBiz, seatBiz))
 }

@@ -75,7 +75,7 @@ func serve(c *cli.Context) error {
 	go func() {
 		defer wg.Done()
 		logrus.Printf("Email verification service started\n")
-		if err = emailService.SubscribeNotificationQueue(c.Context); err != nil {
+		if err = emailService.SubscribeEmailNotificationQueue(c.Context); err != nil {
 			logrus.Fatalf("Email verification service error: %v\n", err)
 		}
 	}()

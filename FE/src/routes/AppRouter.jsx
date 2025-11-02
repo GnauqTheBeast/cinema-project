@@ -14,6 +14,7 @@ import ShowtimesPage from '../pages/admin/ShowtimesPage'
 import StaffManagementPage from '../pages/admin/StaffManagementPage'
 import BookingPage from '../pages/client/BookingPage'
 import BookingHistoryPage from '../pages/client/BookingHistoryPage'
+import BookingSuccessPage from '../pages/client/BookingSuccessPage'
 import HomePage from '../pages/client/HomePage'
 import LoginPage from '../pages/client/LoginPage'
 import PaymentPage from '../pages/client/PaymentPage'
@@ -91,6 +92,12 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
         path="/booking-history"
         element={
             <BookingHistoryPage />
+        }
+      />
+      <Route
+        path="/booking-success"
+        element={
+            <BookingSuccessPage />
         }
       />
 

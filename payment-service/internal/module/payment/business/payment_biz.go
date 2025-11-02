@@ -87,8 +87,6 @@ func (b *paymentBiz) GetPaymentByBookingId(ctx context.Context, bookingId string
 }
 
 func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.SePayWebhook) error {
-	// Extract UUID without hyphens from content or description
-	// Expected formats:
 	// - QR code: "QH" + 32 alphanumeric chars (UUID without hyphens)
 	// - Example: "QHFFBEF88798BE46D9917B5D41747F0DC1"
 	uuidNoHyphens := b.extractUUIDNoHyphens(webhook.Content, webhook.Description)
@@ -98,26 +96,15 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 
 	transactionId := fmt.Sprintf("%d", webhook.Id)
 
-	// Format UUID with hyphens for better debugging
-	// 4C2A5112E7CA465598558E4AB4CCB834 -> 4c2a5112-e7ca-4655-9855-8e4ab4ccb834
-	uuidWithHyphens := formatUUIDWithHyphens(uuidNoHyphens)
-
-	// Try to find existing payment by UUID without hyphens
 	payment, err := b.repo.FindByUUIDNoHyphens(ctx, uuidNoHyphens)
-	// CASE 1: Payment doesn't exist yet - Return error (payment should be created when booking is created)
 	if err != nil || payment == nil {
-		fmt.Printf("Failed to find payment by UUID: %v\n", err)
-		fmt.Printf("Searching for booking_id that matches: %s (or %s)\n", uuidNoHyphens, uuidWithHyphens)
 		return fmt.Errorf("payment not found with UUID (no hyphens) %s", uuidNoHyphens)
 	}
 
 	fmt.Printf("Found payment: ID=%s, BookingID=%s, Status=%s\n", payment.Id, payment.BookingId, payment.Status)
 
-	// CASE 2: Payment exists - Update it
-
 	// Check idempotency: if already processed this transaction
 	if payment.TransactionId != nil && *payment.TransactionId == transactionId {
-		// Already processed, return success (idempotent)
 		return nil
 	}
 
@@ -126,7 +113,6 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 		return fmt.Errorf("payment already completed with different transaction")
 	}
 
-	// Validate amount matches
 	if webhook.TransferAmount != payment.Amount {
 		return fmt.Errorf("amount mismatch: expected %.2f, got %.2f", payment.Amount, webhook.TransferAmount)
 	}
@@ -157,7 +143,6 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 
 	fmt.Printf("Payment updated successfully, publishing payment_completed event\n")
 
-	// Publish payment_completed event to Redis for worker-service to process
 	paymentCompletedMessage := map[string]interface{}{
 		"payment_id":     payment.Id,
 		"booking_id":     payment.BookingId,
@@ -168,16 +153,10 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 		"timestamp":      time.Now().Unix(),
 	}
 
-	message := &pubsub.Message{
+	_ = b.pubsub.Publish(ctx, &pubsub.Message{
 		Topic: "payment_completed",
 		Data:  paymentCompletedMessage,
-	}
-
-	if err = b.pubsub.Publish(ctx, message); err != nil {
-		fmt.Printf("Failed to publish payment_completed event: %v\n", err)
-		// Error but payment is already completed
-		return nil
-	}
+	})
 
 	fmt.Printf("Published payment_completed event for payment %s, booking %s\n", payment.Id, payment.BookingId)
 

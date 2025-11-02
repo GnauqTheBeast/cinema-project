@@ -863,19 +863,19 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 	// Price configuration based on room type and time
 	priceConfig := map[string]map[string]float64{
 		"standard": {
-			"morning":   80000,
-			"afternoon": 100000,
-			"evening":   120000,
+			"morning":   8000,
+			"afternoon": 10000,
+			"evening":   12000,
 		},
 		"vip": {
-			"morning":   150000,
-			"afternoon": 180000,
-			"evening":   220000,
+			"morning":   15000,
+			"afternoon": 18000,
+			"evening":   22000,
 		},
 		"imax": {
-			"morning":   120000,
-			"afternoon": 150000,
-			"evening":   180000,
+			"morning":   12000,
+			"afternoon": 15000,
+			"evening":   18000,
 		},
 	}
 
@@ -925,9 +925,9 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 
 							switch format {
 							case "3d":
-								basePrice += 20000
+								basePrice += 2000
 							case "imax":
-								basePrice += 50000
+								basePrice += 5000
 							}
 
 							status := "scheduled"

@@ -5,6 +5,7 @@ package pb;
 service UserService {
   rpc EnsurePending(EnsurePendingRequest) returns (EnsurePendingResponse);
   rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
+  rpc GetUserById(GetUserByIdRequest) returns (GetUserByIdResponse);
   rpc ActivateUser(ActivateUserRequest) returns (ActivateUserResponse);
   rpc CreateStaff(CreateStaffRequest) returns (CreateStaffResponse);
   rpc GetPermissionsByRoleId(GetPermissionsByRoleIdRequest) returns (GetPermissionsByRoleIdResponse);
@@ -25,6 +26,8 @@ message EnsurePendingResponse {
 
 message GetUserByEmailRequest { string email = 1; }
 
+message GetUserByIdRequest { string id = 1; }
+
 message User {
   string id = 1;
   string name = 2;
@@ -35,6 +38,11 @@ message User {
 }
 
 message GetUserByEmailResponse {
+  bool found = 1;
+  User user = 2;
+}
+
+message GetUserByIdResponse {
   bool found = 1;
   User user = 2;
 }
