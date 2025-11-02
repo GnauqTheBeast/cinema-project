@@ -53,8 +53,14 @@ func (h *WebSocketHandler) notificatonHandler(ctx *WSContext, request *WSRequest
 		}, nil
 	}
 
-	topic := notificationTopic(userId)
-	subscriber, err := h.pubsub.Subscribe(ctx.Context(), []string{topic}, types.UnmarshalNotificationMessage)
+	// Subscribe to both notification_<userId> and booking_<userId> topics
+	topics := []string{
+		notificationTopic(userId),
+		bookingNotificationTopic(userId),
+	}
+
+	// Use generic unmarshal to support flexible message formats (especially for booking notifications)
+	subscriber, err := h.pubsub.Subscribe(ctx.Context(), topics, types.UnmarshalGenericMessage)
 	if err != nil {
 		return &WSResponse{
 			Id:     request.Id,
@@ -75,22 +81,40 @@ func (h *WebSocketHandler) notificatonHandler(ctx *WSContext, request *WSRequest
 				fmt.Println("Context done, stopping subscriber")
 				return
 			case msg := <-messageChan:
-				if msg.Topic == notificationTopic(userId) {
+				switch msg.Topic {
+				case notificationTopic(userId):
 					ctx.WSConn.sendMessage(&WSResponse{
 						Id:     request.Id,
-						Result: json.RawMessage(`{"status": "notification sent"}`),
+						Result: json.RawMessage(`{"type": "notification", "status": "sent"}`),
+						Error:  nil,
+					})
+				case bookingNotificationTopic(userId):
+					notificationData, ok := msg.Data.(map[string]interface{})
+					if !ok {
+						fmt.Printf("Invalid notification data type: %T\n", msg.Data)
+						continue
+					}
+
+					// Push realtime to WebSocket client
+					responseData, _ := json.Marshal(map[string]interface{}{
+						"type":   "booking_notification",
+						"data":   notificationData,
+						"status": "sent",
+					})
+
+					ctx.WSConn.sendMessage(&WSResponse{
+						Id:     request.Id,
+						Result: responseData,
 						Error:  nil,
 					})
 				}
-
-				// TODO: handle booking_success here
 			}
 		}
 	}()
 
 	return &WSResponse{
 		Id:     request.Id,
-		Result: json.RawMessage(`{"status": "success", "message": "Notification sent"}`),
+		Result: json.RawMessage(`{"status": "success", "message": "Subscribed to notifications"}`),
 		Error:  nil,
 	}, nil
 }

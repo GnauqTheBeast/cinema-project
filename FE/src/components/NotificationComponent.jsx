@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import websocketService from '../services/websocketService'
 
 const NotificationComponent = () => {
+  const navigate = useNavigate()
+  const location = useLocation()
   const [notifications, setNotifications] = useState([])
   const [connectionStatus, setConnectionStatus] = useState(websocketService.getConnectionStatus())
 
@@ -13,19 +16,66 @@ const NotificationComponent = () => {
 
     // Listen for notifications
     const handleNotification = (notification) => {
-      console.log('Received notification:', notification)
+      console.log('=== RECEIVED NOTIFICATION ===')
+      console.log('Full notification object:', JSON.stringify(notification, null, 2))
+      console.log('notification.type:', notification.type)
+      console.log('notification.data:', notification.data)
+      console.log('Current pathname:', location.pathname)
+
+      // Extract data from notification
+      let title = 'New Notification'
+      let message = 'You have a new notification'
+      let type = notification.type || 'notification'
+
+      if (notification.type === 'booking_notification' && notification.data) {
+        console.log('✓ This is a booking_notification')
+        // Access nested Data field
+        const nestedData = notification.data.Data || notification.data
+        console.log('notification.data.Data?.status:', nestedData.status)
+        console.log('notification.data.Data?.booking_id:', nestedData.booking_id)
+
+        title = nestedData.title || 'Booking Update'
+        message = nestedData.message || 'Your booking has been updated'
+
+        // Check if booking is confirmed and user is on payment page
+        const isCompleted = nestedData.status === 'completed'
+        const hasBookingId = !!nestedData.booking_id
+        const isOnPaymentPage = location.pathname.includes('/payment')
+
+        console.log('Redirect check:')
+        console.log('  - isCompleted:', isCompleted)
+        console.log('  - hasBookingId:', hasBookingId)
+        console.log('  - isOnPaymentPage:', isOnPaymentPage)
+
+        if (isCompleted && hasBookingId && isOnPaymentPage) {
+          console.log('✓✓✓ ALL CONDITIONS MET - REDIRECTING TO SUCCESS PAGE')
+          // Redirect to success page with bookingId after a short delay to show notification
+          setTimeout(() => {
+            console.log('Navigating to:', `/booking-success?bookingId=${nestedData.booking_id}`)
+            navigate(`/booking-success?bookingId=${nestedData.booking_id}`)
+          }, 2000)
+        } else {
+          console.log('✗ Redirect conditions not met')
+        }
+      } else {
+        console.log('✗ Not a booking_notification or no data')
+      }
+
       const newNotification = {
         id: Date.now(),
-        message: notification,
+        title,
+        message,
+        type,
+        data: notification.data || notification,
         timestamp: new Date().toISOString(),
       }
 
       setNotifications((prev) => [...prev, newNotification])
 
-      // Auto-remove notification after 3 seconds
+      // Auto-remove notification after 5 seconds
       setTimeout(() => {
         removeNotification(newNotification.id)
-      }, 3000)
+      }, 5000)
     }
 
     websocketService.onNotification(handleNotification)
@@ -34,7 +84,7 @@ const NotificationComponent = () => {
       clearInterval(statusInterval)
       websocketService.removeNotificationListener(handleNotification)
     }
-  }, [])
+  }, [location.pathname, navigate])
 
   const clearNotifications = () => {
     setNotifications([])
@@ -56,12 +106,12 @@ const NotificationComponent = () => {
             >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900">New Notification</div>
+                  <div className="text-sm font-medium text-gray-900">{notification.title}</div>
                   <div className="text-xs text-gray-500 mt-1">
                     {new Date(notification.timestamp).toLocaleTimeString()}
                   </div>
                   <div className="text-sm text-gray-700 mt-1">
-                    {JSON.stringify(notification.message, null, 2)}
+                    {notification.message}
                   </div>
                 </div>
                 <button

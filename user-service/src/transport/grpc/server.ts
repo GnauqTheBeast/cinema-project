@@ -72,6 +72,20 @@ export async function startGrpcServer(): Promise<void> {
         callback({ code: grpc.status.INTERNAL, message: e.message } as any);
       }
     },
+    getUserById: async (
+      call: grpc.ServerUnaryCall<any, any>,
+      callback: grpc.sendUnaryData<any>
+    ) => {
+      try {
+        const { id } = call.request;
+        const user = await models.User.findOne({ where: { id } });
+        if (!user) return callback(null, { found: false });
+        const data = user.toJSON() as any;
+        callback(null, { found: true, user: data });
+      } catch (e: any) {
+        callback({ code: grpc.status.INTERNAL, message: e.message } as any);
+      }
+    },
     activateUser: async (
       call: grpc.ServerUnaryCall<any, any>,
       callback: grpc.sendUnaryData<any>

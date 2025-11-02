@@ -16,6 +16,7 @@ import (
 type PaymentSubscriber struct {
 	pubsub        pubsub.PubSub
 	bookingClient *grpc.BookingClient
+	userClient    *grpc.UserClient
 }
 
 func NewPaymentSubscriber(i *do.Injector) (*PaymentSubscriber, error) {
@@ -29,9 +30,15 @@ func NewPaymentSubscriber(i *do.Injector) (*PaymentSubscriber, error) {
 		return nil, fmt.Errorf("failed to create booking client: %w", err)
 	}
 
+	userClient, err := grpc.NewUserClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create user client: %w", err)
+	}
+
 	return &PaymentSubscriber{
 		pubsub:        pubsub,
 		bookingClient: bookingClient,
+		userClient:    userClient,
 	}, nil
 }
 
@@ -70,8 +77,6 @@ func (s *PaymentSubscriber) Start(ctx context.Context) error {
 }
 
 func (s *PaymentSubscriber) unmarshalPaymentMessage(data []byte) (interface{}, error) {
-	log.Printf("[PaymentSubscriber] Unmarshaling message, raw data: %s\n", string(data))
-
 	var msg map[string]interface{}
 	if err := json.Unmarshal(data, &msg); err != nil {
 		log.Printf("[PaymentSubscriber] Unmarshal error: %v\n", err)
@@ -83,15 +88,12 @@ func (s *PaymentSubscriber) unmarshalPaymentMessage(data []byte) (interface{}, e
 }
 
 func (s *PaymentSubscriber) handlePaymentCompleted(ctx context.Context, msg *pubsub.Message) error {
-	// The unmarshaled message has structure: {Topic: "...", Data: {...}}
-	// So msg.Data is actually the outer map, we need to extract the nested "Data" field
 	outerData, ok := msg.Data.(map[string]interface{})
 	if !ok {
 		log.Printf("[PaymentSubscriber] msg.Data type assertion failed, got type: %T\n", msg.Data)
 		return fmt.Errorf("invalid message data format")
 	}
 
-	// Extract the nested "Data" field
 	data, ok := outerData["Data"].(map[string]interface{})
 	if !ok {
 		log.Printf("[PaymentSubscriber] nested Data field type assertion failed, got type: %T\n", outerData["Data"])
@@ -112,7 +114,6 @@ func (s *PaymentSubscriber) handlePaymentCompleted(ctx context.Context, msg *pub
 
 	amount, ok := data["amount"].(float64)
 	if !ok {
-		// Try int conversion
 		amountInt, ok := data["amount"].(int)
 		if !ok {
 			log.Printf("[PaymentSubscriber] amount not found or invalid type: %T\n", data["amount"])
@@ -121,34 +122,81 @@ func (s *PaymentSubscriber) handlePaymentCompleted(ctx context.Context, msg *pub
 		amount = float64(amountInt)
 	}
 
-	log.Printf("[PaymentSubscriber] Received payment_completed event for payment %s, booking %s, amount: %.2f\n", paymentID, bookingID, amount)
-
-	if err := s.bookingClient.UpdateBookingStatus(ctx, bookingID, "confirmed"); err != nil {
+	// Call gRPC to update booking status and get userId
+	resp, err := s.bookingClient.UpdateBookingStatusWithResponse(ctx, bookingID, "confirmed")
+	if err != nil {
 		return fmt.Errorf("failed to update booking status via gRPC: %w", err)
 	}
 
-	log.Printf("[PaymentSubscriber] Booking %s status updated to confirmed via gRPC\n", bookingID)
+	userID := resp.UserId
+	userEmail, err := s.userClient.GetUserEmailById(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to get user email via gRPC: %w", err)
+	}
 
-	// Publish notification message
-	notificationMessage := map[string]interface{}{
-		"type":       "payment_completed",
-		"payment_id": paymentID,
+	// Create tickets for the booking and get details for email
+	ticketResp, err := s.bookingClient.CreateTicketsWithDetails(ctx, bookingID)
+	if err != nil {
+		log.Printf("[PaymentSubscriber] Failed to create tickets for booking %s: %v\n", bookingID, err)
+	}
+
+	// Prepare notification data
+	notificationData := map[string]interface{}{
+		"user_id":    userID,
 		"booking_id": bookingID,
+		"payment_id": paymentID,
 		"amount":     amount,
 		"status":     "completed",
 		"timestamp":  time.Now().Unix(),
+		"title":      "Payment Successful",
+		"message":    fmt.Sprintf("Your booking %s has been confirmed. Payment of %.2f VND received.", bookingID, amount),
 	}
 
-	message := &pubsub.Message{
+	// Message 1: Publish to "booking_success" topic for notification-service to send email with barcode
+	// Include full booking details if available
+	emailData := map[string]interface{}{
+		"user_id":    userID,
+		"user_email": userEmail,
+		"booking_id": bookingID,
+	}
+
+	if ticketResp != nil && ticketResp.BookingDetails != nil {
+		details := ticketResp.BookingDetails
+
+		seats := make([]map[string]interface{}, 0, len(details.Seats))
+		for _, seat := range details.Seats {
+			seats = append(seats, map[string]interface{}{
+				"seat_row":    seat.SeatRow,
+				"seat_number": seat.SeatNumber,
+				"seat_type":   seat.SeatType,
+			})
+		}
+
+		emailData["to"] = details.UserEmail
+		emailData["seats"] = seats
+		emailData["showtime"] = map[string]interface{}{
+			"showtime_id": details.Showtime.ShowtimeId,
+			"start_time":  details.Showtime.StartTime,
+			"movie_name":  details.Showtime.MovieName,
+			"room_name":   details.Showtime.RoomName,
+		}
+	}
+
+	emailMessage := &pubsub.Message{
 		Topic: "booking_success",
-		Data:  notificationMessage,
+		Data:  emailData,
 	}
 
-	if err := s.pubsub.Publish(ctx, message); err != nil {
-		return fmt.Errorf("failed to publish notification message: %w", err)
+	_ = s.pubsub.Publish(ctx, emailMessage)
+
+	// Message 2: Publish to "booking_<userId>" topic for WebSocket
+	userNotificationTopic := fmt.Sprintf("booking_%s", userID)
+	userMessage := &pubsub.Message{
+		Topic: userNotificationTopic,
+		Data:  notificationData,
 	}
 
-	log.Printf("[PaymentSubscriber] Payment completed notification sent for payment ID: %s\n", paymentID)
+	_ = s.pubsub.Publish(ctx, userMessage)
 
 	return nil
 }
