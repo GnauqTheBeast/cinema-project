@@ -162,7 +162,8 @@ func (p *Proxy) getTargetService(path string) (*ServiceInfo, string) {
 	case strings.HasPrefix(path, "/api/v1/movies"),
 		strings.HasPrefix(path, "/api/v1/rooms"),
 		strings.HasPrefix(path, "/api/v1/seats"),
-		strings.HasPrefix(path, "/api/v1/showtimes"):
+		strings.HasPrefix(path, "/api/v1/showtimes"),
+		strings.HasPrefix(path, "/api/v1/news"):
 		return &ServiceInfo{
 			Name:     "movie-service",
 			Endpoint: p.config.Services.MovieService,

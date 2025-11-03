@@ -23,9 +23,7 @@ movieApi.interceptors.request.use(
   },
 )
 
-// Movie Service API calls
 export const movieService = {
-  // Get all movies (now showing)
   getAllMovies: async () => {
     try {
       const response = await movieApi.get('/movies')
@@ -37,7 +35,6 @@ export const movieService = {
     }
   },
 
-  // Get now showing movies
   getNowShowingMovies: async () => {
     try {
       const response = await movieApi.get('/movies?status=showing')
@@ -48,18 +45,16 @@ export const movieService = {
     }
   },
 
-  // Get coming soon movies
-  getComingSoonMovies: async () => {
+  getUpcomingMovies: async () => {
     try {
-      const response = await movieApi.get('/movies?status=coming_soon')
+      const response = await movieApi.get('/movies?status=upcoming')
       return response.data
     } catch (error) {
-      console.error('Error fetching coming soon movies:', error)
+      console.error('Error fetching upcoming movies:', error)
       throw error
     }
   },
 
-  // Get movie by ID
   getMovieById: async (id) => {
     try {
       const response = await movieApi.get(`/movies/${id}`)
@@ -162,7 +157,7 @@ export const movieService = {
 export const {
   getAllMovies,
   getNowShowingMovies,
-  getComingSoonMovies,
+  getUpcomingMovies,
   getMovieById,
   getShowtimes,
   getUpcomingShowtimes,

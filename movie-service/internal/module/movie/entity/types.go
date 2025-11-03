@@ -37,9 +37,9 @@ type GetMoviesQuery struct {
 	Page   int    `form:"page,default=1" binding:"min=1"`
 	Size   int    `form:"size,default=10" binding:"min=1,max=100"`
 	Search string `form:"search"`
+	Status string `form:"status" binding:"omitempty,oneof=upcoming showing ended"`
 }
 
-// Response DTOs
 type MovieResponse struct {
 	Id          string     `json:"id"`
 	Title       string     `json:"title"`
