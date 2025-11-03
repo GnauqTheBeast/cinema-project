@@ -71,6 +71,8 @@ auth:
     - "/api/v1/rooms"
     - "/api/v1/rooms/*/seats"
     - "/api/v1/rooms/*/showtimes"
+    - "/api/v1/news"
+    - "/api/v1/news/*"
     
     # User service - public endpoints
     - "/api/v1/users/*"

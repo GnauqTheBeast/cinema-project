@@ -3,6 +3,7 @@ package main
 import (
 	"movie-service/internal/container"
 	"movie-service/internal/module/movie/transport/rest"
+	newsRest "movie-service/internal/module/news/transport/rest"
 	roomRest "movie-service/internal/module/room/transport/rest"
 	seatRest "movie-service/internal/module/seat/transport/rest"
 	showtimeRest "movie-service/internal/module/showtime/transport/rest"
@@ -51,6 +52,11 @@ func startRouteV1(group *gin.RouterGroup) {
 	}
 
 	showtimeApi, err := showtimeRest.NewAPI(i)
+	if err != nil {
+		panic(err)
+	}
+
+	newsApi, err := newsRest.NewAPI(i)
 	if err != nil {
 		panic(err)
 	}
@@ -110,13 +116,20 @@ func startRouteV1(group *gin.RouterGroup) {
 		showtimes.PATCH("/:id/status", showtimeApi.UpdateShowtimeStatus)
 	}
 
+	// News endpoints
+	news := group.Group("/news")
+	{
+		news.GET("/summaries", newsApi.GetNewsSummaries)
+		news.GET("/summaries/:id", newsApi.GetNewsSummaryByID)
+	}
+
 	// Admin routes (optional grouping for future middleware)
 	admin := group.Group("/admin")
 	{
 		admin.GET("/dashboard", func(c *gin.Context) {
 			c.JSON(200, gin.H{
 				"message": "Admin dashboard - Coming soon",
-				"modules": []string{"movies", "rooms", "seats", "showtimes"},
+				"modules": []string{"movies", "rooms", "seats", "showtimes", "news"},
 			})
 		})
 	}

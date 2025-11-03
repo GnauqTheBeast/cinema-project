@@ -77,16 +77,10 @@ export default function Header() {
               Lịch chiếu
             </Link>
             <Link
-              to="/cinemas"
+              to="/news"
               className="text-gray-300 hover:text-red-400 transition-colors duration-300 font-medium"
             >
-              Rạp HQ Cinema
-            </Link>
-            <Link
-              to="/promotions"
-              className="text-gray-300 hover:text-red-400 transition-colors duration-300 font-medium"
-            >
-              Khuyến mãi
+              Tin tức
             </Link>
           </nav>
 
@@ -216,16 +210,10 @@ export default function Header() {
                 Lịch chiếu
               </Link>
               <Link
-                to="/cinemas"
+                to="/news"
                 className="text-gray-300 hover:text-red-400 transition-colors duration-300 py-2 font-medium"
               >
-                Rạp HQ Cinema
-              </Link>
-              <Link
-                to="/promotions"
-                className="text-gray-300 hover:text-red-400 transition-colors duration-300 py-2 font-medium"
-              >
-                Khuyến mãi
+                Tin tức
               </Link>
             </nav>
           </div>

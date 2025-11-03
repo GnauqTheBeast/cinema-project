@@ -20,7 +20,7 @@ type ArticleGroup struct {
 	Language string
 }
 
-// GroupArticles groups similar articles together based on title similarity and time proximity
+// GroupArticles groups similar articles together based on multiple similarity criteria
 func GroupArticles(articles []*models.NewsArticle) []*ArticleGroup {
 	if len(articles) == 0 {
 		return nil
@@ -44,7 +44,7 @@ func GroupArticles(articles []*models.NewsArticle) []*ArticleGroup {
 
 		processed[article.Id] = true
 
-		// Find similar articles
+		// Find similar articles using multiple strategies
 		for _, other := range articles {
 			if processed[other.Id] {
 				continue
@@ -55,13 +55,30 @@ func GroupArticles(articles []*models.NewsArticle) []*ArticleGroup {
 				continue
 			}
 
-			// Check time proximity (within 48 hours)
-			if !isTimeProximate(article.PublishedAt, other.PublishedAt, 48*time.Hour) {
+			// Check time proximity (within 7 days for broader grouping)
+			if !isTimeProximate(article.PublishedAt, other.PublishedAt, 7*24*time.Hour) {
 				continue
 			}
 
-			// Check title similarity
-			if isSimilarTitle(article.Title, other.Title, 0.5) {
+			// Multiple matching strategies (any of these can trigger grouping)
+			matched := false
+
+			// Strategy 1: Title similarity (lowered threshold for more matches)
+			if isSimilarTitle(article.Title, other.Title, 0.25) {
+				matched = true
+			}
+
+			// Strategy 2: Tag-based similarity (if they share significant tags)
+			if !matched && hasCommonTags(article.Tags, other.Tags, 2) {
+				matched = true
+			}
+
+			// Strategy 3: Keyword in content similarity
+			if !matched && hasCommonKeywords(article, other, 3) {
+				matched = true
+			}
+
+			if matched {
 				group.Articles = append(group.Articles, other)
 				processed[other.Id] = true
 			}
@@ -71,6 +88,60 @@ func GroupArticles(articles []*models.NewsArticle) []*ArticleGroup {
 	}
 
 	return groups
+}
+
+// hasCommonTags checks if two articles share at least minCommon tags
+func hasCommonTags(tags1, tags2 []string, minCommon int) bool {
+	if len(tags1) == 0 || len(tags2) == 0 {
+		return false
+	}
+
+	tagMap := make(map[string]bool)
+	for _, tag := range tags1 {
+		tagMap[strings.ToLower(tag)] = true
+	}
+
+	common := 0
+	for _, tag := range tags2 {
+		if tagMap[strings.ToLower(tag)] {
+			common++
+		}
+	}
+
+	return common >= minCommon
+}
+
+// hasCommonKeywords checks if articles share significant keywords from title+content
+func hasCommonKeywords(article1, article2 *models.NewsArticle, minCommon int) bool {
+	// Extract keywords from title and first part of content
+	keywords1 := extractKeywords(article1.Title + " " + truncateContent(article1.Content, 200))
+	keywords2 := extractKeywords(article2.Title + " " + truncateContent(article2.Content, 200))
+
+	if len(keywords1) == 0 || len(keywords2) == 0 {
+		return false
+	}
+
+	keywordMap := make(map[string]bool)
+	for _, kw := range keywords1 {
+		keywordMap[kw] = true
+	}
+
+	common := 0
+	for _, kw := range keywords2 {
+		if keywordMap[kw] {
+			common++
+		}
+	}
+
+	return common >= minCommon
+}
+
+// truncateContent returns first n characters of content
+func truncateContent(content string, n int) string {
+	if len(content) <= n {
+		return content
+	}
+	return content[:n]
 }
 
 // extractKeywords extracts important keywords from title

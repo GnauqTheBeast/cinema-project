@@ -83,27 +83,38 @@ func (w *Worker) processPendingArticles(ctx context.Context) error {
 
 	// Group similar articles
 	groups := GroupArticles(articles)
-	logrus.Infof("Grouped into %d article groups", len(groups))
+
+	// Log grouping statistics
+	singleCount := 0
+	multiCount := 0
+	maxGroupSize := 0
+	for _, group := range groups {
+		if len(group.Articles) == 1 {
+			singleCount++
+		} else {
+			multiCount++
+			if len(group.Articles) > maxGroupSize {
+				maxGroupSize = len(group.Articles)
+			}
+		}
+	}
+
+	logrus.Infof("Grouped into %d groups: %d single articles, %d multi-article groups (largest: %d articles)",
+		len(groups), singleCount, multiCount, maxGroupSize)
 
 	// Process each group
 	summariesCreated := 0
 	articlesProcessed := 0
 
 	for _, group := range groups {
-		// Only create summary if there are multiple articles or single article is substantial
-		if len(group.Articles) < 2 {
-			// For single article, just mark as processed without creating summary
-			if err := w.markArticlesProcessed(ctx, group.Articles, ""); err != nil {
-				logrus.Errorf("Failed to mark single article as processed: %v", err)
-			}
-			articlesProcessed += len(group.Articles)
-			continue
-		}
-
-		// Generate summary for group
+		// Generate summary for all groups (including single articles)
 		summary, err := w.createSummaryForGroup(ctx, group)
 		if err != nil {
 			logrus.Errorf("Failed to create summary for group: %v", err)
+			// Still mark articles as processed even if summary fails
+			if err := w.markArticlesProcessed(ctx, group.Articles, ""); err != nil {
+				logrus.Errorf("Failed to mark articles as processed: %v", err)
+			}
 			continue
 		}
 
@@ -152,7 +163,11 @@ func (w *Worker) createSummaryForGroup(ctx context.Context, group *ArticleGroup)
 		}
 	}
 
-	logrus.Infof("Generating summary for %d articles in %s", len(titles), group.Language)
+	articleType := "single article"
+	if len(titles) > 1 {
+		articleType = fmt.Sprintf("%d related articles", len(titles))
+	}
+	logrus.Infof("Generating summary for %s in %s", articleType, group.Language)
 
 	// Generate topic title
 	topicTitle, err := w.geminiClient.GenerateTopicTitle(ctx, titles, group.Language)

@@ -41,7 +41,7 @@ func (h *handler) GetMovies(c *gin.Context) {
 		query.Size = 10
 	}
 
-	movies, total, err := h.biz.GetMovies(c.Request.Context(), query.Page, query.Size, query.Search)
+	movies, total, err := h.biz.GetMovies(c.Request.Context(), query.Page, query.Size, query.Search, query.Status)
 	if err != nil {
 		response.ErrorWithMessage(c, err.Error())
 		return

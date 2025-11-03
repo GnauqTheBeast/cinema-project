@@ -35,7 +35,7 @@ func NewClient(apiKeys []string) *Client {
 		httpClient: &http.Client{
 			Timeout: 60 * time.Second,
 		},
-		model: "gemini-1.5-flash", // Using flash model for faster responses
+		model: "gemini-2.0-flash-exp", // Using Gemini 2.0 Flash for better performance
 		index: 0,
 	}
 }
@@ -134,47 +134,87 @@ func (c *Client) GenerateContent(ctx context.Context, prompt string) (string, er
 	return response.Candidates[0].Content.Parts[0].Text, nil
 }
 
-// SummarizeArticles generates a summary for multiple related articles
+// SummarizeArticles generates a summary for one or more related articles
 func (c *Client) SummarizeArticles(ctx context.Context, titles []string, language string) (string, error) {
 	var prompt string
 
-	if language == "vi" {
-		prompt = fmt.Sprintf(`Bạn là một biên tập viên chuyên về tin tức điện ảnh.
-Dưới đây là danh sách các tiêu đề bài báo cùng đề cập về một sự kiện/chủ đề trong lĩnh vực phim ảnh:
+	if len(titles) == 1 {
+		// Single article summary
+		if language == "vi" {
+			prompt = fmt.Sprintf(`Bạn là một biên tập viên chuyên về tin tức điện ảnh.
+Dưới đây là tiêu đề bài báo về phim ảnh:
+
+%s
+
+Hãy viết một đoạn tóm tắt ngắn gọn (2-3 câu) về nội dung chính của bài báo này dựa trên tiêu đề.
+Tập trung vào thông tin quan trọng nhất.`, titles[0])
+		} else {
+			prompt = fmt.Sprintf(`You are a film news editor.
+Here is a film industry news article title:
+
+%s
+
+Write a concise summary (2-3 sentences) of what this article is likely about based on the title.
+Focus on the most important information.`, titles[0])
+		}
+	} else {
+		// Multiple articles summary
+		if language == "vi" {
+			prompt = fmt.Sprintf(`Bạn là một biên tập viên chuyên về tin tức điện ảnh.
+Dưới đây là %d tiêu đề bài báo cùng đề cập về một sự kiện/chủ đề trong lĩnh vực phim ảnh:
 
 %s
 
 Hãy viết một đoạn tóm tắt ngắn gọn (2-3 câu) về nội dung chính mà các bài báo này đang đề cập.
-Tập trung vào sự kiện/thông tin chính, không cần liệt kê nguồn tin.`, formatTitles(titles))
-	} else {
-		prompt = fmt.Sprintf(`You are a film news editor.
-Below are news article titles about the same film industry event/topic:
+Tập trung vào sự kiện/thông tin chính, không cần liệt kê nguồn tin.`, len(titles), formatTitles(titles))
+		} else {
+			prompt = fmt.Sprintf(`You are a film news editor.
+Below are %d news article titles about the same film industry event/topic:
 
 %s
 
 Write a concise summary (2-3 sentences) of the main content these articles are covering.
-Focus on the main event/information, don't list the sources.`, formatTitles(titles))
+Focus on the main event/information, don't list the sources.`, len(titles), formatTitles(titles))
+		}
 	}
 
 	return c.GenerateContent(ctx, prompt)
 }
 
-// GenerateTopicTitle generates a title for a group of articles
+// GenerateTopicTitle generates a title for one or more articles
 func (c *Client) GenerateTopicTitle(ctx context.Context, titles []string, language string) (string, error) {
 	var prompt string
 
-	if language == "vi" {
-		prompt = fmt.Sprintf(`Dựa trên các tiêu đề bài báo sau:
+	if len(titles) == 1 {
+		// For single article, just clean up and shorten the title
+		if language == "vi" {
+			prompt = fmt.Sprintf(`Dựa trên tiêu đề bài báo sau:
 
 %s
 
-Hãy tạo một tiêu đề ngắn gọn (tối đa 10 từ) tóm tắt chủ đề chính.`, formatTitles(titles))
+Hãy tạo một tiêu đề ngắn gọn hơn (tối đa 10 từ) giữ nguyên nội dung chính.`, titles[0])
+		} else {
+			prompt = fmt.Sprintf(`Based on this article title:
+
+%s
+
+Create a shorter, concise title (max 10 words) keeping the main content.`, titles[0])
+		}
 	} else {
-		prompt = fmt.Sprintf(`Based on these article titles:
+		// For multiple articles
+		if language == "vi" {
+			prompt = fmt.Sprintf(`Dựa trên %d tiêu đề bài báo sau:
 
 %s
 
-Create a concise title (max 10 words) summarizing the main topic.`, formatTitles(titles))
+Hãy tạo một tiêu đề ngắn gọn (tối đa 10 từ) tóm tắt chủ đề chung.`, len(titles), formatTitles(titles))
+		} else {
+			prompt = fmt.Sprintf(`Based on these %d article titles:
+
+%s
+
+Create a concise title (max 10 words) summarizing the main topic.`, len(titles), formatTitles(titles))
+		}
 	}
 
 	return c.GenerateContent(ctx, prompt)
