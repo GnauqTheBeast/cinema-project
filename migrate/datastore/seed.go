@@ -889,8 +889,10 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 	for day := 0; day < 2; day++ {
 		currentDate := now.AddDate(0, 0, day)
 
-		for _, movie := range movies {
-			for _, room := range rooms {
+		for movieIdx, movie := range movies {
+			for roomIdx, room := range rooms {
+				// Determine which format to use for this movie+room combination
+				// Ensure each time slot has only ONE format per movie per room per day
 				formats := make([]string, 0)
 				switch room.RoomType {
 				case "imax":
@@ -899,59 +901,53 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 					formats = []string{"2d", "3d"}
 				}
 
-				for _, format := range formats {
-					if day%2 == 0 && format == "3d" {
-						continue
-					}
-					if day%3 == 0 && format == "imax" {
-						continue
-					}
+				// Select format based on movie and room index to avoid duplicates
+				selectedFormat := formats[(movieIdx+roomIdx+day)%len(formats)]
 
-					for period, times := range timeSlots {
-						for _, timeStr := range times {
-							startTime, err := time.Parse("15:04", timeStr)
-							if err != nil {
-								continue
-							}
-
-							showtimeStart := time.Date(
-								currentDate.Year(), currentDate.Month(), currentDate.Day(),
-								startTime.Hour(), startTime.Minute(), 0, 0, currentDate.Location(),
-							)
-
-							showtimeEnd := showtimeStart.Add(time.Duration(movie.Duration+30) * time.Minute)
-
-							basePrice := priceConfig[room.RoomType][period]
-
-							switch format {
-							case "3d":
-								basePrice += 2000
-							case "imax":
-								basePrice += 5000
-							}
-
-							status := "scheduled"
-							if showtimeStart.Before(now) {
-								if showtimeEnd.Before(now) {
-									status = "completed"
-								} else {
-									status = "ongoing"
-								}
-							}
-
-							showtime := &models.Showtime{
-								Id:        uuid.New().String(),
-								MovieId:   movie.Id,
-								RoomId:    room.Id,
-								StartTime: showtimeStart,
-								EndTime:   showtimeEnd,
-								Format:    format,
-								BasePrice: basePrice,
-								Status:    status,
-								CreatedAt: now,
-							}
-							showtimes = append(showtimes, showtime)
+				for period, times := range timeSlots {
+					for _, timeStr := range times {
+						startTime, err := time.Parse("15:04", timeStr)
+						if err != nil {
+							continue
 						}
+
+						showtimeStart := time.Date(
+							currentDate.Year(), currentDate.Month(), currentDate.Day(),
+							startTime.Hour(), startTime.Minute(), 0, 0, currentDate.Location(),
+						)
+
+						showtimeEnd := showtimeStart.Add(time.Duration(movie.Duration+30) * time.Minute)
+
+						basePrice := priceConfig[room.RoomType][period]
+
+						switch selectedFormat {
+						case "3d":
+							basePrice += 2000
+						case "imax":
+							basePrice += 5000
+						}
+
+						status := "scheduled"
+						if showtimeStart.Before(now) {
+							if showtimeEnd.Before(now) {
+								status = "completed"
+							} else {
+								status = "ongoing"
+							}
+						}
+
+						showtime := &models.Showtime{
+							Id:        uuid.New().String(),
+							MovieId:   movie.Id,
+							RoomId:    room.Id,
+							StartTime: showtimeStart,
+							EndTime:   showtimeEnd,
+							Format:    selectedFormat,
+							BasePrice: basePrice,
+							Status:    status,
+							CreatedAt: now,
+						}
+						showtimes = append(showtimes, showtime)
 					}
 				}
 			}
