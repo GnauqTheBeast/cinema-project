@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [],
+    "deny": [
+      "Read(.git)",
+      "Read(.idea)",
+      "Read(.env)"
+    ]
+  }
+}

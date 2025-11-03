@@ -35,7 +35,6 @@ func ServeAPI() *cli.Command {
 func startRouteV1(group *gin.RouterGroup) {
 	i := container.NewContainer()
 
-	// Initialize all APIs
 	movieApi, err := rest.NewAPI(i)
 	if err != nil {
 		panic(err)
@@ -61,9 +60,6 @@ func startRouteV1(group *gin.RouterGroup) {
 		panic(err)
 	}
 
-	// Health check endpoint
-	group.GET("/health", movieApi.HelloWorld)
-
 	// Movie endpoints
 	movies := group.Group("/movies")
 	{
@@ -74,8 +70,6 @@ func startRouteV1(group *gin.RouterGroup) {
 		movies.PUT("/:id", movieApi.UpdateMovie)
 		movies.DELETE("/:id", movieApi.DeleteMovie)
 		movies.PATCH("/:id/status", movieApi.UpdateMovieStatus)
-		// Movie-specific showtime endpoints
-		movies.GET("/:id/showtimes", showtimeApi.GetShowtimesByMovie)
 	}
 
 	// Room endpoints
@@ -121,16 +115,5 @@ func startRouteV1(group *gin.RouterGroup) {
 	{
 		news.GET("/summaries", newsApi.GetNewsSummaries)
 		news.GET("/summaries/:id", newsApi.GetNewsSummaryByID)
-	}
-
-	// Admin routes (optional grouping for future middleware)
-	admin := group.Group("/admin")
-	{
-		admin.GET("/dashboard", func(c *gin.Context) {
-			c.JSON(200, gin.H{
-				"message": "Admin dashboard - Coming soon",
-				"modules": []string{"movies", "rooms", "seats", "showtimes", "news"},
-			})
-		})
 	}
 }

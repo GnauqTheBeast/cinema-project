@@ -93,29 +93,6 @@ func (h *handler) GetShowtimeById(c *gin.Context) {
 	response.Success(c, resp)
 }
 
-func (h *handler) GetShowtimesByMovie(c *gin.Context) {
-	movieId := c.Param("id")
-	if movieId == "" {
-		response.BadRequest(c, "Movie ID is required")
-		return
-	}
-
-	showtimes, err := h.biz.GetShowtimesByMovie(c.Request.Context(), movieId)
-	if err != nil {
-		response.ErrorWithMessage(c, "Failed to get showtimes by movie")
-		return
-	}
-
-	responses := make([]*entity.ShowtimeResponse, len(showtimes))
-	for i, showtime := range showtimes {
-		responses[i] = entity.ToShowtimeResponse(showtime)
-	}
-
-	response.Success(c, map[string]interface{}{
-		"data": responses,
-	})
-}
-
 func (h *handler) GetShowtimesByRoom(c *gin.Context) {
 	roomId := c.Param("id")
 	if roomId == "" {

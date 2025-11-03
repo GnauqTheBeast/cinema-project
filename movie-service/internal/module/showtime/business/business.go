@@ -10,8 +10,6 @@ import (
 	"movie-service/internal/module/showtime/entity"
 	"movie-service/internal/pkg/caching"
 
-	"movie-service/proto/pb"
-
 	"github.com/redis/go-redis/v9"
 	"github.com/samber/do"
 )
@@ -29,7 +27,6 @@ type ShowtimeBiz interface {
 	GetShowtimeById(ctx context.Context, id string) (*entity.Showtime, error)
 	GetShowtimesByIds(ctx context.Context, ids []string) ([]*entity.Showtime, error)
 	GetShowtimes(ctx context.Context, page, size int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) ([]*entity.Showtime, int, error)
-	GetShowtimesByMovie(ctx context.Context, movieId string) ([]*entity.Showtime, error)
 	GetShowtimesByRoom(ctx context.Context, roomId string, date time.Time) ([]*entity.Showtime, error)
 	GetUpcomingShowtimes(ctx context.Context, limit int) ([]*entity.Showtime, error)
 	CreateShowtime(ctx context.Context, showtime *entity.Showtime) error
@@ -37,15 +34,6 @@ type ShowtimeBiz interface {
 	DeleteShowtime(ctx context.Context, id string) error
 	UpdateShowtimeStatus(ctx context.Context, id string, status entity.ShowtimeStatus) error
 	CheckTimeConflict(ctx context.Context, roomId string, startTime, endTime time.Time, excludeId string) (bool, error)
-}
-
-type MovieServiceServer struct {
-	pb.UnimplementedMovieServiceServer
-	business ShowtimeBiz
-}
-
-func NewMovieGRPCServer(business ShowtimeBiz) *MovieServiceServer {
-	return &MovieServiceServer{business: business}
 }
 
 type ShowtimeRepository interface {
@@ -151,23 +139,6 @@ func (b *business) GetShowtimes(ctx context.Context, page, size int, search, mov
 	}
 
 	return showtimes, total, nil
-}
-
-func (b *business) GetShowtimesByMovie(ctx context.Context, movieId string) ([]*entity.Showtime, error) {
-	if movieId == "" {
-		return nil, ErrInvalidShowtimeData
-	}
-
-	callback := func() ([]*entity.Showtime, error) {
-		return b.repository.GetByMovie(ctx, movieId)
-	}
-
-	showtimes, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, redisMovieShowtimes(movieId), CACHE_TTL_30_MINS, callback)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get showtimes by movie: %w", err)
-	}
-
-	return showtimes, nil
 }
 
 func (b *business) GetShowtimesByRoom(ctx context.Context, roomId string, date time.Time) ([]*entity.Showtime, error) {

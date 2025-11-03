@@ -200,9 +200,3 @@ func (h *handler) GetMovieStats(c *gin.Context) {
 	response.Success(c, stats)
 }
 
-func (h *handler) HelloWorld(c *gin.Context) {
-	response.Success(c, gin.H{
-		"message": "Hello from Movie Service API!",
-		"status":  "healthy",
-	})
-}
