@@ -192,28 +192,6 @@ func (r *Repository) GetByMovie(ctx context.Context, movieId string) ([]*entity.
 	return showtimes, nil
 }
 
-func (r *Repository) GetByRoomAndDate(ctx context.Context, roomId string, date time.Time) ([]*entity.Showtime, error) {
-	startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
-	endOfDay := startOfDay.Add(24 * time.Hour)
-
-	var showtimes []*entity.Showtime
-	err := r.roDb.NewSelect().
-		Model(&showtimes).
-		Where("room_id = ?", roomId).
-		Where("start_time >= ? AND start_time < ?", startOfDay, endOfDay).
-		Where("status IN (?)", bun.In([]entity.ShowtimeStatus{
-			entity.ShowtimeStatusScheduled,
-			entity.ShowtimeStatusOngoing,
-		})).
-		Order("start_time ASC").
-		Scan(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get showtimes by room and date: %w", err)
-	}
-
-	return showtimes, nil
-}
-
 func (r *Repository) GetUpcoming(ctx context.Context, limit int) ([]*entity.Showtime, error) {
 	now := time.Now()
 

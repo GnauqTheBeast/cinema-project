@@ -40,16 +40,3 @@ func (r *Room) IsValid() bool {
 	}
 	return true
 }
-
-func (r *Room) CanChangeStatus(newStatus RoomStatus) bool {
-	switch r.Status {
-	case RoomStatusActive:
-		return newStatus == RoomStatusInactive || newStatus == RoomStatusMaintenance
-	case RoomStatusInactive:
-		return newStatus == RoomStatusActive
-	case RoomStatusMaintenance:
-		return newStatus == RoomStatusActive
-	default:
-		return false
-	}
-}

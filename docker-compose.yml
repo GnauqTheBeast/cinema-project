@@ -75,9 +75,9 @@ services:
       - ./notification-service/.env
     ports:
       - "8080:8080"
-#    depends_on:
-#      - postgres
-#      - redis
+    depends_on:
+      - postgres
+      - redis
 
   booking-service:
     build:
@@ -134,9 +134,9 @@ services:
     ports:
       - "8087:8087"
     restart: unless-stopped
-#    depends_on:
-#      - postgres
-#      - redis
+    depends_on:
+      - postgres
+      - redis
 
 volumes:
   postgres_data:

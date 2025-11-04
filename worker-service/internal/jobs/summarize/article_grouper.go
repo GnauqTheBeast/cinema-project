@@ -1,6 +1,7 @@
 package summarize
 
 import (
+	"math"
 	"strings"
 	"time"
 	"unicode"
@@ -20,7 +21,7 @@ type ArticleGroup struct {
 	Language string
 }
 
-// GroupArticles groups similar articles together based on multiple similarity criteria
+// GroupArticles groups similar articles together using TF-IDF and cosine similarity
 func GroupArticles(articles []*models.NewsArticle) []*ArticleGroup {
 	if len(articles) == 0 {
 		return nil
@@ -29,7 +30,10 @@ func GroupArticles(articles []*models.NewsArticle) []*ArticleGroup {
 	groups := make([]*ArticleGroup, 0)
 	processed := make(map[string]bool)
 
-	for _, article := range articles {
+	// Build TF-IDF vectors for all articles
+	tfidfVectors := buildTFIDFVectors(articles)
+
+	for i, article := range articles {
 		if processed[article.Id] {
 			continue
 		}
@@ -44,8 +48,8 @@ func GroupArticles(articles []*models.NewsArticle) []*ArticleGroup {
 
 		processed[article.Id] = true
 
-		// Find similar articles using multiple strategies
-		for _, other := range articles {
+		// Find similar articles using cosine similarity
+		for j, other := range articles {
 			if processed[other.Id] {
 				continue
 			}
@@ -55,30 +59,16 @@ func GroupArticles(articles []*models.NewsArticle) []*ArticleGroup {
 				continue
 			}
 
-			// Check time proximity (within 7 days for broader grouping)
-			if !isTimeProximate(article.PublishedAt, other.PublishedAt, 7*24*time.Hour) {
+			// Check time proximity (within 3 days for tighter grouping)
+			if !isTimeProximate(article.PublishedAt, other.PublishedAt, 3*24*time.Hour) {
 				continue
 			}
 
-			// Multiple matching strategies (any of these can trigger grouping)
-			matched := false
+			// Calculate cosine similarity between article vectors
+			similarity := cosineSimilarity(tfidfVectors[i], tfidfVectors[j])
 
-			// Strategy 1: Title similarity (lowered threshold for more matches)
-			if isSimilarTitle(article.Title, other.Title, 0.25) {
-				matched = true
-			}
-
-			// Strategy 2: Tag-based similarity (if they share significant tags)
-			if !matched && hasCommonTags(article.Tags, other.Tags, 2) {
-				matched = true
-			}
-
-			// Strategy 3: Keyword in content similarity
-			if !matched && hasCommonKeywords(article, other, 3) {
-				matched = true
-			}
-
-			if matched {
+			// Threshold: 0.5 means articles share 50%+ similar content
+			if similarity >= 0.5 {
 				group.Articles = append(group.Articles, other)
 				processed[other.Id] = true
 			}
@@ -88,52 +78,6 @@ func GroupArticles(articles []*models.NewsArticle) []*ArticleGroup {
 	}
 
 	return groups
-}
-
-// hasCommonTags checks if two articles share at least minCommon tags
-func hasCommonTags(tags1, tags2 []string, minCommon int) bool {
-	if len(tags1) == 0 || len(tags2) == 0 {
-		return false
-	}
-
-	tagMap := make(map[string]bool)
-	for _, tag := range tags1 {
-		tagMap[strings.ToLower(tag)] = true
-	}
-
-	common := 0
-	for _, tag := range tags2 {
-		if tagMap[strings.ToLower(tag)] {
-			common++
-		}
-	}
-
-	return common >= minCommon
-}
-
-// hasCommonKeywords checks if articles share significant keywords from title+content
-func hasCommonKeywords(article1, article2 *models.NewsArticle, minCommon int) bool {
-	// Extract keywords from title and first part of content
-	keywords1 := extractKeywords(article1.Title + " " + truncateContent(article1.Content, 200))
-	keywords2 := extractKeywords(article2.Title + " " + truncateContent(article2.Content, 200))
-
-	if len(keywords1) == 0 || len(keywords2) == 0 {
-		return false
-	}
-
-	keywordMap := make(map[string]bool)
-	for _, kw := range keywords1 {
-		keywordMap[kw] = true
-	}
-
-	common := 0
-	for _, kw := range keywords2 {
-		if keywordMap[kw] {
-			common++
-		}
-	}
-
-	return common >= minCommon
 }
 
 // truncateContent returns first n characters of content
@@ -170,38 +114,6 @@ func extractKeywords(title string) []string {
 	return keywords
 }
 
-// isSimilarTitle checks if two titles are similar based on keyword overlap
-func isSimilarTitle(title1, title2 string, threshold float64) bool {
-	keywords1 := extractKeywords(title1)
-	keywords2 := extractKeywords(title2)
-
-	if len(keywords1) == 0 || len(keywords2) == 0 {
-		return false
-	}
-
-	// Calculate Jaccard similarity
-	intersection := 0
-	keyword1Map := make(map[string]bool)
-	for _, kw := range keywords1 {
-		keyword1Map[kw] = true
-	}
-
-	for _, kw := range keywords2 {
-		if keyword1Map[kw] {
-			intersection++
-		}
-	}
-
-	union := len(keywords1) + len(keywords2) - intersection
-	if union == 0 {
-		return false
-	}
-
-	similarity := float64(intersection) / float64(union)
-	return similarity >= threshold
-}
-
-// isTimeProximate checks if two timestamps are within the given duration
 func isTimeProximate(t1, t2 *time.Time, duration time.Duration) bool {
 	if t1 == nil || t2 == nil {
 		return true // If we don't have timestamps, assume they're related
@@ -215,7 +127,6 @@ func isTimeProximate(t1, t2 *time.Time, duration time.Duration) bool {
 	return diff <= duration
 }
 
-// normalizeText removes accents and normalizes text for comparison
 func normalizeText(text string) string {
 	// Remove accents
 	t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
@@ -245,4 +156,87 @@ func getStopWords() map[string]bool {
 		"những": true, "các": true, "một": true, "để": true, "khi": true,
 		"theo": true, "trên": true, "sau": true, "trước": true,
 	}
+}
+
+func buildTFIDFVectors(articles []*models.NewsArticle) []map[string]float64 {
+	// Step 1: Build vocabulary and document frequency (DF)
+	vocabulary := make(map[string]int) // word -> document frequency
+	docTerms := make([]map[string]int, len(articles))
+
+	// Count term frequency for each document
+	for i, article := range articles {
+		text := article.Title + " " + truncateContent(article.Content, 500)
+		terms := extractKeywords(text)
+
+		termCount := make(map[string]int)
+		for _, term := range terms {
+			termCount[term]++
+		}
+		docTerms[i] = termCount
+
+		// Update document frequency
+		for term := range termCount {
+			vocabulary[term]++
+		}
+	}
+
+	// Step 2: Calculate TF-IDF for each document
+	numDocs := float64(len(articles))
+	tfidfVectors := make([]map[string]float64, len(articles))
+
+	for i, termCount := range docTerms {
+		tfidf := make(map[string]float64)
+		totalTerms := 0
+		for _, count := range termCount {
+			totalTerms += count
+		}
+
+		for term, count := range termCount {
+			// TF: term frequency in document
+			tf := float64(count) / float64(totalTerms)
+
+			// IDF: inverse document frequency
+			df := float64(vocabulary[term])
+			idf := math.Log(numDocs / df)
+
+			// TF-IDF
+			tfidf[term] = tf * idf
+		}
+
+		tfidfVectors[i] = tfidf
+	}
+
+	return tfidfVectors
+}
+
+// cosineSimilarity calculates cosine similarity between two TF-IDF vectors
+func cosineSimilarity(vec1, vec2 map[string]float64) float64 {
+	if len(vec1) == 0 || len(vec2) == 0 {
+		return 0.0
+	}
+
+	// Calculate dot product and magnitudes
+	dotProduct := 0.0
+	magnitude1 := 0.0
+	magnitude2 := 0.0
+
+	for term, val1 := range vec1 {
+		magnitude1 += val1 * val1
+		if val2, exists := vec2[term]; exists {
+			dotProduct += val1 * val2
+		}
+	}
+
+	for _, val2 := range vec2 {
+		magnitude2 += val2 * val2
+	}
+
+	magnitude1 = math.Sqrt(magnitude1)
+	magnitude2 = math.Sqrt(magnitude2)
+
+	if magnitude1 == 0 || magnitude2 == 0 {
+		return 0.0
+	}
+
+	return dotProduct / (magnitude1 * magnitude2)
 }

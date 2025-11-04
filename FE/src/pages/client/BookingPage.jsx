@@ -206,11 +206,17 @@ const BookingPage = () => {
   }
 
   const handleProceedToPayment = async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      navigate('/login')
+      return
+    }
+
     if (selectedSeats.length === 0) {
       alert('Vui lòng chọn ít nhất một ghế')
       return
     }
-    
+
     try {
       const bookingData = {
         showtime_id: showtimeId,
@@ -221,7 +227,7 @@ const BookingPage = () => {
       const response = await bookingService.createBooking(bookingData)
       if (response.code === 200) {
         navigate(`/booking/${response.data.id}/payment`)
-      } 
+      }
     } catch (err) {
       alert('Có lỗi xảy ra khi tạo booking')
       console.error('Error creating booking:', err)

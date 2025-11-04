@@ -3,7 +3,6 @@ package rest
 import (
 	"errors"
 	"fmt"
-
 	"movie-service/internal/module/seat/business"
 	"movie-service/internal/module/seat/entity"
 	"movie-service/internal/pkg/response"

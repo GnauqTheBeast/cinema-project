@@ -108,7 +108,6 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 		return nil
 	}
 
-	// Check if payment already completed (by different transaction)
 	if payment.Status == "completed" {
 		return fmt.Errorf("payment already completed with different transaction")
 	}

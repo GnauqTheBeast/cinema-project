@@ -43,21 +43,6 @@ func (s *Seat) IsValid() bool {
 	return true
 }
 
-func (s *Seat) CanChangeStatus(newStatus SeatStatus) bool {
-	switch s.Status {
-	case SeatStatusAvailable:
-		return newStatus == SeatStatusOccupied || newStatus == SeatStatusMaintenance || newStatus == SeatStatusBlocked
-	case SeatStatusOccupied:
-		return newStatus == SeatStatusAvailable
-	case SeatStatusMaintenance:
-		return newStatus == SeatStatusAvailable
-	case SeatStatusBlocked:
-		return newStatus == SeatStatusAvailable
-	default:
-		return false
-	}
-}
-
 type SeatsDetail struct {
 	Seats       []*Seat `json:"seats"`
 	LockedSeats []*Seat `json:"locked_seats"`
