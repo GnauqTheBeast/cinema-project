@@ -64,7 +64,7 @@ export const showtimeService = {
   },
 
   getShowtimesByMovie: async (movieId) => {
-    const response = await showtimeApi.get(`/movies/${movieId}/showtimes`)
+    const response = await showtimeApi.get(`/showtimes?movie_id=${movieId}`)
     return response.data
   },
 
@@ -109,21 +109,6 @@ export const showtimeService = {
     }
     const response = await showtimeApi.get(url)
     return response.data
-  },
-
-  truncateToHalfHour: (dateTime) => {
-    const date = new Date(dateTime)
-    const minutes = date.getMinutes()
-    if (minutes < 30) {
-      date.setMinutes(0, 0, 0)
-    } else {
-      date.setMinutes(30, 0, 0)
-    }
-    return date
-  },
-
-  formatDateTime: (dateTime) => {
-    return new Date(dateTime).toISOString()
   },
 
   getShowtimeFormats: () => [

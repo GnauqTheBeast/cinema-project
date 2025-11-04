@@ -35,7 +35,7 @@ export const movieService = {
     }
   },
 
-  getNowShowingMovies: async () => {
+  getShowingMovies: async () => {
     try {
       const response = await movieApi.get('/movies?status=showing')
       return response.data
@@ -156,7 +156,7 @@ export const movieService = {
 // Export individual functions for backward compatibility
 export const {
   getAllMovies,
-  getNowShowingMovies,
+  getShowingMovies,
   getUpcomingMovies,
   getMovieById,
   getShowtimes,

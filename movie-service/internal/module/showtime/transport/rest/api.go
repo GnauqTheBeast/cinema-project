@@ -93,40 +93,6 @@ func (h *handler) GetShowtimeById(c *gin.Context) {
 	response.Success(c, resp)
 }
 
-func (h *handler) GetShowtimesByRoom(c *gin.Context) {
-	roomId := c.Param("id")
-	if roomId == "" {
-		response.BadRequest(c, "Room ID is required")
-		return
-	}
-
-	dateStr := c.Query("date")
-	if dateStr == "" {
-		dateStr = time.Now().Format("2006-01-02")
-	}
-
-	date, err := time.Parse("2006-01-02", dateStr)
-	if err != nil {
-		response.BadRequest(c, "Invalid date format, use YYYY-MM-DD")
-		return
-	}
-
-	showtimes, err := h.biz.GetShowtimesByRoom(c.Request.Context(), roomId, date)
-	if err != nil {
-		response.ErrorWithMessage(c, "Failed to get showtimes by room")
-		return
-	}
-
-	responses := make([]*entity.ShowtimeResponse, len(showtimes))
-	for i, showtime := range showtimes {
-		responses[i] = entity.ToShowtimeResponse(showtime)
-	}
-
-	response.Success(c, map[string]interface{}{
-		"data": responses,
-	})
-}
-
 func (h *handler) GetUpcomingShowtimes(c *gin.Context) {
 	limit := 10
 	if limitStr := c.Query("limit"); limitStr != "" {

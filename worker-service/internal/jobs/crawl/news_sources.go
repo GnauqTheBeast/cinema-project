@@ -5,8 +5,10 @@ import (
 	"crypto/md5"
 	"encoding/xml"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -14,6 +16,8 @@ import (
 	"github.com/google/uuid"
 	"worker-service/internal/models"
 )
+
+var reImage = regexp.MustCompile(`<img[^>]+src="([^"]+)"`)
 
 // RSS Feed Structures
 type RSSFeed struct {
@@ -145,12 +149,10 @@ func ParseRSSToArticles(feed *RSSFeed, source NewsSource) ([]*models.NewsArticle
 	articles := make([]*models.NewsArticle, 0, len(feed.Channel.Items))
 
 	for _, item := range feed.Channel.Items {
-		// Skip if essential fields are missing
 		if item.Title == "" || item.Link == "" {
 			continue
 		}
 
-		// Parse published date
 		var publishedAt *time.Time
 		if item.PubDate != "" {
 			parsed, err := parseDate(item.PubDate)
@@ -165,19 +167,15 @@ func ParseRSSToArticles(feed *RSSFeed, source NewsSource) ([]*models.NewsArticle
 			content = item.Description
 		}
 
-		// Clean HTML tags from content
 		content = stripHTMLTags(content)
+		content = cleanText(content) // Decode URL and HTML entities in content
 
-		// Generate unique ID from URL
 		articleID := generateIDFromURL(item.Link)
 
-		// Generate slug from title
 		slug := generateSlug(item.Title)
 
-		// Extract image URL from content if available
 		imageURL := extractImageURL(item.Description + item.Content)
 
-		// Extract tags/keywords from content
 		tags := extractTags(item.Title + " " + content)
 
 		now := time.Now()
@@ -283,9 +281,7 @@ func generateSlug(title string) string {
 }
 
 func extractImageURL(html string) string {
-	// Extract image URL from img tags
-	re := regexp.MustCompile(`<img[^>]+src="([^"]+)"`)
-	matches := re.FindStringSubmatch(html)
+	matches := reImage.FindStringSubmatch(html)
 	if len(matches) > 1 {
 		return matches[1]
 	}
@@ -318,9 +314,19 @@ func extractTags(text string) []string {
 }
 
 func cleanText(text string) string {
-	text = strings.TrimSpace(text)
-	// Remove extra whitespace
+	// First decode URL encoding
+	urlDecoded, err := url.QueryUnescape(text)
+	if err != nil {
+		urlDecoded = text
+	}
+
+	// Then decode HTML entities
+	htmlDecoded := html.UnescapeString(urlDecoded)
+
+	// Trim and clean whitespace
+	htmlDecoded = strings.TrimSpace(htmlDecoded)
 	re := regexp.MustCompile(`\s+`)
-	text = re.ReplaceAllString(text, " ")
-	return text
+	htmlDecoded = re.ReplaceAllString(htmlDecoded, " ")
+
+	return htmlDecoded
 }

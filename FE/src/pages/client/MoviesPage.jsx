@@ -22,8 +22,8 @@ export default function MoviesPage() {
       setLoading(true)
       let response
       switch (filter) {
-        case 'now_showing':
-          response = await movieService.getNowShowingMovies()
+        case 'showing':
+          response = await movieService.getShowingMovies()
           break
         case 'upcoming':
           response = await movieService.getUpcomingMovies()
@@ -43,7 +43,7 @@ export default function MoviesPage() {
 
   const filters = [
     { value: 'all', label: 'Tất cả phim' },
-    { value: 'now_showing', label: 'Đang chiếu' },
+    { value: 'showing', label: 'Đang chiếu' },
     { value: 'upcoming', label: 'Sắp chiếu' },
   ]
 

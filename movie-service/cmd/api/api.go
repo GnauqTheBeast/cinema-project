@@ -83,7 +83,6 @@ func startRouteV1(group *gin.RouterGroup) {
 		rooms.PATCH("/:id/status", roomApi.UpdateRoomStatus)
 		// Room-specific seat and showtime endpoints
 		rooms.GET("/:id/seats", seatApi.GetSeatsByRoom)
-		rooms.GET("/:id/showtimes", showtimeApi.GetShowtimesByRoom)
 	}
 
 	// Seat endpoints

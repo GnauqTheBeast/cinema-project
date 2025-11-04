@@ -18,7 +18,7 @@ export default function ShowtimesModal({
 
   const handleBooking = () => {
     if (selectedShowtime) {
-      navigate(`/showtimes?movie_id=${movie.id}`)
+      navigate(`/showtimes/${selectedShowtime.id}/booking`)
     }
   }
 

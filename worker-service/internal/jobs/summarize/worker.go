@@ -91,11 +91,11 @@ func (w *Worker) processPendingArticles(ctx context.Context) error {
 	for _, group := range groups {
 		if len(group.Articles) == 1 {
 			singleCount++
-		} else {
-			multiCount++
-			if len(group.Articles) > maxGroupSize {
-				maxGroupSize = len(group.Articles)
-			}
+			continue
+		}
+		multiCount++
+		if len(group.Articles) > maxGroupSize {
+			maxGroupSize = len(group.Articles)
 		}
 	}
 
@@ -110,16 +110,12 @@ func (w *Worker) processPendingArticles(ctx context.Context) error {
 		// Generate summary for all groups (including single articles)
 		summary, err := w.createSummaryForGroup(ctx, group)
 		if err != nil {
-			logrus.Errorf("Failed to create summary for group: %v", err)
-			// Still mark articles as processed even if summary fails
-			if err := w.markArticlesProcessed(ctx, group.Articles, ""); err != nil {
-				logrus.Errorf("Failed to mark articles as processed: %v", err)
-			}
+			_ = w.markArticlesProcessed(ctx, group.Articles, "")
 			continue
 		}
 
 		// Update articles status
-		if err := w.markArticlesProcessed(ctx, group.Articles, summary.Id); err != nil {
+		if err = w.markArticlesProcessed(ctx, group.Articles, summary.Id); err != nil {
 			logrus.Errorf("Failed to mark articles as processed: %v", err)
 			continue
 		}
@@ -194,7 +190,6 @@ func (w *Worker) createSummaryForGroup(ctx context.Context, group *ArticleGroup)
 		tags = append(tags, tag)
 	}
 
-	// Create summary record
 	now := time.Now()
 	summary := &models.NewsSummary{
 		Id:          uuid.New().String(),

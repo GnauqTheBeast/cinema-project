@@ -31,7 +31,6 @@ const (
 	ShowtimeFormat2D   ShowtimeFormat = "2d"
 	ShowtimeFormat3D   ShowtimeFormat = "3d"
 	ShowtimeFormatIMAX ShowtimeFormat = "imax"
-	ShowtimeFormat4DX  ShowtimeFormat = "4dx"
 )
 
 type Showtime struct {
@@ -72,19 +71,6 @@ func (s *Showtime) IsValid() bool {
 		return false
 	}
 	return true
-}
-
-func (s *Showtime) CanChangeStatus(newStatus ShowtimeStatus) bool {
-	switch s.Status {
-	case ShowtimeStatusScheduled:
-		return newStatus == ShowtimeStatusOngoing || newStatus == ShowtimeStatusCanceled
-	case ShowtimeStatusOngoing:
-		return newStatus == ShowtimeStatusCompleted || newStatus == ShowtimeStatusCanceled
-	case ShowtimeStatusCompleted, ShowtimeStatusCanceled:
-		return false
-	default:
-		return false
-	}
 }
 
 func (s *Showtime) IsActiveStatus() bool {

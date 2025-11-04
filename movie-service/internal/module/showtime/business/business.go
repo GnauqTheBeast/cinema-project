@@ -27,7 +27,6 @@ type ShowtimeBiz interface {
 	GetShowtimeById(ctx context.Context, id string) (*entity.Showtime, error)
 	GetShowtimesByIds(ctx context.Context, ids []string) ([]*entity.Showtime, error)
 	GetShowtimes(ctx context.Context, page, size int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) ([]*entity.Showtime, int, error)
-	GetShowtimesByRoom(ctx context.Context, roomId string, date time.Time) ([]*entity.Showtime, error)
 	GetUpcomingShowtimes(ctx context.Context, limit int) ([]*entity.Showtime, error)
 	CreateShowtime(ctx context.Context, showtime *entity.Showtime) error
 	UpdateShowtime(ctx context.Context, id string, updates *entity.UpdateShowtimeRequest) error
@@ -42,7 +41,6 @@ type ShowtimeRepository interface {
 	GetMany(ctx context.Context, limit, offset int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) ([]*entity.Showtime, error)
 	GetTotalCount(ctx context.Context, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) (int, error)
 	GetByMovie(ctx context.Context, movieId string) ([]*entity.Showtime, error)
-	GetByRoomAndDate(ctx context.Context, roomId string, date time.Time) ([]*entity.Showtime, error)
 	GetUpcoming(ctx context.Context, limit int) ([]*entity.Showtime, error)
 	Create(ctx context.Context, showtime *entity.Showtime) error
 	Update(ctx context.Context, showtime *entity.Showtime) error
@@ -141,24 +139,6 @@ func (b *business) GetShowtimes(ctx context.Context, page, size int, search, mov
 	return showtimes, total, nil
 }
 
-func (b *business) GetShowtimesByRoom(ctx context.Context, roomId string, date time.Time) ([]*entity.Showtime, error) {
-	if roomId == "" {
-		return nil, ErrInvalidShowtimeData
-	}
-
-	callback := func() ([]*entity.Showtime, error) {
-		return b.repository.GetByRoomAndDate(ctx, roomId, date)
-	}
-
-	cacheKey := redisRoomShowtimes(roomId, date.Format("2006-01-02"))
-	showtimes, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, cacheKey, CACHE_TTL_30_MINS, callback)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get showtimes by room: %w", err)
-	}
-
-	return showtimes, nil
-}
-
 func (b *business) GetUpcomingShowtimes(ctx context.Context, limit int) ([]*entity.Showtime, error) {
 	if limit <= 0 {
 		limit = 10
@@ -244,9 +224,6 @@ func (b *business) UpdateShowtime(ctx context.Context, id string, updates *entit
 	}
 
 	if updates.Status != nil {
-		if !showtime.CanChangeStatus(*updates.Status) {
-			return ErrInvalidStatusTransition
-		}
 		showtime.Status = *updates.Status
 	}
 
@@ -313,13 +290,9 @@ func (b *business) UpdateShowtimeStatus(ctx context.Context, id string, status e
 		return fmt.Errorf("failed to get showtime: %w", err)
 	}
 
-	if !showtime.CanChangeStatus(status) {
-		return ErrInvalidStatusTransition
-	}
-
 	showtime.Status = status
 
-	if err := b.repository.Update(ctx, showtime); err != nil {
+	if err = b.repository.Update(ctx, showtime); err != nil {
 		return fmt.Errorf("failed to update showtime status: %w", err)
 	}
 
