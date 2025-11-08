@@ -124,6 +124,7 @@ func (h *handler) VerifyCryptoPayment(c *gin.Context) {
 
 	err := h.paymentBiz.VerifyCryptoPayment(c.Request.Context(), &req)
 	if err != nil {
+		fmt.Println("error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"message": "Failed to verify crypto payment",

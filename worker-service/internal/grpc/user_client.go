@@ -3,9 +3,11 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"os"
+
 	"worker-service/proto/pb"
 )
 

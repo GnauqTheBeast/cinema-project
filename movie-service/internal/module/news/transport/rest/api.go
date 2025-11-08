@@ -1,10 +1,11 @@
 package rest
 
 import (
-	"movie-service/internal/module/news/business"
-	"movie-service/internal/module/news/repository"
 	"net/http"
 	"strconv"
+
+	"movie-service/internal/module/news/business"
+	"movie-service/internal/module/news/repository"
 
 	"github.com/gin-gonic/gin"
 	"github.com/samber/do"

@@ -2,7 +2,9 @@ package business
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -48,7 +50,10 @@ func NewPaymentBiz(i *do.Injector) (PaymentBiz, error) {
 		return nil, err
 	}
 
-	blockchainService := service.NewBlockchainService()
+	blockchainService, err := service.NewBlockchainService()
+	if err != nil {
+		return nil, err
+	}
 
 	return &paymentBiz{
 		container:         i,
@@ -163,83 +168,42 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 }
 
 func (b *paymentBiz) VerifyCryptoPayment(ctx context.Context, req *entity.CryptoVerificationRequest) error {
-	// Verify transaction format and basic validation
 	if err := b.blockchainService.VerifyTransaction(ctx, req.TxHash, req.FromAddress, req.ToAddress, req.AmountEth); err != nil {
 		return fmt.Errorf("blockchain verification failed: %w", err)
 	}
 
-	// Check if transaction already processed (idempotency)
-	var existingCrypto entity.CryptoPayment
+	// Check if payment already completed with this transaction
+	payment := new(entity.Payment)
 	err := b.db.NewSelect().
-		Model(&existingCrypto).
-		Where("tx_hash = ?", req.TxHash).
+		Model(payment).
+		Where("transaction_id = ?", req.TxHash).
+		Where("payment_method = ?", "cryptocurrency").
 		Scan(ctx)
-
-	if err == nil {
-		// Transaction already processed, return success (idempotent)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	if payment.Status == "completed" {
 		return nil
 	}
 
-	// Create crypto payment record and update payment in atomic transaction
 	err = b.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
-		// 1. Create crypto payment record
-		cryptoPayment := &entity.CryptoPayment{
-			Id:          uuid.New().String(),
-			BookingId:   req.BookingId,
-			TxHash:      req.TxHash,
-			FromAddress: req.FromAddress,
-			ToAddress:   req.ToAddress,
-			AmountEth:   req.AmountEth,
-			AmountVnd:   req.AmountVnd,
-			Network:     req.Network,
-			Status:      "verified",
-			CreatedAt:   time.Now(),
-		}
-
-		verifiedAt := time.Now()
-		cryptoPayment.VerifiedAt = &verifiedAt
-
-		_, err := tx.NewInsert().Model(cryptoPayment).Exec(ctx)
+		payment, err = b.repo.FindByBookingId(ctx, req.BookingId)
 		if err != nil {
-			return fmt.Errorf("failed to create crypto payment record: %w", err)
+			return err
 		}
 
-		// 2. Find or create payment record
-		payment, err := b.repo.FindByBookingId(ctx, req.BookingId)
-		if err != nil || payment == nil {
-			// Create new payment
-			txHash := req.TxHash
-			payment = &entity.Payment{
-				Id:            uuid.New().String(),
-				BookingId:     req.BookingId,
-				Amount:        req.AmountVnd,
-				PaymentDate:   time.Now(),
-				PaymentMethod: "cryptocurrency",
-				TransactionId: &txHash,
-				Status:        "completed",
-				CreatedAt:     time.Now(),
-			}
-
-			_, err = tx.NewInsert().Model(payment).Exec(ctx)
-			if err != nil {
-				return fmt.Errorf("failed to create payment record: %w", err)
-			}
-		} else {
-			// Update existing payment
-			fields := map[string]interface{}{
-				"transaction_id": req.TxHash,
-				"payment_method": "cryptocurrency",
-				"status":         "completed",
-				"updated_at":     time.Now(),
-			}
-
-			err = b.repo.UpdateFieldsTx(ctx, tx, payment.Id, fields)
-			if err != nil {
-				return fmt.Errorf("failed to update payment: %w", err)
-			}
+		fields := map[string]interface{}{
+			"transaction_id": req.TxHash,
+			"payment_method": "cryptocurrency",
+			"status":         "completed",
+			"updated_at":     time.Now(),
 		}
 
-		// 3. Create PaymentCompleted outbox event
+		err = b.repo.UpdateFieldsTx(ctx, tx, payment.Id, fields)
+		if err != nil {
+			return fmt.Errorf("failed to update payment: %w", err)
+		}
+
 		eventData := map[string]interface{}{
 			"payment_id":     payment.Id,
 			"booking_id":     req.BookingId,

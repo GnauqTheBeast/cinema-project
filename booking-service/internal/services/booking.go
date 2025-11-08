@@ -347,7 +347,6 @@ func (s *BookingService) checkSeatInDB(ctx context.Context, showtimeId, seatId s
 		Where("b.status IN (?, ?)", models.BookingStatusPending, models.BookingStatusConfirmed).
 		Limit(1).
 		Scan(ctx, &result)
-
 	if err != nil {
 		return "", false
 	}

@@ -137,7 +137,6 @@ func (w *Worker) fetchPendingArticles(ctx context.Context) ([]*models.NewsArticl
 		Order("published_at DESC").
 		Limit(w.batchSize).
 		Scan(ctx)
-
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +209,6 @@ func (w *Worker) createSummaryForGroup(ctx context.Context, group *ArticleGroup)
 	_, err = w.db.NewInsert().
 		Model(summary).
 		Exec(ctx)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert summary: %w", err)
 	}

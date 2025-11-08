@@ -19,7 +19,6 @@ const PaymentPage = () => {
   const [error, setError] = useState('')
   const [qrCodeUrl, setQrCodeUrl] = useState('')
 
-  // Payment method state
   const [paymentMethod, setPaymentMethod] = useState('vnd') // 'vnd' or 'crypto'
 
   // Crypto state
@@ -32,8 +31,8 @@ const PaymentPage = () => {
   const [vndUsdRate, setVndUsdRate] = useState(0)
   const [loadingPrice, setLoadingPrice] = useState(true)
 
-  // Contract config (replace with your actual contract)
-  const PAYMENT_RECEIVER = '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb' // Your wallet address
+  const PAYMENT_RECEIVER = '0x6721aDe7bfB76c6cfD97635Dc177Cb797F434087'
+  const SEPOLIA_CHAIN_ID = '0xaa36a7' // 11155111 in decimal
 
   useEffect(() => {
     fetchBooking()
@@ -41,7 +40,6 @@ const PaymentPage = () => {
   }, [bookingId])
 
   useEffect(() => {
-    // Check if wallet is already connected
     checkWalletConnection()
   }, [])
 
@@ -75,8 +73,6 @@ const PaymentPage = () => {
 
       setBooking(bookingResponse.data)
 
-      // IMPORTANT: Create payment record in database before showing QR code
-      // This ensures SePay webhook can find the payment when user completes transfer
       try {
         const paymentApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1'
         const token = localStorage.getItem('token')
@@ -186,11 +182,60 @@ const PaymentPage = () => {
     try {
       setIsConnecting(true)
       const provider = new ethers.BrowserProvider(window.ethereum)
+
+      // Request account access
       await provider.send('eth_requestAccounts', [])
+
+      // Check current network
+      const network = await provider.getNetwork()
+      const currentChainId = '0x' + network.chainId.toString(16)
+
+      // If not on Sepolia, switch to Sepolia
+      if (currentChainId !== SEPOLIA_CHAIN_ID) {
+        try {
+          // Try to switch to Sepolia network
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: SEPOLIA_CHAIN_ID }],
+          })
+        } catch (switchError) {
+          // This error code indicates that the chain has not been added to MetaMask
+          if (switchError.code === 4902) {
+            try {
+              // Add Sepolia network to MetaMask
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: SEPOLIA_CHAIN_ID,
+                  chainName: 'Sepolia Testnet',
+                  nativeCurrency: {
+                    name: 'SepoliaETH',
+                    symbol: 'ETH',
+                    decimals: 18
+                  },
+                  rpcUrls: ['https://rpc.sepolia.org'],
+                  blockExplorerUrls: ['https://sepolia.etherscan.io']
+                }],
+              })
+            } catch (addError) {
+              console.error('Error adding Sepolia network:', addError)
+              alert('Failed to add Sepolia network to MetaMask')
+              setIsConnecting(false)
+              return
+            }
+          } else {
+            console.error('Error switching to Sepolia:', switchError)
+            alert('Failed to switch to Sepolia network')
+            setIsConnecting(false)
+            return
+          }
+        }
+      }
+
       const signer = await provider.getSigner()
       const address = await signer.getAddress()
       setWalletAddress(address)
-      console.log('Wallet connected:', address)
+      console.log('Wallet connected to Sepolia:', address)
     } catch (err) {
       console.error('Error connecting wallet:', err)
       alert('Failed to connect wallet: ' + err.message)
@@ -216,10 +261,10 @@ const PaymentPage = () => {
       const signer = await provider.getSigner()
 
       // Send transaction
+      // Booking ID will be tracked via backend verification
       const tx = await signer.sendTransaction({
         to: PAYMENT_RECEIVER,
         value: ethers.parseEther(cryptoAmount.toFixed(6)),
-        data: ethers.hexlify(ethers.toUtf8Bytes(`QH-${bookingId}`)),
       })
 
       console.log('Transaction sent:', tx.hash)
@@ -499,7 +544,7 @@ const PaymentPage = () => {
                         </div>
                         <div>
                           <p className="text-white font-semibold">{shortenAddress(walletAddress)}</p>
-                          <p className="text-gray-400 text-xs">Ethereum Mainnet</p>
+                          <p className="text-gray-400 text-xs">Sepolia Testnet</p>
                         </div>
                       </div>
                     </div>
@@ -533,7 +578,7 @@ const PaymentPage = () => {
                       </div>
                       <div className="flex justify-between">
                         <p className="text-gray-400">Network</p>
-                        <p className="text-white">Ethereum Mainnet</p>
+                        <p className="text-white">Sepolia Testnet</p>
                       </div>
                       <div className="flex justify-between">
                         <p className="text-gray-400">Transaction Data</p>

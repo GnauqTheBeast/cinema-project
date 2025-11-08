@@ -51,8 +51,10 @@ type BookingShowtimeDetail struct {
 	RoomName   string `json:"room_name"`
 }
 
-type SeatInfo = BookingSeatDetail
-type ShowtimeInfo = BookingShowtimeDetail
+type (
+	SeatInfo     = BookingSeatDetail
+	ShowtimeInfo = BookingShowtimeDetail
+)
 
 func UnmarshalEmailVerify(data []byte) (interface{}, error) {
 	emailVerify := new(EmailVerifyMessage)

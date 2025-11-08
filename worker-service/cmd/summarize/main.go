@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/joho/godotenv"
 
 	"worker-service/internal/container"
 	"worker-service/internal/jobs/summarize"

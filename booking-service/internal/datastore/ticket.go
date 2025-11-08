@@ -81,7 +81,6 @@ func GetBookedSeatsForShowtime(ctx context.Context, db bun.IDB, showtimeId strin
 		Where("b.showtime_id = ?", showtimeId).
 		Where("b.status IN (?, ?)", models.BookingStatusPending, models.BookingStatusConfirmed).
 		Scan(ctx, &results)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to get booked seats: %w", err)
 	}

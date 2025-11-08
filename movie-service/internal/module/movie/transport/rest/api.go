@@ -199,4 +199,3 @@ func (h *handler) GetMovieStats(c *gin.Context) {
 
 	response.Success(c, stats)
 }
-

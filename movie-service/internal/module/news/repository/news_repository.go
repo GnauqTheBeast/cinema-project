@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"movie-service/internal/module/news/entity"
 
 	"github.com/uptrace/bun"
@@ -51,7 +52,6 @@ func (r *newsRepository) GetNewsSummaryByID(ctx context.Context, id string) (*en
 		Model(&summary).
 		Where("id = ?", id).
 		Scan(ctx)
-
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,6 @@ func (r *newsRepository) GetArticlesByIDs(ctx context.Context, ids []string) ([]
 		Model(&articles).
 		Where("id IN (?)", bun.In(ids)).
 		Scan(ctx)
-
 	if err != nil {
 		return nil, err
 	}

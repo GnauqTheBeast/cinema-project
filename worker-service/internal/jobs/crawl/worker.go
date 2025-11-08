@@ -123,7 +123,6 @@ func (w *Worker) saveArticles(ctx context.Context, articles []*models.NewsArticl
 			Model((*models.NewsArticle)(nil)).
 			Where("source_url = ?", article.SourceURL).
 			Exists(ctx)
-
 		if err != nil {
 			logrus.Error("Failed to check article existence: %v", err)
 			continue
@@ -135,7 +134,6 @@ func (w *Worker) saveArticles(ctx context.Context, articles []*models.NewsArticl
 				Model(article).
 				Where("source_url = ?", article.SourceURL).
 				Exec(ctx)
-
 			if err != nil {
 				logrus.Error("Failed to update article: %v", err)
 				continue
@@ -145,7 +143,6 @@ func (w *Worker) saveArticles(ctx context.Context, articles []*models.NewsArticl
 			_, err = w.db.NewInsert().
 				Model(article).
 				Exec(ctx)
-
 			if err != nil {
 				logrus.Error("Failed to insert article: %v", err)
 				continue

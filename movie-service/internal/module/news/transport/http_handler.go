@@ -1,9 +1,10 @@
 package transport
 
 import (
-	"movie-service/internal/module/news/business"
 	"net/http"
 	"strconv"
+
+	"movie-service/internal/module/news/business"
 
 	"github.com/labstack/echo/v4"
 )
