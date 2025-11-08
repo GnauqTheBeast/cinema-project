@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_URL = process.env.REACT_APP_MOVIE_API_URL || 'http://localhost:8083/api/v1'
+const API_URL = process.env.REACT_APP_MOVIE_API_URL || 'http://localhost:8000/api/v1'
 
 const roomApi = axios.create({
   baseURL: API_URL,
@@ -66,7 +66,6 @@ export const roomService = {
     { value: 'standard', label: 'Standard' },
     { value: 'vip', label: 'VIP' },
     { value: 'imax', label: 'IMAX' },
-    { value: '4dx', label: '4DX' },
   ],
 
   getRoomStatuses: () => [

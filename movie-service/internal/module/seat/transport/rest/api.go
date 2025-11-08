@@ -3,7 +3,6 @@ package rest
 import (
 	"errors"
 	"fmt"
-
 	"movie-service/internal/module/seat/business"
 	"movie-service/internal/module/seat/entity"
 	"movie-service/internal/pkg/response"
@@ -80,19 +79,54 @@ func (h *handler) GetSeatsByRoom(c *gin.Context) {
 		return
 	}
 
-	seats, err := h.biz.GetSeatsByRoom(c.Request.Context(), roomId)
+	seatsDetail, err := h.biz.GetSeatsByRoom(c.Request.Context(), roomId)
 	if err != nil {
 		response.ErrorWithMessage(c, "Failed to get seats by room")
 		return
 	}
 
-	responses := make([]*entity.SeatResponse, len(seats))
-	for i, seat := range seats {
+	responses := make([]*entity.SeatResponse, len(seatsDetail.Seats))
+	for i, seat := range seatsDetail.Seats {
 		responses[i] = entity.ToSeatResponse(seat)
 	}
 
+	lockedResponses := make([]*entity.SeatResponse, len(seatsDetail.LockedSeats))
+	for i, seat := range seatsDetail.LockedSeats {
+		lockedResponses[i] = entity.ToSeatResponse(seat)
+	}
+
 	response.Success(c, map[string]interface{}{
-		"data": responses,
+		"seats":        responses,
+		"locked_seats": lockedResponses,
+	})
+}
+
+func (h *handler) GetSeatsByShowtime(c *gin.Context) {
+	showtimeId := c.Param("id")
+	if showtimeId == "" {
+		response.BadRequest(c, "Showtime ID is required")
+		return
+	}
+
+	seatsDetail, err := h.biz.GetSeatsByShowtime(c.Request.Context(), showtimeId)
+	if err != nil {
+		response.ErrorWithMessage(c, "Failed to get seats by showtime")
+		return
+	}
+
+	responses := make([]*entity.SeatResponse, len(seatsDetail.Seats))
+	for i, seat := range seatsDetail.Seats {
+		responses[i] = entity.ToSeatResponse(seat)
+	}
+
+	lockedResponses := make([]*entity.SeatResponse, len(seatsDetail.LockedSeats))
+	for i, seat := range seatsDetail.LockedSeats {
+		lockedResponses[i] = entity.ToSeatResponse(seat)
+	}
+
+	response.Success(c, map[string]interface{}{
+		"seats":        responses,
+		"locked_seats": lockedResponses,
 	})
 }
 

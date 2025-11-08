@@ -4,7 +4,7 @@ import ChatbotDocumentsPage from '../pages/admin/ChatbotDocumentsPage'
 import DashboardPage from '../pages/admin/DashboardPage'
 import MovieDetailPage from '../pages/admin/MovieDetailPage'
 import MovieFormPage from '../pages/admin/MovieFormPage'
-import MoviesPage from '../pages/admin/MoviesPage'
+import AdminMoviesPage from '../pages/admin/MoviesPage'
 import RevenueStatsPage from '../pages/admin/RevenueStatsPage'
 import RoomFormPage from '../pages/admin/RoomFormPage'
 import RoomsPage from '../pages/admin/RoomsPage'
@@ -13,8 +13,14 @@ import SeatsPage from '../pages/admin/SeatsPage'
 import ShowtimeFormPage from '../pages/admin/ShowtimeFormPage'
 import ShowtimesPage from '../pages/admin/ShowtimesPage'
 import StaffManagementPage from '../pages/admin/StaffManagementPage'
+import BookingPage from '../pages/client/BookingPage'
+import BookingHistoryPage from '../pages/client/BookingHistoryPage'
+import BookingSuccessPage from '../pages/client/BookingSuccessPage'
 import HomePage from '../pages/client/HomePage'
 import LoginPage from '../pages/client/LoginPage'
+import MoviesPage from '../pages/client/MoviesPage'
+import NewsPage from '../pages/client/NewsPage'
+import PaymentPage from '../pages/client/PaymentPage'
 import ProfilePage from '../pages/client/ProfilePage'
 import RegisterPage from '../pages/client/RegisterPage'
 import ShowtimePage from '../pages/client/ShowtimePage'
@@ -66,13 +72,37 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
       />
 
       {/* User Routes */}
+      <Route path="/movies" element={<MoviesPage />} />
       <Route path="/showtimes" element={<ShowtimePage />} />
+      <Route path="/news" element={<NewsPage />} />
       <Route
         path="/profile"
         element={
-          <ProtectedRoute>
             <ProfilePage />
-          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/showtimes/:showtimeId/booking"
+        element={
+            <BookingPage />
+        }
+      />
+      <Route
+        path="/booking/:bookingId/payment"
+        element={
+            <PaymentPage />
+        }
+      />
+      <Route
+        path="/booking-history"
+        element={
+            <BookingHistoryPage />
+        }
+      />
+      <Route
+        path="/booking-success"
+        element={
+            <BookingSuccessPage />
         }
       />
 
@@ -91,7 +121,7 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
         path="/admin/movies"
         element={
           <AdminRoute>
-            <MoviesPage />
+            <AdminMoviesPage />
           </AdminRoute>
         }
       />

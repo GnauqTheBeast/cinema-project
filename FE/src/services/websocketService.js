@@ -110,7 +110,7 @@ class WebSocketService {
   }
 
   handleMessage(message) {
-    console.log('Received WebSocket message:', message)
+    console.log('[WebSocket] Received raw message:', message)
 
     if (message.id && this.messageHandlers.has(message.id)) {
       const handler = this.messageHandlers.get(message.id)
@@ -124,7 +124,18 @@ class WebSocketService {
         const result =
           typeof message.result === 'string' ? JSON.parse(message.result) : message.result
 
-        if (result.status === 'notification sent') {
+        console.log('[WebSocket] Parsed result:', result)
+        console.log('[WebSocket] result.type:', result.type)
+        console.log('[WebSocket] result.status:', result.status)
+
+        // Handle both general notifications and booking notifications
+        if (
+          result.status === 'notification sent' ||
+          result.status === 'sent' ||
+          result.type === 'booking_notification' ||
+          result.type === 'notification'
+        ) {
+          console.log('[WebSocket] ✓ Notification detected, calling callbacks. Total callbacks:', this.notificationCallbacks.length)
           this.notificationCallbacks.forEach((callback) => {
             try {
               callback(result)
@@ -132,10 +143,14 @@ class WebSocketService {
               console.error('Error in notification callback:', error)
             }
           })
+        } else {
+          console.log('[WebSocket] ✗ Not a notification (conditions not met)')
         }
       } catch (error) {
         console.error('Error processing notification message:', error)
       }
+    } else {
+      console.log('[WebSocket] Message has no result field')
     }
   }
 

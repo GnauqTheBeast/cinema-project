@@ -20,7 +20,6 @@ const (
 	RoomTypeStandard RoomType = "standard"
 	RoomTypeVIP      RoomType = "vip"
 	RoomTypeIMAX     RoomType = "imax"
-	RoomType4DX      RoomType = "4dx"
 )
 
 type Room struct {
@@ -40,17 +39,4 @@ func (r *Room) IsValid() bool {
 		return false
 	}
 	return true
-}
-
-func (r *Room) CanChangeStatus(newStatus RoomStatus) bool {
-	switch r.Status {
-	case RoomStatusActive:
-		return newStatus == RoomStatusInactive || newStatus == RoomStatusMaintenance
-	case RoomStatusInactive:
-		return newStatus == RoomStatusActive
-	case RoomStatusMaintenance:
-		return newStatus == RoomStatusActive
-	default:
-		return false
-	}
 }

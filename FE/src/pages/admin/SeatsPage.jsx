@@ -22,6 +22,7 @@ const SeatsPage = () => {
 
   const seatTypes = seatService.getSeatTypes()
   const seatStatuses = seatService.getSeatStatuses()
+  const coupleRows = ['M', 'N', 'O']
 
   const fetchSeats = async () => {
     try {
@@ -30,7 +31,7 @@ const SeatsPage = () => {
         currentPage,
         10,
         search,
-        selectedRoom,
+        selectedRoom || '',
         selectedSeatType,
         selectedStatus,
         selectedRow,
@@ -54,10 +55,10 @@ const SeatsPage = () => {
     try {
       const response = await roomService.getRooms(1, 100)
       if (response.success) {
-        setRooms(response.data.data || [])
-        // Set first room as default for grid view
-        if (response.data.data && response.data.data.length > 0) {
-          setSelectedRoom(response.data.data[0].id)
+        const roomsData = response.data.data || []
+        setRooms(roomsData)
+        if (roomsData.length > 0 && !selectedRoom) {
+          setSelectedRoom(roomsData[0].id)
         }
       }
     } catch (err) {
@@ -71,15 +72,18 @@ const SeatsPage = () => {
     try {
       setLoading(true)
       const response = await seatService.getSeatsByRoom(roomId)
-      console.log('Room seats response:', response) // Debug log
 
       let seats = []
       if (response.success && response.data) {
-        seats = Array.isArray(response.data) ? response.data : response.data.data || []
+        if (response.data.seats) {
+          seats = response.data.seats
+        } else if (Array.isArray(response.data)) {
+          seats = response.data
+        }
+      } else if (response.seats) {
+        seats = response.seats
       } else if (Array.isArray(response)) {
         seats = response
-      } else if (response.data && Array.isArray(response.data)) {
-        seats = response.data
       }
 
       setRoomSeats(seats)
@@ -103,10 +107,14 @@ const SeatsPage = () => {
   useEffect(() => {
     if (viewMode === 'table') {
       fetchSeats()
-    } else if (viewMode === 'grid' && selectedRoom) {
-      fetchRoomSeats(selectedRoom)
+    } else if (viewMode === 'grid') {
+      if (selectedRoom) {
+        fetchRoomSeats(selectedRoom)
+      } else if (rooms.length > 0) {
+        setSelectedRoom(rooms[0].id)
+      }
     }
-  }, [currentPage, search, selectedRoom, selectedSeatType, selectedStatus, selectedRow, viewMode])
+  }, [currentPage, search, selectedRoom, selectedSeatType, selectedStatus, selectedRow, viewMode, rooms])
 
   const handleSearch = (e) => {
     setSearch(e.target.value)
@@ -167,21 +175,18 @@ const SeatsPage = () => {
     return room ? `Phòng ${room.room_number}` : roomId
   }
 
-  // Grid view functions
   const createSeatGrid = () => {
     const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O']
-    const seatsPerRow = 16
     const grid = {}
 
-    // Initialize empty grid
     rows.forEach((row) => {
       grid[row] = {}
+      const seatsPerRow = coupleRows.includes(row) ? 5 : 16
       for (let i = 1; i <= seatsPerRow; i++) {
         grid[row][i] = null
       }
     })
 
-    // Populate with existing seats
     if (Array.isArray(roomSeats)) {
       roomSeats.forEach((seat) => {
         if (
@@ -193,6 +198,8 @@ const SeatsPage = () => {
           grid[seat.row_number][parseInt(seat.seat_number)] = seat
         }
       })
+    } else {
+      console.log('roomSeats is not an array:', roomSeats)
     }
 
     return grid
@@ -207,22 +214,20 @@ const SeatsPage = () => {
       case 'available':
         switch (seat.seat_type) {
           case 'regular':
-            return 'bg-green-200 border-green-400 text-green-800'
+            return 'bg-green-200 border-green-400 text-green-800 hover:bg-green-300'
           case 'vip':
-            return 'bg-yellow-200 border-yellow-400 text-yellow-800'
+            return 'bg-yellow-200 border-yellow-400 text-yellow-800 hover:bg-yellow-300'
           case 'couple':
-            return 'bg-pink-200 border-pink-400 text-pink-800'
-          case '4dx':
-            return 'bg-purple-200 border-purple-400 text-purple-800'
+            return 'bg-pink-200 border-pink-400 text-pink-800 hover:bg-pink-300'
           default:
-            return 'bg-green-200 border-green-400 text-green-800'
+            return 'bg-green-200 border-green-400 text-green-800 hover:bg-green-300'
         }
       case 'occupied':
-        return 'bg-red-200 border-red-400 text-red-800'
+        return 'bg-red-200 border-red-400 text-red-800 cursor-not-allowed'
       case 'maintenance':
-        return 'bg-orange-200 border-orange-400 text-orange-800'
+        return 'bg-orange-200 border-orange-400 text-orange-800 cursor-not-allowed'
       case 'blocked':
-        return 'bg-gray-300 border-gray-500 text-gray-700'
+        return 'bg-gray-300 border-gray-500 text-gray-700 cursor-not-allowed'
       default:
         return 'bg-gray-200 border-gray-400 text-gray-700'
     }
@@ -284,12 +289,13 @@ const SeatsPage = () => {
               <div className="flex items-center gap-2">
                 <label className="text-sm font-medium text-gray-700">Phòng chiếu:</label>
                 <select
-                  value={selectedRoom}
+                  value={selectedRoom || ''}
                   onChange={(e) => {
                     setSelectedRoom(e.target.value)
                   }}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
+                  <option value="">Chọn phòng chiếu</option>
                   {rooms.map((room) => (
                     <option key={room.id} value={room.id}>
                       Phòng {room.room_number} ({room.room_type})
@@ -299,20 +305,15 @@ const SeatsPage = () => {
               </div>
 
               <div className="text-sm text-gray-600 ml-auto">
-                <span className="inline-block w-4 h-4 bg-gray-100 border border-gray-300 rounded mr-2"></span>
-                Trống
-                <span className="inline-block w-4 h-4 bg-green-200 border border-green-400 rounded mr-2 ml-4"></span>
+                <span className="inline-block w-4 h-4 bg-green-200 border border-green-400 rounded mr-2"></span>
                 Thường
                 <span className="inline-block w-4 h-4 bg-yellow-200 border border-yellow-400 rounded mr-2 ml-4"></span>
                 VIP
                 <span className="inline-block w-4 h-4 bg-pink-200 border border-pink-400 rounded mr-2 ml-4"></span>
-                Couple
-                <span className="inline-block w-4 h-4 bg-purple-200 border border-purple-400 rounded mr-2 ml-4"></span>
-                4DX
+                Đôi
               </div>
             </div>
           ) : (
-            // Table view filters
             <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
               <div className="relative">
                 <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -326,9 +327,9 @@ const SeatsPage = () => {
               </div>
 
               <select
-                value={selectedRoom}
+                value={selectedRoom || ''}
                 onChange={(e) => {
-                  setSelectedRoom(e.target.value)
+                  setSelectedRoom(e.target.value || '')
                   setCurrentPage(1)
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -397,7 +398,6 @@ const SeatsPage = () => {
             {error}
           </div>
         ) : viewMode === 'grid' ? (
-          // Grid View
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -421,52 +421,52 @@ const SeatsPage = () => {
               {/* Seat Grid */}
               <div className="overflow-x-auto">
                 <div className="inline-block">
-                  {roomSeats &&
-                    Object.entries(createSeatGrid()).map(([row, rowSeats]) => (
-                      <div key={row} className="flex items-center justify-center mb-3">
-                        {/* Row Label Left */}
-                        <div className="w-8 text-center text-sm font-bold text-gray-700 mr-4">
-                          {row}
-                        </div>
+                  {Array.isArray(roomSeats) && roomSeats.length > 0 ? (
+                    Object.entries(createSeatGrid())
+                      .filter(([_, rowSeats]) => {
+                        return Object.values(rowSeats).some(seat => seat !== null)
+                      })
+                      .map(([row, rowSeats]) => (
+                        <div key={row} className="flex items-center justify-center mb-3">
+                          <div className="w-8 text-center text-sm font-bold text-gray-700 mr-4">
+                            {row}
+                          </div>
 
-                        {/* Seats */}
-                        <div className="flex gap-1">
-                          {Object.entries(rowSeats).map(([seatNumber, seat]) => {
-                            const seatNum = parseInt(seatNumber)
+                          {/* Seats */}
+                          <div className={`flex ${coupleRows.includes(row) ? 'gap-3' : 'gap-1'} justify-center`}>
+                            {Object.entries(rowSeats)
+                              .filter(([_, seat]) => seat !== null)
+                              .map(([seatNumber, seat]) => {
+                                const isCouple = seat.seat_type === 'couple'
 
-                            return (
-                              <button
-                                key={`${row}-${seatNumber}`}
-                                // onClick={() => handleGridSeatClick(row, seatNum)}
-                                className={`w-8 h-8 border-2 rounded text-xs font-semibold transition-all hover:scale-110 ${getSeatColor(seat)}`}
-                                title={
-                                  seat
-                                    ? `${row}${seatNumber.padStart(2, '0')} - ${getSeatTypeLabel(seat.seat_type)} - ${getStatusLabel(seat.status)}`
-                                    : `Tạo ghế ${row}${seatNumber.padStart(2, '0')}`
-                                }
-                              >
-                                {seat ? (
-                                  seat.seat_type === 'couple' ? (
-                                    <div className="flex items-center justify-center">
-                                      <FaCouch className="w-3 h-3" />
-                                    </div>
-                                  ) : (
-                                    seatNumber.padStart(2, '0')
-                                  )
-                                ) : (
-                                  '+'
-                                )}
-                              </button>
-                            )
-                          })}
-                        </div>
+                                return (
+                                  <button
+                                    key={`${row}-${seatNumber}`}
+                                    className={`${isCouple ? 'w-12' : 'w-8'} h-8 border-2 rounded text-xs font-semibold transition-all hover:scale-110 ${getSeatColor(seat)}`}
+                                    title={`${row}${seatNumber.padStart(2, '0')} - ${getSeatTypeLabel(seat.seat_type)} - ${getStatusLabel(seat.status)}`}
+                                  >
+                                    {isCouple ? (
+                                      <div className="flex items-center justify-center">
+                                        <FaCouch className="w-3 h-3" />
+                                      </div>
+                                    ) : (
+                                      seatNumber.padStart(2, '0')
+                                    )}
+                                  </button>
+                                )
+                              })}
+                          </div>
 
-                        {/* Row Label Right */}
-                        <div className="w-8 text-center text-sm font-bold text-gray-700 ml-4">
-                          {row}
+                          <div className="w-8 text-center text-sm font-bold text-gray-700 ml-4">
+                            {row}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">Không có dữ liệu ghế</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -474,6 +474,37 @@ const SeatsPage = () => {
               <div className="mt-8 text-center">
                 <div className="text-xs text-gray-500 mb-2">ENTRANCE</div>
                 <div className="w-24 h-1 bg-gray-300 rounded"></div>
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Chú thích:</h4>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <span className="inline-block w-4 h-4 bg-green-200 border border-green-400 rounded"></span>
+                  Thường
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <span className="inline-block w-4 h-4 bg-yellow-200 border border-yellow-400 rounded"></span>
+                  VIP
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <span className="inline-block w-4 h-4 bg-pink-200 border border-pink-400 rounded"></span>
+                  Đôi
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <span className="inline-block w-4 h-4 bg-red-200 border border-red-400 rounded"></span>
+                  Đã đặt
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <span className="inline-block w-4 h-4 bg-orange-200 border border-orange-400 rounded"></span>
+                  Bảo trì
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <span className="inline-block w-4 h-4 bg-gray-300 border border-gray-500 rounded"></span>
+                  Bị chặn
+                </div>
               </div>
             </div>
 

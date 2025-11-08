@@ -4,15 +4,17 @@ import dotenv from 'dotenv';
 import { Server } from 'http';
 
 import DatabaseManager from './config/database.js';
+import { RedisManager } from './config/redis.js';
 import userRoutes from './routes/user.js';
 import { startGrpcServer } from './transport/grpc/server.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
-import { IHealthCheck, IServerConfig, IApiError, IDatabaseManager } from './types/index.js';
+import { IHealthCheck, IServerConfig, IDatabaseManager } from './types/index.js';
 
 class UserServer {
   private app: Application;
   private port: number;
   private databaseManager: IDatabaseManager | null = null;
+  private redisManager: RedisManager | null = null;
   private config: IServerConfig;
 
   constructor() {
@@ -33,7 +35,7 @@ class UserServer {
 
   private loadConfiguration(): IServerConfig {
     return {
-      port: parseInt(process.env.USER_SERVICE_PORT || '4001'),
+      port: parseInt(process.env.USER_SERVICE_PORT || '8005'),
       corsOrigin: process.env.CORS_ORIGIN || '*',
       jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
       jwtExpiresIn: process.env.JWT_EXPIRES_IN || '24h'
@@ -107,7 +109,7 @@ class UserServer {
     try {
       this.databaseManager = DatabaseManager.getInstance();
       const connected = await this.databaseManager.testConnection();
-      
+
       if (connected) {
         await this.databaseManager.syncDatabase();
         console.log('Database initialized successfully');
@@ -121,6 +123,28 @@ class UserServer {
     }
   }
 
+  private async initializeRedis(): Promise<boolean> {
+    try {
+      this.redisManager = RedisManager.getInstance();
+      const connected = await this.redisManager.connect();
+
+      if (connected) {
+        const isReady = await this.redisManager.isConnected();
+        if (isReady) {
+          console.log('Redis initialized successfully');
+          return true;
+        } else {
+          throw new Error('Redis connection test failed');
+        }
+      } else {
+        throw new Error('Redis connection failed');
+      }
+    } catch (error) {
+      console.error('Redis initialization failed:', error);
+      return false;
+    }
+  }
+
   public async start(): Promise<Server> {
     try {
       console.log('Starting User Service...');
@@ -128,6 +152,11 @@ class UserServer {
       const dbInitialized = await this.initializeDatabase();
       if (!dbInitialized) {
         throw new Error('Failed to initialize database');
+      }
+
+      const redisInitialized = await this.initializeRedis();
+      if (!redisInitialized) {
+        console.warn('Redis initialization failed, continuing without Redis cache');
       }
 
       const server = this.app.listen(this.port, () => {
@@ -161,6 +190,15 @@ class UserServer {
             console.log('Database connection closed');
           } catch (error) {
             console.error('Error closing database:', error);
+          }
+        }
+
+        if (this.redisManager) {
+          try {
+            await this.redisManager.disconnect();
+            console.log('Redis connection closed');
+          } catch (error) {
+            console.error('Error closing Redis:', error);
           }
         }
 

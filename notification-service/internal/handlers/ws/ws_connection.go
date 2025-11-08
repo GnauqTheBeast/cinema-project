@@ -126,7 +126,9 @@ func (wsc *WSConnection) writeMessage() error {
 			}
 
 		case <-ticker.C:
+			logrus.Info("[WebSocket] Sending PING to client")
 			if err := wsc.wsconn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				logrus.Errorf("[WebSocket] Failed to send PING: %v", err)
 				return err
 			}
 		}
@@ -211,6 +213,6 @@ func (wsc *WSConnection) CloseConnection() {
 }
 
 func (wsc *WSConnection) pongHandler(msg string) error {
-	logrus.Println(msg)
+	logrus.Info("[WebSocket] Received PONG from client, resetting read deadline")
 	return wsc.wsconn.SetReadDeadline(time.Now().Add(pongWait))
 }

@@ -1,21 +1,32 @@
-FROM node:20-alpine
+FROM node:18-alpine AS deps
+
+WORKDIR /app
+COPY package*.json ./
+
+RUN npm ci
+
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+RUN npm run build
+
+FROM node:18-alpine AS runner
 
 WORKDIR /app
 
-COPY package*.json yarn.lock* .npmrc* ./
-
-RUN if [ -f yarn.lock ]; then yarn install --frozen-lockfile; else npm ci --no-audit --no-fund; fi
-
-COPY tsconfig.json ./
-COPY src ./src
-COPY proto ./proto
-
-RUN npm run build || yarn build
-
 ENV NODE_ENV=production
+ENV PORT=8005
 
-EXPOSE 4001 50051
+COPY package*.json ./
+RUN npm ci --omit=dev
 
-CMD [ "sh", "-c", "node dist/server.js" ]
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/proto ./proto
+COPY .env .env
 
+EXPOSE 8005
 
+CMD ["npm", "run", "start"]

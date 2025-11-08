@@ -3,9 +3,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import {NextFunction, Request, Response} from 'express';
 import {QueryTypes} from 'sequelize';
-import {v4 as uuidv4} from 'uuid';
 
-import {CustomerProfile, sequelize, User} from '../models/index.js';
+import {sequelize, User} from '../models/index.js';
 import { userClient } from '../services/userGrpcClient.js';
 import {redisClient, redisPubSubClient} from '../config/redis.js';
 import { PermissionService } from '../services/permissionService.js';
@@ -300,7 +299,7 @@ class AuthController {
         permissions: permissions,
         cachedAt: new Date().toISOString()
       };
-      TokenService.cacheUserInfo(token, userInfo).catch(error => {
+      TokenService.cacheUserInfo(token, userInfo).catch((error: any) => {
         console.error('Failed to cache user info after login:', error);
       });
 
@@ -403,7 +402,7 @@ class AuthController {
         permissions: permissions,
         cachedAt: new Date().toISOString()
       };
-      TokenService.cacheUserInfo(token, userInfo).catch(error => {
+      TokenService.cacheUserInfo(token, userInfo).catch((error: any) => {
         console.error('Failed to cache user info after login:', error);
       });
 

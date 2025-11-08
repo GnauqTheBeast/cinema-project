@@ -8,11 +8,13 @@ import {
   FaSpinner,
   FaTicketAlt,
 } from 'react-icons/fa'
+import { Link, useSearchParams } from 'react-router-dom'
 import Header from '../../components/Header'
 import { movieService } from '../../services/movieService'
 import { showtimeService } from '../../services/showtimeApi'
 
 export default function ShowtimePage() {
+  const [searchParams] = useSearchParams()
   const [showtimes, setShowtimes] = useState([])
   const [movies, setMovies] = useState([])
   const [loading, setLoading] = useState(true)
@@ -145,7 +147,12 @@ export default function ShowtimePage() {
 
   useEffect(() => {
     fetchMovies()
-  }, [])
+    // Check if movie_id is in URL query parameters
+    const movieId = searchParams.get('movie_id')
+    if (movieId) {
+      setSelectedMovie(movieId)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     fetchShowtimes()
@@ -384,10 +391,13 @@ export default function ShowtimePage() {
 
                         {/* Actions */}
                         <div className="flex space-x-2">
-                          <button className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-300 flex items-center justify-center space-x-2">
+                          <Link
+                            to={`/showtimes/${showtime.id}/booking`}
+                            className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-300 flex items-center justify-center space-x-2"
+                          >
                             <FaTicketAlt />
                             <span>Đặt vé</span>
-                          </button>
+                          </Link>
                           {movie?.trailer_url && (
                             <a
                               href={movie.trailer_url}

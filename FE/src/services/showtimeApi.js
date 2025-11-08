@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_URL = process.env.REACT_APP_MOVIE_API_URL || 'http://localhost:8083/api/v1'
+const API_URL = process.env.REACT_APP_MOVIE_API_URL || 'http://localhost:8000/api/v1'
 
 const showtimeApi = axios.create({
   baseURL: API_URL,
@@ -11,7 +11,7 @@ const showtimeApi = axios.create({
 
 showtimeApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('adminToken')
+    const token = localStorage.getItem('token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -64,7 +64,7 @@ export const showtimeService = {
   },
 
   getShowtimesByMovie: async (movieId) => {
-    const response = await showtimeApi.get(`/movies/${movieId}/showtimes`)
+    const response = await showtimeApi.get(`/showtimes?movie_id=${movieId}`)
     return response.data
   },
 
@@ -111,23 +111,6 @@ export const showtimeService = {
     return response.data
   },
 
-  // Helper functions for time management
-  truncateToHalfHour: (dateTime) => {
-    const date = new Date(dateTime)
-    const minutes = date.getMinutes()
-    if (minutes < 30) {
-      date.setMinutes(0, 0, 0)
-    } else {
-      date.setMinutes(30, 0, 0)
-    }
-    return date
-  },
-
-  formatDateTime: (dateTime) => {
-    return new Date(dateTime).toISOString()
-  },
-
-  // Showtime formats and statuses for form options
   getShowtimeFormats: () => [
     { value: '2d', label: '2D' },
     { value: '3d', label: '3D' },

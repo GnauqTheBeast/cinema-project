@@ -6,6 +6,16 @@ import (
 	"github.com/uptrace/bun"
 )
 
+type Movie struct {
+	Id    string `bun:"id,pk" json:"id"`
+	Title string `bun:"title" json:"title"`
+}
+
+type Room struct {
+	Id         string `bun:"id,pk" json:"id"`
+	RoomNumber int    `bun:"room_number" json:"room_number"`
+}
+
 type ShowtimeStatus string
 
 const (
@@ -21,7 +31,6 @@ const (
 	ShowtimeFormat2D   ShowtimeFormat = "2d"
 	ShowtimeFormat3D   ShowtimeFormat = "3d"
 	ShowtimeFormatIMAX ShowtimeFormat = "imax"
-	ShowtimeFormat4DX  ShowtimeFormat = "4dx"
 )
 
 type Showtime struct {
@@ -37,6 +46,10 @@ type Showtime struct {
 	Status    ShowtimeStatus `bun:"status,notnull,default:'scheduled'" json:"status"`
 	CreatedAt time.Time      `bun:"created_at,nullzero,default:current_timestamp" json:"created_at"`
 	UpdatedAt *time.Time     `bun:"updated_at" json:"updated_at,omitempty"`
+
+	// Relations
+	Movie *Movie `bun:"rel:belongs-to,join:movie_id=id" json:"movie,omitempty"`
+	Room  *Room  `bun:"rel:belongs-to,join:room_id=id" json:"room,omitempty"`
 }
 
 func TruncateToHalfHour(t time.Time) time.Time {
@@ -58,19 +71,6 @@ func (s *Showtime) IsValid() bool {
 		return false
 	}
 	return true
-}
-
-func (s *Showtime) CanChangeStatus(newStatus ShowtimeStatus) bool {
-	switch s.Status {
-	case ShowtimeStatusScheduled:
-		return newStatus == ShowtimeStatusOngoing || newStatus == ShowtimeStatusCanceled
-	case ShowtimeStatusOngoing:
-		return newStatus == ShowtimeStatusCompleted || newStatus == ShowtimeStatusCanceled
-	case ShowtimeStatusCompleted, ShowtimeStatusCanceled:
-		return false
-	default:
-		return false
-	}
 }
 
 func (s *Showtime) IsActiveStatus() bool {

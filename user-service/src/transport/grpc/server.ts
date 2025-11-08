@@ -20,7 +20,7 @@ export async function startGrpcServer(): Promise<void> {
     oneofs: true
   });
   const proto = grpc.loadPackageDefinition(packageDefinition) as any;
-  const svc = proto.user;
+  const svc = proto.pb;
 
   const server = new grpc.Server();
 
@@ -65,6 +65,20 @@ export async function startGrpcServer(): Promise<void> {
       try {
         const { email } = call.request;
         const user = await models.User.findOne({ where: { email } });
+        if (!user) return callback(null, { found: false });
+        const data = user.toJSON() as any;
+        callback(null, { found: true, user: data });
+      } catch (e: any) {
+        callback({ code: grpc.status.INTERNAL, message: e.message } as any);
+      }
+    },
+    getUserById: async (
+      call: grpc.ServerUnaryCall<any, any>,
+      callback: grpc.sendUnaryData<any>
+    ) => {
+      try {
+        const { id } = call.request;
+        const user = await models.User.findOne({ where: { id } });
         if (!user) return callback(null, { found: false });
         const data = user.toJSON() as any;
         callback(null, { found: true, user: data });

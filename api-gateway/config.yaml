@@ -28,7 +28,21 @@ services:
     load_balancer: []
 
   user_service:
-    url: "http://localhost:4001"
+    url: "http://localhost:8005"
+    health_check_path: "/api/v1/health"
+    timeout: 30
+    retries: 3
+    load_balancer: []
+
+  booking_service:
+    url: "http://localhost:8082"
+    health_check_path: "/api/health"
+    timeout: 30
+    retries: 3
+    load_balancer: []
+
+  payment_service:
+    url: "http://localhost:8086"
     health_check_path: "/api/v1/health"
     timeout: 30
     retries: 3
@@ -57,9 +71,18 @@ auth:
     - "/api/v1/rooms"
     - "/api/v1/rooms/*/seats"
     - "/api/v1/rooms/*/showtimes"
+    - "/api/v1/news"
+    - "/api/v1/news/*"
     
     # User service - public endpoints
     - "/api/v1/users/*"
+
+    # Booking service - public endpoints
+    - "/api/v1/bookings/*"
+
+    # Payment service - public endpoints
+    - "/api/v1/payments"
+    - "/api/v1/payments/*"
 
     # Notification service - public endpoints  
     - "/api/v1/notifications/*/unread-count"
@@ -97,5 +120,5 @@ rate_limit:
 
 logging:
   level: "info"
-  format: "json"
+  format: "text"
   output: "stdout"

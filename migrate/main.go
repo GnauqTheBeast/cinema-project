@@ -70,6 +70,9 @@ func MigrateAll(ctx context.Context, db *bun.DB) error {
 		datastore.CreateNotificationTable,
 		datastore.CreateStaffProfileTable,
 		datastore.CreateCustomerProfileTable,
+		datastore.CreateOutboxEventTable,
+		datastore.CreateNewsArticleTable,
+		datastore.CreateNewsSummaryTable,
 	}
 
 	for _, migrateFunc := range migrationFuncs {
@@ -84,6 +87,8 @@ func MigrateAll(ctx context.Context, db *bun.DB) error {
 
 func DropAllTables(ctx context.Context, db *bun.DB) error {
 	dropFuncs := []func(context.Context, *bun.DB) error{
+		datastore.DropNewsSummaryTable,
+		datastore.DropNewsArticleTable,
 		datastore.DropCustomerProfileTable,
 		datastore.DropStaffProfileTable,
 		datastore.DropNotificationTable,
@@ -98,6 +103,7 @@ func DropAllTables(ctx context.Context, db *bun.DB) error {
 		datastore.DropRolePermissionTable,
 		datastore.DropPermissionTable,
 		datastore.DropRoleTable,
+		datastore.DropOutboxEventTable,
 	}
 
 	for _, dropFunc := range dropFuncs {
@@ -121,6 +127,8 @@ func SeedAll(ctx context.Context, db *bun.DB) error {
 		datastore.SeedShowtimes,
 		datastore.SeedUsers,
 		datastore.SeedNotifications,
+		datastore.SeedBookings,
+		datastore.SeedTickets,
 	}
 
 	for _, seedFunc := range seedFuncs {

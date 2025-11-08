@@ -1,11 +1,42 @@
-import { useState } from 'react'
-import { FaBars, FaMapMarkerAlt, FaSearch, FaTimes, FaUser } from 'react-icons/fa'
+import { useState, useEffect } from 'react'
+import { FaBars, FaBell, FaMapMarkerAlt, FaSearch, FaTimes, FaUser } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
+import NotificationPanel from './NotificationPanel'
+import notificationService from '../services/notificationService'
+import websocketService from '../services/websocketService'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const token = localStorage.getItem('token')
   const user = JSON.parse(localStorage.getItem('user') || '{}')
+
+  useEffect(() => {
+    if (token && user.id) {
+      loadUnreadCount()
+
+      const handleNotification = () => {
+        loadUnreadCount()
+      }
+
+      websocketService.onNotification(handleNotification)
+
+      return () => {
+        websocketService.removeNotificationListener(handleNotification)
+      }
+    }
+  }, [token, user.id])
+
+  const loadUnreadCount = async () => {
+    if (!user.id) return
+    try {
+      const response = await notificationService.getUnreadCount(user.id)
+      setUnreadCount(response.data?.count || 0)
+    } catch (error) {
+      console.error('Failed to load unread count:', error)
+    }
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -46,16 +77,10 @@ export default function Header() {
               Lịch chiếu
             </Link>
             <Link
-              to="/cinemas"
+              to="/news"
               className="text-gray-300 hover:text-red-400 transition-colors duration-300 font-medium"
             >
-              Rạp HQ Cinema
-            </Link>
-            <Link
-              to="/promotions"
-              className="text-gray-300 hover:text-red-400 transition-colors duration-300 font-medium"
-            >
-              Khuyến mãi
+              Tin tức
             </Link>
           </nav>
 
@@ -74,6 +99,29 @@ export default function Header() {
               <FaMapMarkerAlt className="w-4 h-4" />
               <span className="text-sm">Hà Nội</span>
             </div>
+
+            {/* Notification Bell - Only show when logged in */}
+            {token && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                  className="relative text-gray-300 hover:text-red-400 transition-colors duration-300 p-2"
+                >
+                  <FaBell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+                <NotificationPanel
+                  userId={user.id}
+                  isOpen={isNotificationOpen}
+                  onClose={() => setIsNotificationOpen(false)}
+                />
+              </div>
+            )}
 
             {/* User Menu */}
             {token ? (
@@ -96,7 +144,7 @@ export default function Header() {
                       Thông tin cá nhân
                     </Link>
                     <Link
-                      to="/bookings"
+                      to="/booking-history"
                       className="block px-4 py-2 text-gray-300 hover:text-red-400 hover:bg-red-900/20 transition-colors duration-300"
                     >
                       Lịch sử đặt vé
@@ -162,16 +210,10 @@ export default function Header() {
                 Lịch chiếu
               </Link>
               <Link
-                to="/cinemas"
+                to="/news"
                 className="text-gray-300 hover:text-red-400 transition-colors duration-300 py-2 font-medium"
               >
-                Rạp HQ Cinema
-              </Link>
-              <Link
-                to="/promotions"
-                className="text-gray-300 hover:text-red-400 transition-colors duration-300 py-2 font-medium"
-              >
-                Khuyến mãi
+                Tin tức
               </Link>
             </nav>
           </div>

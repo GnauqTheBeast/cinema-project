@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
-import { createClient } from 'redis';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import path from 'path';
+import { RedisManager } from '../config/redis.js';
 
 export interface AuthenticatedRequest extends Request {
   user: {
@@ -23,25 +23,20 @@ export interface CachedUserInfo {
   cachedAt: string;
 }
 
-// Constants
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const TOKEN_CACHE_PREFIX = 'auth:token:';
-const TOKEN_CACHE_TTL = 3600; // 1 hour
-const AUTH_GRPC_ADDRESS = process.env.AUTH_GRPC_ADDRESS || 'localhost:50052';
+const TOKEN_CACHE_TTL = 3600;
 
-// Redis client configuration
-const redisClient = createClient({ url: REDIS_URL });
+const getRedisClient = () => {
+  return RedisManager.getInstance().getClient();
+};
 
-// Connect to Redis
-redisClient.connect().catch(console.error);
+const getAuthGrpcAddress = () => process.env.AUTH_GRPC_ADDRESS || 'localhost:50052';
 
-// gRPC client for auth-service
 let authClient: any = null;
 
-// Initialize gRPC client
 const initAuthClient = () => {
   if (authClient) return authClient;
-  
+
   try {
     const PROTO_PATH = path.resolve(process.cwd(), '../auth-service/proto/auth.proto');
     const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
@@ -51,12 +46,12 @@ const initAuthClient = () => {
       defaults: true,
       oneofs: true
     });
-    
+
     const proto = grpc.loadPackageDefinition(packageDefinition) as any;
     const authService = proto.auth;
-    
-    authClient = new authService.AuthService(AUTH_GRPC_ADDRESS, grpc.credentials.createInsecure());
-    
+
+    authClient = new authService.AuthService(getAuthGrpcAddress(), grpc.credentials.createInsecure());
+
     return authClient;
   } catch (error) {
     console.error('Failed to initialize auth gRPC client:', error);
@@ -80,10 +75,10 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     return;
   }
 
-  // Check token in Redis cache first
   const tokenKey = `${TOKEN_CACHE_PREFIX}${token}`;
-  
-  redisClient.get(tokenKey)
+  const redis = getRedisClient();
+
+  redis.get(tokenKey)
     .then(cachedData => {
       if (cachedData) {
         // Token found in cache, use cached data
@@ -121,9 +116,6 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     });
 };
 
-/**
- * Call auth-service to verify token and cache the result
- */
 const callAuthService = (token: string, req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
   const client = initAuthClient();
   if (!client) {
@@ -181,22 +173,17 @@ const callAuthService = (token: string, req: AuthenticatedRequest, res: Response
   });
 };
 
-/**
- * Cache user info to Redis
- */
 const cacheUserInfo = async (token: string, userInfo: CachedUserInfo): Promise<void> => {
   try {
+    const redis = getRedisClient();
     const tokenKey = `${TOKEN_CACHE_PREFIX}${token}`;
-    await redisClient.setEx(tokenKey, TOKEN_CACHE_TTL, JSON.stringify(userInfo));
+    await redis.setEx(tokenKey, TOKEN_CACHE_TTL, JSON.stringify(userInfo));
     console.log(`Cached user info for token: ${token.substring(0, 10)}...`);
   } catch (error) {
     console.error('Error caching user info:', error);
   }
 };
 
-/**
- * Middleware để kiểm tra role cụ thể
- */
 export const requireRole = (allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const authReq = req as AuthenticatedRequest;
@@ -220,9 +207,6 @@ export const requireRole = (allowedRoles: string[]) => {
   };
 };
 
-/**
- * Middleware để kiểm tra permission cụ thể
- */
 export const requirePermission = (requiredPermissions: string[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const authReq = req as AuthenticatedRequest;
@@ -251,13 +235,11 @@ export const requirePermission = (requiredPermissions: string[]) => {
   };
 };
 
-/**
- * Utility function để check token từ Redis
- */
 export const validateToken = async (token: string): Promise<CachedUserInfo | null> => {
   try {
+    const redis = getRedisClient();
     const tokenKey = `${TOKEN_CACHE_PREFIX}${token}`;
-    const cachedData = await redisClient.get(tokenKey);
+    const cachedData = await redis.get(tokenKey);
 
     if (!cachedData) {
       return null;

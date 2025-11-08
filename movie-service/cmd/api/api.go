@@ -3,6 +3,7 @@ package main
 import (
 	"movie-service/internal/container"
 	"movie-service/internal/module/movie/transport/rest"
+	newsRest "movie-service/internal/module/news/transport/rest"
 	roomRest "movie-service/internal/module/room/transport/rest"
 	seatRest "movie-service/internal/module/seat/transport/rest"
 	showtimeRest "movie-service/internal/module/showtime/transport/rest"
@@ -34,7 +35,6 @@ func ServeAPI() *cli.Command {
 func startRouteV1(group *gin.RouterGroup) {
 	i := container.NewContainer()
 
-	// Initialize all APIs
 	movieApi, err := rest.NewAPI(i)
 	if err != nil {
 		panic(err)
@@ -55,8 +55,10 @@ func startRouteV1(group *gin.RouterGroup) {
 		panic(err)
 	}
 
-	// Health check endpoint
-	group.GET("/health", movieApi.HelloWorld)
+	newsApi, err := newsRest.NewAPI(i)
+	if err != nil {
+		panic(err)
+	}
 
 	// Movie endpoints
 	movies := group.Group("/movies")
@@ -68,8 +70,6 @@ func startRouteV1(group *gin.RouterGroup) {
 		movies.PUT("/:id", movieApi.UpdateMovie)
 		movies.DELETE("/:id", movieApi.DeleteMovie)
 		movies.PATCH("/:id/status", movieApi.UpdateMovieStatus)
-		// Movie-specific showtime endpoints
-		movies.GET("/:id/showtimes", showtimeApi.GetShowtimesByMovie)
 	}
 
 	// Room endpoints
@@ -83,7 +83,6 @@ func startRouteV1(group *gin.RouterGroup) {
 		rooms.PATCH("/:id/status", roomApi.UpdateRoomStatus)
 		// Room-specific seat and showtime endpoints
 		rooms.GET("/:id/seats", seatApi.GetSeatsByRoom)
-		rooms.GET("/:id/showtimes", showtimeApi.GetShowtimesByRoom)
 	}
 
 	// Seat endpoints
@@ -103,21 +102,17 @@ func startRouteV1(group *gin.RouterGroup) {
 		showtimes.GET("", showtimeApi.GetShowtimes)
 		showtimes.POST("", showtimeApi.CreateShowtime)
 		showtimes.GET("/upcoming", showtimeApi.GetUpcomingShowtimes)
-		showtimes.GET("/conflict-check", showtimeApi.CheckTimeConflict)
 		showtimes.GET("/:id", showtimeApi.GetShowtimeById)
+		showtimes.GET("/:id/seats", seatApi.GetSeatsByShowtime)
 		showtimes.PUT("/:id", showtimeApi.UpdateShowtime)
 		showtimes.DELETE("/:id", showtimeApi.DeleteShowtime)
 		showtimes.PATCH("/:id/status", showtimeApi.UpdateShowtimeStatus)
 	}
 
-	// Admin routes (optional grouping for future middleware)
-	admin := group.Group("/admin")
+	// News endpoints
+	news := group.Group("/news")
 	{
-		admin.GET("/dashboard", func(c *gin.Context) {
-			c.JSON(200, gin.H{
-				"message": "Admin dashboard - Coming soon",
-				"modules": []string{"movies", "rooms", "seats", "showtimes"},
-			})
-		})
+		news.GET("/summaries", newsApi.GetNewsSummaries)
+		news.GET("/summaries/:id", newsApi.GetNewsSummaryByID)
 	}
 }
