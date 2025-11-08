@@ -8,6 +8,7 @@ import {
   FaFilm,
   FaHome,
   FaMoneyBillWave,
+  FaRobot,
   FaSignOutAlt,
   FaTimes,
   FaUser,
@@ -32,6 +33,7 @@ export default function AdminLayout({ children }) {
       '/admin/rooms',
       '/admin/seats',
       '/admin/showtimes',
+      '/admin/chatbot-documents',
     ]),
     ticket_staff: new Set([
       '/admin/dashboard',
@@ -100,7 +102,13 @@ export default function AdminLayout({ children }) {
       icon: FaUser,
       permission: 'staff_manage', // This permission needs to be added to the database
     },
-   
+    {
+      path: '/admin/chatbot-documents',
+      label: 'Chatbot Documents',
+      icon: FaRobot,
+      permission: 'chatbot_manage',
+    },
+
   ]
 
   return (

@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AdminLoginPage from '../pages/admin/AdminLoginPage'
+import ChatbotDocumentsPage from '../pages/admin/ChatbotDocumentsPage'
 import DashboardPage from '../pages/admin/DashboardPage'
 import MovieDetailPage from '../pages/admin/MovieDetailPage'
 import MovieFormPage from '../pages/admin/MovieFormPage'
@@ -213,6 +214,16 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
         element={
           <AdminRoute>
             <StaffManagementPage />
+          </AdminRoute>
+        }
+      />
+
+      {/* Chatbot Documents */}
+      <Route
+        path="/admin/chatbot-documents"
+        element={
+          <AdminRoute>
+            <ChatbotDocumentsPage />
           </AdminRoute>
         }
       />
