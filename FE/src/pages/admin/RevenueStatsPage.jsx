@@ -15,7 +15,7 @@ import {
   YAxis,
 } from 'recharts'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { mockDataService } from '../../services/mockData'
+import analyticsService from '../../services/analyticsService'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D']
 
@@ -26,21 +26,89 @@ export default function RevenueStatsPage() {
   const [overallStats, setOverallStats] = useState({})
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
+  const [dateRange, setDateRange] = useState({
+    startDate: new Date(new Date().setMonth(new Date().getMonth() - 6))
+      .toISOString()
+      .split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+  })
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true)
 
-        const monthly = mockDataService.getRevenueByMonth()
-        const movies = mockDataService.getRevenueByMovie()
-        const genres = mockDataService.getRevenueByGenre()
-        const stats = mockDataService.getOverallStats()
+        const [timeData, movieRevenueData, genreRevenueData, totalRevenueData] =
+          await Promise.all([
+            analyticsService.getRevenueByTime(dateRange.startDate, dateRange.endDate, 180),
+            analyticsService.getRevenueByMovie(dateRange.startDate, dateRange.endDate, 10),
+            analyticsService.getRevenueByGenre(dateRange.startDate, dateRange.endDate),
+            analyticsService.getTotalRevenue(dateRange.startDate, dateRange.endDate),
+          ])
+
+        const monthlyGrouped = {}
+        if (timeData.success && timeData.data) {
+          timeData.data.forEach((item) => {
+            const date = new Date(item.time_period)
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+            const monthName = date.toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' })
+
+            if (!monthlyGrouped[monthKey]) {
+              monthlyGrouped[monthKey] = {
+                monthName,
+                revenue: 0,
+                bookings: 0,
+              }
+            }
+
+            monthlyGrouped[monthKey].revenue += item.total_revenue
+            monthlyGrouped[monthKey].bookings += item.total_bookings
+          })
+        }
+
+        const monthly = Object.values(monthlyGrouped)
+
+        const movies =
+          movieRevenueData.success && movieRevenueData.data
+            ? movieRevenueData.data.map((movie) => ({
+                title: movie.movie_title,
+                revenue: movie.total_revenue,
+                revenueFormatted: formatCurrency(movie.total_revenue),
+                ticketsSold: movie.total_tickets,
+                genre: 'N/A',
+              }))
+            : []
+
+        const genres =
+          genreRevenueData.success && genreRevenueData.data
+            ? genreRevenueData.data.map((genre) => ({
+                genre: genre.genre,
+                revenue: genre.total_revenue,
+                revenueFormatted: formatCurrency(genre.total_revenue),
+              }))
+            : []
+
+        const totalRevenue = totalRevenueData.success ? totalRevenueData.data.total_revenue : 0
+        const totalTickets =
+          movieRevenueData.success && movieRevenueData.data
+            ? movieRevenueData.data.reduce((sum, movie) => sum + movie.total_tickets, 0)
+            : 0
+        const totalBookings =
+          movieRevenueData.success && movieRevenueData.data
+            ? movieRevenueData.data.reduce((sum, movie) => sum + movie.total_bookings, 0)
+            : 0
 
         setMonthlyData(monthly)
-        setMovieData(movies.slice(0, 10)) // Top 10 movies
+        setMovieData(movies)
         setGenreData(genres)
-        setOverallStats(stats)
+        setOverallStats({
+          totalRevenue,
+          totalRevenueFormatted: formatCurrency(totalRevenue),
+          totalTickets,
+          totalBookings,
+          averageTicketPriceFormatted:
+            totalTickets > 0 ? formatCurrency(totalRevenue / totalTickets) : formatCurrency(0),
+        })
       } catch (error) {
         console.error('Error loading revenue data:', error)
       } finally {
@@ -49,7 +117,7 @@ export default function RevenueStatsPage() {
     }
 
     loadData()
-  }, [])
+  }, [dateRange])
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('vi-VN', {

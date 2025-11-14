@@ -48,6 +48,13 @@ services:
     retries: 3
     load_balancer: []
 
+  analytics_service:
+    url: "http://localhost:8087"
+    health_check_path: "/health"
+    timeout: 30
+    retries: 3
+    load_balancer: []
+
 redis:
   address: "localhost:6379"
   password: ""
@@ -108,10 +115,13 @@ auth:
     - "/api/v1/showtimes/*/update"
     - "/api/v1/showtimes/*/delete"
     - "/api/v1/admin/*"
-    
+
     # Notification service - admin endpoints
     - "/api/v1/notifications"
     - "/api/v1/notifications/*/delete"
+
+    # Analytics service - admin only endpoints
+    - "/api/v1/analytics/*"
 
 rate_limit:
   requests_per_second: 100

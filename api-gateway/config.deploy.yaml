@@ -48,6 +48,13 @@ services:
     retries: 3
     load_balancer: []
 
+  analytics_service:
+    url: "http://analytics-service:8087"
+    health_check_path: "/health"
+    timeout: 30
+    retries: 3
+    load_balancer: []
+
 redis:
   host: "redis"
   address: "redis:6379"
@@ -71,6 +78,8 @@ auth:
     - "/api/v1/payments"
     - "/api/v1/payments/*"
     - "/api/v1/webhooks/*"
+  admin_paths:
+    - "/api/v1/analytics/*"
 
 rate_limiter:
   enabled: true

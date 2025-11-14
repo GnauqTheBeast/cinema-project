@@ -132,6 +132,20 @@ services:
     env_file:
       - ./worker-service/.env
     ports:
+      - "8088:8088"
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+
+  analytics-service:
+    build:
+      context: ./analytics-service
+      dockerfile: Dockerfile
+    container_name: analytics-service
+    env_file:
+      - ./analytics-service/.env
+    ports:
       - "8087:8087"
     restart: unless-stopped
     depends_on:

@@ -256,9 +256,8 @@ func (x *CreateTicketsResponse) GetBookingDetails() *BookingDetails {
 type BookingDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	BookingId     string                 `protobuf:"bytes,1,opt,name=booking_id,json=bookingId,proto3" json:"booking_id,omitempty"`
-	UserEmail     string                 `protobuf:"bytes,2,opt,name=user_email,json=userEmail,proto3" json:"user_email,omitempty"`
-	Seats         []*SeatInfo            `protobuf:"bytes,3,rep,name=seats,proto3" json:"seats,omitempty"`
-	Showtime      *ShowtimeInfo          `protobuf:"bytes,4,opt,name=showtime,proto3" json:"showtime,omitempty"`
+	Seats         []*SeatInfo            `protobuf:"bytes,2,rep,name=seats,proto3" json:"seats,omitempty"`
+	Showtime      *ShowtimeInfo          `protobuf:"bytes,3,opt,name=showtime,proto3" json:"showtime,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -296,13 +295,6 @@ func (*BookingDetails) Descriptor() ([]byte, []int) {
 func (x *BookingDetails) GetBookingId() string {
 	if x != nil {
 		return x.BookingId
-	}
-	return ""
-}
-
-func (x *BookingDetails) GetUserEmail() string {
-	if x != nil {
-		return x.UserEmail
 	}
 	return ""
 }
@@ -449,6 +441,683 @@ func (x *ShowtimeInfo) GetRoomName() string {
 	return ""
 }
 
+// Analytics messages
+type GetRevenueByTimeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StartDate     string                 `protobuf:"bytes,1,opt,name=start_date,json=startDate,proto3" json:"start_date,omitempty"`
+	EndDate       string                 `protobuf:"bytes,2,opt,name=end_date,json=endDate,proto3" json:"end_date,omitempty"`
+	Limit         int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRevenueByTimeRequest) Reset() {
+	*x = GetRevenueByTimeRequest{}
+	mi := &file_booking_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRevenueByTimeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRevenueByTimeRequest) ProtoMessage() {}
+
+func (x *GetRevenueByTimeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_booking_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRevenueByTimeRequest.ProtoReflect.Descriptor instead.
+func (*GetRevenueByTimeRequest) Descriptor() ([]byte, []int) {
+	return file_booking_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *GetRevenueByTimeRequest) GetStartDate() string {
+	if x != nil {
+		return x.StartDate
+	}
+	return ""
+}
+
+func (x *GetRevenueByTimeRequest) GetEndDate() string {
+	if x != nil {
+		return x.EndDate
+	}
+	return ""
+}
+
+func (x *GetRevenueByTimeRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type RevenueByTime struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	TimePeriod      string                 `protobuf:"bytes,1,opt,name=time_period,json=timePeriod,proto3" json:"time_period,omitempty"`
+	TotalRevenue    float64                `protobuf:"fixed64,2,opt,name=total_revenue,json=totalRevenue,proto3" json:"total_revenue,omitempty"`
+	TotalBookings   int32                  `protobuf:"varint,3,opt,name=total_bookings,json=totalBookings,proto3" json:"total_bookings,omitempty"`
+	AvgBookingValue float64                `protobuf:"fixed64,4,opt,name=avg_booking_value,json=avgBookingValue,proto3" json:"avg_booking_value,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *RevenueByTime) Reset() {
+	*x = RevenueByTime{}
+	mi := &file_booking_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevenueByTime) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevenueByTime) ProtoMessage() {}
+
+func (x *RevenueByTime) ProtoReflect() protoreflect.Message {
+	mi := &file_booking_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevenueByTime.ProtoReflect.Descriptor instead.
+func (*RevenueByTime) Descriptor() ([]byte, []int) {
+	return file_booking_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *RevenueByTime) GetTimePeriod() string {
+	if x != nil {
+		return x.TimePeriod
+	}
+	return ""
+}
+
+func (x *RevenueByTime) GetTotalRevenue() float64 {
+	if x != nil {
+		return x.TotalRevenue
+	}
+	return 0
+}
+
+func (x *RevenueByTime) GetTotalBookings() int32 {
+	if x != nil {
+		return x.TotalBookings
+	}
+	return 0
+}
+
+func (x *RevenueByTime) GetAvgBookingValue() float64 {
+	if x != nil {
+		return x.AvgBookingValue
+	}
+	return 0
+}
+
+type GetRevenueByTimeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Data          []*RevenueByTime       `protobuf:"bytes,3,rep,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRevenueByTimeResponse) Reset() {
+	*x = GetRevenueByTimeResponse{}
+	mi := &file_booking_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRevenueByTimeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRevenueByTimeResponse) ProtoMessage() {}
+
+func (x *GetRevenueByTimeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_booking_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRevenueByTimeResponse.ProtoReflect.Descriptor instead.
+func (*GetRevenueByTimeResponse) Descriptor() ([]byte, []int) {
+	return file_booking_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *GetRevenueByTimeResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *GetRevenueByTimeResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *GetRevenueByTimeResponse) GetData() []*RevenueByTime {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type GetRevenueByShowtimeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StartDate     string                 `protobuf:"bytes,1,opt,name=start_date,json=startDate,proto3" json:"start_date,omitempty"`
+	EndDate       string                 `protobuf:"bytes,2,opt,name=end_date,json=endDate,proto3" json:"end_date,omitempty"`
+	ShowtimeId    string                 `protobuf:"bytes,3,opt,name=showtime_id,json=showtimeId,proto3" json:"showtime_id,omitempty"`
+	Limit         int32                  `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRevenueByShowtimeRequest) Reset() {
+	*x = GetRevenueByShowtimeRequest{}
+	mi := &file_booking_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRevenueByShowtimeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRevenueByShowtimeRequest) ProtoMessage() {}
+
+func (x *GetRevenueByShowtimeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_booking_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRevenueByShowtimeRequest.ProtoReflect.Descriptor instead.
+func (*GetRevenueByShowtimeRequest) Descriptor() ([]byte, []int) {
+	return file_booking_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *GetRevenueByShowtimeRequest) GetStartDate() string {
+	if x != nil {
+		return x.StartDate
+	}
+	return ""
+}
+
+func (x *GetRevenueByShowtimeRequest) GetEndDate() string {
+	if x != nil {
+		return x.EndDate
+	}
+	return ""
+}
+
+func (x *GetRevenueByShowtimeRequest) GetShowtimeId() string {
+	if x != nil {
+		return x.ShowtimeId
+	}
+	return ""
+}
+
+func (x *GetRevenueByShowtimeRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type RevenueByShowtime struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ShowtimeId    string                 `protobuf:"bytes,1,opt,name=showtime_id,json=showtimeId,proto3" json:"showtime_id,omitempty"`
+	TotalRevenue  float64                `protobuf:"fixed64,2,opt,name=total_revenue,json=totalRevenue,proto3" json:"total_revenue,omitempty"`
+	TotalBookings int32                  `protobuf:"varint,3,opt,name=total_bookings,json=totalBookings,proto3" json:"total_bookings,omitempty"`
+	TotalTickets  int32                  `protobuf:"varint,4,opt,name=total_tickets,json=totalTickets,proto3" json:"total_tickets,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevenueByShowtime) Reset() {
+	*x = RevenueByShowtime{}
+	mi := &file_booking_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevenueByShowtime) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevenueByShowtime) ProtoMessage() {}
+
+func (x *RevenueByShowtime) ProtoReflect() protoreflect.Message {
+	mi := &file_booking_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevenueByShowtime.ProtoReflect.Descriptor instead.
+func (*RevenueByShowtime) Descriptor() ([]byte, []int) {
+	return file_booking_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *RevenueByShowtime) GetShowtimeId() string {
+	if x != nil {
+		return x.ShowtimeId
+	}
+	return ""
+}
+
+func (x *RevenueByShowtime) GetTotalRevenue() float64 {
+	if x != nil {
+		return x.TotalRevenue
+	}
+	return 0
+}
+
+func (x *RevenueByShowtime) GetTotalBookings() int32 {
+	if x != nil {
+		return x.TotalBookings
+	}
+	return 0
+}
+
+func (x *RevenueByShowtime) GetTotalTickets() int32 {
+	if x != nil {
+		return x.TotalTickets
+	}
+	return 0
+}
+
+type GetRevenueByShowtimeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Data          []*RevenueByShowtime   `protobuf:"bytes,3,rep,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRevenueByShowtimeResponse) Reset() {
+	*x = GetRevenueByShowtimeResponse{}
+	mi := &file_booking_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRevenueByShowtimeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRevenueByShowtimeResponse) ProtoMessage() {}
+
+func (x *GetRevenueByShowtimeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_booking_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRevenueByShowtimeResponse.ProtoReflect.Descriptor instead.
+func (*GetRevenueByShowtimeResponse) Descriptor() ([]byte, []int) {
+	return file_booking_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *GetRevenueByShowtimeResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *GetRevenueByShowtimeResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *GetRevenueByShowtimeResponse) GetData() []*RevenueByShowtime {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type GetRevenueByBookingTypeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StartDate     string                 `protobuf:"bytes,1,opt,name=start_date,json=startDate,proto3" json:"start_date,omitempty"`
+	EndDate       string                 `protobuf:"bytes,2,opt,name=end_date,json=endDate,proto3" json:"end_date,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRevenueByBookingTypeRequest) Reset() {
+	*x = GetRevenueByBookingTypeRequest{}
+	mi := &file_booking_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRevenueByBookingTypeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRevenueByBookingTypeRequest) ProtoMessage() {}
+
+func (x *GetRevenueByBookingTypeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_booking_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRevenueByBookingTypeRequest.ProtoReflect.Descriptor instead.
+func (*GetRevenueByBookingTypeRequest) Descriptor() ([]byte, []int) {
+	return file_booking_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *GetRevenueByBookingTypeRequest) GetStartDate() string {
+	if x != nil {
+		return x.StartDate
+	}
+	return ""
+}
+
+func (x *GetRevenueByBookingTypeRequest) GetEndDate() string {
+	if x != nil {
+		return x.EndDate
+	}
+	return ""
+}
+
+type RevenueByBookingType struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BookingType   string                 `protobuf:"bytes,1,opt,name=booking_type,json=bookingType,proto3" json:"booking_type,omitempty"`
+	TotalRevenue  float64                `protobuf:"fixed64,2,opt,name=total_revenue,json=totalRevenue,proto3" json:"total_revenue,omitempty"`
+	TotalBookings int32                  `protobuf:"varint,3,opt,name=total_bookings,json=totalBookings,proto3" json:"total_bookings,omitempty"`
+	Percentage    float64                `protobuf:"fixed64,4,opt,name=percentage,proto3" json:"percentage,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevenueByBookingType) Reset() {
+	*x = RevenueByBookingType{}
+	mi := &file_booking_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevenueByBookingType) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevenueByBookingType) ProtoMessage() {}
+
+func (x *RevenueByBookingType) ProtoReflect() protoreflect.Message {
+	mi := &file_booking_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevenueByBookingType.ProtoReflect.Descriptor instead.
+func (*RevenueByBookingType) Descriptor() ([]byte, []int) {
+	return file_booking_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *RevenueByBookingType) GetBookingType() string {
+	if x != nil {
+		return x.BookingType
+	}
+	return ""
+}
+
+func (x *RevenueByBookingType) GetTotalRevenue() float64 {
+	if x != nil {
+		return x.TotalRevenue
+	}
+	return 0
+}
+
+func (x *RevenueByBookingType) GetTotalBookings() int32 {
+	if x != nil {
+		return x.TotalBookings
+	}
+	return 0
+}
+
+func (x *RevenueByBookingType) GetPercentage() float64 {
+	if x != nil {
+		return x.Percentage
+	}
+	return 0
+}
+
+type GetRevenueByBookingTypeResponse struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Success       bool                    `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                  `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Data          []*RevenueByBookingType `protobuf:"bytes,3,rep,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRevenueByBookingTypeResponse) Reset() {
+	*x = GetRevenueByBookingTypeResponse{}
+	mi := &file_booking_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRevenueByBookingTypeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRevenueByBookingTypeResponse) ProtoMessage() {}
+
+func (x *GetRevenueByBookingTypeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_booking_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRevenueByBookingTypeResponse.ProtoReflect.Descriptor instead.
+func (*GetRevenueByBookingTypeResponse) Descriptor() ([]byte, []int) {
+	return file_booking_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *GetRevenueByBookingTypeResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *GetRevenueByBookingTypeResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *GetRevenueByBookingTypeResponse) GetData() []*RevenueByBookingType {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type GetTotalRevenueRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StartDate     string                 `protobuf:"bytes,1,opt,name=start_date,json=startDate,proto3" json:"start_date,omitempty"`
+	EndDate       string                 `protobuf:"bytes,2,opt,name=end_date,json=endDate,proto3" json:"end_date,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTotalRevenueRequest) Reset() {
+	*x = GetTotalRevenueRequest{}
+	mi := &file_booking_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTotalRevenueRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTotalRevenueRequest) ProtoMessage() {}
+
+func (x *GetTotalRevenueRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_booking_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTotalRevenueRequest.ProtoReflect.Descriptor instead.
+func (*GetTotalRevenueRequest) Descriptor() ([]byte, []int) {
+	return file_booking_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *GetTotalRevenueRequest) GetStartDate() string {
+	if x != nil {
+		return x.StartDate
+	}
+	return ""
+}
+
+func (x *GetTotalRevenueRequest) GetEndDate() string {
+	if x != nil {
+		return x.EndDate
+	}
+	return ""
+}
+
+type GetTotalRevenueResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	TotalRevenue  float64                `protobuf:"fixed64,3,opt,name=total_revenue,json=totalRevenue,proto3" json:"total_revenue,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTotalRevenueResponse) Reset() {
+	*x = GetTotalRevenueResponse{}
+	mi := &file_booking_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTotalRevenueResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTotalRevenueResponse) ProtoMessage() {}
+
+func (x *GetTotalRevenueResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_booking_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTotalRevenueResponse.ProtoReflect.Descriptor instead.
+func (*GetTotalRevenueResponse) Descriptor() ([]byte, []int) {
+	return file_booking_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *GetTotalRevenueResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *GetTotalRevenueResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *GetTotalRevenueResponse) GetTotalRevenue() float64 {
+	if x != nil {
+		return x.TotalRevenue
+	}
+	return 0
+}
+
 var File_booking_proto protoreflect.FileDescriptor
 
 const file_booking_proto_rawDesc = "" +
@@ -471,14 +1140,12 @@ const file_booking_proto_rawDesc = "" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12'\n" +
 	"\x0ftickets_created\x18\x03 \x01(\x05R\x0eticketsCreated\x12;\n" +
-	"\x0fbooking_details\x18\x04 \x01(\v2\x12.pb.BookingDetailsR\x0ebookingDetails\"\xa0\x01\n" +
+	"\x0fbooking_details\x18\x04 \x01(\v2\x12.pb.BookingDetailsR\x0ebookingDetails\"\x81\x01\n" +
 	"\x0eBookingDetails\x12\x1d\n" +
 	"\n" +
-	"booking_id\x18\x01 \x01(\tR\tbookingId\x12\x1d\n" +
-	"\n" +
-	"user_email\x18\x02 \x01(\tR\tuserEmail\x12\"\n" +
-	"\x05seats\x18\x03 \x03(\v2\f.pb.SeatInfoR\x05seats\x12,\n" +
-	"\bshowtime\x18\x04 \x01(\v2\x10.pb.ShowtimeInfoR\bshowtime\"c\n" +
+	"booking_id\x18\x01 \x01(\tR\tbookingId\x12\"\n" +
+	"\x05seats\x18\x02 \x03(\v2\f.pb.SeatInfoR\x05seats\x12,\n" +
+	"\bshowtime\x18\x03 \x01(\v2\x10.pb.ShowtimeInfoR\bshowtime\"c\n" +
 	"\bSeatInfo\x12\x19\n" +
 	"\bseat_row\x18\x01 \x01(\tR\aseatRow\x12\x1f\n" +
 	"\vseat_number\x18\x02 \x01(\x05R\n" +
@@ -491,10 +1158,69 @@ const file_booking_proto_rawDesc = "" +
 	"start_time\x18\x02 \x01(\tR\tstartTime\x12\x1d\n" +
 	"\n" +
 	"movie_name\x18\x03 \x01(\tR\tmovieName\x12\x1b\n" +
-	"\troom_name\x18\x04 \x01(\tR\broomName2\xae\x01\n" +
+	"\troom_name\x18\x04 \x01(\tR\broomName\"i\n" +
+	"\x17GetRevenueByTimeRequest\x12\x1d\n" +
+	"\n" +
+	"start_date\x18\x01 \x01(\tR\tstartDate\x12\x19\n" +
+	"\bend_date\x18\x02 \x01(\tR\aendDate\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\"\xa8\x01\n" +
+	"\rRevenueByTime\x12\x1f\n" +
+	"\vtime_period\x18\x01 \x01(\tR\n" +
+	"timePeriod\x12#\n" +
+	"\rtotal_revenue\x18\x02 \x01(\x01R\ftotalRevenue\x12%\n" +
+	"\x0etotal_bookings\x18\x03 \x01(\x05R\rtotalBookings\x12*\n" +
+	"\x11avg_booking_value\x18\x04 \x01(\x01R\x0favgBookingValue\"u\n" +
+	"\x18GetRevenueByTimeResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12%\n" +
+	"\x04data\x18\x03 \x03(\v2\x11.pb.RevenueByTimeR\x04data\"\x8e\x01\n" +
+	"\x1bGetRevenueByShowtimeRequest\x12\x1d\n" +
+	"\n" +
+	"start_date\x18\x01 \x01(\tR\tstartDate\x12\x19\n" +
+	"\bend_date\x18\x02 \x01(\tR\aendDate\x12\x1f\n" +
+	"\vshowtime_id\x18\x03 \x01(\tR\n" +
+	"showtimeId\x12\x14\n" +
+	"\x05limit\x18\x04 \x01(\x05R\x05limit\"\xa5\x01\n" +
+	"\x11RevenueByShowtime\x12\x1f\n" +
+	"\vshowtime_id\x18\x01 \x01(\tR\n" +
+	"showtimeId\x12#\n" +
+	"\rtotal_revenue\x18\x02 \x01(\x01R\ftotalRevenue\x12%\n" +
+	"\x0etotal_bookings\x18\x03 \x01(\x05R\rtotalBookings\x12#\n" +
+	"\rtotal_tickets\x18\x04 \x01(\x05R\ftotalTickets\"}\n" +
+	"\x1cGetRevenueByShowtimeResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12)\n" +
+	"\x04data\x18\x03 \x03(\v2\x15.pb.RevenueByShowtimeR\x04data\"Z\n" +
+	"\x1eGetRevenueByBookingTypeRequest\x12\x1d\n" +
+	"\n" +
+	"start_date\x18\x01 \x01(\tR\tstartDate\x12\x19\n" +
+	"\bend_date\x18\x02 \x01(\tR\aendDate\"\xa5\x01\n" +
+	"\x14RevenueByBookingType\x12!\n" +
+	"\fbooking_type\x18\x01 \x01(\tR\vbookingType\x12#\n" +
+	"\rtotal_revenue\x18\x02 \x01(\x01R\ftotalRevenue\x12%\n" +
+	"\x0etotal_bookings\x18\x03 \x01(\x05R\rtotalBookings\x12\x1e\n" +
+	"\n" +
+	"percentage\x18\x04 \x01(\x01R\n" +
+	"percentage\"\x83\x01\n" +
+	"\x1fGetRevenueByBookingTypeResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12,\n" +
+	"\x04data\x18\x03 \x03(\v2\x18.pb.RevenueByBookingTypeR\x04data\"R\n" +
+	"\x16GetTotalRevenueRequest\x12\x1d\n" +
+	"\n" +
+	"start_date\x18\x01 \x01(\tR\tstartDate\x12\x19\n" +
+	"\bend_date\x18\x02 \x01(\tR\aendDate\"r\n" +
+	"\x17GetTotalRevenueResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12#\n" +
+	"\rtotal_revenue\x18\x03 \x01(\x01R\ftotalRevenue2\x88\x04\n" +
 	"\x0eBookingService\x12V\n" +
 	"\x13UpdateBookingStatus\x12\x1e.pb.UpdateBookingStatusRequest\x1a\x1f.pb.UpdateBookingStatusResponse\x12D\n" +
-	"\rCreateTickets\x12\x18.pb.CreateTicketsRequest\x1a\x19.pb.CreateTicketsResponseB\x1aZ\x18booking-service/proto/pbb\x06proto3"
+	"\rCreateTickets\x12\x18.pb.CreateTicketsRequest\x1a\x19.pb.CreateTicketsResponse\x12M\n" +
+	"\x10GetRevenueByTime\x12\x1b.pb.GetRevenueByTimeRequest\x1a\x1c.pb.GetRevenueByTimeResponse\x12Y\n" +
+	"\x14GetRevenueByShowtime\x12\x1f.pb.GetRevenueByShowtimeRequest\x1a .pb.GetRevenueByShowtimeResponse\x12b\n" +
+	"\x17GetRevenueByBookingType\x12\".pb.GetRevenueByBookingTypeRequest\x1a#.pb.GetRevenueByBookingTypeResponse\x12J\n" +
+	"\x0fGetTotalRevenue\x12\x1a.pb.GetTotalRevenueRequest\x1a\x1b.pb.GetTotalRevenueResponseB\x1aZ\x18booking-service/proto/pbb\x06proto3"
 
 var (
 	file_booking_proto_rawDescOnce sync.Once
@@ -508,29 +1234,51 @@ func file_booking_proto_rawDescGZIP() []byte {
 	return file_booking_proto_rawDescData
 }
 
-var file_booking_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_booking_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_booking_proto_goTypes = []any{
-	(*UpdateBookingStatusRequest)(nil),  // 0: pb.UpdateBookingStatusRequest
-	(*UpdateBookingStatusResponse)(nil), // 1: pb.UpdateBookingStatusResponse
-	(*CreateTicketsRequest)(nil),        // 2: pb.CreateTicketsRequest
-	(*CreateTicketsResponse)(nil),       // 3: pb.CreateTicketsResponse
-	(*BookingDetails)(nil),              // 4: pb.BookingDetails
-	(*SeatInfo)(nil),                    // 5: pb.SeatInfo
-	(*ShowtimeInfo)(nil),                // 6: pb.ShowtimeInfo
+	(*UpdateBookingStatusRequest)(nil),      // 0: pb.UpdateBookingStatusRequest
+	(*UpdateBookingStatusResponse)(nil),     // 1: pb.UpdateBookingStatusResponse
+	(*CreateTicketsRequest)(nil),            // 2: pb.CreateTicketsRequest
+	(*CreateTicketsResponse)(nil),           // 3: pb.CreateTicketsResponse
+	(*BookingDetails)(nil),                  // 4: pb.BookingDetails
+	(*SeatInfo)(nil),                        // 5: pb.SeatInfo
+	(*ShowtimeInfo)(nil),                    // 6: pb.ShowtimeInfo
+	(*GetRevenueByTimeRequest)(nil),         // 7: pb.GetRevenueByTimeRequest
+	(*RevenueByTime)(nil),                   // 8: pb.RevenueByTime
+	(*GetRevenueByTimeResponse)(nil),        // 9: pb.GetRevenueByTimeResponse
+	(*GetRevenueByShowtimeRequest)(nil),     // 10: pb.GetRevenueByShowtimeRequest
+	(*RevenueByShowtime)(nil),               // 11: pb.RevenueByShowtime
+	(*GetRevenueByShowtimeResponse)(nil),    // 12: pb.GetRevenueByShowtimeResponse
+	(*GetRevenueByBookingTypeRequest)(nil),  // 13: pb.GetRevenueByBookingTypeRequest
+	(*RevenueByBookingType)(nil),            // 14: pb.RevenueByBookingType
+	(*GetRevenueByBookingTypeResponse)(nil), // 15: pb.GetRevenueByBookingTypeResponse
+	(*GetTotalRevenueRequest)(nil),          // 16: pb.GetTotalRevenueRequest
+	(*GetTotalRevenueResponse)(nil),         // 17: pb.GetTotalRevenueResponse
 }
 var file_booking_proto_depIdxs = []int32{
-	4, // 0: pb.CreateTicketsResponse.booking_details:type_name -> pb.BookingDetails
-	5, // 1: pb.BookingDetails.seats:type_name -> pb.SeatInfo
-	6, // 2: pb.BookingDetails.showtime:type_name -> pb.ShowtimeInfo
-	0, // 3: pb.BookingService.UpdateBookingStatus:input_type -> pb.UpdateBookingStatusRequest
-	2, // 4: pb.BookingService.CreateTickets:input_type -> pb.CreateTicketsRequest
-	1, // 5: pb.BookingService.UpdateBookingStatus:output_type -> pb.UpdateBookingStatusResponse
-	3, // 6: pb.BookingService.CreateTickets:output_type -> pb.CreateTicketsResponse
-	5, // [5:7] is the sub-list for method output_type
-	3, // [3:5] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	4,  // 0: pb.CreateTicketsResponse.booking_details:type_name -> pb.BookingDetails
+	5,  // 1: pb.BookingDetails.seats:type_name -> pb.SeatInfo
+	6,  // 2: pb.BookingDetails.showtime:type_name -> pb.ShowtimeInfo
+	8,  // 3: pb.GetRevenueByTimeResponse.data:type_name -> pb.RevenueByTime
+	11, // 4: pb.GetRevenueByShowtimeResponse.data:type_name -> pb.RevenueByShowtime
+	14, // 5: pb.GetRevenueByBookingTypeResponse.data:type_name -> pb.RevenueByBookingType
+	0,  // 6: pb.BookingService.UpdateBookingStatus:input_type -> pb.UpdateBookingStatusRequest
+	2,  // 7: pb.BookingService.CreateTickets:input_type -> pb.CreateTicketsRequest
+	7,  // 8: pb.BookingService.GetRevenueByTime:input_type -> pb.GetRevenueByTimeRequest
+	10, // 9: pb.BookingService.GetRevenueByShowtime:input_type -> pb.GetRevenueByShowtimeRequest
+	13, // 10: pb.BookingService.GetRevenueByBookingType:input_type -> pb.GetRevenueByBookingTypeRequest
+	16, // 11: pb.BookingService.GetTotalRevenue:input_type -> pb.GetTotalRevenueRequest
+	1,  // 12: pb.BookingService.UpdateBookingStatus:output_type -> pb.UpdateBookingStatusResponse
+	3,  // 13: pb.BookingService.CreateTickets:output_type -> pb.CreateTicketsResponse
+	9,  // 14: pb.BookingService.GetRevenueByTime:output_type -> pb.GetRevenueByTimeResponse
+	12, // 15: pb.BookingService.GetRevenueByShowtime:output_type -> pb.GetRevenueByShowtimeResponse
+	15, // 16: pb.BookingService.GetRevenueByBookingType:output_type -> pb.GetRevenueByBookingTypeResponse
+	17, // 17: pb.BookingService.GetTotalRevenue:output_type -> pb.GetTotalRevenueResponse
+	12, // [12:18] is the sub-list for method output_type
+	6,  // [6:12] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_booking_proto_init() }
@@ -544,7 +1292,7 @@ func file_booking_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_booking_proto_rawDesc), len(file_booking_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
