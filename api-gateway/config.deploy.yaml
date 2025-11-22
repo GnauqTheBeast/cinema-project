@@ -48,6 +48,13 @@ services:
     retries: 3
     load_balancer: []
 
+  chatbot:
+    url: "http://chatbot:8088"
+    health_check_path: "/health"
+    timeout: 30
+    retries: 3
+    load_balancer: []
+
 redis:
   host: "redis"
   address: "redis:6379"
@@ -71,6 +78,7 @@ auth:
     - "/api/v1/payments"
     - "/api/v1/payments/*"
     - "/api/v1/webhooks/*"
+    - "/api/v1/chatbot/*"
 
 rate_limiter:
   enabled: true

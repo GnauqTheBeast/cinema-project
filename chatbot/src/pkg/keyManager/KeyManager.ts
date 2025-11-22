@@ -1,49 +1,49 @@
 export class KeyManager {
-  private keys: string[] = [];
-  private counter: number = 0;
+    private keys: string[] = []
+    private counter: number = 0
 
-  constructor(keyString?: string) {
-    if (keyString) {
-      this.setKeys(keyString);
-    }
-  }
-
-  setKeys(keyString: string): void {
-    const rawKeys = keyString.split(',');
-    const keys: string[] = [];
-
-    for (const key of rawKeys) {
-      const trimmed = key.trim();
-      if (trimmed) {
-        keys.push(trimmed);
-      }
+    constructor(keyString?: string) {
+        if (keyString) {
+            this.setKeys(keyString)
+        }
     }
 
-    this.keys = keys;
-    this.counter = 0; // Reset counter when keys change
-  }
+    setKeys(keyString: string): void {
+        const rawKeys = keyString.split(',')
+        const keys: string[] = []
 
-  getNextKey(): string {
-    if (this.keys.length === 0) {
-      return '';
+        for (const key of rawKeys) {
+            const trimmed = key.trim()
+            if (trimmed) {
+                keys.push(trimmed)
+            }
+        }
+
+        this.keys = keys
+        this.counter = 0 // Reset counter when keys change
     }
 
-    // Round-robin selection
-    const key = this.keys[this.counter % this.keys.length];
-    this.counter++;
-    return key;
-  }
+    getNextKey(): string {
+        if (this.keys.length === 0) {
+            return ''
+        }
 
-  getKeyCount(): number {
-    return this.keys.length;
-  }
+        // Round-robin selection
+        const key = this.keys[this.counter % this.keys.length]
+        this.counter++
+        return key
+    }
 
-  hasKeys(): boolean {
-    return this.keys.length > 0;
-  }
+    getKeyCount(): number {
+        return this.keys.length
+    }
 
-  getAllKeys(): string[] {
-    // Return copy to prevent external modification
-    return [...this.keys];
-  }
+    hasKeys(): boolean {
+        return this.keys.length > 0
+    }
+
+    getAllKeys(): string[] {
+        // Return copy to prevent external modification
+        return [...this.keys]
+    }
 }

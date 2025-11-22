@@ -1,6 +1,6 @@
 export interface DocumentResponse {
-  id: string;
-  title: string;
-  status: string;
-  message: string;
+    id: string
+    title: string
+    status: string
+    message: string
 }

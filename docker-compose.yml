@@ -138,6 +138,20 @@ services:
       - postgres
       - redis
 
+  chatbot:
+    build:
+      context: ./chatbot
+      dockerfile: Dockerfile
+    container_name: chatbot
+    env_file:
+      - ./chatbot/.env
+    ports:
+      - "8088:8088"
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+
 volumes:
   postgres_data:
   redis_data:

@@ -1,53 +1,53 @@
 export interface GeminiPart {
-  text: string;
+    text: string
 }
 
 export interface GeminiContent {
-  parts: GeminiPart[];
-  role?: string;
+    parts: GeminiPart[]
+    role?: string
 }
 
 export interface GeminiGenerationConfig {
-  maxOutputTokens: number;
-  temperature: number;
+    maxOutputTokens: number
+    temperature: number
 }
 
 export interface GeminiSafetySetting {
-  category: string;
-  threshold: string;
+    category: string
+    threshold: string
 }
 
 export interface GeminiRequest {
-  contents: GeminiContent[];
-  generationConfig: GeminiGenerationConfig;
-  safetySettings?: GeminiSafetySetting[];
+    contents: GeminiContent[]
+    generationConfig: GeminiGenerationConfig
+    safetySettings?: GeminiSafetySetting[]
 }
 
 export interface GeminiCandidate {
-  content: GeminiContent;
+    content: GeminiContent
 }
 
 export interface GeminiResponse {
-  candidates: GeminiCandidate[];
+    candidates: GeminiCandidate[]
 }
 
 export interface GeminiEmbeddingPart {
-  text: string;
+    text: string
 }
 
 export interface GeminiEmbeddingContent {
-  parts: GeminiEmbeddingPart[];
+    parts: GeminiEmbeddingPart[]
 }
 
 export interface GeminiEmbeddingRequest {
-  model: string;
-  content: GeminiEmbeddingContent;
+    model: string
+    content: GeminiEmbeddingContent
 }
 
 export interface GeminiEmbeddingValues {
-  values: number[];
+    values: number[]
 }
 
 export interface GeminiEmbeddingResponse {
-  embedding: GeminiEmbeddingValues;
+    embedding: GeminiEmbeddingValues
 }

@@ -1,96 +1,85 @@
-import { asClass, asFunction, createContainer, InjectionMode } from 'awilix';
-import Redis from 'ioredis';
-import { Pool } from 'pg';
-import { createPostgresConnection, createRedisClient, PostgresConfig, RedisConfig } from '../pkg/db';
-import { CacheManager, RedisCache } from '../pkg/caching';
-import { KeyManager } from '../pkg/keyManager';
-import { EmbeddingService, DocumentService, ChatService } from '../services';
-import { ChatHandler, DocumentHandler } from '../handlers';
-import { logger } from '../utils/logger';
+import { asClass, asFunction, createContainer, InjectionMode } from 'awilix'
+import { Pool } from 'pg'
+import DatabaseManager from '../config/database'
+import { RedisManager } from '../config/redis'
+import { KeyManager } from '../pkg/keyManager'
+import { RedisCache, CacheManager } from '../pkg/caching'
+import { EmbeddingService, DocumentService, ChatService } from '../services'
+import { ChatHandler, DocumentHandler } from '../handlers'
 
 export interface AppContainer {
-  pool: Pool;
-  redisClient: Redis;
-  cacheRedisClient: Redis;
-  cacheManager: CacheManager;
-  keyManager: KeyManager;
-  embeddingService: EmbeddingService;
-  documentService: DocumentService;
-  chatService: ChatService;
-  chatHandler: ChatHandler;
-  documentHandler: DocumentHandler;
+    pool: Pool
+    keyManager: KeyManager
+    cacheManager: CacheManager
+    embeddingService: EmbeddingService
+    documentService: DocumentService
+    chatService: ChatService
+    chatHandler: ChatHandler
+    documentHandler: DocumentHandler
 }
 
 export async function createAppContainer(): Promise<AppContainer> {
-  const container = createContainer<AppContainer>({
-    injectionMode: InjectionMode.PROXY,
-  });
+    const container = createContainer<AppContainer>({
+        injectionMode: InjectionMode.PROXY,
+    })
 
-  // PostgreSQL Database
-  const postgresConfig: PostgresConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432'),
-    database: process.env.DB_NAME || 'chatbot',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    maxConnections: 100,
-  };
+    const databaseManager = DatabaseManager.getInstance()
+    const dbConnected = await databaseManager.testConnection()
+    if (!dbConnected) {
+        throw new Error('Failed to connect to PostgreSQL database')
+    }
 
-  const postgresDB = createPostgresConnection(postgresConfig);
-  const pool = postgresDB.getPool();
+    const pool = databaseManager.getPool()
 
-  // Redis clients
-  const redisConfig: RedisConfig = {
-    url: process.env.REDIS_URL || 'redis://localhost:6379/0',
-  };
+    const redisManager = RedisManager.getInstance()
+    const redisConnected = await redisManager.connect()
+    if (!redisConnected) {
+        throw new Error('Failed to connect to Redis')
+    }
 
-  const cacheRedisConfig: RedisConfig = {
-    url: process.env.REDIS_CACHE_URL || process.env.REDIS_URL || 'redis://localhost:6379/0',
-  };
+    const isReady = await redisManager.isConnected()
+    if (!isReady) {
+        throw new Error('Redis connection test failed')
+    }
 
-  const redisClient = await createRedisClient(redisConfig);
-  const cacheRedisClient = await createRedisClient(cacheRedisConfig);
+    console.log('All database connections established successfully')
 
-  logger.info('Database connections established');
+    const redisClient = redisManager.getClient()
+    const redisCache = new RedisCache(redisClient)
+    const cacheManager = new CacheManager(redisCache)
 
-  // Register dependencies
-  container.register({
-    pool: asFunction(() => pool).singleton(),
-    redisClient: asFunction(() => redisClient).singleton(),
-    cacheRedisClient: asFunction(() => cacheRedisClient).singleton(),
+    container.register({
+        pool: asFunction(() => pool).singleton(),
 
-    cacheManager: asFunction(({ cacheRedisClient }: AppContainer) => {
-      const cache = new RedisCache(cacheRedisClient);
-      return new CacheManager(cache);
-    }).singleton(),
+        keyManager: asFunction(() => {
+            const geminiKeys = process.env.GEMINI_API_KEY
+            if (!geminiKeys) {
+                throw new Error('GEMINI_API_KEY environment variable is not set')
+            }
 
-    keyManager: asFunction(() => {
-      const geminiKeys = process.env.GEMINI_API_KEY;
-      if (!geminiKeys) {
-        throw new Error('GEMINI_API_KEY environment variable is not set');
-      }
+            const keyManager = new KeyManager(geminiKeys)
+            if (!keyManager.hasKeys()) {
+                throw new Error('No valid Gemini API keys provided')
+            }
 
-      const keyManager = new KeyManager(geminiKeys);
-      if (!keyManager.hasKeys()) {
-        throw new Error('No valid Gemini API keys provided');
-      }
+            console.log(`Loaded ${keyManager.getKeyCount()} Gemini API key(s)`)
+            return keyManager
+        }).singleton(),
 
-      logger.info(`Loaded ${keyManager.getKeyCount()} Gemini API key(s)`);
-      return keyManager;
-    }).singleton(),
+        cacheManager: asFunction(() => cacheManager).singleton(),
 
-    embeddingService: asClass(EmbeddingService).singleton(),
+        embeddingService: asClass(EmbeddingService).singleton(),
 
-    documentService: asClass(DocumentService).singleton(),
+        documentService: asClass(DocumentService).singleton(),
 
-    chatService: asClass(ChatService).singleton(),
+        chatService: asClass(ChatService).singleton(),
 
-    chatHandler: asClass(ChatHandler).singleton(),
+        chatHandler: asClass(ChatHandler).singleton(),
 
-    documentHandler: asClass(DocumentHandler).singleton(),
-  });
+        documentHandler: asClass(DocumentHandler).singleton(),
+    })
 
-  logger.info('Dependency injection container initialized');
+    console.log('Dependency injection container initialized')
 
-  return container.cradle;
+    return container.cradle
 }

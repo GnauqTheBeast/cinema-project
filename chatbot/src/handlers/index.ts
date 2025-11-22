@@ -1,2 +1,2 @@
-export * from './ChatHandler';
-export * from './DocumentHandler';
+export * from './ChatHandler'
+export * from './DocumentHandler'

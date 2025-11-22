@@ -1,3 +1,3 @@
-export * from './question';
-export * from './document';
-export * from './embedding';
+export * from './question'
+export * from './document'
+export * from './embedding'

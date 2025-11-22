@@ -73,6 +73,9 @@ func MigrateAll(ctx context.Context, db *bun.DB) error {
 		datastore.CreateOutboxEventTable,
 		datastore.CreateNewsArticleTable,
 		datastore.CreateNewsSummaryTable,
+		datastore.CreateDocumentTable,
+		datastore.CreateDocumentChunkTable,
+		datastore.CreateChatTable,
 	}
 
 	for _, migrateFunc := range migrationFuncs {
@@ -87,6 +90,9 @@ func MigrateAll(ctx context.Context, db *bun.DB) error {
 
 func DropAllTables(ctx context.Context, db *bun.DB) error {
 	dropFuncs := []func(context.Context, *bun.DB) error{
+		datastore.DropChatTable,
+		datastore.DropDocumentChunkTable,
+		datastore.DropDocumentTable,
 		datastore.DropNewsSummaryTable,
 		datastore.DropNewsArticleTable,
 		datastore.DropCustomerProfileTable,

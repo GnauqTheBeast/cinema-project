@@ -1,90 +1,93 @@
-import express, { Express } from 'express';
-import fileUpload from 'express-fileupload';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import { createAppContainer } from './container/container';
-import { corsMiddleware } from './middleware';
-import { logger } from './utils/logger';
+import express, { Express } from 'express'
+import fileUpload from 'express-fileupload'
+import cors from 'cors'
+import dotenv from 'dotenv'
+import { createAppContainer } from './container/container'
+import { corsMiddleware } from './middleware'
+import { logger } from './utils'
 
-// Load environment variables
-dotenv.config();
+dotenv.config()
 
-const PORT = process.env.PORT || 8088;
+const PORT = process.env.PORT || 8088
 
 async function startServer() {
-  try {
-    // Create dependency injection container
-    const container = await createAppContainer();
+    try {
+        const container = await createAppContainer()
 
-    // Create Express app
-    const app: Express = express();
+        const app: Express = express()
 
-    // Middleware
-    app.use(express.json());
-    app.use(express.urlencoded({ extended: true }));
-    app.use(cors());
-    app.use(corsMiddleware);
-    app.use(
-      fileUpload({
-        limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-        abortOnLimit: true,
-      })
-    );
+        app.use(express.json())
+        app.use(express.urlencoded({ extended: true }))
+        app.use(cors())
+        app.use(corsMiddleware)
+        app.use(
+            fileUpload({
+                limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+                abortOnLimit: true,
+            }),
+        )
 
-    // Routes
-    const { chatHandler, documentHandler } = container;
+        const { chatHandler, documentHandler } = container
 
-    // Document routes
-    app.post('/document/upload', (req, res) => documentHandler.uploadDocument(req, res));
-    app.get('/document/list', (req, res) => documentHandler.listDocuments(req, res));
-    app.get('/document/:id', (req, res) => documentHandler.getDocument(req, res));
-    app.delete('/document/:id', (req, res) => documentHandler.deleteDocument(req, res));
-    app.get('/document/:id/chunks', (req, res) => documentHandler.getDocumentChunks(req, res));
+        app.post('/api/v1/chatbot/message', (req, res) => chatHandler.sendMessage(req, res))
+        app.post('/api/v1/chatbot/document/upload', (req, res) =>
+            documentHandler.uploadDocument(req, res),
+        )
+        app.get('/api/v1/chatbot/document/list', (req, res) =>
+            documentHandler.listDocuments(req, res),
+        )
+        app.get('/api/v1/chatbot/document/:id', (req, res) => documentHandler.getDocument(req, res))
+        app.delete('/api/v1/chatbot/document/:id', (req, res) =>
+            documentHandler.deleteDocument(req, res),
+        )
+        app.get('/api/v1/chatbot/document/:id/chunks', (req, res) =>
+            documentHandler.getDocumentChunks(req, res),
+        )
+        app.post('/api/v1/chatbot/chat/ask', (req, res) => chatHandler.askQuestion(req, res))
 
-    // Chat routes
-    app.post('/chat/ask', (req, res) => chatHandler.askQuestion(req, res));
+        app.post('/document/upload', (req, res) => documentHandler.uploadDocument(req, res))
+        app.get('/document/list', (req, res) => documentHandler.listDocuments(req, res))
+        app.get('/document/:id', (req, res) => documentHandler.getDocument(req, res))
+        app.delete('/document/:id', (req, res) => documentHandler.deleteDocument(req, res))
+        app.get('/document/:id/chunks', (req, res) => documentHandler.getDocumentChunks(req, res))
+        app.post('/chat/ask', (req, res) => chatHandler.askQuestion(req, res))
 
-    // Chatbot API routes (with /api/v1 prefix)
-    app.post('/api/v1/chatbot/message', (req, res) => chatHandler.sendMessage(req, res));
+        app.get('/', (_req, res) => {
+            res.status(200).json({
+                message: 'RAG Chatbot API - TypeScript Version',
+                version: '1.0.0',
+                endpoints: {
+                    health: 'GET /health',
+                    chatbot:
+                        'POST /api/v1/chatbot/message - Body: { "message": "your message", "conversation_id": "optional" }',
+                    chat: {
+                        ask: 'POST /chat/ask - Body: { "question": "your question" }',
+                    },
+                    document: {
+                        upload: 'POST /document/upload - Form: document (file), title (optional)',
+                        list: 'GET /document/list?limit=10&offset=0',
+                        get: 'GET /document/:id',
+                        delete: 'DELETE /document/:id',
+                        chunks: 'GET /document/:id/chunks',
+                    },
+                },
+            })
+        })
 
-    // Welcome route
-    app.get('/', (_req, res) => {
-      res.status(200).json({
-        message: 'RAG Chatbot API - TypeScript Version',
-        version: '1.0.0',
-        endpoints: {
-          health: 'GET /health',
-          chatbot: 'POST /api/v1/chatbot/message - Body: { "message": "your message", "conversation_id": "optional" }',
-          chat: {
-            ask: 'POST /chat/ask - Body: { "question": "your question" }',
-          },
-          document: {
-            upload: 'POST /document/upload - Form: document (file), title (optional)',
-            list: 'GET /document/list?limit=10&offset=0',
-            get: 'GET /document/:id',
-            delete: 'DELETE /document/:id',
-            chunks: 'GET /document/:id/chunks',
-          },
-        },
-      });
-    });
+        app.get('/health', (_req, res) => {
+            res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() })
+        })
 
-    // Health check
-    app.get('/health', (_req, res) => {
-      res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-    });
-
-    // Start server
-    app.listen(PORT, () => {
-      logger.info(`Server is running on port ${PORT}`);
-      logger.info(`Health check: http://localhost:${PORT}/health`);
-      logger.info(`Chat endpoint: http://localhost:${PORT}/chat/ask`);
-      logger.info(`Document upload: http://localhost:${PORT}/document/upload`);
-    });
-  } catch (error) {
-    logger.error('Failed to start server', { error });
-    process.exit(1);
-  }
+        app.listen(PORT, () => {
+            logger.info(`Server is running on port ${PORT}`)
+            logger.info(`Health check: http://localhost:${PORT}/health`)
+            logger.info(`Chat endpoint: http://localhost:${PORT}/chat/ask`)
+            logger.info(`Document upload: http://localhost:${PORT}/document/upload`)
+        })
+    } catch (error) {
+        logger.error('Failed to start server', { error })
+        process.exit(1)
+    }
 }
 
-startServer();
+startServer()
