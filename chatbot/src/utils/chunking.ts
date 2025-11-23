@@ -15,16 +15,6 @@ export interface TextChunk {
     tokenCount: number
 }
 
-export function defaultChunkConfig(): ChunkConfig {
-    return {
-        maxSize: 800,
-        overlap: 100,
-        method: 'sentence',
-        minSize: 50,
-        separators: ['\n\n', '\n', '. ', '! ', '? '],
-    }
-}
-
 export function splitIntoChunks(text: string, config: ChunkConfig): TextChunk[] {
     switch (config.method) {
         case 'fixed':
@@ -91,7 +81,6 @@ function chunkBySentence(text: string, config: ChunkConfig): TextChunk[] {
             continue
         }
 
-        // Calculate position in original text
         if (i === 0) {
             sentenceStart = 0
             currentStart = 0

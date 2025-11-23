@@ -6,7 +6,7 @@ import { DocumentDatastore, ChunkDatastore } from '../datastore'
 import { CacheManager } from '../pkg/caching'
 import { TextExtractor, splitIntoChunks, ChunkConfig } from '../utils'
 import { EmbeddingService } from './EmbeddingService'
-import { logger } from '../utils/logger'
+import { logger } from '../utils'
 
 export class DocumentService {
     private cacheManager: CacheManager
@@ -32,13 +32,10 @@ export class DocumentService {
     }
 
     async processDocument(filePath: string, title: string): Promise<Document> {
-        // Validate file
         await this.extractor.validateFile(filePath)
 
-        // Extract text
         const content = await this.extractor.extractText(filePath)
 
-        // Get file info
         let size = 0
         try {
             const fileInfo = await this.extractor.getFileInfo(filePath)
@@ -47,7 +44,6 @@ export class DocumentService {
             logger.warn('Could not get file info', { error })
         }
 
-        // Create document record
         const doc: Document = {
             id: uuidv4(),
             title,
@@ -60,9 +56,7 @@ export class DocumentService {
 
         await this.documentDatastore.createDocument(doc)
 
-        // Process chunks asynchronously
-        this.processChunks(doc, content).catch((error) => {
-            logger.error('Failed to process chunks', { docId: doc.id, error })
+        this.processChunks(doc, content).catch(() => {
             this.documentDatastore
                 .updateDocumentStatus(doc.id, DocumentStatus.FAILED)
                 .catch((err) => {
