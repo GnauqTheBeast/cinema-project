@@ -1,5 +1,6 @@
 import { Pool } from 'pg'
 import { Document, DocumentStatus, DOCUMENT_TABLE } from '../models'
+import { wrapDatabaseError } from '../utils/errorHandler'
 
 export class DocumentDatastore {
     constructor(private pool: Pool) {}
@@ -23,9 +24,7 @@ export class DocumentDatastore {
         try {
             await this.pool.query(query, values)
         } catch (error) {
-            throw new Error(
-                `Failed to insert document: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            )
+            throw wrapDatabaseError('Failed to insert document', error)
         }
     }
 

@@ -1,5 +1,6 @@
 import { Pool } from 'pg'
 import { Chat, CHAT_TABLE } from '../models'
+import { wrapDatabaseError } from '../utils/errorHandler'
 
 export class ChatDatastore {
     constructor(private pool: Pool) {}
@@ -24,9 +25,7 @@ export class ChatDatastore {
         try {
             await this.pool.query(query, values)
         } catch (error) {
-            throw new Error(
-                `Failed to insert chat record: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            )
+            throw wrapDatabaseError('Failed to insert chat record', error)
         }
     }
 
@@ -40,9 +39,7 @@ export class ChatDatastore {
             }
             return result.rows[0] as Chat
         } catch (error) {
-            throw new Error(
-                `Failed to get chat: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            )
+            throw wrapDatabaseError('Failed to get chat', error)
         }
     }
 
@@ -58,9 +55,7 @@ export class ChatDatastore {
             const result = await this.pool.query(query, [limit])
             return result.rows as Chat[]
         } catch (error) {
-            throw new Error(
-                `Failed to get recent chat records: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            )
+            throw wrapDatabaseError('Failed to get recent chat records', error)
         }
     }
 }

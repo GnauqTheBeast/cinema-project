@@ -1,14 +1,19 @@
-import {Pool} from 'pg'
+import { Pool } from 'pg'
 import crypto from 'crypto'
 import axios from 'axios'
-import {Chat, DocumentChunk} from '../models'
-import {ChatDatastore, ChunkDatastore} from '../datastore'
-import {CACHE_TTL_12_HOUR, CACHE_TTL_15_MINS, CACHE_TTL_5_MINS, CacheManager,} from '../pkg/caching'
-import {KeyManager} from '../pkg/keyManager'
-import {EmbeddingService} from './EmbeddingService'
-import {GeminiRequest, GeminiResponse, QuestionResponse, SimilarDocument} from '../types'
-import {cosineSimilarity, validateAndSanitizeContext, validateQuestion} from '../utils'
-import {logger} from '../utils/logger'
+import { Chat, DocumentChunk } from '../models'
+import { ChatDatastore, ChunkDatastore } from '../datastore'
+import {
+    CACHE_TTL_12_HOUR,
+    CACHE_TTL_15_MINS,
+    CACHE_TTL_5_MINS,
+    CacheManager,
+} from '../pkg/caching'
+import { KeyManager } from '../pkg/keyManager'
+import { EmbeddingService } from './EmbeddingService'
+import { GeminiRequest, GeminiResponse, QuestionResponse, SimilarDocument } from '../types'
+import { cosineSimilarity, validateAndSanitizeContext, validateQuestion } from '../utils'
+import { logger } from '../utils/logger'
 
 export class ChatService {
     private embeddingService: EmbeddingService
