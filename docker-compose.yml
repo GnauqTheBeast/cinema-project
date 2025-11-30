@@ -89,11 +89,11 @@ services:
     env_file:
       - ./booking-service/.env
     restart: unless-stopped
-#    depends_on:
-#      - postgres
-#      - redis
-#      - movie-service
-#      - auth-service
+    depends_on:
+      - postgres
+      - redis
+      - movie-service
+      - auth-service
 
   payment-service:
     build:
@@ -105,9 +105,9 @@ services:
     env_file:
       - ./payment-service/.env
     restart: unless-stopped
-#    depends_on:
-#      - postgres
-#      - redis
+    depends_on:
+      - postgres
+      - redis
       
   api-gateway:
     build:
@@ -119,10 +119,10 @@ services:
     ports:
       - "8000:8000"
     restart: unless-stopped
-#    depends_on:
-#      - movie-service
-#      - booking-service
-#      - redis
+    depends_on:
+      - movie-service
+      - booking-service
+      - redis
   
   worker-service:
     build:
