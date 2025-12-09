@@ -125,13 +125,15 @@ export async function startGrpcServer(): Promise<void> {
             status: 'active' // Staff accounts are active immediately
           } as any);
 
-          // Create customer profile for staff (they can also be customers)
-          await models.CustomerProfile.create({
+          // Create staff profile
+          await models.StaffProfile.create({
             id: uuidv4(),
             user_id: id,
-            total_payment_amount: 0,
-            point: 0,
-            onchain_wallet_address: ''
+            salary: 0,
+            position: '',
+            department: '',
+            hire_date: new Date(),
+            is_active: true
           } as any);
 
           created = true;

@@ -23,16 +23,31 @@ export interface CustomerProfileAttributes {
   onchain_wallet_address?: string | null;
 }
 
+export interface StaffProfileAttributes {
+  id: string;
+  user_id: string;
+  salary: number;
+  position: string;
+  department: string;
+  hire_date: Date;
+  is_active: boolean;
+}
+
 export type UserModel = ModelDefined<UserAttributes, Partial<UserAttributes>>;
 export type CustomerProfileModel = ModelDefined<
   CustomerProfileAttributes,
   Partial<CustomerProfileAttributes>
+>;
+export type StaffProfileModel = ModelDefined<
+  StaffProfileAttributes,
+  Partial<StaffProfileAttributes>
 >;
 
 export interface Models {
   sequelize: Sequelize;
   User: UserModel;
   CustomerProfile: CustomerProfileModel;
+  StaffProfile: StaffProfileModel;
 }
 
 export function initModels(sequelize: Sequelize): Models {
@@ -69,7 +84,23 @@ export function initModels(sequelize: Sequelize): Models {
     { tableName: 'customer_profile', timestamps: false }
   ) as CustomerProfileModel;
 
-  return { sequelize, User, CustomerProfile };
+  const StaffProfile = sequelize.define<
+    Model<StaffProfileAttributes, Partial<StaffProfileAttributes>>
+  >(
+    'StaffProfile',
+    {
+      id: { type: DataTypes.STRING, primaryKey: true },
+      user_id: { type: DataTypes.STRING, allowNull: false },
+      salary: { type: DataTypes.INTEGER, allowNull: false },
+      position: { type: DataTypes.STRING, allowNull: false },
+      department: { type: DataTypes.STRING, allowNull: false },
+      hire_date: { type: DataTypes.DATE, allowNull: false },
+      is_active: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true }
+    },
+    { tableName: 'staff_profile', timestamps: false }
+  ) as StaffProfileModel;
+
+  return { sequelize, User, CustomerProfile, StaffProfile };
 }
 
 
