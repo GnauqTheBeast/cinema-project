@@ -122,7 +122,6 @@ export class ChatService {
     }
 
     private async generateAnswer(question: string, context: string): Promise<string> {
-        // Note: question is already validated and sanitized by processQuestion
         const sanitizedContext = validateAndSanitizeContext(context)
 
         const systemRole = `SYSTEM: Bạn là một trợ lý AI chuyên tư vấn về nghiệp vụ bán vé xem phim tại rạp chiếu phim.

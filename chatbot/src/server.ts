@@ -8,7 +8,7 @@ import { logger } from './utils'
 
 dotenv.config()
 
-const PORT = process.env.PORT || 8088
+const PORT = process.env.PORT || 8089
 
 async function startServer() {
     try {

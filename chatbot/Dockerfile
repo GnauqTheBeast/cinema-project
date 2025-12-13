@@ -18,7 +18,7 @@ FROM node:18-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=8088
+ENV PORT=8089
 
 COPY package*.json ./
 RUN npm ci --omit=dev
@@ -26,6 +26,6 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY .env .env
 
-EXPOSE 8088
+EXPOSE 8089
 
 CMD ["npm", "run", "start"]

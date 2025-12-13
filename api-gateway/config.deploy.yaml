@@ -56,7 +56,7 @@ services:
     load_balancer: []
 
   chatbot:
-    url: "http://chatbot:8088"
+    url: "http://chatbot:8089"
     health_check_path: "/health"
     timeout: 30
     retries: 3
