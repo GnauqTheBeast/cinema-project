@@ -55,6 +55,13 @@ services:
     retries: 3
     load_balancer: []
 
+  chatbot:
+    url: "http://localhost:8088"
+    health_check_path: "/health"
+    timeout: 30
+    retries: 3
+    load_balancer: []
+
 redis:
   address: "localhost:6379"
   password: ""
@@ -91,10 +98,13 @@ auth:
     - "/api/v1/payments"
     - "/api/v1/payments/*"
 
-    # Notification service - public endpoints  
+    # Notification service - public endpoints
     - "/api/v1/notifications/*/unread-count"
     - "/api/v1/notifications/ws"
-    
+
+    # Chatbot service - public endpoints
+    - "/api/v1/chatbot/*"
+
     # Gateway endpoints
     - "/health"
     - "/metrics"

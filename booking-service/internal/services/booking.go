@@ -243,11 +243,11 @@ func (s *BookingService) CreateBooking(ctx context.Context, userId string, showt
 	}
 
 	err = s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
-		if err := datastore.CreateBooking(ctx, tx, booking); err != nil {
+		if err = datastore.CreateBooking(ctx, tx, booking); err != nil {
 			return fmt.Errorf("failed to create booking: %w", err)
 		}
 
-		if err := datastore.CreateOutboxEvent(ctx, tx, models.EventTypeBookingCreated, eventData); err != nil {
+		if err = datastore.CreateOutboxEvent(ctx, tx, models.EventTypeBookingCreated, eventData); err != nil {
 			return fmt.Errorf("failed to create outbox event: %w", err)
 		}
 

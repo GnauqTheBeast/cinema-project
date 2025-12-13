@@ -99,7 +99,7 @@ func (w *Worker) processEvents(ctx context.Context) error {
 			continue
 		}
 
-		if err := w.markEventAsSent(ctx, event.ID); err != nil {
+		if err = w.markEventAsSent(ctx, event.ID); err != nil {
 			w.logger.Error("Failed to mark event %d as sent: %v", event.ID, err)
 		}
 	}
@@ -113,14 +113,6 @@ func (w *Worker) processEvent(ctx context.Context, event models.OutboxEvent) err
 	switch event.EventType {
 	case models.EventTypeBookingCreated:
 		return w.handleBookingCreated(ctx, event)
-	// Payment completion is handled by PaymentSubscriber (real-time pub/sub)
-	// Not processed here to avoid duplicate processing
-	case models.EventTypeSeatReserved:
-		return w.handleSeatReserved(ctx, event)
-	case models.EventTypeSeatReleased:
-		return w.handleSeatReleased(ctx, event)
-	case models.EventTypeNotificationSent:
-		return w.handleNotificationSent(ctx, event)
 	default:
 		w.logger.Warn("Unknown event type: %s", event.EventType)
 		return nil
@@ -159,24 +151,6 @@ func (w *Worker) handleBookingCreated(ctx context.Context, event models.OutboxEv
 	}
 
 	w.logger.Info("Successfully locked %d seats for booking %s", len(seatIds), bookingID)
-	return nil
-}
-
-func (w *Worker) handleSeatReserved(ctx context.Context, event models.OutboxEvent) error {
-	w.logger.Info("Handling seat reserved event: %s", event.Payload)
-	// Implement seat reservation logic
-	return nil
-}
-
-func (w *Worker) handleSeatReleased(ctx context.Context, event models.OutboxEvent) error {
-	w.logger.Info("Handling seat released event: %s", event.Payload)
-	// Implement seat release logic
-	return nil
-}
-
-func (w *Worker) handleNotificationSent(ctx context.Context, event models.OutboxEvent) error {
-	w.logger.Info("Handling notification sent event: %s", event.Payload)
-	// Implement notification logic
 	return nil
 }
 

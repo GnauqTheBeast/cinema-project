@@ -33,6 +33,7 @@ type ServicesConfig struct {
 	BookingService      ServiceEndpoint `mapstructure:"booking_service"`
 	PaymentService      ServiceEndpoint `mapstructure:"payment_service"`
 	AnalyticsService    ServiceEndpoint `mapstructure:"analytics_service"`
+	Chatbot             ServiceEndpoint `mapstructure:"chatbot"`
 }
 
 type ServiceEndpoint struct {

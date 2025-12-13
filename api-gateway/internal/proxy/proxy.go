@@ -199,6 +199,12 @@ func (p *Proxy) getTargetService(path string) (*ServiceInfo, string) {
 			Endpoint: p.config.Services.AnalyticsService,
 		}, path
 
+	case strings.HasPrefix(path, "/api/v1/chatbot"):
+		return &ServiceInfo{
+			Name:     "chatbot",
+			Endpoint: p.config.Services.Chatbot,
+		}, path
+
 	default:
 		return nil, ""
 	}

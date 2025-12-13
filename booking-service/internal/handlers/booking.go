@@ -78,7 +78,7 @@ func (h *BookingHandler) CreateBooking(c echo.Context) error {
 		TotalAmount int      `json:"total_amount" validate:"required,min=1"`
 	}
 
-	if err := c.Bind(&request); err != nil {
+	if err = c.Bind(&request); err != nil {
 		return response.BadRequest(c, "Invalid request data")
 	}
 

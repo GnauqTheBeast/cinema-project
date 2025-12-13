@@ -95,45 +95,6 @@ func CreateBooking(ctx context.Context, db bun.IDB, booking *models.Booking) err
 	return nil
 }
 
-func UpdateBooking(ctx context.Context, db *bun.DB, booking *models.Booking) error {
-	_, err := db.NewUpdate().
-		Model(booking).
-		Where("id = ?", booking.Id).
-		Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to update booking: %w", err)
-	}
-
-	return nil
-}
-
-func MarkBookingsAsConfirmed(ctx context.Context, db *bun.DB, bookingIds []string, userId string) error {
-	_, err := db.NewUpdate().
-		Model((*models.Booking)(nil)).
-		Set("status = ?", models.BookingStatusConfirmed).
-		Where("id IN (?)", bun.In(bookingIds)).
-		Where("user_id = ?", userId).
-		Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to mark notifications as read: %w", err)
-	}
-
-	return nil
-}
-
-func GetTotalBookingsByUserId(ctx context.Context, db *bun.DB, userId string) (int, error) {
-	count, err := db.NewSelect().
-		Model((*models.Booking)(nil)).
-		Where("user_id = ?", userId).
-		Where("status IN (?, ?, ?)", models.BookingStatusPending, models.BookingStatusConfirmed, models.BookingStatusCancelled).
-		Count(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("failed to get total bookings count: %w", err)
-	}
-
-	return count, nil
-}
-
 func UpdateBookingStatus(ctx context.Context, db *bun.DB, bookingId string, status models.BookingStatus) error {
 	_, err := db.NewUpdate().
 		Model((*models.Booking)(nil)).
