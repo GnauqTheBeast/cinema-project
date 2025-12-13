@@ -90,7 +90,7 @@ func main() {
 		response.Success(c, map[string]interface{}{
 			"name":     "Cinema API Gateway",
 			"version":  "1.0.0",
-			"services": []string{"auth-service", "movie-service", "notification-service", "booking-service"},
+			"services": []string{"auth-service", "movie-service", "notification-service", "booking-service", "analytics-service"},
 		})
 	})
 

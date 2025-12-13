@@ -19,8 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	BookingService_UpdateBookingStatus_FullMethodName = "/pb.BookingService/UpdateBookingStatus"
-	BookingService_CreateTickets_FullMethodName       = "/pb.BookingService/CreateTickets"
+	BookingService_UpdateBookingStatus_FullMethodName     = "/pb.BookingService/UpdateBookingStatus"
+	BookingService_CreateTickets_FullMethodName           = "/pb.BookingService/CreateTickets"
+	BookingService_GetRevenueByTime_FullMethodName        = "/pb.BookingService/GetRevenueByTime"
+	BookingService_GetRevenueByShowtime_FullMethodName    = "/pb.BookingService/GetRevenueByShowtime"
+	BookingService_GetRevenueByBookingType_FullMethodName = "/pb.BookingService/GetRevenueByBookingType"
+	BookingService_GetTotalRevenue_FullMethodName         = "/pb.BookingService/GetTotalRevenue"
 )
 
 // BookingServiceClient is the client API for BookingService service.
@@ -29,6 +33,10 @@ const (
 type BookingServiceClient interface {
 	UpdateBookingStatus(ctx context.Context, in *UpdateBookingStatusRequest, opts ...grpc.CallOption) (*UpdateBookingStatusResponse, error)
 	CreateTickets(ctx context.Context, in *CreateTicketsRequest, opts ...grpc.CallOption) (*CreateTicketsResponse, error)
+	GetRevenueByTime(ctx context.Context, in *GetRevenueByTimeRequest, opts ...grpc.CallOption) (*GetRevenueByTimeResponse, error)
+	GetRevenueByShowtime(ctx context.Context, in *GetRevenueByShowtimeRequest, opts ...grpc.CallOption) (*GetRevenueByShowtimeResponse, error)
+	GetRevenueByBookingType(ctx context.Context, in *GetRevenueByBookingTypeRequest, opts ...grpc.CallOption) (*GetRevenueByBookingTypeResponse, error)
+	GetTotalRevenue(ctx context.Context, in *GetTotalRevenueRequest, opts ...grpc.CallOption) (*GetTotalRevenueResponse, error)
 }
 
 type bookingServiceClient struct {
@@ -59,12 +67,56 @@ func (c *bookingServiceClient) CreateTickets(ctx context.Context, in *CreateTick
 	return out, nil
 }
 
+func (c *bookingServiceClient) GetRevenueByTime(ctx context.Context, in *GetRevenueByTimeRequest, opts ...grpc.CallOption) (*GetRevenueByTimeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetRevenueByTimeResponse)
+	err := c.cc.Invoke(ctx, BookingService_GetRevenueByTime_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bookingServiceClient) GetRevenueByShowtime(ctx context.Context, in *GetRevenueByShowtimeRequest, opts ...grpc.CallOption) (*GetRevenueByShowtimeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetRevenueByShowtimeResponse)
+	err := c.cc.Invoke(ctx, BookingService_GetRevenueByShowtime_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bookingServiceClient) GetRevenueByBookingType(ctx context.Context, in *GetRevenueByBookingTypeRequest, opts ...grpc.CallOption) (*GetRevenueByBookingTypeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetRevenueByBookingTypeResponse)
+	err := c.cc.Invoke(ctx, BookingService_GetRevenueByBookingType_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bookingServiceClient) GetTotalRevenue(ctx context.Context, in *GetTotalRevenueRequest, opts ...grpc.CallOption) (*GetTotalRevenueResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTotalRevenueResponse)
+	err := c.cc.Invoke(ctx, BookingService_GetTotalRevenue_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BookingServiceServer is the server API for BookingService service.
 // All implementations must embed UnimplementedBookingServiceServer
 // for forward compatibility.
 type BookingServiceServer interface {
 	UpdateBookingStatus(context.Context, *UpdateBookingStatusRequest) (*UpdateBookingStatusResponse, error)
 	CreateTickets(context.Context, *CreateTicketsRequest) (*CreateTicketsResponse, error)
+	GetRevenueByTime(context.Context, *GetRevenueByTimeRequest) (*GetRevenueByTimeResponse, error)
+	GetRevenueByShowtime(context.Context, *GetRevenueByShowtimeRequest) (*GetRevenueByShowtimeResponse, error)
+	GetRevenueByBookingType(context.Context, *GetRevenueByBookingTypeRequest) (*GetRevenueByBookingTypeResponse, error)
+	GetTotalRevenue(context.Context, *GetTotalRevenueRequest) (*GetTotalRevenueResponse, error)
 	mustEmbedUnimplementedBookingServiceServer()
 }
 
@@ -80,6 +132,18 @@ func (UnimplementedBookingServiceServer) UpdateBookingStatus(context.Context, *U
 }
 func (UnimplementedBookingServiceServer) CreateTickets(context.Context, *CreateTicketsRequest) (*CreateTicketsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateTickets not implemented")
+}
+func (UnimplementedBookingServiceServer) GetRevenueByTime(context.Context, *GetRevenueByTimeRequest) (*GetRevenueByTimeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRevenueByTime not implemented")
+}
+func (UnimplementedBookingServiceServer) GetRevenueByShowtime(context.Context, *GetRevenueByShowtimeRequest) (*GetRevenueByShowtimeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRevenueByShowtime not implemented")
+}
+func (UnimplementedBookingServiceServer) GetRevenueByBookingType(context.Context, *GetRevenueByBookingTypeRequest) (*GetRevenueByBookingTypeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRevenueByBookingType not implemented")
+}
+func (UnimplementedBookingServiceServer) GetTotalRevenue(context.Context, *GetTotalRevenueRequest) (*GetTotalRevenueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTotalRevenue not implemented")
 }
 func (UnimplementedBookingServiceServer) mustEmbedUnimplementedBookingServiceServer() {}
 func (UnimplementedBookingServiceServer) testEmbeddedByValue()                        {}
@@ -138,6 +202,78 @@ func _BookingService_CreateTickets_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BookingService_GetRevenueByTime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRevenueByTimeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BookingServiceServer).GetRevenueByTime(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BookingService_GetRevenueByTime_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BookingServiceServer).GetRevenueByTime(ctx, req.(*GetRevenueByTimeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BookingService_GetRevenueByShowtime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRevenueByShowtimeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BookingServiceServer).GetRevenueByShowtime(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BookingService_GetRevenueByShowtime_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BookingServiceServer).GetRevenueByShowtime(ctx, req.(*GetRevenueByShowtimeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BookingService_GetRevenueByBookingType_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRevenueByBookingTypeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BookingServiceServer).GetRevenueByBookingType(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BookingService_GetRevenueByBookingType_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BookingServiceServer).GetRevenueByBookingType(ctx, req.(*GetRevenueByBookingTypeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BookingService_GetTotalRevenue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTotalRevenueRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BookingServiceServer).GetTotalRevenue(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BookingService_GetTotalRevenue_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BookingServiceServer).GetTotalRevenue(ctx, req.(*GetTotalRevenueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BookingService_ServiceDesc is the grpc.ServiceDesc for BookingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -152,6 +288,22 @@ var BookingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateTickets",
 			Handler:    _BookingService_CreateTickets_Handler,
+		},
+		{
+			MethodName: "GetRevenueByTime",
+			Handler:    _BookingService_GetRevenueByTime_Handler,
+		},
+		{
+			MethodName: "GetRevenueByShowtime",
+			Handler:    _BookingService_GetRevenueByShowtime_Handler,
+		},
+		{
+			MethodName: "GetRevenueByBookingType",
+			Handler:    _BookingService_GetRevenueByBookingType_Handler,
+		},
+		{
+			MethodName: "GetTotalRevenue",
+			Handler:    _BookingService_GetTotalRevenue_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

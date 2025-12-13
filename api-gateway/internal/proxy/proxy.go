@@ -193,6 +193,12 @@ func (p *Proxy) getTargetService(path string) (*ServiceInfo, string) {
 			Endpoint: p.config.Services.PaymentService,
 		}, path
 
+	case strings.HasPrefix(path, "/api/v1/analytics"):
+		return &ServiceInfo{
+			Name:     "analytics-service",
+			Endpoint: p.config.Services.AnalyticsService,
+		}, path
+
 	case strings.HasPrefix(path, "/api/v1/chatbot"):
 		return &ServiceInfo{
 			Name:     "chatbot",
@@ -242,6 +248,7 @@ func (p *Proxy) HealthCheck() map[string]bool {
 		"movie-service":        p.config.Services.MovieService,
 		"notification-service": p.config.Services.NotificationService,
 		"user-service":         p.config.Services.UserService,
+		"analytics-service":    p.config.Services.AnalyticsService,
 	}
 
 	results := make(map[string]bool)
