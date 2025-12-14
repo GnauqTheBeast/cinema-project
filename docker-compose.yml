@@ -45,6 +45,7 @@ services:
     container_name: auth-service
     ports:
       - "3001:3001"
+      - "50052:50052"
     env_file:
       - ./auth-service/.env
     restart: unless-stopped

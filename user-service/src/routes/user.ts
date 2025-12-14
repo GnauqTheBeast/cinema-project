@@ -27,5 +27,6 @@ router.put('/:userId', authenticateToken, handleAsyncAuth(userController.updateU
 
 // Admin only routes
 router.get('/admin/users', authenticateToken, requireRole(['admin', 'manager_staff']), handleAsyncAuth(userController.getAllUsers));
+router.delete('/:userId', authenticateToken, requireRole(['admin']), handleAsyncAuth(userController.deleteUser));
 
 export default router;

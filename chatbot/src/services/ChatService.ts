@@ -1,6 +1,6 @@
 import { Pool } from 'pg'
 import crypto from 'crypto'
-import axios from 'axios'
+import { GoogleGenAI } from '@google/genai'
 import { Chat, DocumentChunk } from '../models'
 import { ChatDatastore, ChunkDatastore } from '../datastore'
 import {
@@ -11,9 +11,9 @@ import {
 } from '../pkg/caching'
 import { KeyManager } from '../pkg/keyManager'
 import { EmbeddingService } from './EmbeddingService'
-import { GeminiRequest, GeminiResponse, QuestionResponse, SimilarDocument } from '../types'
+import { QuestionResponse, SimilarDocument } from '../types'
 import { cosineSimilarity, validateAndSanitizeContext, validateQuestion } from '../utils'
-import { logger } from '../utils/logger'
+import { logger } from '../utils'
 
 export class ChatService {
     private embeddingService: EmbeddingService
@@ -159,62 +159,31 @@ Hãy trả lời câu hỏi của khách hàng dựa trên thông tin tham khả
 
         const prompt = systemRole + userDataSection
 
-        const reqBody: GeminiRequest = {
-            contents: [
-                {
-                    parts: [{ text: prompt }],
-                },
-            ],
-            generationConfig: {
-                maxOutputTokens: 1000,
-                temperature: 0.7,
-            },
-            safetySettings: [
-                {
-                    category: 'HARM_CATEGORY_HARASSMENT',
-                    threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-                },
-                {
-                    category: 'HARM_CATEGORY_HATE_SPEECH',
-                    threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-                },
-                {
-                    category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-                    threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-                },
-                {
-                    category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-                    threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-                },
-            ],
-        }
-
+        // Get next API key from rotation pool
         const apiKey = this.keyManager.getNextKey()
         if (!apiKey) {
             throw new Error('No Gemini API key available')
         }
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
-
         try {
-            const response = await axios.post<GeminiResponse>(url, reqBody, {
-                headers: {
-                    'Content-Type': 'application/json',
+            const ai = new GoogleGenAI({ apiKey })
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.0-flash-exp',
+                contents: prompt,
+                config: {
+                    maxOutputTokens: 1000,
+                    temperature: 0.7,
                 },
             })
 
-            logger.info(`Gemini API Response Status: ${response.status}`)
+            logger.info('Gemini API Response received')
 
-            if (!response.data.candidates || response.data.candidates.length === 0) {
-                throw new Error('No candidates returned from Gemini API')
+            const responseText = response.text
+
+            if (!responseText) {
+                throw new Error('No text returned from Gemini API')
             }
-
-            const candidate = response.data.candidates[0]
-            if (!candidate.content?.parts || candidate.content.parts.length === 0) {
-                throw new Error('No content parts in response')
-            }
-
-            const responseText = candidate.content.parts[0].text
 
             // Validate response to prevent prompt injection
             if (!this.validateResponse(responseText)) {
@@ -223,16 +192,8 @@ Hãy trả lời câu hỏi của khách hàng dựa trên thông tin tham khả
 
             return responseText
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                logger.error('Gemini API error', {
-                    status: error.response?.status,
-                    data: error.response?.data,
-                })
-                throw new Error(
-                    `Gemini API error: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`,
-                )
-            }
-            throw error
+            logger.error('Gemini API error', { error })
+            throw new Error(`Gemini API error: ${error}`)
         }
     }
 
@@ -241,7 +202,6 @@ Hãy trả lời câu hỏi của khách hàng dựa trên thông tin tham khả
         threshold: number,
         limit: number,
     ): Promise<SimilarDocument[]> {
-        // Cache chunks for 15 minutes
         const cacheKey = 'document_chunks'
         const chunks = await this.cacheManager.getWithCache<DocumentChunk[]>(
             cacheKey,

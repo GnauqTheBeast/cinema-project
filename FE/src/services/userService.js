@@ -9,23 +9,20 @@ const userApi = axios.create({
   },
 })
 
-// Add request interceptor to include auth token if available
-userApi.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  },
-)
+// userApi.interceptors.request.use(
+//   (config) => {
+//     const token = localStorage.getItem('token')
+//     if (token) {
+//       config.headers.Authorization = `Bearer ${token}`
+//     }
+//     return config
+//   },
+//   (error) => {
+//     return Promise.reject(error)
+//   },
+// )
 
-// User Service API calls
 export const userService = {
-  // Get user by ID
   getUserById: async (id) => {
     try {
       const response = await userApi.get(`/users/${id}`)
@@ -36,7 +33,6 @@ export const userService = {
     }
   },
 
-  // Update user by ID
   updateUser: async (id, userData) => {
     try {
       const response = await userApi.put(`/users/${id}`, userData)
@@ -46,9 +42,78 @@ export const userService = {
       throw error
     }
   },
+
+  getAllUsers: async (page = 1, size = 10, role = '', search = '') => {
+    try {
+      const adminToken = localStorage.getItem('adminToken')
+      const config = {
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
+      }
+
+      let url = `/users/admin/users?page=${page}&size=${size}`
+      if (role) {
+        url += `&role=${encodeURIComponent(role)}`
+      }
+      if (search) {
+        url += `&search=${encodeURIComponent(search)}`
+      }
+
+      const response = await userApi.get(url, config)
+      return response.data
+    } catch (error) {
+      console.error('Error fetching all users:', error)
+      throw error
+    }
+  },
+
+  // Create staff member (admin only) - via auth service
+  createStaff: async (staffData) => {
+    try {
+      const adminToken = localStorage.getItem('adminToken')
+      const response = await axios.post(
+        `${API_URL}/auth/staff`,
+        staffData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${adminToken}`,
+          },
+        },
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error creating staff:', error)
+      throw error
+    }
+  },
+
+  // Delete user by ID (admin only)
+  deleteUser: async (id) => {
+    try {
+      const adminToken = localStorage.getItem('adminToken')
+      const response = await userApi.delete(`/users/${id}`, {
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
+      })
+      return response.data
+    } catch (error) {
+      console.error(`Error deleting user ${id}:`, error)
+      throw error
+    }
+  },
+
+  getRoles: () => [
+    { value: '', label: 'Tất cả vai trò' },
+    { value: 'customer', label: 'Khách hàng' },
+    { value: 'ticket_staff', label: 'Nhân viên bán vé' },
+    { value: 'manager_staff', label: 'Quản lý rạp' },
+    { value: 'admin', label: 'Quản trị viên' },
+  ],
 }
 
-// Export individual functions for backward compatibility
-export const { getUserById, updateUser } = userService
+export const { getUserById, updateUser, getAllUsers, createStaff, deleteUser } = userService
 
 export default userService

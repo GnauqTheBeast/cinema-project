@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import { Op } from 'sequelize';
 import { Models } from '../models/models.js';
 import {
   HttpStatus,
@@ -150,14 +151,146 @@ export class UserController {
         return;
       }
 
+      // Get query parameters for pagination and filtering
+      const page = parseInt(req.query.page as string) || 1;
+      const size = parseInt(req.query.size as string) || 10;
+      const role = req.query.role as string || '';
+      const search = req.query.search as string || '';
+
+      // Build where clause for filtering
+      const whereClause: any = {};
+
+      if (role) {
+        whereClause.role_id = role;
+      }
+
+      if (search) {
+        // Search in name and email
+        whereClause[Op.or] = [
+          { name: { [Op.iLike]: `%${search}%` } },
+          { email: { [Op.iLike]: `%${search}%` } }
+        ];
+      }
+
+      // Calculate offset
+      const offset = (page - 1) * size;
+
+      // Get total count for pagination
+      const totalCount = await this.models.User.count({ where: whereClause });
+      const totalPages = Math.ceil(totalCount / size);
+
       const users = await this.models.User.findAll({
-        attributes: { exclude: ['password'] } // Exclude password from response
+        where: whereClause,
+        attributes: { exclude: ['password'] },
+        include: [
+          {
+            model: this.models.Role,
+            as: 'role',
+            attributes: ['id', 'name', 'description']
+          }
+        ],
+        limit: size,
+        offset: offset,
+        order: [['created_at', 'DESC']]
       });
 
-      const response: IApiResponse<any[]> = {
+      const response: IApiResponse<any> = {
         success: true,
         message: 'Users retrieved successfully',
-        data: users,
+        data: {
+          data: users,
+          paging: {
+            page: page,
+            size: size,
+            total: totalCount,
+            total_pages: totalPages
+          }
+        },
+        status: HttpStatus.OK
+      };
+
+      res.status(HttpStatus.OK).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public deleteUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { userId } = req.params;
+      const authenticatedUser = req.user;
+
+      if (!authenticatedUser) {
+        const response: IApiResponse = {
+          success: false,
+          message: 'User not authenticated',
+          status: HttpStatus.UNAUTHORIZED
+        };
+        res.status(HttpStatus.UNAUTHORIZED).json(response);
+        return;
+      }
+
+      if (!['admin'].includes(authenticatedUser.role)) {
+        const response: IApiResponse = {
+          success: false,
+          message: 'Access denied. Admin role required',
+          status: HttpStatus.FORBIDDEN
+        };
+        res.status(HttpStatus.FORBIDDEN).json(response);
+        return;
+      }
+
+      if (!userId) {
+        const response: IApiResponse = {
+          success: false,
+          message: ErrorMessages.INVALID_REQUEST,
+          status: HttpStatus.BAD_REQUEST
+        };
+        res.status(HttpStatus.BAD_REQUEST).json(response);
+        return;
+      }
+
+      // Prevent admin from deleting themselves
+      if (authenticatedUser.id === userId) {
+        const response: IApiResponse = {
+          success: false,
+          message: 'You cannot delete your own account',
+          status: HttpStatus.FORBIDDEN
+        };
+        res.status(HttpStatus.FORBIDDEN).json(response);
+        return;
+      }
+
+      const user = await this.models.User.findOne({
+        where: { id: userId }
+      });
+
+      if (!user) {
+        const response: IApiResponse = {
+          success: false,
+          message: ErrorMessages.USER_NOT_FOUND,
+          status: HttpStatus.NOT_FOUND
+        };
+        res.status(HttpStatus.NOT_FOUND).json(response);
+        return;
+      }
+
+      // Prevent deleting other admins
+      if (user.toJSON().role_id === 'admin') {
+        const response: IApiResponse = {
+          success: false,
+          message: 'Cannot delete admin accounts',
+          status: HttpStatus.FORBIDDEN
+        };
+        res.status(HttpStatus.FORBIDDEN).json(response);
+        return;
+      }
+
+      await user.destroy();
+
+      const response: IApiResponse = {
+        success: true,
+        message: 'User deleted successfully',
         status: HttpStatus.OK
       };
 

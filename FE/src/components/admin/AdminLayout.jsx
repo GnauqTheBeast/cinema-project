@@ -64,7 +64,7 @@ export default function AdminLayout({ children }) {
       path: '/admin/dashboard',
       label: 'Dashboard',
       icon: FaChartBar,
-      permission: 'profile_view', // kept for reference (no longer used)
+      permission: 'profile_view',
     },
     {
       path: '/admin/movies',
@@ -76,7 +76,7 @@ export default function AdminLayout({ children }) {
       path: '/admin/rooms',
       label: 'Phòng chiếu',
       icon: FaDoorOpen,
-      permission: 'seat_manage', // Room management is part of seat management
+      permission: 'seat_manage',
     },
     {
       path: '/admin/seats',
@@ -100,7 +100,7 @@ export default function AdminLayout({ children }) {
       path: '/admin/staff',
       label: 'Nhân viên',
       icon: FaUser,
-      permission: 'staff_manage', // This permission needs to be added to the database
+      permission: 'staff_manage',
     },
     {
       path: '/admin/chatbot-documents',
@@ -108,7 +108,6 @@ export default function AdminLayout({ children }) {
       icon: FaRobot,
       permission: 'chatbot_manage',
     },
-
   ]
 
   return (

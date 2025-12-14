@@ -1,5 +1,13 @@
 import { DataTypes, Model, ModelDefined, Sequelize } from 'sequelize';
 
+export interface RoleAttributes {
+  id: string;
+  name: string;
+  description?: string | null;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
 export interface UserAttributes {
   id: string;
   name: string;
@@ -33,6 +41,7 @@ export interface StaffProfileAttributes {
   is_active: boolean;
 }
 
+export type RoleModel = ModelDefined<RoleAttributes, Partial<RoleAttributes>>;
 export type UserModel = ModelDefined<UserAttributes, Partial<UserAttributes>>;
 export type CustomerProfileModel = ModelDefined<
   CustomerProfileAttributes,
@@ -45,12 +54,25 @@ export type StaffProfileModel = ModelDefined<
 
 export interface Models {
   sequelize: Sequelize;
+  Role: RoleModel;
   User: UserModel;
   CustomerProfile: CustomerProfileModel;
   StaffProfile: StaffProfileModel;
 }
 
 export function initModels(sequelize: Sequelize): Models {
+  const Role = sequelize.define<Model<RoleAttributes, Partial<RoleAttributes>>>(
+    'Role',
+    {
+      id: { type: DataTypes.STRING, primaryKey: true },
+      name: { type: DataTypes.STRING, allowNull: false },
+      description: { type: DataTypes.STRING },
+      created_at: { type: DataTypes.DATE },
+      updated_at: { type: DataTypes.DATE }
+    },
+    { tableName: 'roles', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' }
+  ) as RoleModel;
+
   const User = sequelize.define<Model<UserAttributes, Partial<UserAttributes>>>(
     'User',
     {
@@ -100,7 +122,10 @@ export function initModels(sequelize: Sequelize): Models {
     { tableName: 'staff_profile', timestamps: false }
   ) as StaffProfileModel;
 
-  return { sequelize, User, CustomerProfile, StaffProfile };
+  User.belongsTo(Role, { foreignKey: 'role_id', as: 'role' });
+  Role.hasMany(User, { foreignKey: 'role_id', as: 'users' });
+
+  return { sequelize, Role, User, CustomerProfile, StaffProfile };
 }
 
 

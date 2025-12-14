@@ -75,10 +75,6 @@ class AuthController {
     }
   }
 
-  static async getStaffRoleId(): Promise<string> {
-    return this.getRoleIdByName('staff', 'staff_role_id');
-  }
-
   static async getManagerStaffRoleId(): Promise<string> {
     return this.getRoleIdByName('manager_staff', 'manager_staff_role_id');
   }

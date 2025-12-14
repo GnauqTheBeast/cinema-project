@@ -13,6 +13,8 @@ import SeatsPage from '../pages/admin/SeatsPage'
 import ShowtimeFormPage from '../pages/admin/ShowtimeFormPage'
 import ShowtimesPage from '../pages/admin/ShowtimesPage'
 import StaffManagementPage from '../pages/admin/StaffManagementPage'
+import StaffPage from '../pages/admin/StaffPage'
+import StaffFormPage from '../pages/admin/StaffFormPage'
 import BookingPage from '../pages/client/BookingPage'
 import BookingHistoryPage from '../pages/client/BookingHistoryPage'
 import BookingSuccessPage from '../pages/client/BookingSuccessPage'
@@ -241,6 +243,38 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
       {/* Staff Management */}
       <Route
         path="/admin/staff"
+        element={
+          <AdminRoute>
+            <StaffPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/staff/new"
+        element={
+          <AdminRoute>
+            <StaffFormPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/staff/:id"
+        element={
+          <AdminRoute>
+            <StaffPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/staff/:id/edit"
+        element={
+          <AdminRoute>
+            <StaffFormPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/staff-old"
         element={
           <AdminRoute>
             <StaffManagementPage />
