@@ -131,26 +131,15 @@ func (w *Worker) handleBookingCreated(ctx context.Context, event models.OutboxEv
 
 	w.logger.Info("Handling booking created event for booking ID: %s", bookingID)
 
-	seatLockKeys := make([]string, len(seatIds))
-	for i, seatId := range seatIds {
-		seatLockKeys[i] = fmt.Sprintf("seat_lock:%s:%s", showtimeId, seatId)
+	for _, seatId := range seatIds {
+		lockKey := fmt.Sprintf("seat_lock:%s:%s", showtimeId, seatId)
+
+		if err := w.redisClient.Set(ctx, lockKey, bookingID, 6*time.Hour).Err(); err != nil {
+			w.logger.Error("Failed to cache seat lock %s: %v", lockKey, err)
+		}
 	}
 
-	acquiredLocks := make([]string, 0)
-	for _, lockKey := range seatLockKeys {
-		acquired, err := w.acquireSeatLock(ctx, lockKey, bookingID, 5*time.Minute)
-		if err != nil {
-			w.releaseSeatLocks(ctx, acquiredLocks)
-			return fmt.Errorf("failed to acquire seat lock %s: %w", lockKey, err)
-		}
-		if !acquired {
-			w.releaseSeatLocks(ctx, acquiredLocks)
-			return fmt.Errorf("seat %s is already locked", lockKey)
-		}
-		acquiredLocks = append(acquiredLocks, lockKey)
-	}
-
-	w.logger.Info("Successfully locked %d seats for booking %s", len(seatIds), bookingID)
+	w.logger.Info("Successfully cached seat locks for booking %s with %d seats", bookingID, len(seatIds))
 	return nil
 }
 
@@ -178,21 +167,4 @@ func (w *Worker) markEventAsFailed(ctx context.Context, eventID int, err error) 
 	}
 
 	return updateErr
-}
-
-func (w *Worker) acquireSeatLock(ctx context.Context, lockKey, bookingID string, ttl time.Duration) (bool, error) {
-	result, err := w.redisClient.SetNX(ctx, lockKey, bookingID, ttl).Result()
-	if err != nil {
-		return false, fmt.Errorf("failed to acquire lock: %w", err)
-	}
-	return result, nil
-}
-
-func (w *Worker) releaseSeatLocks(ctx context.Context, lockKeys []string) {
-	for _, lockKey := range lockKeys {
-		err := w.redisClient.Del(ctx, lockKey).Err()
-		if err != nil {
-			w.logger.Error("Failed to release seat lock %s: %v", lockKey, err)
-		}
-	}
 }

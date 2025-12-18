@@ -971,3 +971,193 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 	fmt.Printf("Showtimes seeded successfully! Total: %d showtimes\n", len(showtimes))
 	return nil
 }
+
+func SeedGenres(ctx context.Context, db *bun.DB) error {
+	now := time.Now()
+	genres := []*models.Genre{
+		{
+			Id:          uuid.New().String(),
+			Name:        "Action",
+			Slug:        "action",
+			Description: stringPtr("Action-packed movies with intense sequences"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Adventure",
+			Slug:        "adventure",
+			Description: stringPtr("Exciting journeys and quests"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Comedy",
+			Slug:        "comedy",
+			Description: stringPtr("Light-hearted movies designed to make you laugh"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Drama",
+			Slug:        "drama",
+			Description: stringPtr("Serious, plot-driven movies"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Horror",
+			Slug:        "horror",
+			Description: stringPtr("Scary movies designed to frighten and thrill"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Romance",
+			Slug:        "romance",
+			Description: stringPtr("Love stories and romantic relationships"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Sci-Fi",
+			Slug:        "sci-fi",
+			Description: stringPtr("Science fiction and futuristic themes"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Thriller",
+			Slug:        "thriller",
+			Description: stringPtr("Suspenseful and intense storylines"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Fantasy",
+			Slug:        "fantasy",
+			Description: stringPtr("Magical and mythical worlds"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Animation",
+			Slug:        "animation",
+			Description: stringPtr("Animated movies for all ages"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Crime",
+			Slug:        "crime",
+			Description: stringPtr("Criminal activities and investigations"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Documentary",
+			Slug:        "documentary",
+			Description: stringPtr("Non-fiction films about real events"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Mystery",
+			Slug:        "mystery",
+			Description: stringPtr("Puzzling plots and detective stories"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "War",
+			Slug:        "war",
+			Description: stringPtr("Military conflicts and wartime stories"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Family",
+			Slug:        "family",
+			Description: stringPtr("Movies suitable for the whole family"),
+			CreatedAt:   now,
+		},
+	}
+
+	_, err := db.NewInsert().Model(&genres).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to seed genres: %w", err)
+	}
+
+	fmt.Println("Genres seeded successfully!")
+	return nil
+}
+
+func SeedMovieGenres(ctx context.Context, db *bun.DB) error {
+	// Get all movies and genres
+	var movies []models.Movie
+	err := db.NewSelect().Model(&movies).Scan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get movies: %w", err)
+	}
+
+	var genres []models.Genre
+	err = db.NewSelect().Model(&genres).Scan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get genres: %w", err)
+	}
+
+	if len(movies) == 0 || len(genres) == 0 {
+		return fmt.Errorf("movies or genres missing; seed movies and genres first")
+	}
+
+	// Build genre lookup map
+	genreNameToId := map[string]string{}
+	for _, g := range genres {
+		genreNameToId[g.Name] = g.Id
+	}
+
+	// Parse existing genre strings from movies and create movie_genres entries
+	var movieGenres []*models.MovieGenre
+	for _, movie := range movies {
+		if movie.Genre == "" {
+			continue
+		}
+
+		// Parse genres from the genre string (comma-separated)
+		genreNames := []string{}
+		if movie.Genre == "Action, Adventure, Drama" {
+			genreNames = []string{"Action", "Adventure", "Drama"}
+		} else if movie.Genre == "Action, Adventure, Sci-Fi" {
+			genreNames = []string{"Action", "Adventure", "Sci-Fi"}
+		} else if movie.Genre == "Action, Drama" {
+			genreNames = []string{"Action", "Drama"}
+		} else if movie.Genre == "Action, Adventure, Drama, Sci-Fi" {
+			genreNames = []string{"Action", "Adventure", "Drama", "Sci-Fi"}
+		} else if movie.Genre == "Action, Crime, Drama" {
+			genreNames = []string{"Action", "Crime", "Drama"}
+		} else {
+			// Default to Drama if unknown
+			genreNames = []string{"Drama"}
+		}
+
+		for _, genreName := range genreNames {
+			if genreId, ok := genreNameToId[genreName]; ok {
+				movieGenres = append(movieGenres, &models.MovieGenre{
+					Id:        uuid.New().String(),
+					MovieId:   movie.Id,
+					GenreId:   genreId,
+					CreatedAt: time.Now(),
+				})
+			}
+		}
+	}
+
+	if len(movieGenres) > 0 {
+		_, err = db.NewInsert().Model(&movieGenres).Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to seed movie_genres: %w", err)
+		}
+	}
+
+	fmt.Printf("Movie-Genre relationships seeded successfully! Total: %d relationships\n", len(movieGenres))
+	return nil
+}

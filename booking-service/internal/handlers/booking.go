@@ -119,3 +119,39 @@ func (h *BookingHandler) GetBookingByID(c echo.Context) error {
 
 	return response.SuccessWithMessage(c, "Booking fetched successfully", booking)
 }
+
+func (h *BookingHandler) CreateBoxOfficeBooking(c echo.Context) error {
+	bookingService, err := do.Invoke[*services.BookingService](h.container)
+	if err != nil {
+		return response.InternalServerError(c, "Failed to get booking service")
+	}
+
+	var request struct {
+		ShowtimeId string   `json:"showtime_id" validate:"required,uuid"`
+		SeatIds    []string `json:"seat_ids" validate:"required,dive,uuid"`
+	}
+
+	if err = c.Bind(&request); err != nil {
+		return response.BadRequest(c, "Invalid request data")
+	}
+
+	userId := c.Get("user_id").(string)
+	if userId == "" {
+		return response.Unauthorized(c, "User ID not found in token")
+	}
+
+	userRole := c.Get("role")
+	if userRole != "ticket_staff" {
+		return response.Forbidden(c, "Only ticket staff can create box office bookings")
+	}
+
+	booking, err := bookingService.CreateBoxOfficeBooking(c.Request().Context(), userId, request.ShowtimeId, request.SeatIds)
+	if err != nil {
+		if errors.Is(err, services.ErrInvalidBookingData) {
+			return response.BadRequest(c, "Invalid booking data")
+		}
+		return response.ErrorWithMessage(c, fmt.Sprintf("Failed to create box office booking: %s", err.Error()))
+	}
+
+	return response.SuccessWithMessage(c, "Box office booking created successfully", booking)
+}

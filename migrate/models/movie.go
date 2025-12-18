@@ -25,4 +25,5 @@ type Movie struct {
 	UpdatedAt   *time.Time `bun:"updated_at" json:"updated_at"`
 
 	Showtimes []*Showtime `bun:"rel:has-many,join:id=movie_id" json:"showtimes,omitempty"`
+	Genres    []*Genre    `bun:"m2m:movie_genres,join:Movie=Genre" json:"genres,omitempty"`
 }

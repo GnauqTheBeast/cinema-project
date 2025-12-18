@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AdminLoginPage from '../pages/admin/AdminLoginPage'
+import BoxOfficePage from '../pages/admin/BoxOfficePage'
 import ChatbotDocumentsPage from '../pages/admin/ChatbotDocumentsPage'
 import DashboardPage from '../pages/admin/DashboardPage'
 import MovieDetailPage from '../pages/admin/MovieDetailPage'
@@ -45,6 +46,19 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
       adminUser.role !== 'ticket_staff'
     ) {
       return <Navigate to="/admin/login" replace />
+    }
+
+    return children
+  }
+
+  const TicketStaffRoute = ({ children }) => {
+    if (!adminToken) {
+      return <Navigate to="/admin/login" replace />
+    }
+
+    const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}')
+    if (adminUser.role !== 'ticket_staff') {
+      return <Navigate to="/admin/dashboard" replace />
     }
 
     return children
@@ -279,6 +293,15 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
           <AdminRoute>
             <StaffManagementPage />
           </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/admin/box-office"
+        element={
+          <TicketStaffRoute>
+            <BoxOfficePage />
+          </TicketStaffRoute>
         }
       />
 

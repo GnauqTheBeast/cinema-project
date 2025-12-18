@@ -192,6 +192,13 @@ func (s *BookingService) CreateBooking(ctx context.Context, userId string, showt
 		return nil, ErrInvalidBookingData
 	}
 
+	lockDuration := 10 * time.Second
+	lockedKeys, err := s.acquireDistributedSeatLocks(ctx, showtimeId, seatIds, lockDuration)
+	if err != nil {
+		return nil, err
+	}
+	defer s.releaseDistributedSeatLocks(ctx, lockedKeys)
+
 	seatsWithPrice, err := s.movieClient.GetSeatsWithPrice(ctx, showtimeId, seatIds)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate seat prices: %w", err)
@@ -210,7 +217,6 @@ func (s *BookingService) CreateBooking(ctx context.Context, userId string, showt
 		return nil, fmt.Errorf("invalid total amount: expected %.2f, got %.2f", expectedTotal, clientTotal)
 	}
 
-	// Check if any seats are already locked in Redis
 	lockedSeats, err := s.checkSeatLocks(ctx, showtimeId, seatIds)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check seat locks: %w", err)
@@ -231,6 +237,107 @@ func (s *BookingService) CreateBooking(ctx context.Context, userId string, showt
 		TotalAmount: expectedTotal,
 		Status:      models.BookingStatusPending,
 		BookingType: "online",
+	}
+
+	eventData := &models.BookingEventData{
+		BookingId:   booking.Id,
+		UserId:      booking.UserId,
+		ShowtimeId:  booking.ShowtimeId,
+		SeatIds:     seatIds,
+		TotalAmount: booking.TotalAmount,
+		Status:      booking.Status,
+	}
+
+	err = s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		if err = datastore.CreateBooking(ctx, tx, booking); err != nil {
+			return fmt.Errorf("failed to create booking: %w", err)
+		}
+
+		return datastore.CreateOutboxEvent(ctx, tx, models.EventTypeBookingCreated, eventData)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return booking, nil
+}
+
+func (s *BookingService) acquireDistributedSeatLocks(ctx context.Context, showtimeId string, seatIds []string, lockDuration time.Duration) ([]string, error) {
+	var lockedKeys []string
+	lockValue := uuid.New().String()
+
+	for _, seatId := range seatIds {
+		lockKey := fmt.Sprintf("seat:lock:%s:%s", showtimeId, seatId)
+
+		acquired, err := s.redisClient.SetNX(ctx, lockKey, lockValue, lockDuration).Result()
+		if err != nil {
+			s.releaseDistributedSeatLocks(ctx, lockedKeys)
+			return nil, fmt.Errorf("failed to acquire lock for seat %s: %w", seatId, err)
+		}
+
+		if !acquired {
+			s.releaseDistributedSeatLocks(ctx, lockedKeys)
+			return nil, fmt.Errorf("%w: seat %s is currently being processed", ErrSeatAlreadyLocked, seatId)
+		}
+
+		lockedKeys = append(lockedKeys, lockKey)
+	}
+
+	return lockedKeys, nil
+}
+
+func (s *BookingService) releaseDistributedSeatLocks(ctx context.Context, lockKeys []string) {
+	for _, key := range lockKeys {
+		if err := s.redisClient.Del(ctx, key).Err(); err != nil {
+			logrus.WithError(err).WithField("lock_key", key).Error("Failed to release distributed lock")
+		}
+	}
+}
+
+func (s *BookingService) CreateBoxOfficeBooking(ctx context.Context, staffUserId string, showtimeId string, seatIds []string) (*models.Booking, error) {
+	if staffUserId == "" || showtimeId == "" || len(seatIds) == 0 {
+		return nil, ErrInvalidBookingData
+	}
+
+	// atomic lock
+	lockDuration := 10 * time.Second
+	lockedKeys, err := s.acquireDistributedSeatLocks(ctx, showtimeId, seatIds, lockDuration)
+	if err != nil {
+		return nil, err
+	}
+	defer s.releaseDistributedSeatLocks(ctx, lockedKeys)
+
+	seatsWithPrice, err := s.movieClient.GetSeatsWithPrice(ctx, showtimeId, seatIds)
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate seat prices: %w", err)
+	}
+
+	for _, seat := range seatsWithPrice.Data {
+		if !seat.Available {
+			return nil, fmt.Errorf("seat %s (%s) is not available", seat.SeatNumber, seat.SeatId)
+		}
+	}
+
+	lockedSeats, err := s.checkSeatLocks(ctx, showtimeId, seatIds)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check seat locks: %w", err)
+	}
+
+	if len(lockedSeats) > 0 {
+		var lockedInfo []string
+		for seatId, lockOwner := range lockedSeats {
+			lockedInfo = append(lockedInfo, fmt.Sprintf("seat %s (locked by booking %s)", seatId, lockOwner))
+		}
+		return nil, fmt.Errorf("%w: %s", ErrSeatAlreadyLocked, strings.Join(lockedInfo, ", "))
+	}
+
+	booking := &models.Booking{
+		Id:          uuid.New().String(),
+		UserId:      staffUserId,
+		ShowtimeId:  showtimeId,
+		TotalAmount: seatsWithPrice.TotalAmount,
+		Status:      models.BookingStatusConfirmed,
+		BookingType: "box_office",
 	}
 
 	eventData := &models.BookingEventData{

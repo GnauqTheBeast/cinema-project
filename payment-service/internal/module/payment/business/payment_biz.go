@@ -23,7 +23,6 @@ type PaymentBiz interface {
 	GetPaymentByBookingId(ctx context.Context, bookingId string) (*entity.Payment, error)
 	ProcessSePayWebhook(ctx context.Context, webhook *entity.SePayWebhook) error
 	VerifyCryptoPayment(ctx context.Context, req *entity.CryptoVerificationRequest) error
-	CreateOutboxEvent(ctx context.Context, eventType string, eventData interface{}) error
 }
 
 type paymentBiz struct {
@@ -135,17 +134,11 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 			"updated_at":     time.Now(),
 		}
 
-		if err := b.repo.UpdateFieldsTx(ctx, tx, payment.Id, fields); err != nil {
-			return fmt.Errorf("failed to update payment: %w", err)
-		}
-
-		return nil
+		return b.repo.UpdateFieldsTx(ctx, tx, payment.Id, fields)
 	})
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("Payment updated successfully, publishing payment_completed event\n")
 
 	paymentCompletedMessage := map[string]interface{}{
 		"payment_id":     payment.Id,
@@ -213,7 +206,7 @@ func (b *paymentBiz) VerifyCryptoPayment(ctx context.Context, req *entity.Crypto
 			"status":         "completed",
 		}
 
-		if err := b.CreateOutboxEventTx(ctx, tx, string(entity.EventTypePaymentCompleted), eventData); err != nil {
+		if err = b.CreateOutboxEventTx(ctx, tx, string(entity.EventTypePaymentCompleted), eventData); err != nil {
 			return fmt.Errorf("failed to create outbox event: %w", err)
 		}
 
@@ -221,28 +214,6 @@ func (b *paymentBiz) VerifyCryptoPayment(ctx context.Context, req *entity.Crypto
 	})
 	if err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func (b *paymentBiz) CreateOutboxEvent(ctx context.Context, eventType string, eventData interface{}) error {
-	eventDataBytes, err := json.Marshal(eventData)
-	if err != nil {
-		return fmt.Errorf("failed to marshal event data: %w", err)
-	}
-
-	outboxEvent := &entity.OutboxEvent{
-		EventType: eventType,
-		Payload:   string(eventDataBytes),
-		Status:    string(entity.OutboxStatusPending),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-
-	_, err = b.db.NewInsert().Model(outboxEvent).Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to create outbox event: %w", err)
 	}
 
 	return nil

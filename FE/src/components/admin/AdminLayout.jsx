@@ -9,6 +9,7 @@ import {
   FaHome,
   FaMoneyBillWave,
   FaRobot,
+  FaShoppingCart,
   FaSignOutAlt,
   FaTimes,
   FaUser,
@@ -38,6 +39,7 @@ export default function AdminLayout({ children }) {
     ticket_staff: new Set([
       '/admin/dashboard',
       '/admin/showtimes',
+      '/admin/box-office',
     ]),
   }
 
@@ -89,6 +91,12 @@ export default function AdminLayout({ children }) {
       label: 'Lịch chiếu',
       icon: FaClock,
       permission: 'showtime_manage',
+    },
+    {
+      path: '/admin/box-office',
+      label: 'Bán vé tại quầy',
+      icon: FaShoppingCart,
+      permission: 'ticket_sell',
     },
     {
       path: '/admin/revenue',
@@ -186,8 +194,9 @@ export default function AdminLayout({ children }) {
                 const IconComponent = item.icon
                 const isActive = isActiveRoute(item.path)
 
-                // Role-based visibility (no API call)
                 if (!isItemVisibleForRole(item.path)) return null
+
+                if (item.path === '/admin/box-office' && role !== 'ticket_staff') return null
 
                 return (
                   <button

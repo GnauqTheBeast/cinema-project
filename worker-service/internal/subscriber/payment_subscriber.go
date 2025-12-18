@@ -65,7 +65,7 @@ func (s *PaymentSubscriber) Start(ctx context.Context) error {
 				if msg == nil {
 					continue
 				}
-				if err := s.handlePaymentCompleted(ctx, msg); err != nil {
+				if err = s.handlePaymentCompleted(ctx, msg); err != nil {
 					log.Printf("[PaymentSubscriber] Failed to handle payment_completed: %v\n", err)
 				}
 			}
@@ -90,25 +90,21 @@ func (s *PaymentSubscriber) unmarshalPaymentMessage(data []byte) (interface{}, e
 func (s *PaymentSubscriber) handlePaymentCompleted(ctx context.Context, msg *pubsub.Message) error {
 	outerData, ok := msg.Data.(map[string]interface{})
 	if !ok {
-		log.Printf("[PaymentSubscriber] msg.Data type assertion failed, got type: %T\n", msg.Data)
 		return fmt.Errorf("invalid message data format")
 	}
 
 	data, ok := outerData["Data"].(map[string]interface{})
 	if !ok {
-		log.Printf("[PaymentSubscriber] nested Data field type assertion failed, got type: %T\n", outerData["Data"])
 		return fmt.Errorf("invalid nested data format")
 	}
 
 	paymentID, ok := data["payment_id"].(string)
 	if !ok {
-		log.Printf("[PaymentSubscriber] payment_id not found or invalid, available keys: %v\n", data)
 		return fmt.Errorf("missing or invalid payment_id")
 	}
 
 	bookingID, ok := data["booking_id"].(string)
 	if !ok {
-		log.Printf("[PaymentSubscriber] booking_id not found or invalid, available keys: %v\n", data)
 		return fmt.Errorf("missing or invalid booking_id")
 	}
 
@@ -116,7 +112,6 @@ func (s *PaymentSubscriber) handlePaymentCompleted(ctx context.Context, msg *pub
 	if !ok {
 		amountInt, ok := data["amount"].(int)
 		if !ok {
-			log.Printf("[PaymentSubscriber] amount not found or invalid type: %T\n", data["amount"])
 			return fmt.Errorf("missing or invalid amount")
 		}
 		amount = float64(amountInt)
@@ -163,22 +158,31 @@ func (s *PaymentSubscriber) handlePaymentCompleted(ctx context.Context, msg *pub
 	if ticketResp != nil && ticketResp.BookingDetails != nil {
 		details := ticketResp.BookingDetails
 
-		seats := make([]map[string]interface{}, 0, len(details.Seats))
-		for _, seat := range details.Seats {
-			seats = append(seats, map[string]interface{}{
-				"seat_row":    seat.SeatRow,
-				"seat_number": seat.SeatNumber,
-				"seat_type":   seat.SeatType,
-			})
+		// Safely handle seats array
+		if details.Seats != nil && len(details.Seats) > 0 {
+			seats := make([]map[string]interface{}, 0, len(details.Seats))
+			for _, seat := range details.Seats {
+				seats = append(seats, map[string]interface{}{
+					"seat_row":    seat.SeatRow,
+					"seat_number": seat.SeatNumber,
+					"seat_type":   seat.SeatType,
+				})
+			}
+			emailData["seats"] = seats
 		}
 
-		emailData["to"] = details.UserEmail
-		emailData["seats"] = seats
-		emailData["showtime"] = map[string]interface{}{
-			"showtime_id": details.Showtime.ShowtimeId,
-			"start_time":  details.Showtime.StartTime,
-			"movie_name":  details.Showtime.MovieName,
-			"room_name":   details.Showtime.RoomName,
+		if details.UserEmail != "" {
+			emailData["to"] = details.UserEmail
+		}
+
+		// Safely handle showtime details
+		if details.Showtime != nil {
+			emailData["showtime"] = map[string]interface{}{
+				"showtime_id": details.Showtime.ShowtimeId,
+				"start_time":  details.Showtime.StartTime,
+				"movie_name":  details.Showtime.MovieName,
+				"room_name":   details.Showtime.RoomName,
+			}
 		}
 	}
 

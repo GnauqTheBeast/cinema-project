@@ -59,7 +59,6 @@ func (h *WebSocketHandler) notificatonHandler(ctx *WSContext, request *WSRequest
 		bookingNotificationTopic(userId),
 	}
 
-	// Use generic unmarshal to support flexible message formats (especially for booking notifications)
 	subscriber, err := h.pubsub.Subscribe(ctx.Context(), topics, types.UnmarshalGenericMessage)
 	if err != nil {
 		return &WSResponse{
