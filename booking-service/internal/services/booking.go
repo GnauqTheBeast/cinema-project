@@ -30,12 +30,13 @@ var (
 )
 
 type BookingService struct {
-	container   *do.Injector
-	db          *bun.DB
-	roDb        *bun.DB
-	movieClient *grpc.MovieClient
-	redisClient redis.UniversalClient
-	pubsub      pubsub.PubSub
+	container    *do.Injector
+	db           *bun.DB
+	roDb         *bun.DB
+	movieClient  *grpc.MovieClient
+	outboxClient *grpc.OutboxClient
+	redisClient  redis.UniversalClient
+	pubsub       pubsub.PubSub
 }
 
 func NewBookingService(container *do.Injector) (*BookingService, error) {
@@ -54,6 +55,11 @@ func NewBookingService(container *do.Injector) (*BookingService, error) {
 		return nil, err
 	}
 
+	outboxClient, err := do.Invoke[*grpc.OutboxClient](container)
+	if err != nil {
+		return nil, err
+	}
+
 	redisClient, err := do.InvokeNamed[redis.UniversalClient](container, "redis-db")
 	if err != nil {
 		return nil, err
@@ -65,12 +71,13 @@ func NewBookingService(container *do.Injector) (*BookingService, error) {
 	}
 
 	return &BookingService{
-		container:   container,
-		db:          db,
-		roDb:        roDb,
-		movieClient: movieClient,
-		redisClient: redisClient,
-		pubsub:      pubsubClient,
+		container:    container,
+		db:           db,
+		roDb:         roDb,
+		movieClient:  movieClient,
+		outboxClient: outboxClient,
+		redisClient:  redisClient,
+		pubsub:       pubsubClient,
 	}, nil
 }
 
@@ -250,10 +257,13 @@ func (s *BookingService) CreateBooking(ctx context.Context, userId string, showt
 
 	err = s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		if err = datastore.CreateBooking(ctx, tx, booking); err != nil {
-			return fmt.Errorf("failed to create booking: %w", err)
+			return err
 		}
 
-		return datastore.CreateOutboxEvent(ctx, tx, models.EventTypeBookingCreated, eventData)
+		// Alert: This grpc call to external service
+		// Dont put any logic after CreateOutBoxEvent in Tx and if Tx failed
+		// Then EventCreated would not be rolled back
+		return s.outboxClient.CreateOutboxEvent(ctx, string(models.EventTypeBookingCreated), eventData)
 	})
 	if err != nil {
 		return nil, err
@@ -350,15 +360,11 @@ func (s *BookingService) CreateBoxOfficeBooking(ctx context.Context, staffUserId
 	}
 
 	err = s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
-		if err = datastore.CreateBooking(ctx, tx, booking); err != nil {
-			return fmt.Errorf("failed to create booking: %w", err)
+		if err := datastore.CreateBooking(ctx, tx, booking); err != nil {
+			return err
 		}
 
-		if err = datastore.CreateOutboxEvent(ctx, tx, models.EventTypeBookingCreated, eventData); err != nil {
-			return fmt.Errorf("failed to create outbox event: %w", err)
-		}
-
-		return nil
+		return s.outboxClient.CreateOutboxEvent(ctx, string(models.EventTypeBookingCreated), eventData)
 	})
 	if err != nil {
 		return nil, err

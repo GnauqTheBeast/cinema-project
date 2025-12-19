@@ -32,9 +32,11 @@ export default function RegisterPage() {
       ...form,
     }
     try {
-      await axios.post(`${API_URL}/auth/register`, data)
-      setSuccess('Đăng ký thành công! Vui lòng kiểm tra email để xác thực.')
-      setTimeout(() => navigate('/login'), 2000)
+      const response = await axios.post(`${API_URL}/auth/register`, data)
+      setSuccess('Đăng ký thành công! Đang chuyển đến trang xác thực OTP...')
+      setTimeout(() => {
+        navigate(`/verify?email=${encodeURIComponent(form.email)}`)
+      }, 1500)
     } catch (err) {
       setError(err.response?.data?.message || 'Đăng ký thất bại')
     }

@@ -154,13 +154,16 @@ export default function VerifyOtpPage() {
             </button>
           </div>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-3">
             <button
               onClick={() => navigate('/login')}
-              className="text-gray-400 hover:text-white text-sm transition-colors duration-300"
+              className="w-full text-gray-400 hover:text-white text-sm transition-colors duration-300 py-2 border border-gray-600/50 rounded-lg hover:border-gray-500"
             >
-              ← Về trang đăng nhập
+              Xác thực sau (Sẽ được yêu cầu khi đăng nhập)
             </button>
+            <p className="text-gray-500 text-xs">
+              Nếu bỏ qua bây giờ, bạn sẽ cần xác thực OTP khi đăng nhập lần đầu
+            </p>
           </div>
         </div>
       </div>

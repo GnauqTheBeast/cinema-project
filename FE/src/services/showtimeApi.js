@@ -11,9 +11,13 @@ const showtimeApi = axios.create({
 
 showtimeApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    const isAdminPage = window.location.pathname.startsWith('/admin')
+    const authToken = isAdminPage
+      ? localStorage.getItem('adminToken')
+      : localStorage.getItem('token')
+
+    if (authToken) {
+      config.headers.Authorization = `Bearer ${authToken}`
     }
     return config
   },

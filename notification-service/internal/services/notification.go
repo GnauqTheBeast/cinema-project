@@ -44,13 +44,11 @@ func NewNotificationService(container *do.Injector) (*NotificationService, error
 	}, nil
 }
 
-// GetUserNotifications retrieves notifications for a user with pagination
 func (s *NotificationService) GetUserNotifications(ctx context.Context, userId string, page, size int, status string) ([]*models.Notification, int, error) {
 	if userId == "" {
 		return nil, 0, ErrInvalidNotificationData
 	}
 
-	// Validate and set defaults for pagination
 	if page <= 0 {
 		page = 1
 	}
@@ -58,7 +56,7 @@ func (s *NotificationService) GetUserNotifications(ctx context.Context, userId s
 		size = 10
 	}
 	if size > 100 {
-		size = 100 // Prevent abuse
+		size = 100
 	}
 
 	limit := size
@@ -68,7 +66,6 @@ func (s *NotificationService) GetUserNotifications(ctx context.Context, userId s
 	var total int
 	var err error
 
-	// Filter by status if provided
 	if status != "" && s.isValidStatus(status) {
 		notificationStatus := models.NotificationStatus(status)
 		notifications, err = datastore.GetNotificationsByUserIdAndStatus(ctx, s.roDb, userId, notificationStatus, limit, offset)
@@ -95,7 +92,6 @@ func (s *NotificationService) GetUserNotifications(ctx context.Context, userId s
 	return notifications, total, nil
 }
 
-// GetNotificationById retrieves a single notification by ID
 func (s *NotificationService) GetNotificationById(ctx context.Context, id string, userId string) (*models.Notification, error) {
 	if id == "" || userId == "" {
 		return nil, ErrInvalidNotificationData
@@ -109,7 +105,6 @@ func (s *NotificationService) GetNotificationById(ctx context.Context, id string
 		return nil, fmt.Errorf("failed to get notification: %w", err)
 	}
 
-	// Check if user has access to this notification
 	if notification.UserId != userId {
 		return nil, ErrUnauthorized
 	}
@@ -117,15 +112,9 @@ func (s *NotificationService) GetNotificationById(ctx context.Context, id string
 	return notification, nil
 }
 
-// CreateNotification creates a new notification
 func (s *NotificationService) CreateNotification(ctx context.Context, userId, title, content string) (*models.Notification, error) {
 	if userId == "" || title == "" || content == "" {
 		return nil, ErrInvalidNotificationData
-	}
-
-	now := ctx.Value("now")
-	if now == nil {
-		// Use current time if not provided in context
 	}
 
 	notification := &models.Notification{
@@ -144,36 +133,26 @@ func (s *NotificationService) CreateNotification(ctx context.Context, userId, ti
 	return notification, nil
 }
 
-// UpdateNotificationStatus updates the status of a notification
 func (s *NotificationService) UpdateNotificationStatus(ctx context.Context, id string, userId string, status models.NotificationStatus) error {
 	if id == "" || userId == "" {
 		return ErrInvalidNotificationData
 	}
 
-	// Check if notification exists and user has access
 	notification, err := s.GetNotificationById(ctx, id, userId)
 	if err != nil {
 		return err
 	}
 
-	// Update status
 	notification.Status = status
 
-	err = datastore.UpdateNotification(ctx, s.db, notification)
-	if err != nil {
-		return fmt.Errorf("failed to update notification status: %w", err)
-	}
-
-	return nil
+	return datastore.UpdateNotification(ctx, s.db, notification)
 }
 
-// DeleteNotification soft deletes a notification
 func (s *NotificationService) DeleteNotification(ctx context.Context, id string, userId string) error {
 	if id == "" || userId == "" {
 		return ErrInvalidNotificationData
 	}
 
-	// Check if notification exists and user has access
 	_, err := s.GetNotificationById(ctx, id, userId)
 	if err != nil {
 		return err
@@ -187,21 +166,14 @@ func (s *NotificationService) DeleteNotification(ctx context.Context, id string,
 	return nil
 }
 
-// MarkNotificationsAsRead marks multiple notifications as read
 func (s *NotificationService) MarkNotificationsAsRead(ctx context.Context, userId string, notificationIds []string) error {
 	if userId == "" || len(notificationIds) == 0 {
 		return ErrInvalidNotificationData
 	}
 
-	err := datastore.MarkNotificationsAsRead(ctx, s.db, notificationIds, userId)
-	if err != nil {
-		return fmt.Errorf("failed to mark notifications as read: %w", err)
-	}
-
-	return nil
+	return datastore.MarkNotificationsAsRead(ctx, s.db, notificationIds, userId)
 }
 
-// GetUnreadCount returns the count of unread notifications for a user
 func (s *NotificationService) GetUnreadCount(ctx context.Context, userId string) (int, error) {
 	if userId == "" {
 		return 0, ErrInvalidNotificationData
@@ -209,13 +181,12 @@ func (s *NotificationService) GetUnreadCount(ctx context.Context, userId string)
 
 	count, err := datastore.GetTotalNotificationsByUserIdAndStatus(ctx, s.roDb, userId, models.NotificationStatusPending)
 	if err != nil {
-		return 0, fmt.Errorf("failed to get unread count: %w", err)
+		return 0, err
 	}
 
 	return count, nil
 }
 
-// isValidStatus validates notification status
 func (s *NotificationService) isValidStatus(status string) bool {
 	switch models.NotificationStatus(status) {
 	case models.NotificationStatusPending,

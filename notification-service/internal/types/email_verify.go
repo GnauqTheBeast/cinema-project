@@ -72,7 +72,12 @@ func UnmarshalBookingSuccess(data []byte) (interface{}, error) {
 
 	nestedData, ok := wrapper["Data"]
 	if !ok {
-		return nil, nil
+		// Try direct unmarshal without wrapper
+		bookingSuccess := new(BookingSuccessMessage)
+		if err := json.Unmarshal(data, bookingSuccess); err != nil {
+			return nil, err
+		}
+		return bookingSuccess, nil
 	}
 
 	nestedBytes, err := json.Marshal(nestedData)

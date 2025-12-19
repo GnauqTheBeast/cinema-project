@@ -9,12 +9,15 @@ const movieApi = axios.create({
   },
 })
 
-// Add request interceptor to include auth token if available
 movieApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    const isAdminPage = window.location.pathname.startsWith('/admin')
+    const authToken = isAdminPage
+      ? localStorage.getItem('adminToken')
+      : localStorage.getItem('token')
+
+    if (authToken) {
+      config.headers.Authorization = `Bearer ${authToken}`
     }
     return config
   },

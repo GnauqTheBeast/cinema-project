@@ -10,7 +10,6 @@ const BoxOfficePage = () => {
   const [step, setStep] = useState(1)
   const [movies, setMovies] = useState([])
   const [showtimes, setShowtimes] = useState([])
-  const [selectedMovie, setSelectedMovie] = useState(null)
   const [selectedShowtime, setSelectedShowtime] = useState(null)
   const [room, setRoom] = useState(null)
   const [seats, setSeats] = useState([])
@@ -29,54 +28,34 @@ const BoxOfficePage = () => {
 
   useEffect(() => {
     if (step === 1) {
-      fetchShowingMovies()
+      fetchMovies()
+      fetchScheduledShowtimes()
     }
   }, [step])
 
-  useEffect(() => {
-    if (selectedShowtime && step === 2) {
-      const intervalId = setInterval(fetchSeats, 5000)
-      return () => clearInterval(intervalId)
-    }
-  }, [selectedShowtime, step])
-
-  const fetchShowingMovies = async () => {
+  const fetchMovies = async () => {
     try {
-      setLoading(true)
-      setError('')
       const response = await movieService.getShowingMovies()
-      
-      if (!response.success) {
-        setError('Không thể hiển thị danh sách phim và suất chiếu.')
-        setMovies([])
-        return
+      if (response.success && response.data) {
+        const moviesData = Array.isArray(response.data.movies) ? response.data.movies :
+                          Array.isArray(response.data) ? response.data :
+                          Array.isArray(response.data.data) ? response.data.data : []
+        setMovies(moviesData)
       }
-
-      if (!response.data) {
-        setMovies([])
-        return
-      }
-
-      const moviesData = Array.isArray(response.data) ? response.data : 
-                         Array.isArray(response.data.data) ? response.data.data : []
-      setMovies(moviesData)
     } catch (err) {
-      setError('Không thể hiển thị danh sách phim và suất chiếu.')
-      setMovies([])
       console.error('Error fetching movies:', err)
-    } finally {
-      setLoading(false)
     }
   }
 
-  const fetchShowtimesByMovie = async (movieId) => {
+  const fetchScheduledShowtimes = async () => {
     try {
       setLoading(true)
       setError('')
-      const response = await showtimeService.getShowtimesByMovie(movieId)
-      
+
+      const response = await showtimeService.getShowtimes(1, 100, '', '', '', '', 'scheduled', '', '')
+
       if (!response.success) {
-        setError('Không thể hiển thị danh sách phim và suất chiếu.')
+        setError('Không thể hiển thị danh sách suất chiếu.')
         setShowtimes([])
         return
       }
@@ -88,20 +67,16 @@ const BoxOfficePage = () => {
 
       const showtimesData = Array.isArray(response.data) ? response.data :
                            Array.isArray(response.data.data) ? response.data.data : []
-      
+
       const now = new Date()
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      const tomorrow = new Date(today)
-      tomorrow.setDate(tomorrow.getDate() + 1)
-      
-      const todayShowtimes = showtimesData.filter(st => {
-        const showtimeDate = new Date(st.start_time)
-        return showtimeDate >= now && showtimeDate < tomorrow
+      const upcomingShowtimes = showtimesData.filter(st => {
+        const showtimeEnd = new Date(st.end_time)
+        return showtimeEnd > now
       })
-      
-      setShowtimes(todayShowtimes)
+
+      setShowtimes(upcomingShowtimes)
     } catch (err) {
-      setError('Không thể hiển thị danh sách phim và suất chiếu.')
+      setError('Không thể hiển thị danh sách suất chiếu.')
       setShowtimes([])
       console.error('Error fetching showtimes:', err)
     } finally {
@@ -109,58 +84,61 @@ const BoxOfficePage = () => {
     }
   }
 
-  const fetchSeats = async () => {
-    if (!selectedShowtime) return
+  const getMoviePoster = (movieId) => {
+    const movie = movies.find(m => m.id === movieId)
+    return movie?.poster_url || ''
+  }
+
+  const getMovieTitle = (movieId) => {
+    const movie = movies.find(m => m.id === movieId)
+    return movie?.title || ''
+  }
+
+  const fetchSeats = async (showtimeId) => {
+    if (!showtimeId) {
+      setLoading(false)
+      return
+    }
 
     try {
-      const response = await clientSeatService.getSeatsByShowtime(selectedShowtime.id)
-      
+      const response = await clientSeatService.getSeatsByShowtime(showtimeId)
+
       if (!response.success) {
         setError('Không thể hiển thị sơ đồ ghế.')
         setSeats([])
+        setLoading(false)
         return
       }
 
       if (!response.data) {
         setSeats([])
         setLockedSeats([])
+        setLoading(false)
         return
       }
 
       const seatsData = response.data.data || response.data
-      const seatsArray = Array.isArray(seatsData.seats) ? seatsData.seats : 
+      const seatsArray = Array.isArray(seatsData.seats) ? seatsData.seats :
                         Array.isArray(seatsData) ? seatsData : []
       const lockedArray = Array.isArray(seatsData.locked_seats) ? seatsData.locked_seats : []
-      
+
       setSeats(seatsArray)
       setLockedSeats(lockedArray)
-      
-      if (selectedSeats.length > 0) {
-        const lockedSeatIds = lockedArray.map(s => s.id)
-        const updatedSelectedSeats = selectedSeats.filter(seat => !lockedSeatIds.includes(seat.id))
-        if (updatedSelectedSeats.length !== selectedSeats.length) {
-          setSelectedSeats(updatedSelectedSeats)
-        }
-      }
+      setLoading(false)
     } catch (err) {
       setError('Không thể hiển thị sơ đồ ghế.')
       setSeats([])
       console.error('Error fetching seats:', err)
+      setLoading(false)
     }
-  }
-
-  const handleMovieSelect = async (movie) => {
-    setSelectedMovie(movie)
-    setSelectedShowtime(null)
-    setShowtimes([])
-    await fetchShowtimesByMovie(movie.id)
   }
 
   const handleShowtimeSelect = async (showtime) => {
     setSelectedShowtime(showtime)
     setRoom(showtime.room)
     setStep(2)
-    await fetchSeats()
+    setLoading(true)
+    await fetchSeats(showtime.id)
   }
 
   const handleSeatSelect = (seat) => {
@@ -212,7 +190,6 @@ const BoxOfficePage = () => {
 
   const handleNewBooking = () => {
     setStep(1)
-    setSelectedMovie(null)
     setSelectedShowtime(null)
     setRoom(null)
     setSeats([])
@@ -245,6 +222,13 @@ const BoxOfficePage = () => {
       }
     })
 
+    Object.keys(grid).forEach((row) => {
+      const hasSeats = Object.values(grid[row]).some(seat => seat !== null)
+      if (!hasSeats) {
+        delete grid[row]
+      }
+    })
+
     return grid
   }
 
@@ -252,14 +236,23 @@ const BoxOfficePage = () => {
     const isSelected = selectedSeats.some(s => s.id === seat.id)
     const isLocked = lockedSeats.some(s => s.id === seat.id)
     
-    if (isSelected) return 'bg-green-500 text-white hover:bg-green-600'
-    if (isLocked) return 'bg-orange-400 text-white cursor-not-allowed'
-    if (seat.status !== 'available') return 'bg-gray-400 text-white cursor-not-allowed'
+    if (isSelected) return 'bg-red-600 border-red-500 text-white'
+    if (isLocked) return 'bg-orange-600 border-orange-500 text-orange-200 cursor-not-allowed'
+    if (seat.status !== 'available') return 'bg-gray-500 border-gray-400 text-gray-300 cursor-not-allowed'
     
-    if (seat.seat_type === 'vip') return 'bg-yellow-100 hover:bg-yellow-200 border-yellow-400'
-    if (seat.seat_type === 'couple') return 'bg-pink-100 hover:bg-pink-200 border-pink-400'
+    if (seat.seat_type === 'vip') return 'bg-yellow-600 border-yellow-500 text-white hover:bg-yellow-500'
+    if (seat.seat_type === 'couple') return 'bg-pink-600 border-pink-500 text-white hover:bg-pink-500'
     
-    return 'bg-blue-100 hover:bg-blue-200 border-blue-400'
+    return 'bg-green-600 border-green-500 text-white hover:bg-green-500'
+  }
+
+  const getSeatTypeLabel = (type) => {
+    switch (type) {
+      case 'regular': return 'Thường'
+      case 'vip': return 'VIP'
+      case 'couple': return 'Đôi'
+      default: return type
+    }
   }
 
   const calculateTotal = () => {
@@ -295,33 +288,54 @@ const BoxOfficePage = () => {
     return (
       <AdminLayout>
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="bg-white rounded-2xl shadow-2xl p-10 text-center">
             <div className="flex justify-center mb-6">
-              <div className="bg-green-100 rounded-full p-6">
-                <FaCheckCircle className="text-6xl text-green-600" />
+              <div className="bg-gradient-to-br from-green-400 to-green-600 rounded-full p-8 shadow-lg">
+                <FaCheckCircle className="text-7xl text-white" />
               </div>
             </div>
-            
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Bán vé thành công!</h2>
-            <p className="text-gray-600 mb-8">Vé đã được tạo và lưu vào hệ thống</p>
+
+            <h2 className="text-4xl font-bold text-gray-900 mb-3">Bán vé thành công!</h2>
+            <p className="text-gray-600 text-lg mb-10">Vé đã được tạo và lưu vào hệ thống</p>
 
             {bookingResult && (
-              <div className="bg-gray-50 rounded-lg p-6 mb-8 text-left">
-                <h3 className="text-lg font-semibold mb-4">Thông tin đặt vé</h3>
-                <div className="space-y-2 text-sm">
-                  <p><span className="font-medium">Mã đặt vé:</span> {bookingResult.id}</p>
-                  <p><span className="font-medium">Phim:</span> {selectedMovie?.title}</p>
-                  <p><span className="font-medium">Suất chiếu:</span> {formatDateTime(selectedShowtime?.start_time)}</p>
-                  <p><span className="font-medium">Phòng:</span> {room?.name}</p>
-                  <p><span className="font-medium">Ghế:</span> {selectedSeats.map(s => `${s.row_number}${s.seat_number}`).join(', ')}</p>
-                  <p><span className="font-medium">Tổng tiền:</span> <span className="text-green-600 font-semibold">{formatCurrency(calculateTotal())}</span></p>
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8 mb-10 text-left border-2 border-blue-100">
+                <h3 className="text-xl font-bold mb-6 text-blue-900 flex items-center gap-2">
+                  <FaFilm className="text-blue-600" />
+                  Thông tin đặt vé
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-gray-700 min-w-[120px]">Mã đặt vé:</span>
+                    <span className="font-mono font-bold text-blue-700 bg-white px-3 py-1 rounded">{bookingResult.id}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-gray-700 min-w-[120px]">Phim:</span>
+                    <span className="font-bold text-gray-900">{selectedShowtime?.movie?.title || getMovieTitle(selectedShowtime?.movie_id)}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-gray-700 min-w-[120px]">Suất chiếu:</span>
+                    <span className="text-gray-900">{formatDateTime(selectedShowtime?.start_time)}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-gray-700 min-w-[120px]">Phòng:</span>
+                    <span className="text-gray-900">{room?.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-gray-700 min-w-[120px]">Ghế:</span>
+                    <span className="font-bold text-gray-900">{selectedSeats.map(s => `${s.row_number}${s.seat_number}`).join(', ')}</span>
+                  </div>
+                  <div className="flex items-center gap-3 pt-3 border-t-2 border-blue-200">
+                    <span className="font-bold text-gray-900 min-w-[120px]">Tổng tiền:</span>
+                    <span className="text-2xl font-bold text-green-600">{formatCurrency(calculateTotal())}</span>
+                  </div>
                 </div>
               </div>
             )}
 
             <button
               onClick={handleNewBooking}
-              className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-10 py-4 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 inline-flex items-center gap-3 text-lg font-semibold"
             >
               <FaCheck />
               Bán vé mới
@@ -335,26 +349,28 @@ const BoxOfficePage = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Bán vé tại quầy</h1>
-            <p className="text-gray-600">Chọn phim, suất chiếu và ghế cho khách hàng</p>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${step >= 1 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
-              <FaFilm />
-              <span className="font-medium">Chọn phim</span>
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 mb-6">
+          <div className="flex justify-between items-center">
+            <div className="text-white">
+              <h1 className="text-3xl font-bold mb-2">Bán vé tại quầy</h1>
+              <p className="text-blue-100">Chọn phim, suất chiếu và ghế cho khách hàng</p>
             </div>
-            <FaArrowRight className="text-gray-400" />
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${step >= 2 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
-              <FaCouch />
-              <span className="font-medium">Chọn ghế</span>
-            </div>
-            <FaArrowRight className="text-gray-400" />
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${step >= 3 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
-              <FaCheck />
-              <span className="font-medium">Hoàn tất</span>
+
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center gap-2 px-5 py-3 rounded-lg transition-all ${step >= 1 ? 'bg-white text-blue-700 shadow-md' : 'bg-blue-500 text-blue-200'}`}>
+                <FaFilm className="text-lg" />
+                <span className="font-semibold">Chọn suất chiếu</span>
+              </div>
+              <FaArrowRight className={step >= 2 ? 'text-white' : 'text-blue-400'} />
+              <div className={`flex items-center gap-2 px-5 py-3 rounded-lg transition-all ${step >= 2 ? 'bg-white text-blue-700 shadow-md' : 'bg-blue-500 text-blue-200'}`}>
+                <FaCouch className="text-lg" />
+                <span className="font-semibold">Chọn ghế</span>
+              </div>
+              <FaArrowRight className={step >= 3 ? 'text-white' : 'text-blue-400'} />
+              <div className={`flex items-center gap-2 px-5 py-3 rounded-lg transition-all ${step >= 3 ? 'bg-white text-blue-700 shadow-md' : 'bg-blue-500 text-blue-200'}`}>
+                <FaCheck className="text-lg" />
+                <span className="font-semibold">Hoàn tất</span>
+              </div>
             </div>
           </div>
         </div>
@@ -367,91 +383,98 @@ const BoxOfficePage = () => {
 
         {step === 1 && (
           <div className="space-y-6">
-            {selectedMovie && (
-              <button
-                onClick={() => {
-                  setSelectedMovie(null)
-                  setSelectedShowtime(null)
-                  setShowtimes([])
-                }}
-                className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
-              >
-                <FaArrowLeft />
-                Quay lại danh sách phim
-              </button>
-            )}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-2xl font-bold mb-6 text-gray-900 flex items-center gap-2">
+                <FaFilm className="text-blue-600" />
+                Danh sách suất chiếu sắp tới
+              </h2>
+              
+              {loading ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+              ) : showtimes.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  Không có suất chiếu sắp tới
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {showtimes.map((showtime) => {
+                    const movie = showtime.movie || movies.find(m => m.id === showtime.movie_id)
+                    const moviePoster = movie?.poster_url || ''
+                    const movieTitle = movie?.title || ''
+                    const movieDuration = movie?.duration
+                    const movieUrl = movie?.trailer_url || movie?.url || ''
 
-            {!selectedMovie ? (
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-xl font-bold mb-4">Danh sách phim đang chiếu</h2>
-                
-                {loading ? (
-                  <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                  </div>
-                ) : movies.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    Không có phim đang chiếu
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {movies.map((movie) => (
-                      <div
-                        key={movie.id}
-                        onClick={() => handleMovieSelect(movie)}
-                        className="border rounded-lg p-4 hover:border-blue-500 cursor-pointer transition-colors"
-                      >
-                        {movie.poster_url && (
-                          <img
-                            src={movie.poster_url}
-                            alt={movie.title}
-                            className="w-full h-48 object-cover rounded-lg mb-3"
-                          />
-                        )}
-                        <h3 className="font-semibold text-lg mb-2">{movie.title}</h3>
-                        <p className="text-sm text-gray-600">{movie.duration} phút</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-xl font-bold mb-4">Chọn suất chiếu - {selectedMovie.title}</h2>
-                
-                {loading ? (
-                  <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                  </div>
-                ) : showtimes.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    Không có suất chiếu sắp tới
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {showtimes.map((showtime) => (
+                    return (
                       <div
                         key={showtime.id}
                         onClick={() => handleShowtimeSelect(showtime)}
-                        className="border rounded-lg p-4 hover:border-blue-500 cursor-pointer transition-colors flex justify-between items-center"
+                        className="bg-white border-2 border-gray-200 rounded-xl p-5 hover:border-blue-500 hover:shadow-xl cursor-pointer transition-all duration-200 transform hover:-translate-y-1"
                       >
-                        <div>
-                          <p className="font-semibold">{formatDateTime(showtime.start_time)}</p>
-                          <p className="text-sm text-gray-600">
-                            Phòng: {showtime.room?.name} | {showtime.format?.toUpperCase()}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-semibold text-green-600">
-                            {formatCurrency(showtime.price)}
-                          </p>
+                        <div className="flex gap-5">
+                          {moviePoster ? (
+                            <img
+                              src={moviePoster}
+                              alt={movieTitle || 'Movie poster'}
+                              className="w-28 h-40 object-cover rounded-lg flex-shrink-0 shadow-md"
+                              onError={(e) => {
+                                e.target.style.display = 'none'
+                              }}
+                            />
+                          ) : (
+                            <div className="w-28 h-40 bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg flex-shrink-0 flex items-center justify-center shadow-md">
+                              <FaFilm className="text-gray-400 text-4xl" />
+                            </div>
+                          )}
+                          <div className="flex-1 flex flex-col justify-between">
+                            <div>
+                              <h3 className="font-bold text-xl mb-3 text-gray-900 line-clamp-2">
+                                {movieTitle || 'Đang cập nhật'}
+                              </h3>
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm text-gray-700">
+                                  <span className="font-semibold text-blue-600 min-w-[90px]">Giờ chiếu:</span>
+                                  <span className="font-medium">{formatDateTime(showtime.start_time)}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-gray-700">
+                                  <span className="font-semibold text-blue-600 min-w-[90px]">Phòng:</span>
+                                  <span className="font-medium">{showtime.room?.name}</span>
+                                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold">
+                                    {showtime.format?.toUpperCase()}
+                                  </span>
+                                </div>
+                                {movieDuration && (
+                                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                                    <span className="font-semibold text-blue-600 min-w-[90px]">Thời lượng:</span>
+                                    <span className="font-medium">{movieDuration} phút</span>
+                                  </div>
+                                )}
+                                {movieUrl && (
+                                  <div className="flex items-start gap-2 text-sm text-gray-700">
+                                    <span className="font-semibold text-blue-600 min-w-[90px]">Trailer:</span>
+                                    <a
+                                      href={movieUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-blue-600 hover:text-blue-800 hover:underline truncate flex-1 font-medium"
+                                      title={movieUrl}
+                                    >
+                                      {movieUrl}
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -464,83 +487,129 @@ const BoxOfficePage = () => {
                 setSeats([])
                 setLockedSeats([])
               }}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium"
             >
               <FaArrowLeft />
               Quay lại chọn suất chiếu
             </button>
 
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="mb-6">
-                <h2 className="text-xl font-bold mb-2">Chọn ghế</h2>
-                <div className="text-sm text-gray-600">
-                  <p>Phim: <span className="font-medium">{selectedMovie?.title}</span></p>
-                  <p>Suất chiếu: <span className="font-medium">{formatDateTime(selectedShowtime.start_time)}</span></p>
-                  <p>Phòng: <span className="font-medium">{room?.name}</span></p>
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="mb-6 pb-6 border-b">
+                <h2 className="text-2xl font-bold mb-4 text-gray-900 flex items-center gap-2">
+                  <FaCouch className="text-blue-600" />
+                  Chọn ghế
+                </h2>
+                <div className="bg-blue-50 rounded-lg p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-blue-700 min-w-[100px]">Phim:</span>
+                    <span className="text-sm font-bold text-gray-900">{selectedShowtime?.movie?.title || getMovieTitle(selectedShowtime?.movie_id)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-blue-700 min-w-[100px]">Suất chiếu:</span>
+                    <span className="text-sm font-medium text-gray-900">{formatDateTime(selectedShowtime.start_time)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-blue-700 min-w-[100px]">Phòng:</span>
+                    <span className="text-sm font-medium text-gray-900">{room?.name}</span>
+                  </div>
                 </div>
               </div>
 
               <div className="mb-8">
                 <div className="flex items-center justify-center gap-6 text-sm">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-blue-100 border border-blue-400 rounded"></div>
+                    <div className="w-6 h-6 bg-green-600 border-2 border-green-500 rounded"></div>
                     <span>Thường</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-yellow-100 border border-yellow-400 rounded"></div>
+                    <div className="w-6 h-6 bg-yellow-600 border-2 border-yellow-500 rounded"></div>
                     <span>VIP</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-pink-100 border border-pink-400 rounded"></div>
+                    <div className="w-6 h-6 bg-pink-600 border-2 border-pink-500 rounded"></div>
                     <span>Đôi</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-green-500 rounded"></div>
+                    <div className="w-6 h-6 bg-red-600 border-2 border-red-500 rounded"></div>
                     <span>Đã chọn</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-gray-400 rounded"></div>
+                    <div className="w-6 h-6 bg-gray-500 border-2 border-gray-400 rounded"></div>
                     <span>Đã đặt</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-orange-400 rounded"></div>
+                    <div className="w-6 h-6 bg-orange-600 border-2 border-orange-500 rounded"></div>
                     <span>Đang giữ</span>
                   </div>
                 </div>
               </div>
 
               <div className="mb-8">
-                <div className="bg-gray-800 text-white text-center py-2 rounded-t-lg mb-8">
-                  MÀN HÌNH
-                </div>
+                <div className="flex flex-col items-center">
+                  <div className="mb-8">
+                    <div className="bg-gray-800 text-white py-3 px-16 rounded-lg text-sm font-medium shadow-lg">
+                      MÀN HÌNH
+                    </div>
+                    <div className="text-center text-xs text-gray-500 mt-1">SCREEN</div>
+                  </div>
 
-                {loading && seats.length === 0 ? (
-                  <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {Object.entries(createSeatGrid()).map(([row, rowSeats]) => (
-                      <div key={row} className="flex items-center justify-center gap-2">
-                        <div className="w-8 text-center font-semibold">{row}</div>
-                        <div className="flex gap-2">
-                          {Object.entries(rowSeats).map(([num, seat]) => (
-                            <button
-                              key={`${row}-${num}`}
-                              onClick={() => seat && handleSeatSelect(seat)}
-                              disabled={!seat || seat.status !== 'available' || lockedSeats.some(s => s.id === seat?.id)}
-                              className={`w-10 h-10 rounded border-2 flex items-center justify-center text-xs font-semibold transition-colors ${
-                                seat ? getSeatColor(seat) : 'invisible'
-                              }`}
-                            >
-                              {seat && num}
-                            </button>
-                          ))}
-                        </div>
+                  {loading && seats.length === 0 ? (
+                    <div className="flex justify-center items-center h-64">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <div className="inline-block">
+                        {Object.entries(createSeatGrid()).map(([row, rowSeats]) => {
+                          const coupleRows = ['M', 'N', 'O']
+                          const isCouple = coupleRows.includes(row)
+                          return (
+                            <div key={row} className="flex items-center justify-center mb-3">
+                              <div className="w-8 text-center text-sm font-bold text-gray-700 mr-4">
+                                {row}
+                              </div>
+
+                              <div className={`flex ${isCouple ? 'gap-3' : 'gap-1'} justify-center`}>
+                                {Object.entries(rowSeats)
+                                  .filter(([_, seat]) => seat !== null)
+                                  .map(([seatNumber, seat]) => {
+                                    const isCoupleType = seat.seat_type === 'couple'
+                                    return (
+                                      <button
+                                        key={`${row}-${seatNumber}`}
+                                        onClick={() => handleSeatSelect(seat)}
+                                        disabled={seat.status !== 'available' || lockedSeats.some(s => s.id === seat.id)}
+                                        className={`${isCoupleType ? 'w-12' : 'w-8'} h-8 border-2 rounded text-xs font-semibold transition-all hover:scale-110 ${getSeatColor(seat)}`}
+                                        title={`${row}${seatNumber.padStart(2, '0')} - ${getSeatTypeLabel(seat.seat_type)} - ${formatCurrency(selectedShowtime.price * (seatTypeMultipliers[seat.seat_type] || 1.0))}`}
+                                      >
+                                        {isCoupleType ? (
+                                          <div className="flex items-center justify-center">
+                                            <FaCouch className="w-3 h-3" />
+                                          </div>
+                                        ) : (
+                                          seatNumber.padStart(2, '0')
+                                        )}
+                                      </button>
+                                    )
+                                  })}
+                              </div>
+
+                              <div className="w-8 text-center text-sm font-bold text-gray-700 ml-4">
+                                {row}
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
-                    ))}
+                    </div>
+                  )}
+
+                  <div className="mt-8 text-center">
+                    <div className="text-sm text-gray-600 bg-gray-100 px-6 py-2 rounded-lg inline-block">
+                      ↑ LỐI VÀO ↑
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
 
               {selectedSeats.length > 0 && (

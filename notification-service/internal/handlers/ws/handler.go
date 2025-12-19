@@ -4,14 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/samber/do"
 	"notification-service/internal/pkg/pubsub"
+	"notification-service/internal/services"
 	"notification-service/internal/types"
+
+	"github.com/samber/do"
 )
 
 type WebSocketHandler struct {
-	containier *do.Injector
-	pubsub     pubsub.PubSub
+	containier          *do.Injector
+	pubsub              pubsub.PubSub
+	notificationService *services.NotificationService
 }
 
 func NewWebSocketHandler(container *do.Injector) (*WebSocketHandler, error) {
@@ -20,9 +23,15 @@ func NewWebSocketHandler(container *do.Injector) (*WebSocketHandler, error) {
 		return nil, err
 	}
 
+	notificationService, err := do.Invoke[*services.NotificationService](container)
+	if err != nil {
+		return nil, err
+	}
+
 	return &WebSocketHandler{
-		containier: container,
-		pubsub:     pubsub,
+		containier:          container,
+		pubsub:              pubsub,
+		notificationService: notificationService,
 	}, nil
 }
 
@@ -94,7 +103,20 @@ func (h *WebSocketHandler) notificatonHandler(ctx *WSContext, request *WSRequest
 						continue
 					}
 
-					// Push realtime to WebSocket client
+					title := ""
+					if titleVal, ok := notificationData["title"].(string); ok {
+						title = titleVal
+					}
+
+					message := ""
+					if msgVal, ok := notificationData["message"].(string); ok {
+						message = msgVal
+					}
+
+					if title != "" && message != "" {
+						go h.notificationService.CreateNotification(ctx.Context(), userId, title, message)
+					}
+
 					responseData, _ := json.Marshal(map[string]interface{}{
 						"type":   "booking_notification",
 						"data":   notificationData,

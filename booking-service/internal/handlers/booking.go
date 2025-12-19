@@ -140,9 +140,9 @@ func (h *BookingHandler) CreateBoxOfficeBooking(c echo.Context) error {
 		return response.Unauthorized(c, "User ID not found in token")
 	}
 
-	userRole := c.Get("role")
-	if userRole != "ticket_staff" {
-		return response.Forbidden(c, "Only ticket staff can create box office bookings")
+	userRole, ok := c.Get("role").(string)
+	if !ok || (userRole != "ticket_staff" && userRole != "admin" && userRole != "manager_staff") {
+		return response.Forbidden(c, "Only ticket staff, managers, and admins can create box office bookings")
 	}
 
 	booking, err := bookingService.CreateBoxOfficeBooking(c.Request().Context(), userId, request.ShowtimeId, request.SeatIds)
