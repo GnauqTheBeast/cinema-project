@@ -5,9 +5,9 @@ services:
     image: postgres:15-alpine
     container_name: postgres
     environment:
-      POSTGRES_DB: cinema_db
-      POSTGRES_USER: cinema_user
-      POSTGRES_PASSWORD: cinema_password
+      POSTGRES_DB: cinema_app
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
