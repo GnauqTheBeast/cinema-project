@@ -59,6 +59,7 @@ type MovieResponse struct {
 type GetMoviesResponse struct {
 	Movies []*MovieResponse `json:"movies"`
 	Meta   *MetaResponse    `json:"meta"`
+	Hello  string           `json:"hello""`
 }
 
 type MetaResponse struct {
@@ -148,6 +149,7 @@ func ToMoviesResponse(movies []*Movie, page, size, total int) *GetMoviesResponse
 			Total:      total,
 			TotalPages: totalPages,
 		},
+		Hello: "world",
 	}
 }
 
