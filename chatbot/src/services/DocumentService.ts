@@ -1,12 +1,12 @@
 import { Pool } from 'pg'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import { Document, DocumentStatus, DocumentChunk } from '../models'
-import { DocumentDatastore, ChunkDatastore } from '../datastore'
-import { CacheManager } from '../pkg/caching'
-import { TextExtractor, splitIntoChunks, ChunkConfig } from '../utils'
-import { EmbeddingService } from './EmbeddingService'
-import { logger } from '../utils'
+import { Document, DocumentStatus, DocumentChunk } from '../models/index.js'
+import { DocumentDatastore, ChunkDatastore } from '../datastore/index.js'
+import { CacheManager } from '../pkg/caching/index.js'
+import { TextExtractor, splitIntoChunks, ChunkConfig } from '../utils/index.js'
+import { EmbeddingService } from './EmbeddingService.js'
+import { logger } from '../utils/index.js'
 
 export class DocumentService {
     private cacheManager: CacheManager

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express'
-import analyticsService from '../services/analytics-service'
-import { AnalyticsFilters } from '../types'
+import analyticsService from '../services/analytics-service.js'
+import { AnalyticsFilters } from '../types/index.js'
 
 const router = Router()
 

@@ -1,7 +1,7 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import AuthController from '../controllers/authController.js';
 import { authenticateToken, requireAdmin } from '../middleware/permissionMiddleware.js';
-import { IController } from '../types';
+import { IController } from '../types/index.js';
 
 class AuthRoutes {
   private router: Router;

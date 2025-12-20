@@ -1,10 +1,10 @@
 import { Request, Response } from 'express'
 import { UploadedFile } from 'express-fileupload'
 import path from 'path'
-import { DocumentService } from '../services'
-import { DocumentResponse } from '../types'
-import { createDirIfNotExists, sanitizeFilename } from '../utils'
-import { logger } from '../utils/logger'
+import { DocumentService } from '../services/index.js'
+import { DocumentResponse } from '../types/index.js'
+import { createDirIfNotExists, sanitizeFilename } from '../utils/index.js'
+import { logger } from '../utils/logger.js'
 
 export class DocumentHandler {
     private uploadDir = './uploads'

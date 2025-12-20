@@ -1,19 +1,19 @@
 import { Pool } from 'pg'
 import crypto from 'crypto'
 import { GoogleGenAI } from '@google/genai'
-import { Chat, DocumentChunk } from '../models'
-import { ChatDatastore, ChunkDatastore } from '../datastore'
+import { Chat, DocumentChunk } from '../models/index.js'
+import { ChatDatastore, ChunkDatastore } from '../datastore/index.js'
 import {
     CACHE_TTL_12_HOUR,
     CACHE_TTL_15_MINS,
     CACHE_TTL_5_MINS,
     CacheManager,
-} from '../pkg/caching'
-import { KeyManager } from '../pkg/keyManager'
-import { EmbeddingService } from './EmbeddingService'
-import { QuestionResponse, SimilarDocument } from '../types'
-import { cosineSimilarity, validateAndSanitizeContext, validateQuestion } from '../utils'
-import { logger } from '../utils'
+} from '../pkg/caching/index.js'
+import { KeyManager } from '../pkg/keyManager/index.js'
+import { EmbeddingService } from './EmbeddingService.js'
+import { QuestionResponse, SimilarDocument } from '../types/index.js'
+import { cosineSimilarity, validateAndSanitizeContext, validateQuestion } from '../utils/index.js'
+import { logger } from '../utils/index.js'
 
 export class ChatService {
     private embeddingService: EmbeddingService

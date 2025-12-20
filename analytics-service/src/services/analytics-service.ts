@@ -1,13 +1,13 @@
-import bookingGrpcClient from '../grpc/booking-client'
-import movieGrpcClient from '../grpc/movie-client'
-import redisClient from '../config/redis'
+import bookingGrpcClient from '../grpc/booking-client.js'
+import movieGrpcClient from '../grpc/movie-client.js'
+import redisClient from '../config/redis.js'
 import {
     RevenueByMovie,
     RevenueByShowtime,
     RevenueByBookingType,
     AnalyticsFilters,
     RevenueByGenre,
-} from '../types'
+} from '../types/index.js'
 
 class AnalyticsService {
     async getRevenueByTime(filters: AnalyticsFilters): Promise<any[]> {

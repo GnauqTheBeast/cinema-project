@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import {NextFunction, Request, Response} from 'express';
 import {QueryTypes} from 'sequelize';
 
-import {sequelize, User} from '../models';
+import {sequelize, User} from '../models/index.js';
 import { userClient } from '../services/userGrpcClient.js';
 import {redisClient, redisPubSubClient} from '../config/redis.js';
 import { PermissionService } from '../services/permissionService.js';
@@ -22,7 +22,7 @@ import {
   IRegisterRequest,
   IVerifyOtpRequest,
   UserStatus
-} from '../types';
+} from '../types/index.js';
 
 class AuthController {
   static readonly ALLOWED_DISCRIMINATOR = 'Customer';

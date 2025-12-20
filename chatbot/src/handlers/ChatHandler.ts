@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
-import { ChatService } from '../services'
-import { QuestionRequest } from '../types'
-import { logger } from '../utils'
+import { ChatService } from '../services/index.js'
+import { QuestionRequest } from '../types/index.js'
+import { logger } from '../utils/index.js'
 import crypto from 'crypto'
 
 interface ConversationMessage {

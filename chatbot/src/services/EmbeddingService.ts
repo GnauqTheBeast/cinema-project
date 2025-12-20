@@ -1,6 +1,6 @@
 import axios from 'axios'
-import { KeyManager } from '../pkg/keyManager'
-import { GeminiEmbeddingRequest, GeminiEmbeddingResponse } from '../types'
+import { KeyManager } from '../pkg/keyManager/index.js'
+import { GeminiEmbeddingRequest, GeminiEmbeddingResponse } from '../types/index.js'
 
 export class EmbeddingService {
     private keyManager: KeyManager

@@ -1,5 +1,5 @@
 import { createClient, RedisClientType } from 'redis';
-import { IRedisManager } from '../types';
+import { IRedisManager } from '../types/index.js';
 
 class RedisManager implements IRedisManager {
   private static instance: RedisManager | null = null;
