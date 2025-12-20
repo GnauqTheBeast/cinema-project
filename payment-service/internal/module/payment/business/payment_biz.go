@@ -81,7 +81,7 @@ func (b *paymentBiz) CreatePayment(ctx context.Context, bookingId string, amount
 		BookingId:   bookingId,
 		Amount:      amount,
 		PaymentDate: time.Now(),
-		Status:      "pending",
+		Status:      entity.PaymentStatusPending,
 		CreatedAt:   time.Now(),
 	}
 
@@ -98,8 +98,6 @@ func (b *paymentBiz) GetPaymentByBookingId(ctx context.Context, bookingId string
 }
 
 func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.SePayWebhook) error {
-	// - QR code: "QH" + 32 alphanumeric chars (UUID without hyphens)
-	// - Example: "QHFFBEF88798BE46D9917B5D41747F0DC1"
 	uuidNoHyphens := b.extractUUIDNoHyphens(webhook.Content, webhook.Description)
 	if uuidNoHyphens == "" {
 		return fmt.Errorf("failed to extract booking UUID from webhook content: %s", webhook.Content)
@@ -119,7 +117,7 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 		return nil
 	}
 
-	if payment.Status == "completed" {
+	if payment.Status == entity.PaymentStatusCompleted {
 		return fmt.Errorf("payment already completed with different transaction")
 	}
 
@@ -136,8 +134,8 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 		"payment_id":     payment.Id,
 		"booking_id":     payment.BookingId,
 		"amount":         payment.Amount,
-		"status":         "completed",
-		"payment_method": "bank_transfer",
+		"status":         entity.PaymentStatusPending,
+		"payment_method": entity.PaymentMethodBankTransfer,
 		"transaction_id": transactionId,
 		"timestamp":      time.Now().Unix(),
 	}
@@ -146,8 +144,8 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 		fields := map[string]interface{}{
 			"transaction_id": transactionId,
 			"payload":        payload,
-			"status":         "completed",
-			"payment_method": "bank_transfer",
+			"status":         entity.PaymentStatusPending,
+			"payment_method": entity.PaymentMethodBankTransfer,
 			"updated_at":     time.Now(),
 		}
 
@@ -156,7 +154,7 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 		}
 
 		// Alert: This grpc call to external service
-		// Dont put any logic after CreateOutboxEvent in Tx and if Tx failed
+		// Don't put any logic after CreateOutboxEvent in Tx and if Tx failed
 		// Then EventCreated would not be rolled back
 		return b.outboxClient.CreateOutboxEvent(ctx, string(entity.EventTypePaymentCompleted), eventData)
 	})
@@ -169,17 +167,16 @@ func (b *paymentBiz) VerifyCryptoPayment(ctx context.Context, req *entity.Crypto
 		return fmt.Errorf("blockchain verification failed: %w", err)
 	}
 
-	// Check if payment already completed with this transaction
 	payment := new(entity.Payment)
 	err := b.db.NewSelect().
 		Model(payment).
 		Where("transaction_id = ?", req.TxHash).
-		Where("payment_method = ?", "cryptocurrency").
+		Where("payment_method = ?", entity.PaymentMethodCryptoCurrency).
 		Scan(ctx)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
-	if payment.Status == "completed" {
+	if payment.Status == entity.PaymentStatusCompleted {
 		return nil
 	}
 
@@ -191,8 +188,8 @@ func (b *paymentBiz) VerifyCryptoPayment(ctx context.Context, req *entity.Crypto
 
 		fields := map[string]interface{}{
 			"transaction_id": req.TxHash,
-			"payment_method": "cryptocurrency",
-			"status":         "completed",
+			"payment_method": entity.PaymentMethodCryptoCurrency,
+			"status":         entity.PaymentStatusCompleted,
 			"updated_at":     time.Now(),
 		}
 
@@ -204,13 +201,13 @@ func (b *paymentBiz) VerifyCryptoPayment(ctx context.Context, req *entity.Crypto
 			"payment_id":     payment.Id,
 			"booking_id":     req.BookingId,
 			"amount":         req.AmountVnd,
-			"payment_method": "cryptocurrency",
+			"payment_method": entity.PaymentMethodCryptoCurrency,
 			"tx_hash":        req.TxHash,
-			"status":         "completed",
+			"status":         entity.PaymentStatusCompleted,
 		}
 
 		// Alert: This grpc call to external service
-		// Dont put any logic after CreateOutBoxEvent in Tx and if Tx failed
+		// Don't put any logic after CreateOutBoxEvent in Tx and if Tx failed
 		// Then EventCreated would not be rolled back
 		return b.outboxClient.CreateOutboxEvent(ctx, string(entity.EventTypePaymentCompleted), eventData)
 	})
@@ -228,7 +225,6 @@ func (b *paymentBiz) extractUUIDNoHyphens(content, description string) string {
 		return uuid
 	}
 
-	// Try description
 	if uuid := extractUUIDFromText(description); uuid != "" {
 		return uuid
 	}

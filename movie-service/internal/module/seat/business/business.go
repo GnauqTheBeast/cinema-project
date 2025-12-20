@@ -136,14 +136,7 @@ func (b *business) GetSeats(ctx context.Context, page, size int, search, roomId,
 		Offset: offset,
 	}
 
-	callback := func() ([]*entity.Seat, error) {
-		return b.repository.GetMany(ctx, size, offset, search, roomId, rowNumber, seatType, status)
-	}
-
-	seats, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, keySeatsListWithFilters(pagingObj, search, roomId, rowNumber, seatType, status), CACHE_TTL_30_MINS, callback)
-	if err != nil {
-		return nil, 0, fmt.Errorf("failed to get seats: %w", err)
-	}
+	seats, err := b.repository.GetMany(ctx, size, offset, search, roomId, rowNumber, seatType, status)
 
 	callbackTotal := func() (int, error) {
 		return b.repository.GetTotalCount(ctx, search, roomId, rowNumber, seatType, status)
@@ -173,10 +166,7 @@ func (b *business) GetSeatsByRoom(ctx context.Context, roomId string) (*entity.S
 
 	lockedSeats, err := b.getLockedSeats(ctx, roomId)
 	if err != nil {
-		return &entity.SeatsDetail{
-			Seats:       seats,
-			LockedSeats: []*entity.Seat{},
-		}, nil
+		return nil, nil
 	}
 
 	lockedSeatsList := make([]*entity.Seat, 0)
@@ -254,10 +244,7 @@ func (b *business) GetSeatsByShowtime(ctx context.Context, showtimeId string) (*
 
 	lockedSeats, err := b.getLockedSeatsByShowtime(ctx, showtimeId)
 	if err != nil {
-		return &entity.SeatsDetail{
-			Seats:       seats,
-			LockedSeats: []*entity.Seat{},
-		}, nil
+		return nil, nil
 	}
 
 	lockedSeatsList := make([]*entity.Seat, 0)

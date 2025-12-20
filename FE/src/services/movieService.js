@@ -40,7 +40,7 @@ export const movieService = {
 
   getShowingMovies: async () => {
     try {
-      const response = await movieApi.get('/movies?status=showing')
+      const response = await movieApi.get('/movies?status=SHOWING')
       return response.data
     } catch (error) {
       console.error('Error fetching now showing movies:', error)
@@ -50,7 +50,7 @@ export const movieService = {
 
   getUpcomingMovies: async () => {
     try {
-      const response = await movieApi.get('/movies?status=upcoming')
+      const response = await movieApi.get('/movies?status=UPCOMING')
       return response.data
     } catch (error) {
       console.error('Error fetching upcoming movies:', error)

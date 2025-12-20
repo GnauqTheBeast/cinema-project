@@ -151,7 +151,7 @@ func (w *Worker) handleBookingCreated(ctx context.Context, event models.OutboxEv
 	for _, seatId := range seatIds {
 		lockKey := fmt.Sprintf("seat_lock:%s:%s", showtimeId, seatId)
 
-		if err := w.redisClient.Set(ctx, lockKey, bookingID, 6*time.Hour).Err(); err != nil {
+		if err := w.redisClient.Set(ctx, lockKey, bookingID, 15*time.Minute).Err(); err != nil {
 			w.logger.Error("Failed to cache seat lock %s: %v", lockKey, err)
 		}
 	}
@@ -185,7 +185,8 @@ func (w *Worker) handlePaymentCompleted(ctx context.Context, event models.Outbox
 		amount = float64(amountInt)
 	}
 
-	resp, err := w.bookingClient.UpdateBookingStatusWithResponse(ctx, bookingID, "confirmed")
+	// use enum uppercase
+	resp, err := w.bookingClient.UpdateBookingStatusWithResponse(ctx, bookingID, "CONFIRMED")
 	if err != nil {
 		return fmt.Errorf("failed to update booking status: %w", err)
 	}
@@ -206,7 +207,7 @@ func (w *Worker) handlePaymentCompleted(ctx context.Context, event models.Outbox
 		"booking_id": bookingID,
 		"payment_id": paymentID,
 		"amount":     amount,
-		"status":     "completed",
+		"status":     "COMPLETED",
 		"timestamp":  time.Now().Unix(),
 		"title":      "Payment Successful",
 		"message":    fmt.Sprintf("Your booking %s has been confirmed. Payment of %.2f VND received.", bookingID, amount),
@@ -234,8 +235,6 @@ func (w *Worker) handlePaymentCompleted(ctx context.Context, event models.Outbox
 			emailData["seats"] = seats
 		}
 
-		// Don't override "to" with details.UserEmail as it may be corrupted
-
 		if details.Showtime != nil {
 			emailData["showtime"] = map[string]interface{}{
 				"showtime_id": details.Showtime.ShowtimeId,
@@ -257,9 +256,8 @@ func (w *Worker) handlePaymentCompleted(ctx context.Context, event models.Outbox
 		Topic: userNotificationTopic,
 		Data:  notificationData,
 	}
-	_ = w.pubsub.Publish(ctx, userMessage)
 
-	return nil
+	return w.pubsub.Publish(ctx, userMessage)
 }
 
 func (w *Worker) markEventAsSent(ctx context.Context, eventID int) error {

@@ -9,18 +9,18 @@ import (
 type SeatStatus string
 
 const (
-	SeatStatusAvailable   SeatStatus = "available"
-	SeatStatusOccupied    SeatStatus = "occupied"
-	SeatStatusMaintenance SeatStatus = "maintenance"
-	SeatStatusBlocked     SeatStatus = "blocked"
+	SeatStatusAvailable   SeatStatus = "AVAILABLE"
+	SeatStatusOccupied    SeatStatus = "OCCUPIED"
+	SeatStatusMaintenance SeatStatus = "MAINTENANCE"
+	SeatStatusBlocked     SeatStatus = "BLOCKED"
 )
 
 type SeatType string
 
 const (
-	SeatTypeRegular SeatType = "regular"
-	SeatTypeVIP     SeatType = "vip"
-	SeatTypeCouple  SeatType = "couple"
+	SeatTypeRegular SeatType = "REGULAR"
+	SeatTypeVIP     SeatType = "VIP"
+	SeatTypeCouple  SeatType = "COUPLE"
 )
 
 type Seat struct {
@@ -30,8 +30,8 @@ type Seat struct {
 	RoomId     string     `bun:"room_id,notnull" json:"room_id"`
 	SeatNumber string     `bun:"seat_number,notnull" json:"seat_number"`
 	RowNumber  string     `bun:"row_number,notnull" json:"row_number"`
-	SeatType   SeatType   `bun:"seat_type,notnull,default:'regular'" json:"seat_type"`
-	Status     SeatStatus `bun:"status,notnull,default:'available'" json:"status"`
+	SeatType   SeatType   `bun:"seat_type,notnull,default:'REGULAR'" json:"seat_type"`
+	Status     SeatStatus `bun:"status,notnull,default:'AVAILABLE'" json:"status"`
 	CreatedAt  time.Time  `bun:"created_at,nullzero,default:current_timestamp" json:"created_at"`
 	UpdatedAt  *time.Time `bun:"updated_at" json:"updated_at,omitempty"`
 }

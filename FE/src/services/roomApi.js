@@ -67,15 +67,15 @@ export const roomService = {
 
   // Room types and statuses for form options
   getRoomTypes: () => [
-    { value: 'standard', label: 'Standard' },
-    { value: 'vip', label: 'VIP' },
-    { value: 'imax', label: 'IMAX' },
+    { value: 'STANDARD', label: 'Standard' },
+    { value: 'VIP', label: 'VIP' },
+    { value: 'IMAX', label: 'IMAX' },
   ],
 
   getRoomStatuses: () => [
-    { value: 'active', label: 'Hoạt động' },
-    { value: 'inactive', label: 'Không hoạt động' },
-    { value: 'maintenance', label: 'Bảo trì' },
+    { value: 'ACTIVE', label: 'Hoạt động' },
+    { value: 'INACTIVE', label: 'Không hoạt động' },
+    { value: 'MAINTENANCE', label: 'Bảo trì' },
   ],
 }
 

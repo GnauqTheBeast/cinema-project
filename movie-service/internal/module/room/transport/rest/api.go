@@ -3,6 +3,7 @@ package rest
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"movie-service/internal/module/room/business"
 	"movie-service/internal/module/room/entity"
@@ -40,6 +41,9 @@ func (h *handler) GetRooms(c *gin.Context) {
 	if query.Size == 0 {
 		query.Size = 10
 	}
+
+	query.RoomType = entity.RoomType(strings.ToUpper(string(query.RoomType)))
+	query.Status = entity.RoomStatus(strings.ToUpper(string(query.Status)))
 
 	rooms, total, err := h.biz.GetRooms(c.Request.Context(), query.Page, query.Size, query.Search, query.RoomType, query.Status)
 	if err != nil {

@@ -20,7 +20,7 @@ type Movie struct {
 	Description string     `bun:"description" json:"description"`
 	TrailerURL  string     `bun:"trailer_url" json:"trailer_url"`
 	PosterURL   string     `bun:"poster_url" json:"poster_url"`
-	Status      string     `bun:"status,notnull,default:'upcoming'" json:"status"`
+	Status      string     `bun:"status,notnull,default:'UPCOMING'" json:"status"`
 	CreatedAt   *time.Time `bun:"created_at,nullzero,default:current_timestamp" json:"created_at"`
 	UpdatedAt   *time.Time `bun:"updated_at" json:"updated_at"`
 

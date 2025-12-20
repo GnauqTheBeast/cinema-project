@@ -275,7 +275,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Description: "After the devastating events of Avengers: Infinity War, the universe is in ruins due to the efforts of the Mad Titan, Thanos.",
 			TrailerURL:  "https://www.youtube.com/watch?v=TcMBFSGVi1c",
 			PosterURL:   "https://image.tmdb.org/t/p/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg",
-			Status:      "showing",
+			Status:      "SHOWING",
 			CreatedAt:   &now,
 		},
 		{
@@ -290,7 +290,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Description: "With Spider-Man's identity now revealed, Peter asks Doctor Strange for help. When a spell goes wrong, dangerous foes from other worlds start to appear.",
 			TrailerURL:  "https://www.youtube.com/watch?v=JfVOs4VSpmA",
 			PosterURL:   "https://image.tmdb.org/t/p/w500/1g0dhYtq4irTY1GPXvft6k4YLjm.jpg",
-			Status:      "showing",
+			Status:      "SHOWING",
 			CreatedAt:   &now,
 		},
 		{
@@ -305,7 +305,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Description: "After thirty years, Maverick is still pushing the envelope as a top naval aviator, but must confront ghosts of his past when he leads TOP GUN's elite graduates on a mission.",
 			TrailerURL:  "https://www.youtube.com/watch?v=g4U4BQW9OEk",
 			PosterURL:   "https://image.tmdb.org/t/p/w500/62HCnUTziyWcpDaBO2i1DX17ljH.jpg",
-			Status:      "upcoming",
+			Status:      "UPCOMING",
 			CreatedAt:   &now,
 		},
 		{
@@ -320,7 +320,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Description: "Paul Atreides, a brilliant and gifted young man born into a great destiny beyond his understanding, must travel to the most dangerous planet in the universe.",
 			TrailerURL:  "https://www.youtube.com/watch?v=8g18jFHCLXk",
 			PosterURL:   "https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg",
-			Status:      "showing",
+			Status:      "SHOWING",
 			CreatedAt:   &now,
 		},
 		{
@@ -335,7 +335,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Description: "When a sadistic serial killer begins murdering key political figures in Gotham, Batman is forced to investigate the city's hidden corruption and question his family's involvement.",
 			TrailerURL:  "https://www.youtube.com/watch?v=mqqft2x_Aa4",
 			PosterURL:   "https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg",
-			Status:      "showing",
+			Status:      "SHOWING",
 			CreatedAt:   &now,
 		},
 	}
@@ -356,40 +356,40 @@ func SeedRooms(ctx context.Context, db *bun.DB) error {
 			Id:         uuid.New().String(),
 			RoomNumber: 1,
 			Capacity:   120,
-			RoomType:   "standard",
-			Status:     "active",
+			RoomType:   "STANDARD",
+			Status:     "ACTIVE",
 			CreatedAt:  now,
 		},
 		{
 			Id:         uuid.New().String(),
 			RoomNumber: 2,
 			Capacity:   150,
-			RoomType:   "standard",
-			Status:     "active",
+			RoomType:   "STANDARD",
+			Status:     "ACTIVE",
 			CreatedAt:  now,
 		},
 		{
 			Id:         uuid.New().String(),
 			RoomNumber: 3,
 			Capacity:   200,
-			RoomType:   "imax",
-			Status:     "active",
+			RoomType:   "IMAX",
+			Status:     "ACTIVE",
 			CreatedAt:  now,
 		},
 		{
 			Id:         uuid.New().String(),
 			RoomNumber: 4,
 			Capacity:   80,
-			RoomType:   "vip",
-			Status:     "active",
+			RoomType:   "VIP",
+			Status:     "ACTIVE",
 			CreatedAt:  now,
 		},
 		{
 			Id:         uuid.New().String(),
 			RoomNumber: 5,
 			Capacity:   100,
-			RoomType:   "standard",
-			Status:     "active",
+			RoomType:   "STANDARD",
+			Status:     "ACTIVE",
 			CreatedAt:  now,
 		},
 	}
@@ -440,7 +440,7 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			RoleId:      &adminRoleId,
 			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
 			Gender:      "male",
-			Status:      "active",
+			Status:      "ACTIVE",
 			CreatedAt:   now,
 		},
 		{
@@ -453,7 +453,7 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			Address:     stringPtr("123 Manager Street"),
 			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
 			Gender:      "male",
-			Status:      "active",
+			Status:      "ACTIVE",
 			CreatedAt:   now,
 		},
 		{
@@ -466,7 +466,7 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			Address:     stringPtr("123 Ticket Street"),
 			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
 			Gender:      "male",
-			Status:      "active",
+			Status:      "ACTIVE",
 			CreatedAt:   now,
 		},
 		{
@@ -479,7 +479,7 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			RoleId:      &customerRoleId,
 			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
 			Gender:      "female",
-			Status:      "active",
+			Status:      "ACTIVE",
 			CreatedAt:   now,
 		},
 		{
@@ -492,7 +492,7 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			RoleId:      &customerRoleId,
 			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
 			Gender:      "male",
-			Status:      "active",
+			Status:      "ACTIVE",
 			CreatedAt:   now,
 		},
 		{
@@ -505,7 +505,7 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			Address:     stringPtr("123 Emma Street"),
 			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
 			Gender:      "female",
-			Status:      "active",
+			Status:      "ACTIVE",
 			CreatedAt:   now,
 		},
 	}
@@ -544,7 +544,7 @@ func SeedBookings(ctx context.Context, db *bun.DB) error {
 			UserId:      users[3].Id,
 			ShowtimeId:  showtimes[0].Id,
 			TotalAmount: 200000,
-			Status:      "confirmed",
+			Status:      "CONFIRMED",
 			CreatedAt:   time.Now().Add(-24 * time.Hour),
 		},
 		{
@@ -552,7 +552,7 @@ func SeedBookings(ctx context.Context, db *bun.DB) error {
 			UserId:      users[3].Id,
 			ShowtimeId:  showtimes[1].Id,
 			TotalAmount: 100000,
-			Status:      "confirmed",
+			Status:      "CONFIRMED",
 			CreatedAt:   time.Now().Add(-48 * time.Hour),
 		},
 		{
@@ -560,7 +560,7 @@ func SeedBookings(ctx context.Context, db *bun.DB) error {
 			UserId:      users[3].Id,
 			ShowtimeId:  showtimes[2].Id,
 			TotalAmount: 300000,
-			Status:      "pending",
+			Status:      "PENDING",
 			CreatedAt:   time.Now().Add(-72 * time.Hour),
 		},
 		{
@@ -568,7 +568,7 @@ func SeedBookings(ctx context.Context, db *bun.DB) error {
 			UserId:      users[1].Id,
 			ShowtimeId:  showtimes[0].Id,
 			TotalAmount: 150000,
-			Status:      "confirmed",
+			Status:      "CONFIRMED",
 			CreatedAt:   time.Now().Add(-96 * time.Hour),
 		},
 		{
@@ -576,7 +576,7 @@ func SeedBookings(ctx context.Context, db *bun.DB) error {
 			UserId:      users[2].Id,
 			ShowtimeId:  showtimes[1].Id,
 			TotalAmount: 450000,
-			Status:      "cancelled",
+			Status:      "CANCELLED",
 			CreatedAt:   time.Now().Add(-120 * time.Hour),
 		},
 	}
@@ -726,21 +726,21 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 		vipRows     []string
 		coupleRows  []string
 	}{
-		"standard": {
+		"STANDARD": {
 			rows:        []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"},
 			seatsPerRow: 8,
 			regularRows: []string{"A", "B", "C", "D", "E"},
 			vipRows:     []string{"F", "G", "H", "I", "J", "K", "L"},
 			coupleRows:  []string{},
 		},
-		"imax": {
+		"IMAX": {
 			rows:        []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"},
 			seatsPerRow: 14,
 			regularRows: []string{"A", "B", "C", "D", "E"},
 			vipRows:     []string{"F", "G", "H", "I", "J", "K", "L"},
 			coupleRows:  []string{"M", "N", "O"},
 		},
-		"vip": {
+		"VIP": {
 			rows:        []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"},
 			seatsPerRow: 8,
 			regularRows: []string{"A", "B", "C"},
@@ -756,32 +756,31 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 		}
 
 		for _, row := range config.rows {
-			// Special handling for couple rows - only 7 seats per row
 			seatsPerRow := config.seatsPerRow
 			if contains(config.coupleRows, row) {
 				seatsPerRow = 7
 			}
 
 			for seatNum := 1; seatNum <= seatsPerRow; seatNum++ {
-				seatType := "regular"
+				seatType := "REGULAR"
 
 				for _, regularRow := range config.regularRows {
 					if row == regularRow {
-						seatType = "regular"
+						seatType = "REGULAR"
 						break
 					}
 				}
 
 				for _, vipRow := range config.vipRows {
 					if row == vipRow {
-						seatType = "vip"
+						seatType = "VIP"
 						break
 					}
 				}
 
 				for _, coupleRow := range config.coupleRows {
 					if row == coupleRow {
-						seatType = "couple"
+						seatType = "COUPLE"
 						break
 					}
 				}
@@ -792,12 +791,12 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 					SeatNumber: fmt.Sprintf("%02d", seatNum),
 					RowNumber:  row,
 					SeatType:   seatType,
-					Status:     "available",
+					Status:     "AVAILABLE",
 					CreatedAt:  now,
 				}
 				seats = append(seats, seat)
 
-				if seatType == "couple" {
+				if seatType == "COUPLE" {
 					seatNum++
 					if seatNum <= seatsPerRow {
 						coupleSeat := &models.Seat{
@@ -806,7 +805,7 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 							SeatNumber: fmt.Sprintf("%02d", seatNum),
 							RowNumber:  row,
 							SeatType:   seatType,
-							Status:     "available",
+							Status:     "AVAILABLE",
 							CreatedAt:  now,
 						}
 						seats = append(seats, coupleSeat)
@@ -839,12 +838,12 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 	var movies []models.Movie
 	var rooms []models.Room
 
-	err := db.NewSelect().Model(&movies).Where("status IN (?)", bun.In([]string{"showing", "upcoming"})).Scan(ctx)
+	err := db.NewSelect().Model(&movies).Where("status IN (?)", bun.In([]string{"SHOWING", "UPCOMING"})).Scan(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get movies: %w", err)
 	}
 
-	err = db.NewSelect().Model(&rooms).Where("status = ?", "active").Scan(ctx)
+	err = db.NewSelect().Model(&rooms).Where("status = ?", "ACTIVE").Scan(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get rooms: %w", err)
 	}
@@ -862,17 +861,17 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 
 	// Price configuration based on room type and time
 	priceConfig := map[string]map[string]float64{
-		"standard": {
+		"STANDARD": {
 			"morning":   8000,
 			"afternoon": 10000,
 			"evening":   12000,
 		},
-		"vip": {
+		"VIP": {
 			"morning":   15000,
 			"afternoon": 18000,
 			"evening":   22000,
 		},
-		"imax": {
+		"IMAX": {
 			"morning":   12000,
 			"afternoon": 15000,
 			"evening":   18000,
@@ -895,10 +894,10 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 				// Ensure each time slot has only ONE format per movie per room per day
 				formats := make([]string, 0)
 				switch room.RoomType {
-				case "imax":
-					formats = []string{"2d", "3d", "imax"}
-				case "standard", "vip":
-					formats = []string{"2d", "3d"}
+				case "IMAX":
+					formats = []string{"2D", "3D", "IMAX"}
+				case "STANDARD", "VIP":
+					formats = []string{"2D", "3D"}
 				}
 
 				// Select format based on movie and room index to avoid duplicates
@@ -921,18 +920,18 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 						basePrice := priceConfig[room.RoomType][period]
 
 						switch selectedFormat {
-						case "3d":
+						case "3D":
 							basePrice += 2000
-						case "imax":
+						case "IMAX":
 							basePrice += 5000
 						}
 
-						status := "scheduled"
+						status := "SCHEDULED"
 						if showtimeStart.Before(now) {
 							if showtimeEnd.Before(now) {
-								status = "completed"
+								status = "COMPLETED"
 							} else {
-								status = "ongoing"
+								status = "ONGOING"
 							}
 						}
 

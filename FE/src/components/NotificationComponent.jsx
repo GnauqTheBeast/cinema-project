@@ -37,8 +37,7 @@ const NotificationComponent = () => {
         title = nestedData.title || 'Booking Update'
         message = nestedData.message || 'Your booking has been updated'
 
-        // Check if booking is confirmed and user is on payment page
-        const isCompleted = nestedData.status === 'completed'
+        const isCompleted = nestedData.status === 'COMPLETED'
         const hasBookingId = !!nestedData.booking_id
         const isOnPaymentPage = location.pathname.includes('/payment')
 

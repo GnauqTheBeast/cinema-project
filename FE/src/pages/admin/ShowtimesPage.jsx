@@ -125,13 +125,13 @@ const ShowtimesPage = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'scheduled':
+      case 'SCHEDULED':
         return 'bg-blue-100 text-blue-800'
-      case 'ongoing':
+      case 'ONGOING':
         return 'bg-green-100 text-green-800'
-      case 'completed':
+      case 'COMPLETED':
         return 'bg-gray-100 text-gray-800'
-      case 'canceled':
+      case 'CANCELED':
         return 'bg-red-100 text-red-800'
       default:
         return 'bg-gray-100 text-gray-800'
@@ -167,7 +167,7 @@ const ShowtimesPage = () => {
   const isUpcoming = (showtime) => {
     const now = new Date()
     const startTime = new Date(showtime.start_time)
-    return startTime > now && showtime.status === 'scheduled'
+    return startTime > now && showtime.status === 'SCHEDULED'
   }
 
   return (

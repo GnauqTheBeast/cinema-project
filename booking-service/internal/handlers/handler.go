@@ -62,7 +62,6 @@ func New(cfg *Config) (http.Handler, error) {
 			routesBooking.GET("/me", bookingHandler.GetBookings, internalMiddleware.RequireAuth(authClient, cacheService))
 			routesBooking.GET("/:id", bookingHandler.GetBookingByID, internalMiddleware.RequireAuth(authClient, cacheService))
 			routesBooking.POST("", bookingHandler.CreateBooking, internalMiddleware.RequireAuth(authClient, cacheService))
-			routesBooking.POST("/box-office", bookingHandler.CreateBoxOfficeBooking, internalMiddleware.RequireAuth(authClient, cacheService))
 		}
 	}
 

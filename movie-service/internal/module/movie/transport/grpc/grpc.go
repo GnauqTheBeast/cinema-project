@@ -93,7 +93,6 @@ func (s *MovieServiceServer) GetShowtimes(ctx context.Context, req *pb.GetShowti
 }
 
 func (s *MovieServiceServer) GetSeatsWithPrice(ctx context.Context, req *pb.GetSeatsWithPriceRequest) (*pb.GetSeatsWithPriceResponse, error) {
-	// Validate input
 	if req.ShowtimeId == "" || len(req.SeatIds) == 0 {
 		return &pb.GetSeatsWithPriceResponse{
 			Success: false,
@@ -101,7 +100,6 @@ func (s *MovieServiceServer) GetSeatsWithPrice(ctx context.Context, req *pb.GetS
 		}, nil
 	}
 
-	// Get showtime to retrieve base price
 	showtime, err := s.showtimeBiz.GetShowtimeById(ctx, req.ShowtimeId)
 	if err != nil {
 		return &pb.GetSeatsWithPriceResponse{
@@ -110,7 +108,6 @@ func (s *MovieServiceServer) GetSeatsWithPrice(ctx context.Context, req *pb.GetS
 		}, nil
 	}
 
-	// Get seats by IDs
 	seats, err := s.seatBiz.GetSeatsByIds(ctx, req.SeatIds)
 	if err != nil {
 		return &pb.GetSeatsWithPriceResponse{
@@ -119,7 +116,6 @@ func (s *MovieServiceServer) GetSeatsWithPrice(ctx context.Context, req *pb.GetS
 		}, nil
 	}
 
-	// Check if all seats were found
 	if len(seats) != len(req.SeatIds) {
 		return &pb.GetSeatsWithPriceResponse{
 			Success: false,
@@ -127,7 +123,6 @@ func (s *MovieServiceServer) GetSeatsWithPrice(ctx context.Context, req *pb.GetS
 		}, nil
 	}
 
-	// Calculate prices and build response
 	var seatPriceData []*pb.SeatPriceData
 	var totalAmount float64
 
@@ -153,7 +148,6 @@ func (s *MovieServiceServer) GetSeatsWithPrice(ctx context.Context, req *pb.GetS
 }
 
 func (s *MovieServiceServer) GetSeatDetails(ctx context.Context, req *pb.GetSeatDetailsRequest) (*pb.GetSeatDetailsResponse, error) {
-	// Validate input
 	if len(req.SeatIds) == 0 {
 		return &pb.GetSeatDetailsResponse{
 			Success: false,
@@ -161,7 +155,6 @@ func (s *MovieServiceServer) GetSeatDetails(ctx context.Context, req *pb.GetSeat
 		}, nil
 	}
 
-	// Get seats by IDs
 	seats, err := s.seatBiz.GetSeatsByIds(ctx, req.SeatIds)
 	if err != nil {
 		return &pb.GetSeatDetailsResponse{
@@ -170,7 +163,6 @@ func (s *MovieServiceServer) GetSeatDetails(ctx context.Context, req *pb.GetSeat
 		}, nil
 	}
 
-	// Check if all seats were found
 	if len(seats) != len(req.SeatIds) {
 		return &pb.GetSeatDetailsResponse{
 			Success: false,
@@ -178,10 +170,8 @@ func (s *MovieServiceServer) GetSeatDetails(ctx context.Context, req *pb.GetSeat
 		}, nil
 	}
 
-	// Build response with seat details
 	var seatDetails []*pb.SeatDetailData
 	for _, seat := range seats {
-		// Parse seat_number to int32
 		seatNumber := int32(0)
 		fmt.Sscanf(seat.SeatNumber, "%d", &seatNumber)
 

@@ -142,7 +142,7 @@ const BoxOfficePage = () => {
   }
 
   const handleSeatSelect = (seat) => {
-    if (seat.status !== 'available') return
+    if (seat.status !== 'AVAILABLE') return
     
     const lockedSeatIds = lockedSeats.map(s => s.id)
     if (lockedSeatIds.includes(seat.id)) return
@@ -172,16 +172,23 @@ const BoxOfficePage = () => {
 
       const response = await boxOfficeService.createBoxOfficeBooking(bookingData)
       
-      if (!response.success) {
+      if (response.code === 200) {
+        setBookingResult(response.data)
+        setSuccess(true)
+        setStep(3)
+      } else {
         setError('Bán vé không thành công.')
-        return
       }
-
-      setBookingResult(response.data)
-      setSuccess(true)
-      setStep(3)
     } catch (err) {
-      setError('Bán vé không thành công.')
+      if (err.response?.status === 400 && err.response?.data?.error === 'Seat already booked') {
+        setError('Một hoặc nhiều ghế đã được đặt bởi người khác. Vui lòng chọn ghế khác.')
+        setSelectedSeats([])
+        fetchSeatsForShowtime(selectedShowtime.id)
+      } else if (err.response?.data?.error) {
+        setError(err.response.data.error)
+      } else {
+        setError('Bán vé không thành công.')
+      }
       console.error('Error creating booking:', err)
     } finally {
       setLoading(false)
@@ -238,19 +245,19 @@ const BoxOfficePage = () => {
     
     if (isSelected) return 'bg-red-600 border-red-500 text-white'
     if (isLocked) return 'bg-orange-600 border-orange-500 text-orange-200 cursor-not-allowed'
-    if (seat.status !== 'available') return 'bg-gray-500 border-gray-400 text-gray-300 cursor-not-allowed'
+    if (seat.status !== 'AVAILABLE') return 'bg-gray-500 border-gray-400 text-gray-300 cursor-not-allowed'
     
-    if (seat.seat_type === 'vip') return 'bg-yellow-600 border-yellow-500 text-white hover:bg-yellow-500'
-    if (seat.seat_type === 'couple') return 'bg-pink-600 border-pink-500 text-white hover:bg-pink-500'
+    if (seat.seat_type === 'VIP') return 'bg-yellow-600 border-yellow-500 text-white hover:bg-yellow-500'
+    if (seat.seat_type === 'COUPLE') return 'bg-pink-600 border-pink-500 text-white hover:bg-pink-500'
     
     return 'bg-green-600 border-green-500 text-white hover:bg-green-500'
   }
 
   const getSeatTypeLabel = (type) => {
     switch (type) {
-      case 'regular': return 'Thường'
-      case 'vip': return 'VIP'
-      case 'couple': return 'Đôi'
+      case 'REGULAR': return 'Thường'
+      case 'VIP': return 'VIP'
+      case 'COUPLE': return 'Đôi'
       default: return type
     }
   }
@@ -573,12 +580,12 @@ const BoxOfficePage = () => {
                                 {Object.entries(rowSeats)
                                   .filter(([_, seat]) => seat !== null)
                                   .map(([seatNumber, seat]) => {
-                                    const isCoupleType = seat.seat_type === 'couple'
+                                    const isCoupleType = seat.seat_type === 'COUPLE'
                                     return (
                                       <button
                                         key={`${row}-${seatNumber}`}
                                         onClick={() => handleSeatSelect(seat)}
-                                        disabled={seat.status !== 'available' || lockedSeats.some(s => s.id === seat.id)}
+                                        disabled={seat.status !== 'AVAILABLE' || lockedSeats.some(s => s.id === seat.id)}
                                         className={`${isCoupleType ? 'w-12' : 'w-8'} h-8 border-2 rounded text-xs font-semibold transition-all hover:scale-110 ${getSeatColor(seat)}`}
                                         title={`${row}${seatNumber.padStart(2, '0')} - ${getSeatTypeLabel(seat.seat_type)} - ${formatCurrency(selectedShowtime.price * (seatTypeMultipliers[seat.seat_type] || 1.0))}`}
                                       >

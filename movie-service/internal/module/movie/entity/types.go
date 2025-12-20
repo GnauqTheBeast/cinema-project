@@ -30,14 +30,14 @@ type UpdateMovieRequest struct {
 }
 
 type UpdateMovieStatusRequest struct {
-	Status string `json:"status" binding:"required,oneof=upcoming showing ended"`
+	Status string `json:"status" binding:"required,oneof=upcoming showing ended UPCOMING SHOWING ENDED"`
 }
 
 type GetMoviesQuery struct {
 	Page   int    `form:"page,default=1" binding:"min=1"`
 	Size   int    `form:"size,default=10" binding:"min=1,max=100"`
 	Search string `form:"search"`
-	Status string `form:"status" binding:"omitempty,oneof=upcoming showing ended"`
+	Status string `form:"status" binding:"omitempty,oneof=upcoming showing ended UPCOMING SHOWING ENDED"`
 }
 
 type MovieResponse struct {

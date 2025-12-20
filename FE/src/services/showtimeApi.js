@@ -116,17 +116,17 @@ export const showtimeService = {
   },
 
   getShowtimeFormats: () => [
-    { value: '2d', label: '2D' },
-    { value: '3d', label: '3D' },
-    { value: 'imax', label: 'IMAX' },
-    { value: '4dx', label: '4DX' },
+    { value: '2D', label: '2D' },
+    { value: '3D', label: '3D' },
+    { value: 'IMAX', label: 'IMAX' },
+    { value: '4DX', label: '4DX' },
   ],
 
   getShowtimeStatuses: () => [
-    { value: 'scheduled', label: 'Đã lên lịch' },
-    { value: 'ongoing', label: 'Đang chiếu' },
-    { value: 'completed', label: 'Hoàn thành' },
-    { value: 'canceled', label: 'Đã hủy' },
+    { value: 'SCHEDULED', label: 'Đã lên lịch' },
+    { value: 'ONGOING', label: 'Đang chiếu' },
+    { value: 'COMPLETED', label: 'Hoàn thành' },
+    { value: 'CANCELED', label: 'Đã hủy' },
   ],
 }
 

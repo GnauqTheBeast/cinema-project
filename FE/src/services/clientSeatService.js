@@ -46,9 +46,9 @@ export const clientSeatService = {
   },
 
   getSeatTypeMultipliers: () => [
-    { value: 'regular', label: 'Thường', multiplier: 1.0 },
-    { value: 'vip', label: 'VIP', multiplier: 1.5 },
-    { value: 'couple', label: 'Đôi', multiplier: 2.5 },
+    { value: 'REGULAR', label: 'Thường', multiplier: 1.0 },
+    { value: 'VIP', label: 'VIP', multiplier: 1.5 },
+    { value: 'COUPLE', label: 'Đôi', multiplier: 2.5 },
   ],
 
   calculateSeatPrice: (seatType, basePrice) => {
@@ -59,16 +59,16 @@ export const clientSeatService = {
   },
 
   getSeatTypes: (basePrice = 50000) => [
-    { value: 'regular', label: 'Thường', price: Math.round(basePrice) },
-    { value: 'vip', label: 'VIP', price: Math.round(basePrice * 1.5) },
-    { value: 'couple', label: 'Đôi', price: Math.round(basePrice * 2.5) },
+    { value: 'REGULAR', label: 'Thường', price: Math.round(basePrice) },
+    { value: 'VIP', label: 'VIP', price: Math.round(basePrice * 1.5) },
+    { value: 'COUPLE', label: 'Đôi', price: Math.round(basePrice * 2.5) },
   ],
 
   getSeatStatuses: () => [
-    { value: 'available', label: 'Có sẵn' },
-    { value: 'occupied', label: 'Đã đặt' },
-    { value: 'maintenance', label: 'Bảo trì' },
-    { value: 'blocked', label: 'Bị khóa' },
+    { value: 'AVAILABLE', label: 'Có sẵn' },
+    { value: 'OCCUPIED', label: 'Đã đặt' },
+    { value: 'MAINTENANCE', label: 'Bảo trì' },
+    { value: 'BLOCKED', label: 'Bị khóa' },
   ],
 }
 

@@ -37,11 +37,8 @@ func NewBookingServer(i *do.Injector) (*BookingServer, error) {
 }
 
 func (s *BookingServer) UpdateBookingStatus(ctx context.Context, req *pb.UpdateBookingStatusRequest) (*pb.UpdateBookingStatusResponse, error) {
-	logrus.Infof("[gRPC] UpdateBookingStatus called for booking %s to status %s", req.BookingId, req.Status)
-
 	userId, err := s.bookingService.UpdateBookingStatus(ctx, req.BookingId, req.Status)
 	if err != nil {
-		logrus.Errorf("[gRPC] Failed to update booking status: %v", err)
 		return &pb.UpdateBookingStatusResponse{
 			Success:   false,
 			Message:   fmt.Sprintf("failed to update booking status: %v", err),
@@ -50,7 +47,6 @@ func (s *BookingServer) UpdateBookingStatus(ctx context.Context, req *pb.UpdateB
 		}, err
 	}
 
-	logrus.Infof("[gRPC] Successfully updated booking %s to status %s (user: %s)", req.BookingId, req.Status, userId)
 	return &pb.UpdateBookingStatusResponse{
 		Success:   true,
 		Message:   "Booking status updated successfully",

@@ -539,7 +539,7 @@ class AuthController {
           email, 
           name, 
           role: role, 
-          status: 'active' 
+          status: 'ACTIVE' 
         }
       });
     } catch (err) {

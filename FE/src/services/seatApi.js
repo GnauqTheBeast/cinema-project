@@ -86,16 +86,16 @@ export const seatService = {
 
   // Seat types and statuses for form options
   getSeatTypes: () => [
-    { value: 'regular', label: 'Thường' },
-    { value: 'vip', label: 'VIP' },
-    { value: 'couple', label: 'Đôi' },
+    { value: 'REGULAR', label: 'Thường' },
+    { value: 'VIP', label: 'VIP' },
+    { value: 'COUPLE', label: 'Đôi' },
   ],
 
   getSeatStatuses: () => [
-    { value: 'available', label: 'Có sẵn' },
-    { value: 'occupied', label: 'Đã đặt' },
-    { value: 'maintenance', label: 'Bảo trì' },
-    { value: 'blocked', label: 'Bị khóa' },
+    { value: 'AVAILABLE', label: 'Có sẵn' },
+    { value: 'OCCUPIED', label: 'Đã đặt' },
+    { value: 'MAINTENANCE', label: 'Bảo trì' },
+    { value: 'BLOCKED', label: 'Bị khóa' },
   ],
 }
 

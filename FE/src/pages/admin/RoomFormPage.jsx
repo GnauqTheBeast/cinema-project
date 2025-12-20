@@ -12,8 +12,8 @@ const RoomFormPage = () => {
   const [formData, setFormData] = useState({
     room_number: '',
     capacity: '',
-    room_type: 'standard',
-    status: 'active',
+    room_type: 'STANDARD',
+    status: 'ACTIVE',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

@@ -14,8 +14,8 @@ const SeatFormPage = () => {
     room_id: '',
     seat_number: '',
     row_number: '',
-    seat_type: 'regular',
-    status: 'available',
+    seat_type: 'REGULAR',
+    status: 'AVAILABLE',
   })
   const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(false)

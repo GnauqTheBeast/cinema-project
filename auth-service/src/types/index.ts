@@ -115,10 +115,10 @@ export interface IHealthCheck {
 }
 
 export enum UserStatus {
-  PENDING = 'pending',
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  SUSPENDED = 'suspended'
+  PENDING = 'PENDING',
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  SUSPENDED = 'SUSPENDED'
 }
 
 export enum HttpStatus {

@@ -3,6 +3,7 @@ package rest
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"movie-service/internal/module/showtime/business"
@@ -41,6 +42,9 @@ func (h *handler) GetShowtimes(c *gin.Context) {
 	if query.Size == 0 {
 		query.Size = 10
 	}
+
+	query.Format = entity.ShowtimeFormat(strings.ToUpper(string(query.Format)))
+	query.Status = entity.ShowtimeStatus(strings.ToUpper(string(query.Status)))
 
 	var dateFrom, dateTo *time.Time
 	if query.DateFrom != "" {

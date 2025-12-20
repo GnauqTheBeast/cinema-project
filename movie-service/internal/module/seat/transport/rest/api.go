@@ -3,6 +3,7 @@ package rest
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"movie-service/internal/module/seat/business"
 	"movie-service/internal/module/seat/entity"
@@ -40,6 +41,9 @@ func (h *handler) GetSeats(c *gin.Context) {
 	if query.Size == 0 {
 		query.Size = 10
 	}
+
+	query.SeatType = entity.SeatType(strings.ToUpper(string(query.SeatType)))
+	query.Status = entity.SeatStatus(strings.ToUpper(string(query.Status)))
 
 	seats, total, err := h.biz.GetSeats(c.Request.Context(), query.Page, query.Size, query.Search, query.RoomId, query.RowNumber, query.SeatType, query.Status)
 	if err != nil {

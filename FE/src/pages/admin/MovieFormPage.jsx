@@ -22,7 +22,7 @@ export default function MovieFormPage() {
     description: '',
     trailer_url: '',
     poster_url: '',
-    status: 'upcoming',
+    status: 'UPCOMING',
   })
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function MovieFormPage() {
         description: movie.description || '',
         trailer_url: movie.trailer_url || '',
         poster_url: movie.poster_url || '',
-        status: movie.status || 'upcoming',
+        status: movie.status || 'UPCOMING',
       })
       setError('')
     } catch (err) {
@@ -313,9 +313,9 @@ export default function MovieFormPage() {
                     boxSizing: 'border-box',
                   }}
                 >
-                  <option value="upcoming">Upcoming</option>
-                  <option value="showing">Now Showing</option>
-                  <option value="ended">Ended</option>
+                  <option value="UPCOMING">Upcoming</option>
+                  <option value="SHOWING">Now Showing</option>
+                  <option value="ENDED">Ended</option>
                 </select>
               </div>
             </div>

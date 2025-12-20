@@ -51,12 +51,6 @@ func RequireAuth(auth AuthService, cacheService caching.Cache) echo.MiddlewareFu
 			}
 
 			status, role, permissions, err := auth.Validate(c.Request().Context(), token)
-			fmt.Println(
-				"status", status,
-				"role", role,
-				"permissions", permissions,
-				"err", err,
-			)
 			if err != nil {
 				return response.Unauthorized(c, "Unauthorized: token validation failed")
 			}

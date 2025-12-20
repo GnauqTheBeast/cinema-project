@@ -43,7 +43,7 @@ export async function startGrpcServer(): Promise<void> {
             password,
             role_id: role_id || null,
             address: address || null,
-            status: 'pending'
+            status: 'PENDING'
           } as any);
           await models.CustomerProfile.create({
             id: uuidv4(),
@@ -94,7 +94,7 @@ export async function startGrpcServer(): Promise<void> {
         const { email } = call.request;
         const user = await models.User.findOne({ where: { email } });
         if (!user) return callback({ code: grpc.status.NOT_FOUND, message: 'user not found' } as any);
-        await (user as any).update({ status: 'active' });
+        await (user as any).update({ status: 'ACTIVE' });
         callback(null, { success: true });
       } catch (e: any) {
         callback({ code: grpc.status.INTERNAL, message: e.message } as any);
@@ -122,7 +122,7 @@ export async function startGrpcServer(): Promise<void> {
             password,
             role_id: role_id || null,
             address: address || null,
-            status: 'active' // Staff accounts are active immediately
+            status: 'ACTIVE' // Staff accounts are active immediately
           } as any);
 
           // Create staff profile
@@ -140,7 +140,7 @@ export async function startGrpcServer(): Promise<void> {
         } else {
           // Update existing user to active and staff role
           await (existing as any).update({
-            status: 'active',
+            status: 'ACTIVE',
             role_id: role_id || existing.get('role_id'),
             name: name || existing.get('name'),
             address: address || existing.get('address')

@@ -28,7 +28,7 @@ const generateMockBookings = () => {
       customer_id: `customer_${Math.floor(Math.random() * 100) + 1}`,
       showtime_id: `showtime_${Math.floor(Math.random() * 50) + 1}`,
       total_amount: (basePrice + priceVariation) * quantity,
-      status: ['completed', 'completed', 'completed', 'pending', 'cancelled'][
+      status: ['COMPLETED', 'COMPLETED', 'COMPLETED', 'PENDING', 'CANCELLED'][
         Math.floor(Math.random() * 5)
       ],
       staff_id: `staff_${Math.floor(Math.random() * 10) + 1}`,
@@ -40,7 +40,7 @@ const generateMockBookings = () => {
     })
   }
 
-  return bookings.filter((booking) => booking.status === 'completed')
+  return bookings.filter((booking) => booking.status === 'COMPLETED')
 }
 
 export const mockDataService = {

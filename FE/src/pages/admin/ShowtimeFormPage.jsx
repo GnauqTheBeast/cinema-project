@@ -26,9 +26,9 @@ const ShowtimeFormPage = () => {
     room_id: '',
     start_time: '',
     end_time: '',
-    format: '2d',
+    format: '2D',
     base_price: '',
-    status: 'scheduled',
+    status: 'SCHEDULED',
   })
   const [rooms, setRooms] = useState([])
   const [movies, setMovies] = useState([])

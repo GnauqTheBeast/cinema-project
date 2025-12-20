@@ -47,7 +47,7 @@ func main() {
 
 	go func() {
 		log.Printf("Starting gRPC server on port %s...", grpcPort)
-		if err := grpcSrv.Serve(lis); err != nil {
+		if err = grpcSrv.Serve(lis); err != nil {
 			panic(err)
 		}
 	}()
