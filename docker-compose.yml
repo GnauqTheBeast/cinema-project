@@ -10,7 +10,6 @@ services:
       POSTGRES_PASSWORD: cinema_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./postgres-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
@@ -21,7 +20,6 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-      - ./redis-data:/data
 
   movie-service:
     build:
