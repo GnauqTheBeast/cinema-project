@@ -8,7 +8,7 @@ import {
   IUserResponse,
   IUpdateUserRequest,
   IController
-} from '../types/index.js';
+} from '../types';
 import { AuthenticatedRequest } from '../middleware/auth.js';
 
 export class UserController {
