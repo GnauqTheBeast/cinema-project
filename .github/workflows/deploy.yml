@@ -19,7 +19,7 @@ jobs:
           cp /home/quangnguyen/cinema-env/api-gateway.env api-gateway/.env
           cp /home/quangnguyen/cinema-env/auth-service.env auth-service/.env
           cp /home/quangnguyen/cinema-env/booking-service.env booking-service/.env
-          cp /home/quangnguyen/cinema-env/chatbot-service.env chatbot-service/.env
+          cp /home/quangnguyen/cinema-env/chatbot-service.env chatbot/.env
           cp /home/quangnguyen/cinema-env/movie-service.env movie-service/.env
           cp /home/quangnguyen/cinema-env/payment-service.env payment-service/.env
           cp /home/quangnguyen/cinema-env/user-service.env user-service/.env
