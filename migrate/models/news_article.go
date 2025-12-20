@@ -22,7 +22,7 @@ type NewsArticle struct {
 	Tags        []string   `bun:"tags,array" json:"tags"`                         // Related topics/keywords
 	Language    string     `bun:"language,notnull,default:'vi'" json:"language"`  // "vi" or "en"
 	PublishedAt *time.Time `bun:"published_at" json:"published_at"`               // Original publish date from source
-	Status      string     `bun:"status,notnull,default:'pending'" json:"status"` // pending, summarized, published
+	Status      string     `bun:"status,notnull,default:'PENDING'" json:"status"` // pending, summarized, published
 	CreatedAt   *time.Time `bun:"created_at,nullzero,default:current_timestamp" json:"created_at"`
 	UpdatedAt   *time.Time `bun:"updated_at" json:"updated_at"`
 }

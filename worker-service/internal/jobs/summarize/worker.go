@@ -133,7 +133,7 @@ func (w *Worker) fetchPendingArticles(ctx context.Context) ([]*models.NewsArticl
 
 	err := w.db.NewSelect().
 		Model(&articles).
-		Where("status = ?", "pending").
+		Where("status = ?", "PENDING").
 		Order("published_at DESC").
 		Limit(w.batchSize).
 		Scan(ctx)

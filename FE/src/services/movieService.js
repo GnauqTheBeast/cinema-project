@@ -9,12 +9,15 @@ const movieApi = axios.create({
   },
 })
 
-// Add request interceptor to include auth token if available
 movieApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    const isAdminPage = window.location.pathname.startsWith('/admin')
+    const authToken = isAdminPage
+      ? localStorage.getItem('adminToken')
+      : localStorage.getItem('token')
+
+    if (authToken) {
+      config.headers.Authorization = `Bearer ${authToken}`
     }
     return config
   },
@@ -37,7 +40,7 @@ export const movieService = {
 
   getShowingMovies: async () => {
     try {
-      const response = await movieApi.get('/movies?status=showing')
+      const response = await movieApi.get('/movies?status=SHOWING')
       return response.data
     } catch (error) {
       console.error('Error fetching now showing movies:', error)
@@ -47,7 +50,7 @@ export const movieService = {
 
   getUpcomingMovies: async () => {
     try {
-      const response = await movieApi.get('/movies?status=upcoming')
+      const response = await movieApi.get('/movies?status=UPCOMING')
       return response.data
     } catch (error) {
       console.error('Error fetching upcoming movies:', error)

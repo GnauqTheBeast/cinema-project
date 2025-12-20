@@ -19,7 +19,6 @@ var (
 	ErrInvalidStatusTransition = fmt.Errorf("invalid status transition")
 	ErrShowtimeNotFound        = fmt.Errorf("showtime not found")
 	ErrTimeConflict            = fmt.Errorf("showtime conflicts with existing schedule")
-	ErrInvalidTimeRange        = fmt.Errorf("invalid time range")
 	ErrShowtimeInPast          = fmt.Errorf("cannot schedule showtime in the past")
 )
 

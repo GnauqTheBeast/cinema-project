@@ -43,8 +43,8 @@ export default function MoviesPage() {
 
   const filters = [
     { value: 'all', label: 'Tất cả phim' },
-    { value: 'showing', label: 'Đang chiếu' },
-    { value: 'upcoming', label: 'Sắp chiếu' },
+    { value: 'SHOWING', label: 'Đang chiếu' },
+    { value: 'UPCOMING', label: 'Sắp chiếu' },
   ]
 
   const formatDate = (dateString) => {

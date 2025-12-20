@@ -19,18 +19,18 @@ type Room struct {
 type ShowtimeStatus string
 
 const (
-	ShowtimeStatusScheduled ShowtimeStatus = "scheduled"
-	ShowtimeStatusOngoing   ShowtimeStatus = "ongoing"
-	ShowtimeStatusCompleted ShowtimeStatus = "completed"
-	ShowtimeStatusCanceled  ShowtimeStatus = "canceled"
+	ShowtimeStatusScheduled ShowtimeStatus = "SCHEDULED"
+	ShowtimeStatusOngoing   ShowtimeStatus = "ONGOING"
+	ShowtimeStatusCompleted ShowtimeStatus = "COMPLETED"
+	ShowtimeStatusCanceled  ShowtimeStatus = "CANCELED"
 )
 
 type ShowtimeFormat string
 
 const (
-	ShowtimeFormat2D   ShowtimeFormat = "2d"
-	ShowtimeFormat3D   ShowtimeFormat = "3d"
-	ShowtimeFormatIMAX ShowtimeFormat = "imax"
+	ShowtimeFormat2D   ShowtimeFormat = "2D"
+	ShowtimeFormat3D   ShowtimeFormat = "3D"
+	ShowtimeFormatIMAX ShowtimeFormat = "IMAX"
 )
 
 type Showtime struct {
@@ -43,7 +43,7 @@ type Showtime struct {
 	EndTime   time.Time      `bun:"end_time,notnull" json:"end_time"`
 	Format    ShowtimeFormat `bun:"format,notnull" json:"format"`
 	BasePrice float64        `bun:"base_price,notnull,type:decimal(10,2)" json:"base_price"`
-	Status    ShowtimeStatus `bun:"status,notnull,default:'scheduled'" json:"status"`
+	Status    ShowtimeStatus `bun:"status,notnull,default:'SCHEDULED'" json:"status"`
 	CreatedAt time.Time      `bun:"created_at,nullzero,default:current_timestamp" json:"created_at"`
 	UpdatedAt *time.Time     `bun:"updated_at" json:"updated_at,omitempty"`
 

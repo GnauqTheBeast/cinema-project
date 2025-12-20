@@ -3,7 +3,9 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"strings"
 
+	"booking-service/internal/models"
 	"booking-service/internal/pkg/response"
 	"booking-service/internal/services"
 
@@ -48,6 +50,8 @@ func (h *BookingHandler) GetBookings(c echo.Context) error {
 		query.Size = 10
 	}
 
+	query.Status = strings.ToUpper(query.Status)
+
 	bookings, total, err := bookingService.GetUserBookings(c.Request().Context(), userId, query.Page, query.Size, query.Status)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidBookingData) {
@@ -75,7 +79,8 @@ func (h *BookingHandler) CreateBooking(c echo.Context) error {
 	var request struct {
 		ShowtimeId  string   `json:"showtime_id" validate:"required,uuid"`
 		SeatIds     []string `json:"seat_ids" validate:"required,dive,uuid"`
-		TotalAmount int      `json:"total_amount" validate:"required,min=1"`
+		TotalAmount int      `json:"total_amount"`
+		BookingType string   `json:"booking_type"`
 	}
 
 	if err = c.Bind(&request); err != nil {
@@ -87,11 +92,32 @@ func (h *BookingHandler) CreateBooking(c echo.Context) error {
 		return response.Unauthorized(c, "User ID not found in token")
 	}
 
-	booking, err := bookingService.CreateBooking(c.Request().Context(), userId, request.ShowtimeId, request.SeatIds, request.TotalAmount)
+	bookingType := "ONLINE"
+	if request.BookingType != "" {
+		bookingType = strings.ToUpper(request.BookingType)
+	}
+
+	if bookingType == "OFFLINE" {
+		userRole, ok := c.Get("userRole").(string)
+		if !ok || (userRole != "ticket_staff" && userRole != "admin" && userRole != "manager_staff") {
+			return response.Forbidden(c, "Only ticket staff, managers, and admins can create box office bookings")
+		}
+	}
+
+	booking, err := bookingService.CreateBooking(c.Request().Context(), userId, request.ShowtimeId, request.SeatIds, request.TotalAmount, models.BookingType(bookingType))
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidBookingData) {
 			return response.BadRequest(c, "Invalid booking data")
 		}
+
+		if errors.Is(err, services.ErrSeatAlreadyBooked) {
+			return response.BadRequest(c, "Seat already booked")
+		}
+
+		if errors.Is(err, services.ErrSeatAlreadyLocked) {
+			return response.BadRequest(c, "Seat is being processed")
+		}
+
 		return response.ErrorWithMessage(c, fmt.Sprintf("Failed to create booking: %s", err.Error()))
 	}
 

@@ -20,17 +20,17 @@ type OutboxEvent struct {
 type OutboxEventStatus string
 
 const (
-	OutboxStatusPending OutboxEventStatus = "pending"
-	OutboxStatusSent    OutboxEventStatus = "sent"
-	OutboxStatusFailed  OutboxEventStatus = "failed"
+	OutboxStatusPending OutboxEventStatus = "PENDING"
+	OutboxStatusSent    OutboxEventStatus = "SENT"
+	OutboxStatusFailed  OutboxEventStatus = "FAILED"
 )
 
 type OutboxEventType string
 
 const (
-	EventTypeBookingCreated   OutboxEventType = "BookingCreated"
-	EventTypePaymentCompleted OutboxEventType = "PaymentCompleted"
-	EventTypeSeatReserved     OutboxEventType = "SeatReserved"
-	EventTypeSeatReleased     OutboxEventType = "SeatReleased"
-	EventTypeNotificationSent OutboxEventType = "NotificationSent"
+	EventTypeBookingCreated   OutboxEventType = "BOOKING_CREATED"
+	EventTypePaymentCompleted OutboxEventType = "PAYMENT_COMPLETED"
+	EventTypeSeatReserved     OutboxEventType = "SEAT_RESERVED"
+	EventTypeSeatReleased     OutboxEventType = "SEAT_RELEASED"
+	EventTypeNotificationSent OutboxEventType = "NOTIFICATION_SENT"
 )

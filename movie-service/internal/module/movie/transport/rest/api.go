@@ -3,6 +3,7 @@ package rest
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"movie-service/internal/module/movie/business"
 	"movie-service/internal/module/movie/entity"
@@ -40,6 +41,8 @@ func (h *handler) GetMovies(c *gin.Context) {
 	if query.Size == 0 {
 		query.Size = 10
 	}
+
+	query.Status = strings.ToUpper(query.Status)
 
 	movies, total, err := h.biz.GetMovies(c.Request.Context(), query.Page, query.Size, query.Search, query.Status)
 	if err != nil {

@@ -46,16 +46,16 @@ export default function MovieListItem({
         <div className="absolute top-2 left-2">
           <span
             className={`px-3 py-1 rounded-full text-xs font-bold ${
-              movie.status === 'showing'
+              movie.status === 'SHOWING'
                 ? 'bg-green-500 text-white'
-                : movie.status === 'upcoming'
+                : movie.status === 'UPCOMING'
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-500 text-white'
             }`}
           >
-            {movie.status === 'showing'
+            {movie.status === 'SHOWING'
               ? 'Đang chiếu'
-              : movie.status === 'upcoming'
+              : movie.status === 'UPCOMING'
                 ? 'Sắp chiếu'
                 : 'Đã kết thúc'}
           </span>

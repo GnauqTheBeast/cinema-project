@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"notification-service/internal/models"
 	"notification-service/internal/pkg/response"
@@ -47,6 +48,8 @@ func (h *NotificationHandler) GetNotifications(c echo.Context) error {
 	if query.Size == 0 {
 		query.Size = 10
 	}
+
+	query.Status = strings.ToUpper(query.Status)
 
 	notifications, total, err := notiService.GetUserNotifications(c.Request().Context(), userId, query.Page, query.Size, query.Status)
 	if err != nil {

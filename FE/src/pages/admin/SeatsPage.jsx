@@ -147,13 +147,13 @@ const SeatsPage = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'available':
+      case 'AVAILABLE':
         return 'bg-green-100 text-green-800'
-      case 'occupied':
+      case 'OCCUPIED':
         return 'bg-red-100 text-red-800'
-      case 'maintenance':
+      case 'MAINTENANCE':
         return 'bg-yellow-100 text-yellow-800'
-      case 'blocked':
+      case 'BLOCKED':
         return 'bg-gray-100 text-gray-800'
       default:
         return 'bg-gray-100 text-gray-800'
@@ -211,22 +211,22 @@ const SeatsPage = () => {
     }
 
     switch (seat.status) {
-      case 'available':
+      case 'AVAILABLE':
         switch (seat.seat_type) {
-          case 'regular':
+          case 'REGULAR':
             return 'bg-green-200 border-green-400 text-green-800 hover:bg-green-300'
-          case 'vip':
+          case 'VIP':
             return 'bg-yellow-200 border-yellow-400 text-yellow-800 hover:bg-yellow-300'
-          case 'couple':
+          case 'COUPLE':
             return 'bg-pink-200 border-pink-400 text-pink-800 hover:bg-pink-300'
           default:
             return 'bg-green-200 border-green-400 text-green-800 hover:bg-green-300'
         }
-      case 'occupied':
+      case 'OCCUPIED':
         return 'bg-red-200 border-red-400 text-red-800 cursor-not-allowed'
-      case 'maintenance':
+      case 'MAINTENANCE':
         return 'bg-orange-200 border-orange-400 text-orange-800 cursor-not-allowed'
-      case 'blocked':
+      case 'BLOCKED':
         return 'bg-gray-300 border-gray-500 text-gray-700 cursor-not-allowed'
       default:
         return 'bg-gray-200 border-gray-400 text-gray-700'
@@ -437,7 +437,7 @@ const SeatsPage = () => {
                             {Object.entries(rowSeats)
                               .filter(([_, seat]) => seat !== null)
                               .map(([seatNumber, seat]) => {
-                                const isCouple = seat.seat_type === 'couple'
+                                const isCouple = seat.seat_type === 'COUPLE'
 
                                 return (
                                   <button
@@ -515,19 +515,19 @@ const SeatsPage = () => {
                 <span>
                   Còn trống:{' '}
                   {Array.isArray(roomSeats)
-                    ? roomSeats.filter((s) => s.status === 'available').length
+                    ? roomSeats.filter((s) => s.status === 'AVAILABLE').length
                     : 0}
                 </span>
                 <span>
                   Đã đặt:{' '}
                   {Array.isArray(roomSeats)
-                    ? roomSeats.filter((s) => s.status === 'occupied').length
+                    ? roomSeats.filter((s) => s.status === 'OCCUPIED').length
                     : 0}
                 </span>
                 <span>
                   Bảo trì:{' '}
                   {Array.isArray(roomSeats)
-                    ? roomSeats.filter((s) => s.status === 'maintenance').length
+                    ? roomSeats.filter((s) => s.status === 'MAINTENANCE').length
                     : 0}
                 </span>
               </div>

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"notification-service/internal/datastore"
 	"notification-service/internal/models"
@@ -150,9 +151,19 @@ func (e *EmailService) handleTemplatedEmail(ctx context.Context, msg *pubsub.Mes
 		return fmt.Errorf("no template for topic %s", msg.Topic)
 	}
 
+	// Extract and sanitize email addresses
+	toEmail := extractToEmail(msg)
+	toEmail = strings.ReplaceAll(toEmail, "\r", "")
+	toEmail = strings.ReplaceAll(toEmail, "\n", "")
+	toEmail = strings.TrimSpace(toEmail)
+
+	if toEmail == "" {
+		return fmt.Errorf("recipient email is empty for topic %s", msg.Topic)
+	}
+
 	payload := types.EmailPayload{
 		From:    "quangnguyenngoc314@gmail.com",
-		To:      extractToEmail(msg),
+		To:      toEmail,
 		Subject: tmpl.Subject,
 		Body:    tmpl.BodyFunc(msg.Data),
 	}
@@ -190,14 +201,25 @@ func extractUserID(msg *pubsub.Message) string {
 }
 
 func (e *EmailService) sendEmail(p types.EmailPayload) error {
-	msg := fmt.Sprintf(
+	// Build email with proper headers and body separation
+	headers := fmt.Sprintf(
 		"MIME-Version: 1.0\r\n"+
 			"Content-Type: text/html; charset=\"UTF-8\"\r\n"+
 			"From: %s\r\n"+
 			"To: %s\r\n"+
-			"Subject: %s\r\n\r\n%s",
-		p.From, p.To, p.Subject, p.Body,
+			"Subject: %s\r\n",
+		p.From, p.To, p.Subject,
 	)
+
+	// Ensure body uses proper line endings (SMTP requires \r\n)
+	// Replace all \n with \r\n, but avoid double \r\r\n
+	body := p.Body
+	body = strings.ReplaceAll(body, "\r\n", "\n") // Normalize first
+	body = strings.ReplaceAll(body, "\n", "\r\n") // Then convert to SMTP format
+
+	// Combine headers and body with proper separator
+	msg := headers + "\r\n" + body
+
 	return e.emailClient.SendEmail(p.From, p.To, []byte(msg))
 }
 

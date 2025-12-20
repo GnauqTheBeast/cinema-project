@@ -38,24 +38,6 @@ func NewBookingClient() (*BookingClient, error) {
 	}, nil
 }
 
-func (c *BookingClient) UpdateBookingStatus(ctx context.Context, bookingId string, status string) error {
-	req := &pb.UpdateBookingStatusRequest{
-		BookingId: bookingId,
-		Status:    status,
-	}
-
-	resp, err := c.client.UpdateBookingStatus(ctx, req)
-	if err != nil {
-		return fmt.Errorf("failed to update booking status via gRPC: %w", err)
-	}
-
-	if !resp.Success {
-		return fmt.Errorf("update booking status failed: %s", resp.Message)
-	}
-
-	return nil
-}
-
 func (c *BookingClient) UpdateBookingStatusWithResponse(ctx context.Context, bookingId string, status string) (*pb.UpdateBookingStatusResponse, error) {
 	req := &pb.UpdateBookingStatusRequest{
 		BookingId: bookingId,
@@ -72,23 +54,6 @@ func (c *BookingClient) UpdateBookingStatusWithResponse(ctx context.Context, boo
 	}
 
 	return resp, nil
-}
-
-func (c *BookingClient) CreateTickets(ctx context.Context, bookingId string) (int, error) {
-	req := &pb.CreateTicketsRequest{
-		BookingId: bookingId,
-	}
-
-	resp, err := c.client.CreateTickets(ctx, req)
-	if err != nil {
-		return 0, fmt.Errorf("failed to create tickets via gRPC: %w", err)
-	}
-
-	if !resp.Success {
-		return 0, fmt.Errorf("create tickets failed: %s", resp.Message)
-	}
-
-	return int(resp.TicketsCreated), nil
 }
 
 func (c *BookingClient) CreateTicketsWithDetails(ctx context.Context, bookingId string) (*pb.CreateTicketsResponse, error) {

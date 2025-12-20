@@ -9,17 +9,17 @@ import (
 type RoomStatus string
 
 const (
-	RoomStatusActive      RoomStatus = "active"
-	RoomStatusInactive    RoomStatus = "inactive"
-	RoomStatusMaintenance RoomStatus = "maintenance"
+	RoomStatusActive      RoomStatus = "ACTIVE"
+	RoomStatusInactive    RoomStatus = "INACTIVE"
+	RoomStatusMaintenance RoomStatus = "MAINTENANCE"
 )
 
 type RoomType string
 
 const (
-	RoomTypeStandard RoomType = "standard"
-	RoomTypeVIP      RoomType = "vip"
-	RoomTypeIMAX     RoomType = "imax"
+	RoomTypeStandard RoomType = "STANDARD"
+	RoomTypeVIP      RoomType = "VIP"
+	RoomTypeIMAX     RoomType = "IMAX"
 )
 
 type Room struct {
@@ -29,7 +29,7 @@ type Room struct {
 	RoomNumber int        `bun:"room_number,notnull,unique" json:"room_number"`
 	Capacity   int        `bun:"capacity,notnull" json:"capacity"`
 	RoomType   RoomType   `bun:"room_type,notnull" json:"room_type"`
-	Status     RoomStatus `bun:"status,notnull,default:'active'" json:"status"`
+	Status     RoomStatus `bun:"status,notnull,default:'ACTIVE'" json:"status"`
 	CreatedAt  time.Time  `bun:"created_at,nullzero,default:current_timestamp" json:"created_at"`
 	UpdatedAt  *time.Time `bun:"updated_at" json:"updated_at,omitempty"`
 }

@@ -12,16 +12,16 @@ const BookingPage = () => {
   const navigate = useNavigate()
   
   const seatTypeMultipliers = {
-    'regular': 1.0,
-    'vip': 1.5,
-    'couple': 2.5
+    'REGULAR': 1.0,
+    'VIP': 1.5,
+    'COUPLE': 2.5
   }
 
   const getSeatTypeLabel = (type) => {
     const labels = {
-      'regular': 'Ghế thường',
-      'vip': 'Ghế VIP',
-      'couple': 'Ghế đôi'
+      'REGULAR': 'Ghế thường',
+      'VIP': 'Ghế VIP',
+      'COUPLE': 'Ghế đôi'
     }
     return labels[type] || type
   }
@@ -136,11 +136,11 @@ const BookingPage = () => {
       return 'bg-red-600 border-red-500 text-white'
     }
 
-    if (seat.status === 'occupied') {
+    if (seat.status === 'OCCUPIED') {
       return 'bg-gray-500 border-gray-400 text-gray-300 cursor-not-allowed'
     }
 
-    if (seat.status === 'maintenance' || seat.status === 'blocked') {
+    if (seat.status === 'MAINTENANCE' || seat.status === 'BLOCKED') {
       return 'bg-gray-700 border-gray-600 text-gray-400 cursor-not-allowed'
     }
 
@@ -150,11 +150,11 @@ const BookingPage = () => {
     }
 
     switch (seat.seat_type) {
-      case 'regular':
+      case 'REGULAR':
         return 'bg-green-600 border-green-500 text-white hover:bg-green-500 cursor-pointer'
-      case 'vip':
+      case 'VIP':
         return 'bg-yellow-600 border-yellow-500 text-white hover:bg-yellow-500 cursor-pointer'
-      case 'couple':
+      case 'COUPLE':
         return 'bg-pink-600 border-pink-500 text-white hover:bg-pink-500 cursor-pointer'
       default:
         return 'bg-green-600 border-green-500 text-white hover:bg-green-500 cursor-pointer'
@@ -162,7 +162,7 @@ const BookingPage = () => {
   }
 
   const handleSeatClick = (seat) => {
-    if (!seat || seat.status === 'occupied' || seat.status === 'maintenance' || seat.status === 'blocked') {
+    if (!seat || seat.status === 'OCCUPIED' || seat.status === 'MAINTENANCE' || seat.status === 'BLOCKED') {
       return
     }
 
@@ -221,7 +221,8 @@ const BookingPage = () => {
       const bookingData = {
         showtime_id: showtimeId,
         seat_ids: selectedSeats.map(seat => seat.id),
-        total_amount: calculateTotal()
+        total_amount: calculateTotal(),
+        booking_type: 'ONLINE'
       }
 
       const response = await bookingService.createBooking(bookingData)
@@ -229,7 +230,15 @@ const BookingPage = () => {
         navigate(`/booking/${response.data.id}/payment`)
       }
     } catch (err) {
-      alert('Có lỗi xảy ra khi tạo booking')
+      if (err.response?.status === 400 && err.response?.data?.error === 'Seat already booked') {
+        alert('Một hoặc nhiều ghế bạn chọn đã được đặt bởi người khác. Vui lòng chọn ghế khác.')
+        setSelectedSeats([])
+        fetchBookingData()
+      } else if (err.response?.data?.error) {
+        alert(err.response.data.error)
+      } else {
+        alert('Có lỗi xảy ra khi tạo booking')
+      }
       console.error('Error creating booking:', err)
     }
   }
@@ -345,7 +354,7 @@ const BookingPage = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-300">Ghế đôi:</span>
-                      <span className="text-white">{formatPrice(getSeatPrice('couple'))}</span>
+                      <span className="text-white">{formatPrice(getSeatPrice('COUPLE'))}</span>
                     </div>
                   </div>
                 </div>
@@ -388,7 +397,7 @@ const BookingPage = () => {
                                 {Object.entries(rowSeats)
                                   .filter(([_, seat]) => seat !== null)
                                   .map(([seatNumber, seat]) => {
-                                    const isCouple = seat.seat_type === 'couple'
+                                    const isCouple = seat.seat_type === 'COUPLE'
                                     return (
                                       <button
                                         key={`${row}-${seatNumber}`}

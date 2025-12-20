@@ -3,12 +3,12 @@ package business
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"payment-service/internal/module/payment/entity"
+	grpcRepo "payment-service/internal/module/payment/repository/grpc"
 	repository "payment-service/internal/module/payment/repository/postgres"
 	"payment-service/internal/module/payment/service"
 	"payment-service/internal/pkg/pubsub"
@@ -23,13 +23,13 @@ type PaymentBiz interface {
 	GetPaymentByBookingId(ctx context.Context, bookingId string) (*entity.Payment, error)
 	ProcessSePayWebhook(ctx context.Context, webhook *entity.SePayWebhook) error
 	VerifyCryptoPayment(ctx context.Context, req *entity.CryptoVerificationRequest) error
-	CreateOutboxEvent(ctx context.Context, eventType string, eventData interface{}) error
 }
 
 type paymentBiz struct {
 	container         *do.Injector
 	db                *bun.DB
 	repo              repository.PaymentRepository
+	outboxClient      *grpcRepo.OutboxClient
 	blockchainService service.BlockchainService
 	pubsub            pubsub.PubSub
 }
@@ -41,6 +41,11 @@ func NewPaymentBiz(i *do.Injector) (PaymentBiz, error) {
 	}
 
 	repo, err := do.Invoke[repository.PaymentRepository](i)
+	if err != nil {
+		return nil, err
+	}
+
+	outboxClient, err := do.Invoke[*grpcRepo.OutboxClient](i)
 	if err != nil {
 		return nil, err
 	}
@@ -59,6 +64,7 @@ func NewPaymentBiz(i *do.Injector) (PaymentBiz, error) {
 		container:         i,
 		db:                db,
 		repo:              repo,
+		outboxClient:      outboxClient,
 		blockchainService: blockchainService,
 		pubsub:            pubsubClient,
 	}, nil
@@ -75,7 +81,7 @@ func (b *paymentBiz) CreatePayment(ctx context.Context, bookingId string, amount
 		BookingId:   bookingId,
 		Amount:      amount,
 		PaymentDate: time.Now(),
-		Status:      "pending",
+		Status:      entity.PaymentStatusPending,
 		CreatedAt:   time.Now(),
 	}
 
@@ -92,8 +98,6 @@ func (b *paymentBiz) GetPaymentByBookingId(ctx context.Context, bookingId string
 }
 
 func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.SePayWebhook) error {
-	// - QR code: "QH" + 32 alphanumeric chars (UUID without hyphens)
-	// - Example: "QHFFBEF88798BE46D9917B5D41747F0DC1"
 	uuidNoHyphens := b.extractUUIDNoHyphens(webhook.Content, webhook.Description)
 	if uuidNoHyphens == "" {
 		return fmt.Errorf("failed to extract booking UUID from webhook content: %s", webhook.Content)
@@ -113,7 +117,7 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 		return nil
 	}
 
-	if payment.Status == "completed" {
+	if payment.Status == entity.PaymentStatusCompleted {
 		return fmt.Errorf("payment already completed with different transaction")
 	}
 
@@ -126,45 +130,36 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 		return fmt.Errorf("failed to marshal webhook payload: %w", err)
 	}
 
-	err = b.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
-		fields := map[string]interface{}{
-			"transaction_id": transactionId,
-			"payload":        payload,
-			"status":         "completed",
-			"payment_method": "bank_transfer",
-			"updated_at":     time.Now(),
-		}
-
-		if err := b.repo.UpdateFieldsTx(ctx, tx, payment.Id, fields); err != nil {
-			return fmt.Errorf("failed to update payment: %w", err)
-		}
-
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Payment updated successfully, publishing payment_completed event\n")
-
-	paymentCompletedMessage := map[string]interface{}{
+	eventData := map[string]interface{}{
 		"payment_id":     payment.Id,
 		"booking_id":     payment.BookingId,
 		"amount":         payment.Amount,
-		"status":         "completed",
-		"payment_method": "bank_transfer",
+		"status":         entity.PaymentStatusPending,
+		"payment_method": entity.PaymentMethodBankTransfer,
 		"transaction_id": transactionId,
 		"timestamp":      time.Now().Unix(),
 	}
 
-	_ = b.pubsub.Publish(ctx, &pubsub.Message{
-		Topic: "payment_completed",
-		Data:  paymentCompletedMessage,
+	err = b.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		fields := map[string]interface{}{
+			"transaction_id": transactionId,
+			"payload":        payload,
+			"status":         entity.PaymentStatusPending,
+			"payment_method": entity.PaymentMethodBankTransfer,
+			"updated_at":     time.Now(),
+		}
+
+		if err = b.repo.UpdateFieldsTx(ctx, tx, payment.Id, fields); err != nil {
+			return err
+		}
+
+		// Alert: This grpc call to external service
+		// Don't put any logic after CreateOutboxEvent in Tx and if Tx failed
+		// Then EventCreated would not be rolled back
+		return b.outboxClient.CreateOutboxEvent(ctx, string(entity.EventTypePaymentCompleted), eventData)
 	})
 
-	fmt.Printf("Published payment_completed event for payment %s, booking %s\n", payment.Id, payment.BookingId)
-
-	return nil
+	return err
 }
 
 func (b *paymentBiz) VerifyCryptoPayment(ctx context.Context, req *entity.CryptoVerificationRequest) error {
@@ -172,17 +167,16 @@ func (b *paymentBiz) VerifyCryptoPayment(ctx context.Context, req *entity.Crypto
 		return fmt.Errorf("blockchain verification failed: %w", err)
 	}
 
-	// Check if payment already completed with this transaction
 	payment := new(entity.Payment)
 	err := b.db.NewSelect().
 		Model(payment).
 		Where("transaction_id = ?", req.TxHash).
-		Where("payment_method = ?", "cryptocurrency").
+		Where("payment_method = ?", entity.PaymentMethodCryptoCurrency).
 		Scan(ctx)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
-	if payment.Status == "completed" {
+	if payment.Status == entity.PaymentStatusCompleted {
 		return nil
 	}
 
@@ -194,80 +188,31 @@ func (b *paymentBiz) VerifyCryptoPayment(ctx context.Context, req *entity.Crypto
 
 		fields := map[string]interface{}{
 			"transaction_id": req.TxHash,
-			"payment_method": "cryptocurrency",
-			"status":         "completed",
+			"payment_method": entity.PaymentMethodCryptoCurrency,
+			"status":         entity.PaymentStatusCompleted,
 			"updated_at":     time.Now(),
 		}
 
-		err = b.repo.UpdateFieldsTx(ctx, tx, payment.Id, fields)
-		if err != nil {
-			return fmt.Errorf("failed to update payment: %w", err)
+		if err = b.repo.UpdateFieldsTx(ctx, tx, payment.Id, fields); err != nil {
+			return err
 		}
 
 		eventData := map[string]interface{}{
 			"payment_id":     payment.Id,
 			"booking_id":     req.BookingId,
 			"amount":         req.AmountVnd,
-			"payment_method": "cryptocurrency",
+			"payment_method": entity.PaymentMethodCryptoCurrency,
 			"tx_hash":        req.TxHash,
-			"status":         "completed",
+			"status":         entity.PaymentStatusCompleted,
 		}
 
-		if err := b.CreateOutboxEventTx(ctx, tx, string(entity.EventTypePaymentCompleted), eventData); err != nil {
-			return fmt.Errorf("failed to create outbox event: %w", err)
-		}
-
-		return nil
+		// Alert: This grpc call to external service
+		// Don't put any logic after CreateOutBoxEvent in Tx and if Tx failed
+		// Then EventCreated would not be rolled back
+		return b.outboxClient.CreateOutboxEvent(ctx, string(entity.EventTypePaymentCompleted), eventData)
 	})
-	if err != nil {
-		return err
-	}
 
-	return nil
-}
-
-func (b *paymentBiz) CreateOutboxEvent(ctx context.Context, eventType string, eventData interface{}) error {
-	eventDataBytes, err := json.Marshal(eventData)
-	if err != nil {
-		return fmt.Errorf("failed to marshal event data: %w", err)
-	}
-
-	outboxEvent := &entity.OutboxEvent{
-		EventType: eventType,
-		Payload:   string(eventDataBytes),
-		Status:    string(entity.OutboxStatusPending),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-
-	_, err = b.db.NewInsert().Model(outboxEvent).Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to create outbox event: %w", err)
-	}
-
-	return nil
-}
-
-func (b *paymentBiz) CreateOutboxEventTx(ctx context.Context, tx bun.Tx, eventType string, eventData interface{}) error {
-	eventDataBytes, err := json.Marshal(eventData)
-	if err != nil {
-		return fmt.Errorf("failed to marshal event data: %w", err)
-	}
-
-	outboxEvent := &entity.OutboxEvent{
-		EventType: eventType,
-		Payload:   string(eventDataBytes),
-		Status:    string(entity.OutboxStatusPending),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-
-	_, err = tx.NewInsert().Model(outboxEvent).Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to create outbox event: %w", err)
-	}
-
-	return nil
+	return err
 }
 
 // extractUUIDNoHyphens extracts 32-character UUID without hyphens from content or description
@@ -280,7 +225,6 @@ func (b *paymentBiz) extractUUIDNoHyphens(content, description string) string {
 		return uuid
 	}
 
-	// Try description
 	if uuid := extractUUIDFromText(description); uuid != "" {
 		return uuid
 	}
@@ -322,22 +266,4 @@ func isValidUUIDNoHyphens(s string) bool {
 	}
 
 	return true
-}
-
-// formatUUIDWithHyphens formats a 32-char UUID without hyphens into standard UUID format
-// Example: "4C2A5112E7CA465598558E4AB4CCB834" -> "4c2a5112-e7ca-4655-9855-8e4ab4ccb834"
-func formatUUIDWithHyphens(uuidNoHyphens string) string {
-	if len(uuidNoHyphens) != 32 {
-		return uuidNoHyphens
-	}
-
-	// Format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-	// Indices: 0       8    12   16   20         32
-	return fmt.Sprintf("%s-%s-%s-%s-%s",
-		uuidNoHyphens[0:8],
-		uuidNoHyphens[8:12],
-		uuidNoHyphens[12:16],
-		uuidNoHyphens[16:20],
-		uuidNoHyphens[20:32],
-	)
 }

@@ -16,7 +16,7 @@ type Showtime struct {
 	EndTime   time.Time  `bun:"end_time,notnull" json:"end_time"`
 	Format    string     `bun:"format,notnull" json:"format"`
 	BasePrice float64    `bun:"base_price,notnull,type:decimal(10,2)" json:"base_price"`
-	Status    string     `bun:"status,notnull,default:'scheduled'" json:"status"`
+	Status    string     `bun:"status,notnull,default:'SCHEDULED'" json:"status"`
 	CreatedAt time.Time  `bun:"created_at,nullzero,default:current_timestamp" json:"created_at"`
 	UpdatedAt *time.Time `bun:"updated_at" json:"updated_at,omitempty"`
 

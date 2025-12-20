@@ -90,7 +90,9 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*entity.Showtime, 
 }
 
 func (r *Repository) GetMany(ctx context.Context, limit, offset int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) ([]*entity.Showtime, error) {
-	query := r.roDb.NewSelect().Model((*entity.Showtime)(nil))
+	query := r.roDb.
+		NewSelect().
+		Model((*entity.Showtime)(nil))
 
 	if search != "" {
 		searchPattern := "%" + strings.ToLower(search) + "%"
@@ -135,7 +137,9 @@ func (r *Repository) GetMany(ctx context.Context, limit, offset int, search, mov
 }
 
 func (r *Repository) GetTotalCount(ctx context.Context, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) (int, error) {
-	query := r.roDb.NewSelect().Model((*entity.Showtime)(nil))
+	query := r.roDb.
+		NewSelect().
+		Model((*entity.Showtime)(nil))
 
 	if search != "" {
 		searchPattern := "%" + strings.ToLower(search) + "%"

@@ -10,10 +10,10 @@ import (
 )
 
 type RevenueByTime struct {
-	TimePeriod       time.Time `bun:"time_period"`
-	TotalRevenue     float64   `bun:"total_revenue"`
-	TotalBookings    int       `bun:"total_bookings"`
-	AvgBookingValue  float64   `bun:"avg_booking_value"`
+	TimePeriod      time.Time `bun:"time_period"`
+	TotalRevenue    float64   `bun:"total_revenue"`
+	TotalBookings   int       `bun:"total_bookings"`
+	AvgBookingValue float64   `bun:"avg_booking_value"`
 }
 
 type RevenueByShowtime struct {
@@ -99,7 +99,6 @@ func GetRevenueByShowtime(ctx context.Context, db *bun.DB, startDate, endDate, s
 		Order("total_revenue DESC").
 		Limit(limit).
 		Scan(ctx, &results)
-
 	if err != nil {
 		return nil, err
 	}

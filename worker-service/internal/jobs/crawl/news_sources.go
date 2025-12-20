@@ -193,7 +193,7 @@ func ParseRSSToArticles(feed *RSSFeed, source NewsSource) ([]*models.NewsArticle
 			Tags:        tags,
 			Language:    source.Language,
 			PublishedAt: publishedAt,
-			Status:      "pending", // pending for Gemini summarization
+			Status:      "PENDING", // pending for Gemini summarization
 			CreatedAt:   &now,
 			UpdatedAt:   &now,
 		}

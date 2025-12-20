@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"worker-service/internal/grpc"
 	"worker-service/internal/models"
 	"worker-service/internal/pkg/logger"
 	"worker-service/internal/pkg/pubsub"
@@ -16,10 +17,12 @@ import (
 )
 
 type Worker struct {
-	db          *bun.DB
-	logger      logger.Logger
-	pubsub      pubsub.PubSub
-	redisClient redis.UniversalClient
+	db            *bun.DB
+	logger        logger.Logger
+	pubsub        pubsub.PubSub
+	redisClient   redis.UniversalClient
+	bookingClient *grpc.BookingClient
+	userClient    *grpc.UserClient
 }
 
 func NewWorker(ctn *do.Injector) (*Worker, error) {
@@ -43,11 +46,23 @@ func NewWorker(ctn *do.Injector) (*Worker, error) {
 		return nil, err
 	}
 
+	bookingClient, err := grpc.NewBookingClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create booking client: %w", err)
+	}
+
+	userClient, err := grpc.NewUserClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create user client: %w", err)
+	}
+
 	return &Worker{
-		db:          db,
-		logger:      log,
-		pubsub:      pubsub,
-		redisClient: redisClient,
+		db:            db,
+		logger:        log,
+		pubsub:        pubsub,
+		redisClient:   redisClient,
+		bookingClient: bookingClient,
+		userClient:    userClient,
 	}, nil
 }
 
@@ -113,6 +128,8 @@ func (w *Worker) processEvent(ctx context.Context, event models.OutboxEvent) err
 	switch event.EventType {
 	case models.EventTypeBookingCreated:
 		return w.handleBookingCreated(ctx, event)
+	case models.EventTypePaymentCompleted:
+		return w.handlePaymentCompleted(ctx, event)
 	default:
 		w.logger.Warn("Unknown event type: %s", event.EventType)
 		return nil
@@ -131,27 +148,116 @@ func (w *Worker) handleBookingCreated(ctx context.Context, event models.OutboxEv
 
 	w.logger.Info("Handling booking created event for booking ID: %s", bookingID)
 
-	seatLockKeys := make([]string, len(seatIds))
-	for i, seatId := range seatIds {
-		seatLockKeys[i] = fmt.Sprintf("seat_lock:%s:%s", showtimeId, seatId)
+	for _, seatId := range seatIds {
+		lockKey := fmt.Sprintf("seat_lock:%s:%s", showtimeId, seatId)
+
+		if err := w.redisClient.Set(ctx, lockKey, bookingID, 15*time.Minute).Err(); err != nil {
+			w.logger.Error("Failed to cache seat lock %s: %v", lockKey, err)
+		}
 	}
 
-	acquiredLocks := make([]string, 0)
-	for _, lockKey := range seatLockKeys {
-		acquired, err := w.acquireSeatLock(ctx, lockKey, bookingID, 5*time.Minute)
-		if err != nil {
-			w.releaseSeatLocks(ctx, acquiredLocks)
-			return fmt.Errorf("failed to acquire seat lock %s: %w", lockKey, err)
-		}
-		if !acquired {
-			w.releaseSeatLocks(ctx, acquiredLocks)
-			return fmt.Errorf("seat %s is already locked", lockKey)
-		}
-		acquiredLocks = append(acquiredLocks, lockKey)
-	}
-
-	w.logger.Info("Successfully locked %d seats for booking %s", len(seatIds), bookingID)
+	w.logger.Info("Successfully cached seat locks for booking %s with %d seats", bookingID, len(seatIds))
 	return nil
+}
+
+func (w *Worker) handlePaymentCompleted(ctx context.Context, event models.OutboxEvent) error {
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(event.Payload), &data); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	paymentID, ok := data["payment_id"].(string)
+	if !ok {
+		return fmt.Errorf("missing or invalid payment_id")
+	}
+
+	bookingID, ok := data["booking_id"].(string)
+	if !ok {
+		return fmt.Errorf("missing or invalid booking_id")
+	}
+
+	amount, ok := data["amount"].(float64)
+	if !ok {
+		amountInt, ok := data["amount"].(int)
+		if !ok {
+			return fmt.Errorf("missing or invalid amount")
+		}
+		amount = float64(amountInt)
+	}
+
+	// use enum uppercase
+	resp, err := w.bookingClient.UpdateBookingStatusWithResponse(ctx, bookingID, "CONFIRMED")
+	if err != nil {
+		return fmt.Errorf("failed to update booking status: %w", err)
+	}
+
+	userID := resp.UserId
+	userEmail, err := w.userClient.GetUserEmailById(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to get user email: %w", err)
+	}
+
+	ticketResp, err := w.bookingClient.CreateTicketsWithDetails(ctx, bookingID)
+	if err != nil {
+		w.logger.Error("Failed to create tickets for booking %s: %v", bookingID, err)
+	}
+
+	notificationData := map[string]interface{}{
+		"user_id":    userID,
+		"booking_id": bookingID,
+		"payment_id": paymentID,
+		"amount":     amount,
+		"status":     "COMPLETED",
+		"timestamp":  time.Now().Unix(),
+		"title":      "Payment Successful",
+		"message":    fmt.Sprintf("Your booking %s has been confirmed. Payment of %.2f VND received.", bookingID, amount),
+	}
+
+	emailData := map[string]interface{}{
+		"user_id":    userID,
+		"user_email": userEmail,
+		"to":         userEmail, // Use the email from user service, not from booking details
+		"booking_id": bookingID,
+	}
+
+	if ticketResp != nil && ticketResp.BookingDetails != nil {
+		details := ticketResp.BookingDetails
+
+		if len(details.Seats) > 0 {
+			seats := make([]map[string]interface{}, 0, len(details.Seats))
+			for _, seat := range details.Seats {
+				seats = append(seats, map[string]interface{}{
+					"seat_row":    seat.SeatRow,
+					"seat_number": seat.SeatNumber,
+					"seat_type":   seat.SeatType,
+				})
+			}
+			emailData["seats"] = seats
+		}
+
+		if details.Showtime != nil {
+			emailData["showtime"] = map[string]interface{}{
+				"showtime_id": details.Showtime.ShowtimeId,
+				"start_time":  details.Showtime.StartTime,
+				"movie_name":  details.Showtime.MovieName,
+				"room_name":   details.Showtime.RoomName,
+			}
+		}
+	}
+
+	emailMessage := &pubsub.Message{
+		Topic: "booking_success",
+		Data:  emailData,
+	}
+	_ = w.pubsub.Publish(ctx, emailMessage)
+
+	userNotificationTopic := fmt.Sprintf("booking_%s", userID)
+	userMessage := &pubsub.Message{
+		Topic: userNotificationTopic,
+		Data:  notificationData,
+	}
+
+	return w.pubsub.Publish(ctx, userMessage)
 }
 
 func (w *Worker) markEventAsSent(ctx context.Context, eventID int) error {
@@ -178,21 +284,4 @@ func (w *Worker) markEventAsFailed(ctx context.Context, eventID int, err error) 
 	}
 
 	return updateErr
-}
-
-func (w *Worker) acquireSeatLock(ctx context.Context, lockKey, bookingID string, ttl time.Duration) (bool, error) {
-	result, err := w.redisClient.SetNX(ctx, lockKey, bookingID, ttl).Result()
-	if err != nil {
-		return false, fmt.Errorf("failed to acquire lock: %w", err)
-	}
-	return result, nil
-}
-
-func (w *Worker) releaseSeatLocks(ctx context.Context, lockKeys []string) {
-	for _, lockKey := range lockKeys {
-		err := w.redisClient.Del(ctx, lockKey).Err()
-		if err != nil {
-			w.logger.Error("Failed to release seat lock %s: %v", lockKey, err)
-		}
-	}
 }

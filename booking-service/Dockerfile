@@ -11,5 +11,5 @@ RUN apk add ca-certificates
 WORKDIR /app
 COPY --from=builder /app/. ./
 
-EXPOSE 8082
+EXPOSE 8082 50082
 CMD ["./main", "serve"]
