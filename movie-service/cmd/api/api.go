@@ -90,6 +90,7 @@ func startRouteV1(group *gin.RouterGroup) {
 	{
 		seats.GET("", seatApi.GetSeats)
 		seats.POST("", seatApi.CreateSeat)
+		seats.GET("/locked", seatApi.GetLockedSeats)
 		seats.GET("/:id", seatApi.GetSeatById)
 		seats.PUT("/:id", seatApi.UpdateSeat)
 		seats.DELETE("/:id", seatApi.DeleteSeat)

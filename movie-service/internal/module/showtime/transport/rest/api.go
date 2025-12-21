@@ -93,7 +93,7 @@ func (h *handler) GetShowtimeById(c *gin.Context) {
 		return
 	}
 
-	resp := entity.ToShowtimeResponse(showtime)
+	resp := entity.ToShowtimeBookingResponse(showtime)
 	response.Success(c, resp)
 }
 

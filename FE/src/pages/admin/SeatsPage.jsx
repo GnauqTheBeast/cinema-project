@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { FaCouch, FaEdit, FaEye, FaList, FaPlus, FaSearch, FaTh, FaTrash } from 'react-icons/fa'
+import { FaEdit, FaEye, FaList, FaPlus, FaSearch, FaTh, FaTrash } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
 import AdminLayout from '../../components/admin/AdminLayout'
+import SeatGrid from '../../components/SeatGrid'
 import { roomService } from '../../services/roomApi'
 import { seatService } from '../../services/seatApi'
 
@@ -175,63 +176,6 @@ const SeatsPage = () => {
     return room ? `Phòng ${room.room_number}` : roomId
   }
 
-  const createSeatGrid = () => {
-    const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O']
-    const grid = {}
-
-    rows.forEach((row) => {
-      grid[row] = {}
-      const seatsPerRow = coupleRows.includes(row) ? 5 : 16
-      for (let i = 1; i <= seatsPerRow; i++) {
-        grid[row][i] = null
-      }
-    })
-
-    if (Array.isArray(roomSeats)) {
-      roomSeats.forEach((seat) => {
-        if (
-          grid[seat.row_number] &&
-          grid[seat.row_number][parseInt(seat.seat_number)] !== undefined
-        ) {
-          grid[seat.row_number][parseInt(seat.seat_number)] = seat
-        } else if (grid[seat.row_number]) {
-          grid[seat.row_number][parseInt(seat.seat_number)] = seat
-        }
-      })
-    } else {
-      console.log('roomSeats is not an array:', roomSeats)
-    }
-
-    return grid
-  }
-
-  const getSeatColor = (seat) => {
-    if (!seat) {
-      return 'bg-gray-100 border-gray-300 hover:bg-gray-200 cursor-pointer'
-    }
-
-    switch (seat.status) {
-      case 'AVAILABLE':
-        switch (seat.seat_type) {
-          case 'REGULAR':
-            return 'bg-green-200 border-green-400 text-green-800 hover:bg-green-300'
-          case 'VIP':
-            return 'bg-yellow-200 border-yellow-400 text-yellow-800 hover:bg-yellow-300'
-          case 'COUPLE':
-            return 'bg-pink-200 border-pink-400 text-pink-800 hover:bg-pink-300'
-          default:
-            return 'bg-green-200 border-green-400 text-green-800 hover:bg-green-300'
-        }
-      case 'OCCUPIED':
-        return 'bg-red-200 border-red-400 text-red-800 cursor-not-allowed'
-      case 'MAINTENANCE':
-        return 'bg-orange-200 border-orange-400 text-orange-800 cursor-not-allowed'
-      case 'BLOCKED':
-        return 'bg-gray-300 border-gray-500 text-gray-700 cursor-not-allowed'
-      default:
-        return 'bg-gray-200 border-gray-400 text-gray-700'
-    }
-  }
 
   return (
     <AdminLayout>
@@ -408,105 +352,18 @@ const SeatsPage = () => {
               </p>
             </div>
 
-            {/* Cinema Layout Container */}
-            <div className="flex flex-col items-center">
-              {/* Screen */}
-              <div className="mb-8">
-                <div className="bg-gray-800 text-white py-3 px-16 rounded-lg text-sm font-medium shadow-lg">
-                  MÀN HÌNH
-                </div>
-                <div className="text-center text-xs text-gray-500 mt-1">SCREEN</div>
-              </div>
-
-              {/* Seat Grid */}
-              <div className="overflow-x-auto">
-                <div className="inline-block">
-                  {Array.isArray(roomSeats) && roomSeats.length > 0 ? (
-                    Object.entries(createSeatGrid())
-                      .filter(([_, rowSeats]) => {
-                        return Object.values(rowSeats).some(seat => seat !== null)
-                      })
-                      .map(([row, rowSeats]) => (
-                        <div key={row} className="flex items-center justify-center mb-3">
-                          <div className="w-8 text-center text-sm font-bold text-gray-700 mr-4">
-                            {row}
-                          </div>
-
-                          {/* Seats */}
-                          <div className={`flex ${coupleRows.includes(row) ? 'gap-3' : 'gap-1'} justify-center`}>
-                            {Object.entries(rowSeats)
-                              .filter(([_, seat]) => seat !== null)
-                              .map(([seatNumber, seat]) => {
-                                const isCouple = seat.seat_type === 'COUPLE'
-
-                                return (
-                                  <button
-                                    key={`${row}-${seatNumber}`}
-                                    className={`${isCouple ? 'w-12' : 'w-8'} h-8 border-2 rounded text-xs font-semibold transition-all hover:scale-110 ${getSeatColor(seat)}`}
-                                    title={`${row}${seatNumber.padStart(2, '0')} - ${getSeatTypeLabel(seat.seat_type)} - ${getStatusLabel(seat.status)}`}
-                                  >
-                                    {isCouple ? (
-                                      <div className="flex items-center justify-center">
-                                        <FaCouch className="w-3 h-3" />
-                                      </div>
-                                    ) : (
-                                      seatNumber.padStart(2, '0')
-                                    )}
-                                  </button>
-                                )
-                              })}
-                          </div>
-
-                          <div className="w-8 text-center text-sm font-bold text-gray-700 ml-4">
-                            {row}
-                          </div>
-                        </div>
-                      ))
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">Không có dữ liệu ghế</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Entrance */}
-              <div className="mt-8 text-center">
-                <div className="text-xs text-gray-500 mb-2">ENTRANCE</div>
-                <div className="w-24 h-1 bg-gray-300 rounded"></div>
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Chú thích:</h4>
-              <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="inline-block w-4 h-4 bg-green-200 border border-green-400 rounded"></span>
-                  Thường
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="inline-block w-4 h-4 bg-yellow-200 border border-yellow-400 rounded"></span>
-                  VIP
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="inline-block w-4 h-4 bg-pink-200 border border-pink-400 rounded"></span>
-                  Đôi
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="inline-block w-4 h-4 bg-red-200 border border-red-400 rounded"></span>
-                  Đã đặt
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="inline-block w-4 h-4 bg-orange-200 border border-orange-400 rounded"></span>
-                  Bảo trì
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="inline-block w-4 h-4 bg-gray-300 border border-gray-500 rounded"></span>
-                  Bị chặn
-                </div>
-              </div>
-            </div>
+            <SeatGrid
+              seats={roomSeats}
+              selectedSeats={[]}
+              lockedSeats={[]}
+              bookedSeats={[]}
+              onSeatClick={null}
+              colorScheme="admin"
+              interactive={false}
+              showScreen={true}
+              showEntrance={true}
+              showLegend={true}
+            />
 
             {/* Grid Stats */}
             <div className="mt-6 pt-4 border-t border-gray-200">

@@ -72,6 +72,40 @@ type ShowtimeWithDetailsResponse struct {
 	UpdatedAt  *string        `json:"updated_at,omitempty"`
 }
 
+type ShowtimeBookingResponse struct {
+	Id        string         `json:"id"`
+	StartTime string         `json:"start_time"`
+	EndTime   string         `json:"end_time"`
+	Format    ShowtimeFormat `json:"format"`
+	BasePrice float64        `json:"base_price"`
+	Status    ShowtimeStatus `json:"status"`
+	Duration  string         `json:"duration"`
+	CreatedAt string         `json:"created_at"`
+	Movie     *Movie         `json:"movie"`
+	Room      *Room          `json:"room"`
+	Seats     []*Seat        `json:"seats"`
+}
+
+func ToShowtimeBookingResponse(showtime *Showtime) *ShowtimeBookingResponse {
+	if showtime == nil {
+		return nil
+	}
+
+	return &ShowtimeBookingResponse{
+		Id:        showtime.Id,
+		StartTime: showtime.StartTime.Format("2006-01-02T15:04:05Z07:00"),
+		EndTime:   showtime.EndTime.Format("2006-01-02T15:04:05Z07:00"),
+		Format:    showtime.Format,
+		BasePrice: showtime.BasePrice,
+		Status:    showtime.Status,
+		Duration:  showtime.CalculateDuration().String(),
+		CreatedAt: showtime.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		Movie:     showtime.Movie,
+		Room:      showtime.Room,
+		Seats:     showtime.Seats,
+	}
+}
+
 func ToShowtimeResponse(showtime *Showtime) *ShowtimeResponse {
 	if showtime == nil {
 		return nil

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { FaArrowLeft, FaArrowRight, FaCheck, FaFilm, FaCouch, FaCheckCircle } from 'react-icons/fa'
 import AdminLayout from '../../components/admin/AdminLayout'
+import SeatGrid from '../../components/SeatGrid'
 import { movieService } from '../../services/movieService'
 import { showtimeService } from '../../services/showtimeApi'
 import { clientSeatService } from '../../services/clientSeatService'
@@ -183,7 +184,7 @@ const BoxOfficePage = () => {
       if (err.response?.status === 400 && err.response?.data?.error === 'Seat already booked') {
         setError('Một hoặc nhiều ghế đã được đặt bởi người khác. Vui lòng chọn ghế khác.')
         setSelectedSeats([])
-        fetchSeatsForShowtime(selectedShowtime.id)
+        fetchSeats(selectedShowtime.id)
       } else if (err.response?.data?.error) {
         setError(err.response.data.error)
       } else {
@@ -207,60 +208,6 @@ const BoxOfficePage = () => {
     setBookingResult(null)
   }
 
-  const createSeatGrid = () => {
-    if (!seats || seats.length === 0) return {}
-
-    const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O']
-    const coupleRows = ['M', 'N', 'O']
-    const grid = {}
-
-    rows.forEach((row) => {
-      grid[row] = {}
-      const seatsPerRow = coupleRows.includes(row) ? 5 : 16
-      for (let i = 1; i <= seatsPerRow; i++) {
-        grid[row][i] = null
-      }
-    })
-
-    seats.forEach((seat) => {
-      const seatNum = parseInt(seat.seat_number)
-      if (grid[seat.row_number] && grid[seat.row_number][seatNum] !== undefined) {
-        grid[seat.row_number][seatNum] = seat
-      }
-    })
-
-    Object.keys(grid).forEach((row) => {
-      const hasSeats = Object.values(grid[row]).some(seat => seat !== null)
-      if (!hasSeats) {
-        delete grid[row]
-      }
-    })
-
-    return grid
-  }
-
-  const getSeatColor = (seat) => {
-    const isSelected = selectedSeats.some(s => s.id === seat.id)
-    const isLocked = lockedSeats.some(s => s.id === seat.id)
-    
-    if (isSelected) return 'bg-red-600 border-red-500 text-white'
-    if (isLocked) return 'bg-orange-600 border-orange-500 text-orange-200 cursor-not-allowed'
-    if (seat.status !== 'AVAILABLE') return 'bg-gray-500 border-gray-400 text-gray-300 cursor-not-allowed'
-    
-    if (seat.seat_type === 'VIP') return 'bg-yellow-600 border-yellow-500 text-white hover:bg-yellow-500'
-    if (seat.seat_type === 'COUPLE') return 'bg-pink-600 border-pink-500 text-white hover:bg-pink-500'
-    
-    return 'bg-green-600 border-green-500 text-white hover:bg-green-500'
-  }
-
-  const getSeatTypeLabel = (type) => {
-    switch (type) {
-      case 'REGULAR': return 'Thường'
-      case 'VIP': return 'VIP'
-      case 'COUPLE': return 'Đôi'
-      default: return type
-    }
-  }
 
   const calculateTotal = () => {
     if (!selectedShowtime || selectedSeats.length === 0) return 0
@@ -522,102 +469,18 @@ const BoxOfficePage = () => {
                 </div>
               </div>
 
-              <div className="mb-8">
-                <div className="flex items-center justify-center gap-6 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-green-600 border-2 border-green-500 rounded"></div>
-                    <span>Thường</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-yellow-600 border-2 border-yellow-500 rounded"></div>
-                    <span>VIP</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-pink-600 border-2 border-pink-500 rounded"></div>
-                    <span>Đôi</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-red-600 border-2 border-red-500 rounded"></div>
-                    <span>Đã chọn</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-gray-500 border-2 border-gray-400 rounded"></div>
-                    <span>Đã đặt</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-orange-600 border-2 border-orange-500 rounded"></div>
-                    <span>Đang giữ</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mb-8">
-                <div className="flex flex-col items-center">
-                  <div className="mb-8">
-                    <div className="bg-gray-800 text-white py-3 px-16 rounded-lg text-sm font-medium shadow-lg">
-                      MÀN HÌNH
-                    </div>
-                    <div className="text-center text-xs text-gray-500 mt-1">SCREEN</div>
-                  </div>
-
-                  {loading && seats.length === 0 ? (
-                    <div className="flex justify-center items-center h-64">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <div className="inline-block">
-                        {Object.entries(createSeatGrid()).map(([row, rowSeats]) => {
-                          const coupleRows = ['M', 'N', 'O']
-                          const isCouple = coupleRows.includes(row)
-                          return (
-                            <div key={row} className="flex items-center justify-center mb-3">
-                              <div className="w-8 text-center text-sm font-bold text-gray-700 mr-4">
-                                {row}
-                              </div>
-
-                              <div className={`flex ${isCouple ? 'gap-3' : 'gap-1'} justify-center`}>
-                                {Object.entries(rowSeats)
-                                  .filter(([_, seat]) => seat !== null)
-                                  .map(([seatNumber, seat]) => {
-                                    const isCoupleType = seat.seat_type === 'COUPLE'
-                                    return (
-                                      <button
-                                        key={`${row}-${seatNumber}`}
-                                        onClick={() => handleSeatSelect(seat)}
-                                        disabled={seat.status !== 'AVAILABLE' || lockedSeats.some(s => s.id === seat.id)}
-                                        className={`${isCoupleType ? 'w-12' : 'w-8'} h-8 border-2 rounded text-xs font-semibold transition-all hover:scale-110 ${getSeatColor(seat)}`}
-                                        title={`${row}${seatNumber.padStart(2, '0')} - ${getSeatTypeLabel(seat.seat_type)} - ${formatCurrency(selectedShowtime.price * (seatTypeMultipliers[seat.seat_type] || 1.0))}`}
-                                      >
-                                        {isCoupleType ? (
-                                          <div className="flex items-center justify-center">
-                                            <FaCouch className="w-3 h-3" />
-                                          </div>
-                                        ) : (
-                                          seatNumber.padStart(2, '0')
-                                        )}
-                                      </button>
-                                    )
-                                  })}
-                              </div>
-
-                              <div className="w-8 text-center text-sm font-bold text-gray-700 ml-4">
-                                {row}
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="mt-8 text-center">
-                    <div className="text-sm text-gray-600 bg-gray-100 px-6 py-2 rounded-lg inline-block">
-                      ↑ LỐI VÀO ↑
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <SeatGrid
+                seats={seats}
+                selectedSeats={selectedSeats}
+                lockedSeats={lockedSeats}
+                bookedSeats={[]}
+                onSeatClick={handleSeatSelect}
+                colorScheme="client"
+                interactive={true}
+                showScreen={true}
+                showEntrance={true}
+                showLegend={true}
+              />
 
               {selectedSeats.length > 0 && (
                 <div className="border-t pt-6">

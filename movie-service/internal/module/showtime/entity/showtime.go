@@ -7,13 +7,34 @@ import (
 )
 
 type Movie struct {
-	Id    string `bun:"id,pk" json:"id"`
-	Title string `bun:"title" json:"title"`
+	Id          string    `bun:"id,pk" json:"id"`
+	Title       string    `bun:"title" json:"title"`
+	Description string    `bun:"description" json:"description"`
+	Duration    int       `bun:"duration" json:"duration"`
+	ReleaseDate time.Time `bun:"release_date" json:"release_date"`
+	Director    string    `bun:"director" json:"director"`
+	Cast        string    `bun:"cast" json:"cast"`
+	Genre       string    `bun:"genre" json:"genre"`
+	PosterUrl   string    `bun:"poster_url" json:"poster_url"`
+	TrailerUrl  string    `bun:"trailer_url" json:"trailer_url"`
+	Status      string    `bun:"status" json:"status"`
 }
 
 type Room struct {
 	Id         string `bun:"id,pk" json:"id"`
 	RoomNumber int    `bun:"room_number" json:"room_number"`
+	Capacity   int    `bun:"capacity" json:"capacity"`
+	RoomType   string `bun:"room_type" json:"room_type"`
+	Status     string `bun:"status" json:"status"`
+}
+
+type Seat struct {
+	Id         string `bun:"id,pk" json:"id"`
+	RoomId     string `bun:"room_id" json:"room_id"`
+	SeatNumber string `bun:"seat_number" json:"seat_number"`
+	RowNumber  string `bun:"row_number" json:"row_number"`
+	SeatType   string `bun:"seat_type" json:"seat_type"`
+	Status     string `bun:"status" json:"status"`
 }
 
 type ShowtimeStatus string
@@ -48,8 +69,9 @@ type Showtime struct {
 	UpdatedAt *time.Time     `bun:"updated_at" json:"updated_at,omitempty"`
 
 	// Relations
-	Movie *Movie `bun:"rel:belongs-to,join:movie_id=id" json:"movie,omitempty"`
-	Room  *Room  `bun:"rel:belongs-to,join:room_id=id" json:"room,omitempty"`
+	Movie *Movie  `bun:"rel:belongs-to,join:movie_id=id" json:"movie,omitempty"`
+	Room  *Room   `bun:"rel:belongs-to,join:room_id=id" json:"room,omitempty"`
+	Seats []*Seat `bun:"-" json:"seats,omitempty"`
 }
 
 func TruncateToHalfHour(t time.Time) time.Time {

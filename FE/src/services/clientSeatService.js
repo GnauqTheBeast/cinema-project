@@ -30,7 +30,6 @@ export const clientSeatService = {
       const response = await clientSeatApi.get(`/rooms/${roomId}/seats`)
       return response.data
     } catch (error) {
-      console.error('Error fetching room seats:', error)
       throw error
     }
   },
@@ -40,7 +39,15 @@ export const clientSeatService = {
       const response = await clientSeatApi.get(`/showtimes/${showtimeId}/seats`)
       return response.data
     } catch (error) {
-      console.error('Error fetching showtime seats:', error)
+      throw error
+    }
+  },
+
+  getLockedSeats: async (showtimeId) => {
+    try {
+      const response = await clientSeatApi.get(`/seats/locked?showtime_id=${showtimeId}`)
+      return response.data
+    } catch (error) {
       throw error
     }
   },

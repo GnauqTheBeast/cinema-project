@@ -2,8 +2,6 @@ package business
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
@@ -110,8 +108,6 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 		return fmt.Errorf("payment not found with UUID (no hyphens) %s", uuidNoHyphens)
 	}
 
-	fmt.Printf("Found payment: ID=%s, BookingID=%s, Status=%s\n", payment.Id, payment.BookingId, payment.Status)
-
 	// Check idempotency: if already processed this transaction
 	if payment.TransactionId != nil && *payment.TransactionId == transactionId {
 		return nil
@@ -149,7 +145,7 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 			"updated_at":     time.Now(),
 		}
 
-		if err = b.repo.UpdateFieldsTx(ctx, tx, payment.Id, fields); err != nil {
+		if err = b.repo.UpdatePaymentFields(ctx, tx, payment.Id, fields); err != nil {
 			return err
 		}
 
@@ -167,52 +163,26 @@ func (b *paymentBiz) VerifyCryptoPayment(ctx context.Context, req *entity.Crypto
 		return fmt.Errorf("blockchain verification failed: %w", err)
 	}
 
-	payment := new(entity.Payment)
-	err := b.db.NewSelect().
-		Model(payment).
-		Where("transaction_id = ?", req.TxHash).
-		Where("payment_method = ?", entity.PaymentMethodCryptoCurrency).
-		Scan(ctx)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	payment, err := b.repo.FindByBookingId(ctx, req.BookingId)
+	if err != nil {
 		return err
 	}
-	if payment.Status == entity.PaymentStatusCompleted {
-		return nil
-	}
 
-	err = b.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
-		payment, err = b.repo.FindByBookingId(ctx, req.BookingId)
-		if err != nil {
-			return err
-		}
-
-		fields := map[string]interface{}{
-			"transaction_id": req.TxHash,
-			"payment_method": entity.PaymentMethodCryptoCurrency,
-			"status":         entity.PaymentStatusCompleted,
-			"updated_at":     time.Now(),
-		}
-
-		if err = b.repo.UpdateFieldsTx(ctx, tx, payment.Id, fields); err != nil {
-			return err
-		}
-
-		eventData := map[string]interface{}{
-			"payment_id":     payment.Id,
-			"booking_id":     req.BookingId,
-			"amount":         req.AmountVnd,
-			"payment_method": entity.PaymentMethodCryptoCurrency,
-			"tx_hash":        req.TxHash,
-			"status":         entity.PaymentStatusCompleted,
-		}
-
-		// Alert: This grpc call to external service
-		// Don't put any logic after CreateOutBoxEvent in Tx and if Tx failed
-		// Then EventCreated would not be rolled back
-		return b.outboxClient.CreateOutboxEvent(ctx, string(entity.EventTypePaymentCompleted), eventData)
+	_ = b.repo.UpdatePaymentFields(ctx, b.db, payment.Id, map[string]interface{}{
+		"transaction_id": req.TxHash,
+		"payment_method": entity.PaymentMethodCryptoCurrency,
+		"status":         entity.PaymentStatusCompleted,
+		"updated_at":     time.Now(),
 	})
 
-	return err
+	return b.outboxClient.CreateOutboxEvent(ctx, string(entity.EventTypePaymentCompleted), map[string]interface{}{
+		"payment_id":     payment.Id,
+		"booking_id":     req.BookingId,
+		"amount":         req.AmountVnd,
+		"payment_method": entity.PaymentMethodCryptoCurrency,
+		"tx_hash":        req.TxHash,
+		"status":         entity.PaymentStatusCompleted,
+	})
 }
 
 // extractUUIDNoHyphens extracts 32-character UUID without hyphens from content or description

@@ -135,6 +135,22 @@ func (h *handler) GetSeatsByShowtime(c *gin.Context) {
 	})
 }
 
+func (h *handler) GetLockedSeats(c *gin.Context) {
+	showtimeId := c.Query("showtime_id")
+	if showtimeId == "" {
+		response.BadRequest(c, "showtime_id query parameter is required")
+		return
+	}
+
+	lockedSeatsResponse, err := h.biz.GetLockedSeatsByShowtime(c.Request.Context(), showtimeId)
+	if err != nil {
+		response.ErrorWithMessage(c, "Failed to get locked seats")
+		return
+	}
+
+	response.Success(c, lockedSeatsResponse)
+}
+
 func (h *handler) CreateSeat(c *gin.Context) {
 	var req entity.CreateSeatRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

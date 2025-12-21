@@ -77,6 +77,11 @@ func ToSeatsResponse(seats []*Seat, page, size, total int) *SeatsResponse {
 	}
 }
 
+type LockedSeatsResponse struct {
+	LockedSeatIds []string `json:"locked_seat_ids"`
+	BookedSeatIds []string `json:"booked_seat_ids"`
+}
+
 func (req *CreateSeatRequest) ToSeat() *Seat {
 	return &Seat{
 		RoomId:     req.RoomId,

@@ -29,6 +29,7 @@ type SeatBiz interface {
 	GetSeats(ctx context.Context, page, size int, search, roomId, rowNumber string, seatType entity.SeatType, status entity.SeatStatus) ([]*entity.Seat, int, error)
 	GetSeatsByRoom(ctx context.Context, roomId string) (*entity.SeatsDetail, error)
 	GetSeatsByShowtime(ctx context.Context, showtimeId string) (*entity.SeatsDetail, error)
+	GetLockedSeatsByShowtime(ctx context.Context, showtimeId string) (*entity.LockedSeatsResponse, error)
 	CreateSeat(ctx context.Context, seat *entity.Seat) error
 	UpdateSeat(ctx context.Context, id string, updates *entity.UpdateSeatRequest) error
 	DeleteSeat(ctx context.Context, id string) error
@@ -122,6 +123,9 @@ func (b *business) GetSeats(ctx context.Context, page, size int, search, roomId,
 	}
 
 	seats, err := b.repository.GetMany(ctx, size, offset, search, roomId, rowNumber, seatType, status)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get seats: %w", err)
+	}
 
 	callbackTotal := func() (int, error) {
 		return b.repository.GetTotalCount(ctx, search, roomId, rowNumber, seatType, status)
@@ -183,23 +187,42 @@ func (b *business) getLockedSeats(ctx context.Context, roomId string) (map[strin
 	return lockedSeats, nil
 }
 
-func (b *business) getLockedSeatsByShowtime(ctx context.Context, showtimeId string) (map[string]bool, error) {
-	pattern := fmt.Sprintf("seat_lock:%s:*", showtimeId)
+func (b *business) getConcurrentLockedSeatsByShowtime(ctx context.Context, showtimeId string) (map[string]bool, error) {
+	pattern := fmt.Sprintf("seat:concurrent_lock:%s:*", showtimeId)
 	keys, err := b.redisClient.Keys(ctx, pattern).Result()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get seat lock keys: %w", err)
+		return nil, fmt.Errorf("failed to get concurrent lock keys: %w", err)
 	}
 
 	lockedSeats := make(map[string]bool)
 	for _, key := range keys {
 		parts := strings.Split(key, ":")
-		if len(parts) == 3 {
-			seatId := parts[2]
+		if len(parts) == 4 {
+			seatId := parts[3]
 			lockedSeats[seatId] = true
 		}
 	}
 
 	return lockedSeats, nil
+}
+
+func (b *business) getBookedSeatsByShowtime(ctx context.Context, showtimeId string) (map[string]bool, error) {
+	pattern := fmt.Sprintf("seat_lock:%s:*", showtimeId)
+	keys, err := b.redisClient.Keys(ctx, pattern).Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get booked seat keys: %w", err)
+	}
+
+	bookedSeats := make(map[string]bool)
+	for _, key := range keys {
+		parts := strings.Split(key, ":")
+		if len(parts) == 3 {
+			seatId := parts[2]
+			bookedSeats[seatId] = true
+		}
+	}
+
+	return bookedSeats, nil
 }
 
 func (b *business) GetSeatsByShowtime(ctx context.Context, showtimeId string) (*entity.SeatsDetail, error) {
@@ -212,14 +235,19 @@ func (b *business) GetSeatsByShowtime(ctx context.Context, showtimeId string) (*
 		return nil, err
 	}
 
-	lockedSeats, err := b.getLockedSeatsByShowtime(ctx, showtimeId)
+	concurrentLockedSeats, err := b.getConcurrentLockedSeatsByShowtime(ctx, showtimeId)
 	if err != nil {
-		return nil, nil
+		return nil, fmt.Errorf("failed to get concurrent locked seats: %w", err)
+	}
+
+	bookedSeats, err := b.getBookedSeatsByShowtime(ctx, showtimeId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get booked seats: %w", err)
 	}
 
 	lockedSeatsList := make([]*entity.Seat, 0)
 	for _, seat := range seats {
-		if lockedSeats[seat.Id] {
+		if concurrentLockedSeats[seat.Id] || bookedSeats[seat.Id] {
 			seat.Status = entity.SeatStatusOccupied
 			lockedSeatsList = append(lockedSeatsList, seat)
 		}
@@ -228,6 +256,37 @@ func (b *business) GetSeatsByShowtime(ctx context.Context, showtimeId string) (*
 	return &entity.SeatsDetail{
 		Seats:       seats,
 		LockedSeats: lockedSeatsList,
+	}, nil
+}
+
+func (b *business) GetLockedSeatsByShowtime(ctx context.Context, showtimeId string) (*entity.LockedSeatsResponse, error) {
+	if showtimeId == "" {
+		return nil, ErrInvalidSeatData
+	}
+
+	concurrentLockedSeatsMap, err := b.getConcurrentLockedSeatsByShowtime(ctx, showtimeId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get concurrent locked seats: %w", err)
+	}
+
+	bookedSeatsMap, err := b.getBookedSeatsByShowtime(ctx, showtimeId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get booked seats: %w", err)
+	}
+
+	lockedSeatIds := make([]string, 0, len(concurrentLockedSeatsMap))
+	for seatId := range concurrentLockedSeatsMap {
+		lockedSeatIds = append(lockedSeatIds, seatId)
+	}
+
+	bookedSeatIds := make([]string, 0, len(bookedSeatsMap))
+	for seatId := range bookedSeatsMap {
+		bookedSeatIds = append(bookedSeatIds, seatId)
+	}
+
+	return &entity.LockedSeatsResponse{
+		LockedSeatIds: lockedSeatIds,
+		BookedSeatIds: bookedSeatIds,
 	}, nil
 }
 

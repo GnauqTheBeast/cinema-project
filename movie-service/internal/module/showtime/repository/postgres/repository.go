@@ -76,6 +76,7 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 
 func (r *Repository) GetByID(ctx context.Context, id string) (*entity.Showtime, error) {
 	showtime := new(entity.Showtime)
+
 	err := r.roDb.NewSelect().
 		Model(showtime).
 		Relation("Movie").
@@ -85,6 +86,18 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*entity.Showtime, 
 	if err != nil {
 		return nil, err
 	}
+
+	var seats []*entity.Seat
+	err = r.roDb.NewSelect().
+		Model(&seats).
+		Where("room_id = ? AND room_id IN (SELECT room_id FROM showtimes WHERE id = ?)", showtime.RoomId, id).
+		OrderExpr("row_number ASC, seat_number ASC").
+		Scan(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load seats: %w", err)
+	}
+
+	showtime.Seats = seats
 
 	return showtime, nil
 }

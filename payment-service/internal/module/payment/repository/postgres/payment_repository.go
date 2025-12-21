@@ -16,8 +16,7 @@ type PaymentRepository interface {
 	FindByBookingId(ctx context.Context, bookingId string) (*entity.Payment, error)
 	FindByShortCode(ctx context.Context, shortCode string) (*entity.Payment, error)
 	FindByUUIDNoHyphens(ctx context.Context, uuidNoHyphens string) (*entity.Payment, error)
-	UpdateFields(ctx context.Context, id string, fields map[string]interface{}) error
-	UpdateFieldsTx(ctx context.Context, tx bun.Tx, id string, fields map[string]interface{}) error
+	UpdatePaymentFields(ctx context.Context, db bun.IDB, id string, fields map[string]interface{}) error
 	Create(ctx context.Context, payment *entity.Payment) error
 	GetById(ctx context.Context, id string) (*entity.Payment, error)
 }
@@ -97,22 +96,8 @@ func (r *paymentRepository) FindByUUIDNoHyphens(ctx context.Context, uuidNoHyphe
 	return payment, err
 }
 
-func (r *paymentRepository) UpdateFields(ctx context.Context, id string, fields map[string]interface{}) error {
-	_, err := r.db.NewUpdate().
-		Model((*entity.Payment)(nil)).
-		Where("id = ?", id).
-		Set("updated_at = NOW()").
-		Column(getColumnNames(fields)...).
-		Value("status", "?", fields["status"]).
-		Value("transaction_id", "?", fields["transaction_id"]).
-		Value("payload", "?", fields["payload"]).
-		Value("payment_date", "?", fields["payment_date"]).
-		Exec(ctx)
-	return err
-}
-
-func (r *paymentRepository) UpdateFieldsTx(ctx context.Context, tx bun.Tx, id string, fields map[string]interface{}) error {
-	query := tx.NewUpdate().
+func (r *paymentRepository) UpdatePaymentFields(ctx context.Context, db bun.IDB, id string, fields map[string]interface{}) error {
+	query := db.NewUpdate().
 		Model((*entity.Payment)(nil)).
 		Where("id = ?", id)
 
@@ -124,12 +109,4 @@ func (r *paymentRepository) UpdateFieldsTx(ctx context.Context, tx bun.Tx, id st
 
 	_, err := query.Exec(ctx)
 	return err
-}
-
-func getColumnNames(fields map[string]interface{}) []string {
-	columns := make([]string, 0, len(fields))
-	for key := range fields {
-		columns = append(columns, key)
-	}
-	return columns
 }

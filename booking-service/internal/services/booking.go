@@ -230,10 +230,6 @@ func (s *BookingService) checkSeatAvailability(ctx context.Context, showtimeId s
 }
 
 func (s *BookingService) CreateBooking(ctx context.Context, userId string, showtimeId string, seatIds []string, totalAmount int, bookingType models.BookingType) (*models.Booking, error) {
-	if userId == "" || showtimeId == "" || len(seatIds) == 0 {
-		return nil, ErrInvalidBookingData
-	}
-
 	if bookingType == models.BookingTypeOnline && totalAmount <= 0 {
 		return nil, ErrInvalidBookingData
 	}
@@ -292,18 +288,17 @@ func (s *BookingService) CreateBooking(ctx context.Context, userId string, showt
 	}
 
 	err = s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
-		if err = datastore.CreateBooking(ctx, tx, booking); err != nil {
-			return err
+		if err = datastore.AcquireSeatsAdvisoryLock(ctx, tx, seatIds); err != nil {
+			return fmt.Errorf("failed to acquire advisory lock: %w", err)
 		}
 
-		// Alert: This grpc call to external service
-		// Don't put any logic after CreateOutBoxEvent in Tx and if Tx failed
-		// Then EventCreated would not be rolled back
-		return s.outboxClient.CreateOutboxEvent(ctx, string(models.EventTypeBookingCreated), eventData)
+		return datastore.CreateBooking(ctx, tx, booking)
 	})
 	if err != nil {
 		return nil, err
 	}
+
+	_ = s.outboxClient.CreateOutboxEvent(ctx, string(models.EventTypeBookingCreated), eventData)
 
 	return booking, nil
 }
