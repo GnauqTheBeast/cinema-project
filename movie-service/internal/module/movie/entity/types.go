@@ -149,7 +149,7 @@ func ToMoviesResponse(movies []*Movie, page, size, total int) *GetMoviesResponse
 			Total:      total,
 			TotalPages: totalPages,
 		},
-		Hello: "world",
+		Hello: "world!",
 	}
 }
 
