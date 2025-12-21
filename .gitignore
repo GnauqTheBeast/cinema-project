@@ -12,6 +12,8 @@ node_modules
 dist/
 postgres-data/
 redis-data/
+postgres_data
+redis_data
 
 CLAUDE.md
 docker-compose.override.yml

@@ -1,6 +1,5 @@
-import axios from 'axios'
+import { GoogleGenAI } from '@google/genai'
 import { KeyManager } from '../pkg/keyManager/index.js'
-import { GeminiEmbeddingRequest, GeminiEmbeddingResponse } from '../types/index.js'
 
 export class EmbeddingService {
     private keyManager: KeyManager
@@ -10,39 +9,31 @@ export class EmbeddingService {
     }
 
     async embeddingText(text: string): Promise<number[]> {
-        const reqBody: GeminiEmbeddingRequest = {
-            model: 'models/text-embedding-004',
-            content: {
-                parts: [{ text }],
-            },
-        }
-
         const apiKey = this.keyManager.getNextKey()
         if (!apiKey) {
             throw new Error('No Gemini API key available')
         }
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${apiKey}`
-
         try {
-            const response = await axios.post<GeminiEmbeddingResponse>(url, reqBody, {
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+            const ai = new GoogleGenAI({ apiKey })
+
+            const response = await ai.models.embedContent({
+                model: 'gemini-embedding-001',
+                contents: text,
             })
 
-            if (!response.data.embedding?.values || response.data.embedding.values.length === 0) {
+            if (!response.embeddings || response.embeddings.length === 0) {
                 throw new Error('No embedding returned')
             }
 
-            return response.data.embedding.values
-        } catch (error) {
-            if (axios.isAxiosError(error)) {
-                throw new Error(
-                    `Embedding API error: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`,
-                )
+            const values = response.embeddings[0].values
+            if (!values || values.length === 0) {
+                throw new Error('No embedding values returned')
             }
-            throw error
+
+            return values
+        } catch (error) {
+            throw new Error(`Embedding API error: ${error}`)
         }
     }
 }

@@ -86,7 +86,6 @@ export class DocumentService {
             const chunk = chunks[i]
 
             try {
-                // Generate embedding for chunk
                 const embedding = await this.embeddingService.embeddingText(chunk.content)
                 const embeddingJSON = JSON.stringify(embedding)
 

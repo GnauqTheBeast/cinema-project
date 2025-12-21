@@ -100,7 +100,6 @@ export class ChatService {
             cached: false,
         }
 
-        // Cache the result
         await this.cacheManager.set(cacheKey, response, CACHE_TTL_12_HOUR).catch((err) => {
             logger.error('Failed to cache response', { error: err })
         })
@@ -169,7 +168,7 @@ Hãy trả lời câu hỏi của khách hàng dựa trên thông tin tham khả
             const ai = new GoogleGenAI({ apiKey })
 
             const response = await ai.models.generateContent({
-                model: 'gemini-2.0-flash-exp',
+                model: 'gemini-2.5-flash',
                 contents: prompt,
                 config: {
                     maxOutputTokens: 1000,
@@ -185,7 +184,6 @@ Hãy trả lời câu hỏi của khách hàng dựa trên thông tin tham khả
                 throw new Error('No text returned from Gemini API')
             }
 
-            // Validate response to prevent prompt injection
             if (!this.validateResponse(responseText)) {
                 return 'Xin lỗi, tôi không thể trả lời câu hỏi này. Vui lòng liên hệ nhân viên hỗ trợ để được tư vấn chi tiết.'
             }
