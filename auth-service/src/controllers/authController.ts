@@ -285,7 +285,6 @@ class AuthController {
         (process.env.JWT_SECRET || 'your-secret-key') as string,
       );
 
-      // Cache token to Redis for faster subsequent requests
       const userInfo = {
         id: userResp.user.id,
         email: userResp.user.email,
@@ -388,7 +387,6 @@ class AuthController {
         (process.env.JWT_SECRET || 'your-secret-key') as string,
       );
 
-      // Cache token to Redis for faster subsequent requests
       const userInfo = {
         id: userResp.user.id,
         email: userResp.user.email,
@@ -491,11 +489,8 @@ class AuthController {
     }
   };
 
-
   static registerInternalUser: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      // User info is already available from authenticateToken and requireAdmin middleware
-
       const schema = Joi.object({
         email: Joi.string().email().required(),
         password: Joi.string().min(6).required(),

@@ -10,7 +10,6 @@ import (
 	"movie-service/internal/pkg/paging"
 
 	"movie-service/internal/module/seat/entity"
-	showtimeBusiness "movie-service/internal/module/showtime/business"
 	"movie-service/internal/pkg/caching"
 
 	"github.com/redis/go-redis/v9"
@@ -42,6 +41,7 @@ type SeatRepository interface {
 	GetMany(ctx context.Context, limit, offset int, search, roomId, rowNumber string, seatType entity.SeatType, status entity.SeatStatus) ([]*entity.Seat, error)
 	GetTotalCount(ctx context.Context, search, roomId, rowNumber string, seatType entity.SeatType, status entity.SeatStatus) (int, error)
 	GetByRoom(ctx context.Context, roomId string) ([]*entity.Seat, error)
+	GetByShowtime(ctx context.Context, showtimeId string) ([]*entity.Seat, error)
 	Create(ctx context.Context, seat *entity.Seat) error
 	Update(ctx context.Context, seat *entity.Seat) error
 	Delete(ctx context.Context, id string) error
@@ -53,7 +53,6 @@ type business struct {
 	cache       caching.Cache
 	roCache     caching.ReadOnlyCache
 	redisClient redis.UniversalClient
-	showtimeBiz showtimeBusiness.ShowtimeBiz
 }
 
 func NewBusiness(i *do.Injector) (SeatBiz, error) {
@@ -77,25 +76,15 @@ func NewBusiness(i *do.Injector) (SeatBiz, error) {
 		return nil, err
 	}
 
-	showtimeBiz, err := do.Invoke[showtimeBusiness.ShowtimeBiz](i)
-	if err != nil {
-		return nil, err
-	}
-
 	return &business{
 		repository:  repository,
 		cache:       cache,
 		roCache:     roCache,
 		redisClient: redisClient,
-		showtimeBiz: showtimeBiz,
 	}, nil
 }
 
 func (b *business) GetSeatById(ctx context.Context, id string) (*entity.Seat, error) {
-	if id == "" {
-		return nil, ErrInvalidSeatData
-	}
-
 	callback := func() (*entity.Seat, error) {
 		return b.repository.GetByID(ctx, id)
 	}
@@ -112,10 +101,6 @@ func (b *business) GetSeatById(ctx context.Context, id string) (*entity.Seat, er
 }
 
 func (b *business) GetSeatsByIds(ctx context.Context, ids []string) ([]*entity.Seat, error) {
-	if len(ids) == 0 {
-		return nil, ErrInvalidSeatData
-	}
-
 	seats, err := b.repository.GetByIDs(ctx, ids)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get seats by IDs: %w", err)
@@ -151,10 +136,6 @@ func (b *business) GetSeats(ctx context.Context, page, size int, search, roomId,
 }
 
 func (b *business) GetSeatsByRoom(ctx context.Context, roomId string) (*entity.SeatsDetail, error) {
-	if roomId == "" {
-		return nil, ErrInvalidSeatData
-	}
-
 	callback := func() ([]*entity.Seat, error) {
 		return b.repository.GetByRoom(ctx, roomId)
 	}
@@ -222,24 +203,13 @@ func (b *business) getLockedSeatsByShowtime(ctx context.Context, showtimeId stri
 }
 
 func (b *business) GetSeatsByShowtime(ctx context.Context, showtimeId string) (*entity.SeatsDetail, error) {
-	if showtimeId == "" {
-		return nil, ErrInvalidSeatData
-	}
-
-	showtime, err := b.showtimeBiz.GetShowtimeById(ctx, showtimeId)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get showtime: %w", err)
-	}
-
-	roomId := showtime.RoomId
-
 	callback := func() ([]*entity.Seat, error) {
-		return b.repository.GetByRoom(ctx, roomId)
+		return b.repository.GetByShowtime(ctx, showtimeId)
 	}
 
-	seats, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, keyRoomSeats(roomId), CACHE_TTL_30_MINS, callback)
+	seats, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, keyShowtimeSeats(showtimeId), CACHE_TTL_30_MINS, callback)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get seats by room: %w", err)
+		return nil, err
 	}
 
 	lockedSeats, err := b.getLockedSeatsByShowtime(ctx, showtimeId)
@@ -285,10 +255,6 @@ func (b *business) CreateSeat(ctx context.Context, seat *entity.Seat) error {
 }
 
 func (b *business) UpdateSeat(ctx context.Context, id string, updates *entity.UpdateSeatRequest) error {
-	if id == "" || updates == nil {
-		return ErrInvalidSeatData
-	}
-
 	seat, err := b.repository.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -343,10 +309,6 @@ func (b *business) UpdateSeat(ctx context.Context, id string, updates *entity.Up
 }
 
 func (b *business) DeleteSeat(ctx context.Context, id string) error {
-	if id == "" {
-		return ErrInvalidSeatData
-	}
-
 	seat, err := b.repository.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -367,10 +329,6 @@ func (b *business) DeleteSeat(ctx context.Context, id string) error {
 }
 
 func (b *business) UpdateSeatStatus(ctx context.Context, id string, status entity.SeatStatus) error {
-	if id == "" {
-		return ErrInvalidSeatData
-	}
-
 	seat, err := b.repository.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -396,4 +354,5 @@ func (b *business) invalidateSeatsListCache(ctx context.Context) {
 	_ = caching.DeleteKeys(ctx, b.redisClient, keySeatsListPattern)
 	_ = caching.DeleteKeys(ctx, b.redisClient, keySeatDetailPattern)
 	_ = caching.DeleteKeys(ctx, b.redisClient, keyRoomSeatsPattern)
+	_ = caching.DeleteKeys(ctx, b.redisClient, keyShowtimeSeatsPattern)
 }

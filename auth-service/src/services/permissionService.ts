@@ -16,18 +16,15 @@ export class PermissionService {
     const cacheKey = `${this.CACHE_PREFIX}${roleId}`;
     
     try {
-      // Check cache first
       const cachedPermissions = await redisClient.get(cacheKey);
       if (cachedPermissions) {
         console.log(`Permissions cache hit for role: ${roleId}`);
         return JSON.parse(cachedPermissions);
       }
 
-      // Cache miss - fetch from user-service
       console.log(`Permissions cache miss for role: ${roleId}, fetching from user-service`);
       const permissions = await this.fetchPermissionsFromUserService(roleId);
       
-      // Cache the result
       await redisClient.setEx(cacheKey, this.CACHE_TTL, JSON.stringify(permissions));
       console.log(`Permissions cached for role: ${roleId}`);
       
