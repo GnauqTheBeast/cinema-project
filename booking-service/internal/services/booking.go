@@ -11,7 +11,6 @@ import (
 	"booking-service/internal/datastore"
 	"booking-service/internal/grpc"
 	"booking-service/internal/models"
-	"booking-service/internal/pkg/pubsub"
 	"booking-service/internal/types"
 	"booking-service/proto/pb"
 
@@ -36,7 +35,6 @@ type BookingService struct {
 	movieClient  *grpc.MovieClient
 	outboxClient *grpc.OutboxClient
 	redisClient  redis.UniversalClient
-	pubsub       pubsub.PubSub
 }
 
 func NewBookingService(container *do.Injector) (*BookingService, error) {
@@ -65,11 +63,6 @@ func NewBookingService(container *do.Injector) (*BookingService, error) {
 		return nil, err
 	}
 
-	pubsubClient, err := do.Invoke[pubsub.PubSub](container)
-	if err != nil {
-		return nil, err
-	}
-
 	return &BookingService{
 		container:    container,
 		db:           db,
@@ -77,7 +70,6 @@ func NewBookingService(container *do.Injector) (*BookingService, error) {
 		movieClient:  movieClient,
 		outboxClient: outboxClient,
 		redisClient:  redisClient,
-		pubsub:       pubsubClient,
 	}, nil
 }
 
@@ -230,10 +222,6 @@ func (s *BookingService) checkSeatAvailability(ctx context.Context, showtimeId s
 }
 
 func (s *BookingService) CreateBooking(ctx context.Context, userId string, showtimeId string, seatIds []string, totalAmount int, bookingType models.BookingType) (*models.Booking, error) {
-	if bookingType == models.BookingTypeOnline && totalAmount <= 0 {
-		return nil, ErrInvalidBookingData
-	}
-
 	if err := s.checkSeatAvailability(ctx, showtimeId, seatIds, userId); err != nil {
 		return nil, err
 	}
@@ -288,10 +276,6 @@ func (s *BookingService) CreateBooking(ctx context.Context, userId string, showt
 	}
 
 	err = s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
-		if err = datastore.AcquireSeatsAdvisoryLock(ctx, tx, seatIds); err != nil {
-			return fmt.Errorf("failed to acquire advisory lock: %w", err)
-		}
-
 		return datastore.CreateBooking(ctx, tx, booking)
 	})
 	if err != nil {
@@ -334,10 +318,6 @@ func (s *BookingService) releaseDistributedSeatLocks(ctx context.Context, lockKe
 }
 
 func (s *BookingService) GetBookingByID(ctx context.Context, bookingId string) (*models.Booking, error) {
-	if bookingId == "" {
-		return nil, ErrInvalidBookingData
-	}
-
 	booking, err := datastore.GetBookingById(ctx, s.roDb, bookingId)
 	if err != nil {
 		return nil, ErrBookingNotFound
@@ -347,10 +327,6 @@ func (s *BookingService) GetBookingByID(ctx context.Context, bookingId string) (
 }
 
 func (s *BookingService) UpdateBookingStatus(ctx context.Context, bookingId string, status string) (string, error) {
-	if bookingId == "" {
-		return "", ErrInvalidBookingData
-	}
-
 	if !s.isValidStatus(status) {
 		return "", fmt.Errorf("invalid booking status: %s", status)
 	}
@@ -365,67 +341,7 @@ func (s *BookingService) UpdateBookingStatus(ctx context.Context, bookingId stri
 		return "", fmt.Errorf("failed to get booking: %w", err)
 	}
 
-	if status == string(models.BookingStatusConfirmed) {
-		if err = s.extendSeatLocksUntilMovieEnds(ctx, booking); err != nil {
-			fmt.Printf("Failed to extend seat locks for booking %s: %v\n", bookingId, err)
-		}
-	}
-
 	return booking.UserId, nil
-}
-
-func (s *BookingService) extendSeatLocksUntilMovieEnds(ctx context.Context, booking *models.Booking) error {
-	var event models.OutboxEvent
-	err := s.roDb.NewSelect().
-		Model(&event).
-		Where("event_type = ?", models.EventTypeBookingCreated).
-		Where("payload::jsonb->>'booking_id' = ?", booking.Id).
-		Order("id DESC").
-		Limit(1).
-		Scan(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get booking event: %w", err)
-	}
-
-	var eventData models.BookingEventData
-	if err = json.Unmarshal([]byte(event.Payload), &eventData); err != nil {
-		return fmt.Errorf("failed to unmarshal event data: %w", err)
-	}
-
-	seatIds := eventData.SeatIds
-	if len(seatIds) == 0 {
-		return fmt.Errorf("no seats found for booking %s", booking.Id)
-	}
-
-	showtimeData, err := s.movieClient.GetShowtime(ctx, booking.ShowtimeId)
-	if err != nil {
-		return fmt.Errorf("failed to get showtime data: %w", err)
-	}
-
-	showtimeStr := fmt.Sprintf("%s %s", showtimeData.ShowtimeDate, showtimeData.ShowtimeTime)
-	showtimeStart, err := time.Parse("2006-01-02 15:04:05", showtimeStr)
-	if err != nil {
-		return fmt.Errorf("failed to parse showtime: %w", err)
-	}
-
-	movieDuration := 4 * time.Hour
-	movieEndTime := showtimeStart.Add(movieDuration)
-
-	ttl := time.Until(movieEndTime)
-	if ttl <= 0 {
-		ttl = 1 * time.Minute
-	}
-
-	for _, seatId := range seatIds {
-		lockKey := fmt.Sprintf("seat:concurrent_lock:%s:%s", booking.ShowtimeId, seatId)
-
-		err = s.redisClient.Expire(ctx, lockKey, ttl).Err()
-		if err != nil {
-			return fmt.Errorf("failed to extend lock for seat %s: %w", seatId, err)
-		}
-	}
-
-	return nil
 }
 
 type BookingDetailsResult struct {

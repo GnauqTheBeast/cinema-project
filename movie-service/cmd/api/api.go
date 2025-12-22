@@ -81,8 +81,6 @@ func startRouteV1(group *gin.RouterGroup) {
 		rooms.PUT("/:id", roomApi.UpdateRoom)
 		rooms.DELETE("/:id", roomApi.DeleteRoom)
 		rooms.PATCH("/:id/status", roomApi.UpdateRoomStatus)
-		// Room-specific seat and showtime endpoints
-		rooms.GET("/:id/seats", seatApi.GetSeatsByRoom)
 	}
 
 	// Seat endpoints
@@ -104,7 +102,6 @@ func startRouteV1(group *gin.RouterGroup) {
 		showtimes.POST("", showtimeApi.CreateShowtime)
 		showtimes.GET("/upcoming", showtimeApi.GetUpcomingShowtimes)
 		showtimes.GET("/:id", showtimeApi.GetShowtimeById)
-		showtimes.GET("/:id/seats", seatApi.GetSeatsByShowtime)
 		showtimes.PUT("/:id", showtimeApi.UpdateShowtime)
 		showtimes.DELETE("/:id", showtimeApi.DeleteShowtime)
 		showtimes.PATCH("/:id/status", showtimeApi.UpdateShowtimeStatus)

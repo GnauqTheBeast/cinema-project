@@ -602,14 +602,21 @@ func SeedTickets(ctx context.Context, db *bun.DB) error {
 		return fmt.Errorf("failed to get seats: %w", err)
 	}
 
+	var showtimes []models.Showtime
+	err = db.NewSelect().Model(&showtimes).Scan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get seats: %w", err)
+	}
+
 	tickets := make([]models.Ticket, 0)
 	for i := 0; i < len(bookings); i++ {
 		tickets = append(tickets, models.Ticket{
-			Id:        uuid.New().String(),
-			BookingId: bookings[i].Id,
-			Status:    models.TicketStatusUsed,
-			SeatId:    seats[i%len(seats)].Id,
-			CreatedAt: time.Now(),
+			Id:         uuid.New().String(),
+			BookingId:  bookings[i].Id,
+			ShowtimeId: showtimes[i].Id,
+			Status:     models.TicketStatusUsed,
+			SeatId:     seats[i%len(seats)].Id,
+			CreatedAt:  time.Now(),
 		})
 	}
 

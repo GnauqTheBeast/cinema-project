@@ -18,7 +18,7 @@ type UpdateSeatRequest struct {
 
 type GetSeatsQuery struct {
 	Page      int        `form:"page,default=1" binding:"min=1"`
-	Size      int        `form:"size,default=10" binding:"min=1,max=100"`
+	Size      int        `form:"size,default=10" binding:"min=1,max=500"`
 	Search    string     `form:"search"`
 	RoomId    string     `form:"room_id"`
 	SeatType  SeatType   `form:"seat_type"`

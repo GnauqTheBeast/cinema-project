@@ -12,7 +12,7 @@ export default function MovieCard({ movie }) {
     setIsLoadingShowtimes(true)
     try {
       // Pre-fetch showtimes to ensure data is available and warm up cache
-      await showtimeService.getShowtimesByMovie(movie.id)
+      await showtimeService.getShowtimesByMovie(movie.id, true)
       // Navigate to showtimes page with movie ID as filter
       navigate(`/showtimes?movie_id=${movie.id}`)
     } catch (error) {

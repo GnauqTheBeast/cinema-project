@@ -65,7 +65,7 @@ func (h *handler) GetShowtimes(c *gin.Context) {
 		dateTo = &parsed
 	}
 
-	showtimes, total, err := h.biz.GetShowtimes(c.Request.Context(), query.Page, query.Size, query.Search, query.MovieId, query.RoomId, query.Format, query.Status, dateFrom, dateTo)
+	showtimes, total, err := h.biz.GetShowtimes(c.Request.Context(), query.Page, query.Size, query.Search, query.MovieId, query.RoomId, query.Format, query.Status, dateFrom, dateTo, query.ExcludeEnded)
 	if err != nil {
 		response.ErrorWithMessage(c, "Failed to get showtimes")
 		return

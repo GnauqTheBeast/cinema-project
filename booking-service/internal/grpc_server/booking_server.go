@@ -58,7 +58,6 @@ func (s *BookingServer) UpdateBookingStatus(ctx context.Context, req *pb.UpdateB
 func (s *BookingServer) CreateTickets(ctx context.Context, req *pb.CreateTicketsRequest) (*pb.CreateTicketsResponse, error) {
 	logrus.Infof("[gRPC] CreateTickets called for booking %s", req.BookingId)
 
-	// Use new function to get both tickets count and booking details
 	bookingDetails, ticketsCreated, err := s.bookingService.CreateTicketsWithDetails(ctx, req.BookingId)
 	if err != nil {
 		logrus.Errorf("[gRPC] Failed to create tickets: %v", err)
@@ -70,7 +69,6 @@ func (s *BookingServer) CreateTickets(ctx context.Context, req *pb.CreateTickets
 		}, err
 	}
 
-	// Convert booking details to protobuf
 	seats := make([]*pb.SeatInfo, 0, len(bookingDetails.Seats))
 	for _, seat := range bookingDetails.Seats {
 		seats = append(seats, &pb.SeatInfo{

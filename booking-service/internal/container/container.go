@@ -193,7 +193,7 @@ func provideRedisCacheReadOnly(i *do.Injector) (caching.ReadOnlyCache, error) {
 	if err != nil {
 		return nil, err
 	}
-	return caching.NewRedisClient(redisCacheReadOnly, true)
+	return caching.NewRedisClient(redisCacheReadOnly, false)
 }
 
 func provideBookingService(i *do.Injector) (*services.BookingService, error) {

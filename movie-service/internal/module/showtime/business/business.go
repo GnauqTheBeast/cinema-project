@@ -25,7 +25,7 @@ var (
 type ShowtimeBiz interface {
 	GetShowtimeById(ctx context.Context, id string) (*entity.Showtime, error)
 	GetShowtimesByIds(ctx context.Context, ids []string) ([]*entity.Showtime, error)
-	GetShowtimes(ctx context.Context, page, size int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) ([]*entity.Showtime, int, error)
+	GetShowtimes(ctx context.Context, page, size int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time, excludeEnded bool) ([]*entity.Showtime, int, error)
 	GetUpcomingShowtimes(ctx context.Context, limit int) ([]*entity.Showtime, error)
 	CreateShowtime(ctx context.Context, showtime *entity.Showtime) error
 	UpdateShowtime(ctx context.Context, id string, updates *entity.UpdateShowtimeRequest) error
@@ -37,8 +37,8 @@ type ShowtimeBiz interface {
 type ShowtimeRepository interface {
 	GetByID(ctx context.Context, id string) (*entity.Showtime, error)
 	GetByIds(ctx context.Context, ids []string) ([]*entity.Showtime, error)
-	GetMany(ctx context.Context, limit, offset int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) ([]*entity.Showtime, error)
-	GetTotalCount(ctx context.Context, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) (int, error)
+	GetMany(ctx context.Context, limit, offset int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time, excludeEnded bool) ([]*entity.Showtime, error)
+	GetTotalCount(ctx context.Context, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time, excludeEnded bool) (int, error)
 	GetByMovie(ctx context.Context, movieId string) ([]*entity.Showtime, error)
 	GetUpcoming(ctx context.Context, limit int) ([]*entity.Showtime, error)
 	Create(ctx context.Context, showtime *entity.Showtime) error
@@ -83,13 +83,9 @@ func NewBusiness(i *do.Injector) (ShowtimeBiz, error) {
 	}, nil
 }
 
-func (b *business) GetShowtimeById(ctx context.Context, id string) (*entity.Showtime, error) {
-	if id == "" {
-		return nil, ErrInvalidShowtimeData
-	}
-
-	showtime, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, redisShowtimeDetail(id), CACHE_TTL_1_HOUR, func() (*entity.Showtime, error) {
-		return b.repository.GetByID(ctx, id)
+func (b *business) GetShowtimeById(ctx context.Context, Id string) (*entity.Showtime, error) {
+	showtime, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, redisShowtimeDetail(Id), CACHE_TTL_1_HOUR, func() (*entity.Showtime, error) {
+		return b.repository.GetByID(ctx, Id)
 	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -118,19 +114,19 @@ func (b *business) GetShowtimesByIds(ctx context.Context, ids []string) ([]*enti
 	return showtimes, nil
 }
 
-func (b *business) GetShowtimes(ctx context.Context, page, size int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) ([]*entity.Showtime, int, error) {
+func (b *business) GetShowtimes(ctx context.Context, page, size int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time, excludeEnded bool) ([]*entity.Showtime, int, error) {
 	if page < 1 || size < 1 {
 		return nil, 0, ErrInvalidShowtimeData
 	}
 
 	offset := (page - 1) * size
 
-	showtimes, err := b.repository.GetMany(ctx, size, offset, search, movieId, roomId, format, status, dateFrom, dateTo)
+	showtimes, err := b.repository.GetMany(ctx, size, offset, search, movieId, roomId, format, status, dateFrom, dateTo, excludeEnded)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get showtimes: %w", err)
 	}
 
-	total, err := b.repository.GetTotalCount(ctx, search, movieId, roomId, format, status, dateFrom, dateTo)
+	total, err := b.repository.GetTotalCount(ctx, search, movieId, roomId, format, status, dateFrom, dateTo, excludeEnded)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get total count: %w", err)
 	}

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package pb;
 
-option go_package = "movie-service/proto/pb";
+option go_package = "worker-service/proto/pb";
 
 service MovieService {
   rpc GetShowtime(GetShowtimeRequest) returns (GetShowtimeResponse);

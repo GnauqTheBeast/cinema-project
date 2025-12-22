@@ -176,10 +176,7 @@ Hãy trả lời câu hỏi của khách hàng dựa trên thông tin tham khả
                 },
             })
 
-            logger.info('Gemini API Response received')
-
             const responseText = response.text
-
             if (!responseText) {
                 throw new Error('No text returned from Gemini API')
             }
@@ -190,7 +187,6 @@ Hãy trả lời câu hỏi của khách hàng dựa trên thông tin tham khả
 
             return responseText
         } catch (error) {
-            logger.error('Gemini API error', { error })
             throw new Error(`Gemini API error: ${error}`)
         }
     }

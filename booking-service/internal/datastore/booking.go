@@ -3,7 +3,6 @@ package datastore
 import (
 	"context"
 	"fmt"
-	"hash/fnv"
 
 	"booking-service/internal/models"
 
@@ -83,25 +82,6 @@ func GetBookingById(ctx context.Context, db *bun.DB, id string) (*models.Booking
 	}
 
 	return booking, nil
-}
-
-func AcquireSeatsAdvisoryLock(ctx context.Context, db bun.IDB, seatIds []string) error {
-	for _, seatId := range seatIds {
-		lockKey := generateAdvisoryLockKey(seatId)
-
-		_, err := db.NewRaw("SELECT pg_advisory_xact_lock(?)", lockKey).Exec(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to acquire advisory lock for seat %s: %w", seatId, err)
-		}
-	}
-
-	return nil
-}
-
-func generateAdvisoryLockKey(seatId string) int64 {
-	h := fnv.New64a()
-	h.Write([]byte(seatId))
-	return int64(h.Sum64())
 }
 
 func CreateBooking(ctx context.Context, db bun.IDB, booking *models.Booking) error {

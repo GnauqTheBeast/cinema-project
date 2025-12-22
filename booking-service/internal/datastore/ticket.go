@@ -67,7 +67,6 @@ func UpdateTicketStatus(ctx context.Context, db bun.IDB, ticketId string, status
 	return nil
 }
 
-// GetBookedSeatsForShowtime returns all seat IDs that are already booked for a showtime
 func GetBookedSeatsForShowtime(ctx context.Context, db bun.IDB, showtimeId string) (map[string]string, error) {
 	var results []struct {
 		SeatId    string `bun:"seat_id"`

@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
-import { FaEdit, FaEye, FaPlus, FaSearch, FaTrash } from 'react-icons/fa'
-import { Link } from 'react-router-dom'
+import { FaPlus, FaSearch } from 'react-icons/fa'
+import { Link, useNavigate } from 'react-router-dom'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { roomService } from '../../services/roomApi'
+import DataTable from '../../components/shared/DataTable'
+import { formatDate } from '../../utils/formatters'
 
 const RoomsPage = () => {
+  const navigate = useNavigate()
   const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -93,6 +96,61 @@ const RoomsPage = () => {
     return roomType ? roomType.label : type
   }
 
+  const handleView = (room) => {
+    navigate(`/admin/rooms/${room.id}`)
+  }
+
+  const handleEdit = (room) => {
+    navigate(`/admin/rooms/${room.id}/edit`)
+  }
+
+  const columns = [
+    {
+      label: 'Phòng',
+      render: (room) => (
+        <div className="text-sm font-medium text-gray-900">
+          Phòng {room.room_number}
+        </div>
+      )
+    },
+    {
+      label: 'Loại phòng',
+      render: (room) => (
+        <div className="text-sm text-gray-900">
+          {getRoomTypeLabel(room.room_type)}
+        </div>
+      )
+    },
+    {
+      label: 'Sức chứa',
+      render: (room) => (
+        <div className="text-sm text-gray-900">{room.capacity} ghế</div>
+      )
+    },
+    {
+      label: 'Trạng thái',
+      render: (room) => (
+        <select
+          value={room.status}
+          onChange={(e) => handleStatusChange(room.id, e.target.value)}
+          className={`text-xs px-2 py-1 rounded-full ${getStatusColor(room.status)} border-0`}
+        >
+          {roomStatuses.map((status) => (
+            <option key={status.value} value={status.value}>
+              {status.label}
+            </option>
+          ))}
+        </select>
+      )
+    },
+    {
+      label: 'Ngày tạo',
+      render: (room) => (
+        <span className="text-sm text-gray-500">{formatDate(room.created_at)}</span>
+      )
+    }
+  ]
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -170,99 +228,16 @@ const RoomsPage = () => {
           </div>
         ) : (
           <>
-            {/* Rooms Table */}
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Phòng
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Loại phòng
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Sức chứa
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Trạng thái
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ngày tạo
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Thao tác
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {rooms.map((room) => (
-                    <tr key={room.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          Phòng {room.room_number}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {getRoomTypeLabel(room.room_type)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{room.capacity} ghế</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <select
-                          value={room.status}
-                          onChange={(e) => handleStatusChange(room.id, e.target.value)}
-                          className={`text-xs px-2 py-1 rounded-full ${getStatusColor(room.status)} border-0`}
-                        >
-                          {roomStatuses.map((status) => (
-                            <option key={status.value} value={status.value}>
-                              {status.label}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(room.created_at).toLocaleDateString('vi-VN')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link
-                            to={`/admin/rooms/${room.id}`}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="Xem chi tiết"
-                          >
-                            <FaEye />
-                          </Link>
-                          <Link
-                            to={`/admin/rooms/${room.id}/edit`}
-                            className="text-indigo-600 hover:text-indigo-900"
-                            title="Chỉnh sửa"
-                          >
-                            <FaEdit />
-                          </Link>
-                          <button
-                            onClick={() => handleDelete(room.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Xóa"
-                          >
-                            <FaTrash />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {rooms.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">Không có phòng nào</p>
-                </div>
-              )}
-            </div>
+            <DataTable
+              columns={columns}
+              data={rooms}
+              onView={handleView}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              actions={['view', 'edit', 'delete']}
+              emptyMessage="Không có phòng nào"
+              loading={loading}
+            />
 
             {/* Pagination */}
             {totalPages > 1 && (

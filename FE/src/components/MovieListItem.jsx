@@ -14,7 +14,7 @@ export default function MovieListItem({
     e.preventDefault()
     setIsLoadingShowtimes(true)
     try {
-      const response = await showtimeService.getShowtimesByMovie(movie.id)
+      const response = await showtimeService.getShowtimesByMovie(movie.id, true)
       // Handle both possible response formats
       const showtimesData = response.data?.data || response.data || []
       onShowtimesLoaded(movie.id, showtimesData)

@@ -3,12 +3,11 @@ import { FaEdit, FaEye, FaList, FaPlus, FaSearch, FaTh, FaTrash } from 'react-ic
 import { Link } from 'react-router-dom'
 import AdminLayout from '../../components/admin/AdminLayout'
 import SeatGrid from '../../components/SeatGrid'
-import { roomService } from '../../services/roomApi'
 import { seatService } from '../../services/seatApi'
+import { roomService } from '../../services/roomApi'
 
 const SeatsPage = () => {
   const [seats, setSeats] = useState([])
-  const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -20,6 +19,7 @@ const SeatsPage = () => {
   const [selectedRow, setSelectedRow] = useState('')
   const [viewMode, setViewMode] = useState('grid')
   const [roomSeats, setRoomSeats] = useState([])
+  const [rooms, setRooms] = useState([])
 
   const seatTypes = seatService.getSeatTypes()
   const seatStatuses = seatService.getSeatStatuses()
@@ -55,11 +55,11 @@ const SeatsPage = () => {
   const fetchRooms = async () => {
     try {
       const response = await roomService.getRooms(1, 100)
-      if (response.success) {
-        const roomsData = response.data.data || []
-        setRooms(roomsData)
-        if (roomsData.length > 0 && !selectedRoom) {
-          setSelectedRoom(roomsData[0].id)
+      if (response.success && response.data?.data) {
+        setRooms(response.data.data)
+        // Auto-select first room if none selected and in grid mode
+        if (!selectedRoom && response.data.data.length > 0 && viewMode === 'grid') {
+          setSelectedRoom(response.data.data[0].id)
         }
       }
     } catch (err) {
@@ -76,13 +76,11 @@ const SeatsPage = () => {
 
       let seats = []
       if (response.success && response.data) {
-        if (response.data.seats) {
-          seats = response.data.seats
+        if (response.data.data && Array.isArray(response.data.data)) {
+          seats = response.data.data
         } else if (Array.isArray(response.data)) {
           seats = response.data
         }
-      } else if (response.seats) {
-        seats = response.seats
       } else if (Array.isArray(response)) {
         seats = response
       }
@@ -101,6 +99,7 @@ const SeatsPage = () => {
     }
   }
 
+  // Fetch rooms on mount
   useEffect(() => {
     fetchRooms()
   }, [])
@@ -111,11 +110,13 @@ const SeatsPage = () => {
     } else if (viewMode === 'grid') {
       if (selectedRoom) {
         fetchRoomSeats(selectedRoom)
-      } else if (rooms.length > 0) {
-        setSelectedRoom(rooms[0].id)
+      } else {
+        // No room selected in grid mode, stop loading
+        setLoading(false)
+        setRoomSeats([])
       }
     }
-  }, [currentPage, search, selectedRoom, selectedSeatType, selectedStatus, selectedRow, viewMode, rooms])
+  }, [currentPage, search, selectedRoom, selectedSeatType, selectedStatus, selectedRow, viewMode])
 
   const handleSearch = (e) => {
     setSearch(e.target.value)
@@ -171,10 +172,6 @@ const SeatsPage = () => {
     return statusObj ? statusObj.label : status
   }
 
-  const getRoomName = (roomId) => {
-    const room = rooms.find((r) => r.id === roomId)
-    return room ? `Phòng ${room.room_number}` : roomId
-  }
 
 
   return (
@@ -231,15 +228,15 @@ const SeatsPage = () => {
             // Grid view filters
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">Phòng chiếu:</label>
+                <label className="text-sm font-medium text-gray-700">Chọn phòng chiếu:</label>
                 <select
                   value={selectedRoom || ''}
                   onChange={(e) => {
                     setSelectedRoom(e.target.value)
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[200px]"
                 >
-                  <option value="">Chọn phòng chiếu</option>
+                  <option value="">-- Chọn phòng --</option>
                   {rooms.map((room) => (
                     <option key={room.id} value={room.id}>
                       Phòng {room.room_number} ({room.room_type})
@@ -270,21 +267,16 @@ const SeatsPage = () => {
                 />
               </div>
 
-              <select
+              <input
+                type="text"
+                placeholder="Room ID"
                 value={selectedRoom || ''}
                 onChange={(e) => {
                   setSelectedRoom(e.target.value || '')
                   setCurrentPage(1)
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Tất cả phòng</option>
-                {rooms.map((room) => (
-                  <option key={room.id} value={room.id}>
-                    Phòng {room.room_number}
-                  </option>
-                ))}
-              </select>
+              />
 
               <input
                 type="text"
@@ -343,52 +335,63 @@ const SeatsPage = () => {
           </div>
         ) : viewMode === 'grid' ? (
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {selectedRoom && getRoomName(selectedRoom)}
-              </h3>
-              <p className="text-sm text-gray-600 mb-6">
-                Click vào ô trống để thêm ghế, click vào ghế để xóa. Màu sắc biểu thị loại ghế.
-              </p>
-            </div>
+            {selectedRoom ? (
+              <>
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {rooms.find((r) => r.id === selectedRoom)?.room_number
+                      ? `Phòng ${rooms.find((r) => r.id === selectedRoom)?.room_number}`
+                      : 'Sơ đồ ghế ngồi'}
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-6">
+                    Xem sơ đồ ghế ngồi theo phòng chiếu. Màu sắc biểu thị loại ghế.
+                  </p>
+                </div>
 
-            <SeatGrid
-              seats={roomSeats}
-              selectedSeats={[]}
-              lockedSeats={[]}
-              bookedSeats={[]}
-              onSeatClick={null}
-              colorScheme="admin"
-              interactive={false}
-              showScreen={true}
-              showEntrance={true}
-              showLegend={true}
-            />
+                <SeatGrid
+                  seats={roomSeats}
+                  selectedSeats={[]}
+                  lockedSeats={[]}
+                  bookedSeats={[]}
+                  onSeatClick={null}
+                  colorScheme="admin"
+                  interactive={false}
+                  showScreen={true}
+                  showEntrance={true}
+                  showLegend={true}
+                />
 
-            {/* Grid Stats */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>Tổng số ghế: {Array.isArray(roomSeats) ? roomSeats.length : 0}</span>
-                <span>
-                  Còn trống:{' '}
-                  {Array.isArray(roomSeats)
-                    ? roomSeats.filter((s) => s.status === 'AVAILABLE').length
-                    : 0}
-                </span>
-                <span>
-                  Đã đặt:{' '}
-                  {Array.isArray(roomSeats)
-                    ? roomSeats.filter((s) => s.status === 'OCCUPIED').length
-                    : 0}
-                </span>
-                <span>
-                  Bảo trì:{' '}
-                  {Array.isArray(roomSeats)
-                    ? roomSeats.filter((s) => s.status === 'MAINTENANCE').length
-                    : 0}
-                </span>
+                {/* Grid Stats */}
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Tổng số ghế: {Array.isArray(roomSeats) ? roomSeats.length : 0}</span>
+                    <span>
+                      Còn trống:{' '}
+                      {Array.isArray(roomSeats)
+                        ? roomSeats.filter((s) => s.status === 'AVAILABLE').length
+                        : 0}
+                    </span>
+                    <span>
+                      Đã đặt:{' '}
+                      {Array.isArray(roomSeats)
+                        ? roomSeats.filter((s) => s.status === 'OCCUPIED').length
+                        : 0}
+                    </span>
+                    <span>
+                      Bảo trì:{' '}
+                      {Array.isArray(roomSeats)
+                        ? roomSeats.filter((s) => s.status === 'MAINTENANCE').length
+                        : 0}
+                    </span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500 text-lg mb-2">Vui lòng chọn phòng chiếu</p>
+                <p className="text-gray-400 text-sm">Chọn phòng từ dropdown phía trên để xem sơ đồ ghế</p>
               </div>
-            </div>
+            )}
           </div>
         ) : (
           <>
@@ -422,7 +425,7 @@ const SeatsPage = () => {
                     <tr key={seat.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {getRoomName(seat.room_id)}
+                          {seat.room_id}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

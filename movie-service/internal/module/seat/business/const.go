@@ -9,10 +9,8 @@ import (
 )
 
 const (
-	keySeatDetailPattern    = "seat:detail:*"
-	keySeatsListPattern     = "seats:list:*"
-	keyRoomSeatsPattern     = "room:seats:*"
-	keyShowtimeSeatsPattern = "showtime:seats:*"
+	keySeatDetailPattern = "seat:detail:*"
+	keySeatsListPattern  = "seats:list:*"
 
 	CACHE_TTL_1_HOUR  = time.Hour
 	CACHE_TTL_30_MINS = 30 * time.Minute
@@ -26,12 +24,4 @@ func keySeatDetail(id string) string {
 func keySeatsListWithFilters(paging *paging.Paging, searchQuery, roomId, rowNumber string, seatType entity.SeatType, status entity.SeatStatus) string {
 	return fmt.Sprintf("seats:list:paging:page:%d:size:%d:search:%s:room:%s:row:%s:type:%s:status:%s",
 		paging.Limit, paging.Offset, searchQuery, roomId, rowNumber, seatType, status)
-}
-
-func keyRoomSeats(roomId string) string {
-	return fmt.Sprintf("room:seats:%s", roomId)
-}
-
-func keyShowtimeSeats(showtimeId string) string {
-	return fmt.Sprintf("showtime:seats:%s", showtimeId)
 }

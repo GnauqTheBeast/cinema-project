@@ -60,7 +60,7 @@ export const seatService = {
   },
 
   getSeatsByRoom: async (roomId) => {
-    const response = await seatApi.get(`/rooms/${roomId}/seats`)
+    const response = await seatApi.get(`/seats?room_id=${roomId}&size=500`)
     return response.data
   },
 

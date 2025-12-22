@@ -230,17 +230,18 @@ func (x *GetShowtimesResponse) GetData() []*ShowtimeData {
 }
 
 type ShowtimeData struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	MovieId       string                 `protobuf:"bytes,2,opt,name=movie_id,json=movieId,proto3" json:"movie_id,omitempty"`
-	RoomId        string                 `protobuf:"bytes,3,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
-	ShowtimeDate  string                 `protobuf:"bytes,4,opt,name=showtime_date,json=showtimeDate,proto3" json:"showtime_date,omitempty"`
-	ShowtimeTime  string                 `protobuf:"bytes,5,opt,name=showtime_time,json=showtimeTime,proto3" json:"showtime_time,omitempty"`
-	MovieTitle    string                 `protobuf:"bytes,6,opt,name=movie_title,json=movieTitle,proto3" json:"movie_title,omitempty"`
-	RoomNumber    string                 `protobuf:"bytes,7,opt,name=room_number,json=roomNumber,proto3" json:"room_number,omitempty"`
-	SeatNumbers   []string               `protobuf:"bytes,8,rep,name=seat_numbers,json=seatNumbers,proto3" json:"seat_numbers,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	MovieId         string                 `protobuf:"bytes,2,opt,name=movie_id,json=movieId,proto3" json:"movie_id,omitempty"`
+	RoomId          string                 `protobuf:"bytes,3,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
+	ShowtimeDate    string                 `protobuf:"bytes,4,opt,name=showtime_date,json=showtimeDate,proto3" json:"showtime_date,omitempty"`
+	ShowtimeTime    string                 `protobuf:"bytes,5,opt,name=showtime_time,json=showtimeTime,proto3" json:"showtime_time,omitempty"`
+	MovieTitle      string                 `protobuf:"bytes,6,opt,name=movie_title,json=movieTitle,proto3" json:"movie_title,omitempty"`
+	RoomNumber      string                 `protobuf:"bytes,7,opt,name=room_number,json=roomNumber,proto3" json:"room_number,omitempty"`
+	SeatNumbers     []string               `protobuf:"bytes,8,rep,name=seat_numbers,json=seatNumbers,proto3" json:"seat_numbers,omitempty"`
+	DurationSeconds int64                  `protobuf:"varint,9,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ShowtimeData) Reset() {
@@ -327,6 +328,13 @@ func (x *ShowtimeData) GetSeatNumbers() []string {
 		return x.SeatNumbers
 	}
 	return nil
+}
+
+func (x *ShowtimeData) GetDurationSeconds() int64 {
+	if x != nil {
+		return x.DurationSeconds
+	}
+	return 0
 }
 
 type GetSeatsWithPriceRequest struct {
@@ -721,7 +729,7 @@ const file_movie_proto_rawDesc = "" +
 	"\x14GetShowtimesResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12$\n" +
-	"\x04data\x18\x03 \x03(\v2\x10.pb.ShowtimeDataR\x04data\"\x81\x02\n" +
+	"\x04data\x18\x03 \x03(\v2\x10.pb.ShowtimeDataR\x04data\"\xac\x02\n" +
 	"\fShowtimeData\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bmovie_id\x18\x02 \x01(\tR\amovieId\x12\x17\n" +
@@ -732,7 +740,8 @@ const file_movie_proto_rawDesc = "" +
 	"movieTitle\x12\x1f\n" +
 	"\vroom_number\x18\a \x01(\tR\n" +
 	"roomNumber\x12!\n" +
-	"\fseat_numbers\x18\b \x03(\tR\vseatNumbers\"V\n" +
+	"\fseat_numbers\x18\b \x03(\tR\vseatNumbers\x12)\n" +
+	"\x10duration_seconds\x18\t \x01(\x03R\x0fdurationSeconds\"V\n" +
 	"\x18GetSeatsWithPriceRequest\x12\x1f\n" +
 	"\vshowtime_id\x18\x01 \x01(\tR\n" +
 	"showtimeId\x12\x19\n" +

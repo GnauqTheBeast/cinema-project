@@ -6,6 +6,8 @@ import { movieService } from '../../services/movieService'
 import { showtimeService } from '../../services/showtimeApi'
 import { clientSeatService } from '../../services/clientSeatService'
 import boxOfficeService from '../../services/boxOfficeService'
+import { getSeatPrice, calculateBookingTotal, getSeatTypeLabel } from '../../constants/seatConstants'
+import { formatCurrency, formatDateTime } from '../../utils/formatters'
 
 const BoxOfficePage = () => {
   const [step, setStep] = useState(1)
@@ -15,17 +17,12 @@ const BoxOfficePage = () => {
   const [room, setRoom] = useState(null)
   const [seats, setSeats] = useState([])
   const [lockedSeats, setLockedSeats] = useState([])
+  const [bookedSeats, setBookedSeats] = useState([])
   const [selectedSeats, setSelectedSeats] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [bookingResult, setBookingResult] = useState(null)
-
-  const seatTypeMultipliers = {
-    'regular': 1.0,
-    'vip': 1.5,
-    'couple': 2.5
-  }
 
   useEffect(() => {
     if (step === 1) {
@@ -33,6 +30,40 @@ const BoxOfficePage = () => {
       fetchScheduledShowtimes()
     }
   }, [step])
+
+  useEffect(() => {
+    if (!selectedShowtime?.id || step !== 2) {
+      return
+    }
+
+    const pollLockedSeats = async () => {
+      try {
+        const response = await clientSeatService.getLockedSeats(selectedShowtime.id)
+        const lockedSeatIds = response.data?.locked_seat_ids || []
+        const bookedSeatIds = response.data?.booked_seat_ids || []
+
+        const newLockedSeats = seats.filter(seat => lockedSeatIds.includes(seat.id))
+        const newBookedSeats = seats.filter(seat => bookedSeatIds.includes(seat.id))
+        
+        setLockedSeats(newLockedSeats)
+        setBookedSeats(newBookedSeats)
+
+        if (selectedSeats.length > 0) {
+          const unavailableSeatIds = [...lockedSeatIds, ...bookedSeatIds]
+          const updatedSelectedSeats = selectedSeats.filter(seat => !unavailableSeatIds.includes(seat.id))
+          if (updatedSelectedSeats.length !== selectedSeats.length) {
+            setSelectedSeats(updatedSelectedSeats)
+          }
+        }
+      } catch (err) {
+        console.error('Error polling locked seats:', err)
+      }
+    }
+
+    const intervalId = setInterval(pollLockedSeats, 5000)
+
+    return () => clearInterval(intervalId)
+  }, [selectedShowtime?.id, step, selectedSeats, seats])
 
   const fetchMovies = async () => {
     try {
@@ -95,58 +126,49 @@ const BoxOfficePage = () => {
     return movie?.title || ''
   }
 
-  const fetchSeats = async (showtimeId) => {
-    if (!showtimeId) {
-      setLoading(false)
-      return
-    }
-
-    try {
-      const response = await clientSeatService.getSeatsByShowtime(showtimeId)
-
-      if (!response.success) {
-        setError('Không thể hiển thị sơ đồ ghế.')
-        setSeats([])
-        setLoading(false)
-        return
-      }
-
-      if (!response.data) {
-        setSeats([])
-        setLockedSeats([])
-        setLoading(false)
-        return
-      }
-
-      const seatsData = response.data.data || response.data
-      const seatsArray = Array.isArray(seatsData.seats) ? seatsData.seats :
-                        Array.isArray(seatsData) ? seatsData : []
-      const lockedArray = Array.isArray(seatsData.locked_seats) ? seatsData.locked_seats : []
-
-      setSeats(seatsArray)
-      setLockedSeats(lockedArray)
-      setLoading(false)
-    } catch (err) {
-      setError('Không thể hiển thị sơ đồ ghế.')
-      setSeats([])
-      console.error('Error fetching seats:', err)
-      setLoading(false)
-    }
-  }
-
   const handleShowtimeSelect = async (showtime) => {
-    setSelectedShowtime(showtime)
-    setRoom(showtime.room)
-    setStep(2)
-    setLoading(true)
-    await fetchSeats(showtime.id)
+    try {
+      setLoading(true)
+      setError('')
+      
+      const response = await showtimeService.getShowtimeById(showtime.id)
+      
+      if (!response.success || !response.data) {
+        setError('Không thể tải thông tin suất chiếu.')
+        setLoading(false)
+        return
+      }
+
+      const showtimeData = response.data
+      setSelectedShowtime(showtimeData)
+      setRoom(showtimeData.room)
+      setSeats(showtimeData.seats || [])
+      setLockedSeats([])
+      setBookedSeats([])
+      setSelectedSeats([])
+      setStep(2)
+    } catch (err) {
+      setError('Có lỗi xảy ra khi tải dữ liệu')
+      console.error('Error fetching showtime:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSeatSelect = (seat) => {
-    if (seat.status !== 'AVAILABLE') return
-    
-    const lockedSeatIds = lockedSeats.map(s => s.id)
-    if (lockedSeatIds.includes(seat.id)) return
+    if (!seat || seat.status === 'OCCUPIED' || seat.status === 'MAINTENANCE' || seat.status === 'BLOCKED') {
+      return
+    }
+
+    const isLocked = lockedSeats && lockedSeats.some(lockedSeat => lockedSeat.id === seat.id)
+    if (isLocked) {
+      return
+    }
+
+    const isBooked = bookedSeats && bookedSeats.some(bookedSeat => bookedSeat.id === seat.id)
+    if (isBooked) {
+      return
+    }
 
     const isSelected = selectedSeats.some(s => s.id === seat.id)
     if (isSelected) {
@@ -184,7 +206,12 @@ const BoxOfficePage = () => {
       if (err.response?.status === 400 && err.response?.data?.error === 'Seat already booked') {
         setError('Một hoặc nhiều ghế đã được đặt bởi người khác. Vui lòng chọn ghế khác.')
         setSelectedSeats([])
-        fetchSeats(selectedShowtime.id)
+        const response = await showtimeService.getShowtimeById(selectedShowtime.id)
+        if (response.success && response.data) {
+          setSeats(response.data.seats || [])
+          setLockedSeats([])
+          setBookedSeats([])
+        }
       } else if (err.response?.data?.error) {
         setError(err.response.data.error)
       } else {
@@ -202,6 +229,7 @@ const BoxOfficePage = () => {
     setRoom(null)
     setSeats([])
     setLockedSeats([])
+    setBookedSeats([])
     setSelectedSeats([])
     setError('')
     setSuccess(false)
@@ -211,31 +239,8 @@ const BoxOfficePage = () => {
 
   const calculateTotal = () => {
     if (!selectedShowtime || selectedSeats.length === 0) return 0
-    
     const basePrice = selectedShowtime.price || 50000
-    return selectedSeats.reduce((total, seat) => {
-      const multiplier = seatTypeMultipliers[seat.seat_type] || 1.0
-      return total + (basePrice * multiplier)
-    }, 0)
-  }
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount)
-  }
-
-  const formatDateTime = (dateString) => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    return date.toLocaleString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    return calculateBookingTotal(selectedSeats, basePrice)
   }
 
   if (success && step === 3) {
@@ -440,6 +445,7 @@ const BoxOfficePage = () => {
                 setSelectedSeats([])
                 setSeats([])
                 setLockedSeats([])
+                setBookedSeats([])
               }}
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium"
             >
@@ -473,7 +479,7 @@ const BoxOfficePage = () => {
                 seats={seats}
                 selectedSeats={selectedSeats}
                 lockedSeats={lockedSeats}
-                bookedSeats={[]}
+                bookedSeats={bookedSeats}
                 onSeatClick={handleSeatSelect}
                 colorScheme="client"
                 interactive={true}

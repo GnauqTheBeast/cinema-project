@@ -27,8 +27,6 @@ type SeatBiz interface {
 	GetSeatById(ctx context.Context, id string) (*entity.Seat, error)
 	GetSeatsByIds(ctx context.Context, ids []string) ([]*entity.Seat, error)
 	GetSeats(ctx context.Context, page, size int, search, roomId, rowNumber string, seatType entity.SeatType, status entity.SeatStatus) ([]*entity.Seat, int, error)
-	GetSeatsByRoom(ctx context.Context, roomId string) (*entity.SeatsDetail, error)
-	GetSeatsByShowtime(ctx context.Context, showtimeId string) (*entity.SeatsDetail, error)
 	GetLockedSeatsByShowtime(ctx context.Context, showtimeId string) (*entity.LockedSeatsResponse, error)
 	CreateSeat(ctx context.Context, seat *entity.Seat) error
 	UpdateSeat(ctx context.Context, id string, updates *entity.UpdateSeatRequest) error
@@ -41,8 +39,6 @@ type SeatRepository interface {
 	GetByIDs(ctx context.Context, ids []string) ([]*entity.Seat, error)
 	GetMany(ctx context.Context, limit, offset int, search, roomId, rowNumber string, seatType entity.SeatType, status entity.SeatStatus) ([]*entity.Seat, error)
 	GetTotalCount(ctx context.Context, search, roomId, rowNumber string, seatType entity.SeatType, status entity.SeatStatus) (int, error)
-	GetByRoom(ctx context.Context, roomId string) ([]*entity.Seat, error)
-	GetByShowtime(ctx context.Context, showtimeId string) ([]*entity.Seat, error)
 	Create(ctx context.Context, seat *entity.Seat) error
 	Update(ctx context.Context, seat *entity.Seat) error
 	Delete(ctx context.Context, id string) error
@@ -139,54 +135,6 @@ func (b *business) GetSeats(ctx context.Context, page, size int, search, roomId,
 	return seats, total, nil
 }
 
-func (b *business) GetSeatsByRoom(ctx context.Context, roomId string) (*entity.SeatsDetail, error) {
-	callback := func() ([]*entity.Seat, error) {
-		return b.repository.GetByRoom(ctx, roomId)
-	}
-
-	seats, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, keyRoomSeats(roomId), CACHE_TTL_30_MINS, callback)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get seats by room: %w", err)
-	}
-
-	lockedSeats, err := b.getLockedSeats(ctx, roomId)
-	if err != nil {
-		return nil, nil
-	}
-
-	lockedSeatsList := make([]*entity.Seat, 0)
-	for _, seat := range seats {
-		if lockedSeats[seat.Id] {
-			seat.Status = entity.SeatStatusOccupied
-			lockedSeatsList = append(lockedSeatsList, seat)
-		}
-	}
-
-	return &entity.SeatsDetail{
-		Seats:       seats,
-		LockedSeats: lockedSeatsList,
-	}, nil
-}
-
-func (b *business) getLockedSeats(ctx context.Context, roomId string) (map[string]bool, error) {
-	pattern := fmt.Sprintf("seat_lock:%s:*", roomId)
-	keys, err := b.redisClient.Keys(ctx, pattern).Result()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get seat lock keys: %w", err)
-	}
-
-	lockedSeats := make(map[string]bool)
-	for _, key := range keys {
-		parts := strings.Split(key, ":")
-		if len(parts) == 3 {
-			seatId := parts[2]
-			lockedSeats[seatId] = true
-		}
-	}
-
-	return lockedSeats, nil
-}
-
 func (b *business) getConcurrentLockedSeatsByShowtime(ctx context.Context, showtimeId string) (map[string]bool, error) {
 	pattern := fmt.Sprintf("seat:concurrent_lock:%s:*", showtimeId)
 	keys, err := b.redisClient.Keys(ctx, pattern).Result()
@@ -225,53 +173,10 @@ func (b *business) getBookedSeatsByShowtime(ctx context.Context, showtimeId stri
 	return bookedSeats, nil
 }
 
-func (b *business) GetSeatsByShowtime(ctx context.Context, showtimeId string) (*entity.SeatsDetail, error) {
-	callback := func() ([]*entity.Seat, error) {
-		return b.repository.GetByShowtime(ctx, showtimeId)
-	}
-
-	seats, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, keyShowtimeSeats(showtimeId), CACHE_TTL_30_MINS, callback)
-	if err != nil {
-		return nil, err
-	}
-
-	concurrentLockedSeats, err := b.getConcurrentLockedSeatsByShowtime(ctx, showtimeId)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get concurrent locked seats: %w", err)
-	}
-
-	bookedSeats, err := b.getBookedSeatsByShowtime(ctx, showtimeId)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get booked seats: %w", err)
-	}
-
-	lockedSeatsList := make([]*entity.Seat, 0)
-	for _, seat := range seats {
-		if concurrentLockedSeats[seat.Id] || bookedSeats[seat.Id] {
-			seat.Status = entity.SeatStatusOccupied
-			lockedSeatsList = append(lockedSeatsList, seat)
-		}
-	}
-
-	return &entity.SeatsDetail{
-		Seats:       seats,
-		LockedSeats: lockedSeatsList,
-	}, nil
-}
-
 func (b *business) GetLockedSeatsByShowtime(ctx context.Context, showtimeId string) (*entity.LockedSeatsResponse, error) {
-	if showtimeId == "" {
-		return nil, ErrInvalidSeatData
-	}
-
 	concurrentLockedSeatsMap, err := b.getConcurrentLockedSeatsByShowtime(ctx, showtimeId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get concurrent locked seats: %w", err)
-	}
-
-	bookedSeatsMap, err := b.getBookedSeatsByShowtime(ctx, showtimeId)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get booked seats: %w", err)
 	}
 
 	lockedSeatIds := make([]string, 0, len(concurrentLockedSeatsMap))
@@ -279,8 +184,16 @@ func (b *business) GetLockedSeatsByShowtime(ctx context.Context, showtimeId stri
 		lockedSeatIds = append(lockedSeatIds, seatId)
 	}
 
+	bookedSeatsMap, err := b.getBookedSeatsByShowtime(ctx, showtimeId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get booked seats: %w", err)
+	}
+
 	bookedSeatIds := make([]string, 0, len(bookedSeatsMap))
 	for seatId := range bookedSeatsMap {
+		if concurrentLockedSeatsMap[seatId] {
+			continue
+		}
 		bookedSeatIds = append(bookedSeatIds, seatId)
 	}
 
@@ -308,7 +221,6 @@ func (b *business) CreateSeat(ctx context.Context, seat *entity.Seat) error {
 	}
 
 	b.invalidateSeatsListCache(ctx)
-	_ = b.cache.Delete(ctx, keyRoomSeats(seat.RoomId))
 
 	return nil
 }
@@ -362,13 +274,12 @@ func (b *business) UpdateSeat(ctx context.Context, id string, updates *entity.Up
 	}
 
 	_ = b.cache.Delete(ctx, keySeatDetail(id))
-	_ = b.cache.Delete(ctx, keyRoomSeats(seat.RoomId))
 
 	return nil
 }
 
 func (b *business) DeleteSeat(ctx context.Context, id string) error {
-	seat, err := b.repository.GetByID(ctx, id)
+	_, err := b.repository.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrSeatNotFound
@@ -382,7 +293,6 @@ func (b *business) DeleteSeat(ctx context.Context, id string) error {
 
 	b.invalidateSeatsListCache(ctx)
 	_ = b.cache.Delete(ctx, keySeatDetail(id))
-	_ = b.cache.Delete(ctx, keyRoomSeats(seat.RoomId))
 
 	return nil
 }
@@ -404,7 +314,6 @@ func (b *business) UpdateSeatStatus(ctx context.Context, id string, status entit
 
 	b.invalidateSeatsListCache(ctx)
 	_ = b.cache.Delete(ctx, keySeatDetail(id))
-	_ = b.cache.Delete(ctx, keyRoomSeats(seat.RoomId))
 
 	return nil
 }
@@ -412,6 +321,4 @@ func (b *business) UpdateSeatStatus(ctx context.Context, id string, status entit
 func (b *business) invalidateSeatsListCache(ctx context.Context) {
 	_ = caching.DeleteKeys(ctx, b.redisClient, keySeatsListPattern)
 	_ = caching.DeleteKeys(ctx, b.redisClient, keySeatDetailPattern)
-	_ = caching.DeleteKeys(ctx, b.redisClient, keyRoomSeatsPattern)
-	_ = caching.DeleteKeys(ctx, b.redisClient, keyShowtimeSeatsPattern)
 }

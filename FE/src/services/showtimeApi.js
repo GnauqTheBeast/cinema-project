@@ -35,6 +35,7 @@ export const showtimeService = {
     status = '',
     dateFrom = '',
     dateTo = '',
+    excludeEnded = false,
   ) => {
     let url = `/showtimes?page=${page}&size=${size}`
     if (search) {
@@ -58,6 +59,9 @@ export const showtimeService = {
     if (dateTo) {
       url += `&date_to=${dateTo}`
     }
+    if (excludeEnded) {
+      url += `&exclude_ended=true`
+    }
     const response = await showtimeApi.get(url)
     return response.data
   },
@@ -67,8 +71,12 @@ export const showtimeService = {
     return response.data
   },
 
-  getShowtimesByMovie: async (movieId) => {
-    const response = await showtimeApi.get(`/showtimes?movie_id=${movieId}`)
+  getShowtimesByMovie: async (movieId, excludeEnded = false) => {
+    let url = `/showtimes?movie_id=${movieId}`
+    if (excludeEnded) {
+      url += `&exclude_ended=true`
+    }
+    const response = await showtimeApi.get(url)
     return response.data
   },
 

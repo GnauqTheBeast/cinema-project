@@ -69,13 +69,14 @@ export const movieService = {
   },
 
   // Get showtimes
-  getShowtimes: async (movieId = null, roomId = null) => {
+  getShowtimes: async (movieId = null, roomId = null, excludeEnded = false) => {
     try {
       let url = '/showtimes'
       const params = new URLSearchParams()
 
       if (movieId) params.append('movie_id', movieId)
       if (roomId) params.append('room_id', roomId)
+      if (excludeEnded) params.append('exclude_ended', 'true')
 
       if (params.toString()) {
         url += `?${params.toString()}`
@@ -114,7 +115,7 @@ export const movieService = {
   // Get room seats
   getRoomSeats: async (roomId) => {
     try {
-      const response = await movieApi.get(`/rooms/${roomId}/seats`)
+      const response = await movieApi.get(`/seats?room_id=${roomId}&size=500`)
       return response.data
     } catch (error) {
       console.error(`Error fetching seats for room ${roomId}:`, error)

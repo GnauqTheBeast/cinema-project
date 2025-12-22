@@ -43,11 +43,6 @@ func (s *Seat) IsValid() bool {
 	return true
 }
 
-type SeatsDetail struct {
-	Seats       []*Seat `json:"seats"`
-	LockedSeats []*Seat `json:"locked_seats"`
-}
-
 func GetSeatTypePriceMultiplier(seatType SeatType) float64 {
 	switch seatType {
 	case SeatTypeRegular:

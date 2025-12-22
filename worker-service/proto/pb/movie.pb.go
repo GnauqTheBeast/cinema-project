@@ -775,7 +775,7 @@ const file_movie_proto_rawDesc = "" +
 	"\vGetShowtime\x12\x16.pb.GetShowtimeRequest\x1a\x17.pb.GetShowtimeResponse\x12A\n" +
 	"\fGetShowtimes\x12\x17.pb.GetShowtimesRequest\x1a\x18.pb.GetShowtimesResponse\x12P\n" +
 	"\x11GetSeatsWithPrice\x12\x1c.pb.GetSeatsWithPriceRequest\x1a\x1d.pb.GetSeatsWithPriceResponse\x12G\n" +
-	"\x0eGetSeatDetails\x12\x19.pb.GetSeatDetailsRequest\x1a\x1a.pb.GetSeatDetailsResponseB\x18Z\x16movie-service/proto/pbb\x06proto3"
+	"\x0eGetSeatDetails\x12\x19.pb.GetSeatDetailsRequest\x1a\x1a.pb.GetSeatDetailsResponseB\x19Z\x17worker-service/proto/pbb\x06proto3"
 
 var (
 	file_movie_proto_rawDescOnce sync.Once

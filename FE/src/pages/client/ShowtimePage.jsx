@@ -118,6 +118,7 @@ export default function ShowtimePage() {
         'SCHEDULED', // Only show scheduled showtimes
         selectedDate,
         dateTo.toISOString().split('T')[0],
+        true, // excludeEnded - only show showtimes that haven't ended
       )
 
       if (response.data) {

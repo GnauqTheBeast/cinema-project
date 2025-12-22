@@ -173,36 +173,6 @@ func (r *Repository) GetTotalCount(ctx context.Context, search, roomId, rowNumbe
 	return count, nil
 }
 
-func (r *Repository) GetByRoom(ctx context.Context, roomId string) ([]*entity.Seat, error) {
-	var seats []*entity.Seat
-	err := r.roDb.NewSelect().
-		Model(&seats).
-		Where("room_id = ?", roomId).
-		OrderExpr("row_number ASC, seat_number ASC").
-		Scan(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get seats by room: %w", err)
-	}
-
-	return seats, nil
-}
-
-func (r *Repository) GetByShowtime(ctx context.Context, showtimeId string) ([]*entity.Seat, error) {
-	seats := make([]*entity.Seat, 0)
-	err := r.roDb.NewSelect().
-		Model((*entity.Seat)(nil)).
-		Join("INNER JOIN rooms AS r ON r.id = s.room_id").
-		Join("INNER JOIN showtimes AS st ON st.room_id = r.id").
-		Where("st.id = ?", showtimeId).
-		OrderExpr("s.row_number ASC, s.seat_number ASC").
-		Scan(ctx, &seats)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get seats by showtime: %w", err)
-	}
-
-	return seats, nil
-}
-
 func (r *Repository) Update(ctx context.Context, seat *entity.Seat) error {
 	now := time.Now()
 	seat.UpdatedAt = &now

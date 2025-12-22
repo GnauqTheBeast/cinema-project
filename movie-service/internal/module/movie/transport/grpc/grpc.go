@@ -43,15 +43,18 @@ func (s *MovieServiceServer) GetShowtime(ctx context.Context, req *pb.GetShowtim
 		}, nil
 	}
 
+	duration := int64(showtime.EndTime.Sub(showtime.StartTime).Seconds())
+
 	showtimeData := &pb.ShowtimeData{
-		Id:           showtime.Id,
-		MovieId:      showtime.MovieId,
-		RoomId:       showtime.RoomId,
-		ShowtimeDate: showtime.StartTime.Format("2006-01-02"),
-		ShowtimeTime: showtime.StartTime.Format("15:04:05"),
-		MovieTitle:   showtime.Movie.Title,
-		RoomNumber:   fmt.Sprintf("%d", showtime.Room.RoomNumber),
-		SeatNumbers:  []string{}, // Empty for now
+		Id:              showtime.Id,
+		MovieId:         showtime.MovieId,
+		RoomId:          showtime.RoomId,
+		ShowtimeDate:    showtime.StartTime.Format("2006-01-02"),
+		ShowtimeTime:    showtime.StartTime.Format("15:04:05"),
+		MovieTitle:      showtime.Movie.Title,
+		RoomNumber:      fmt.Sprintf("%d", showtime.Room.RoomNumber),
+		SeatNumbers:     []string{},
+		DurationSeconds: duration,
 	}
 
 	return &pb.GetShowtimeResponse{
@@ -72,15 +75,18 @@ func (s *MovieServiceServer) GetShowtimes(ctx context.Context, req *pb.GetShowti
 
 	var showtimeData []*pb.ShowtimeData
 	for _, showtime := range showtimes {
+		duration := int64(showtime.EndTime.Sub(showtime.StartTime).Seconds())
+
 		data := &pb.ShowtimeData{
-			Id:           showtime.Id,
-			MovieId:      showtime.MovieId,
-			RoomId:       showtime.RoomId,
-			ShowtimeDate: showtime.StartTime.Format("2006-01-02"),
-			ShowtimeTime: showtime.StartTime.Format("15:04:05"),
-			MovieTitle:   showtime.Movie.Title,
-			RoomNumber:   fmt.Sprintf("%d", showtime.Room.RoomNumber),
-			SeatNumbers:  []string{}, // Empty for now
+			Id:              showtime.Id,
+			MovieId:         showtime.MovieId,
+			RoomId:          showtime.RoomId,
+			ShowtimeDate:    showtime.StartTime.Format("2006-01-02"),
+			ShowtimeTime:    showtime.StartTime.Format("15:04:05"),
+			MovieTitle:      showtime.Movie.Title,
+			RoomNumber:      fmt.Sprintf("%d", showtime.Room.RoomNumber),
+			SeatNumbers:     []string{},
+			DurationSeconds: duration,
 		}
 		showtimeData = append(showtimeData, data)
 	}

@@ -26,15 +26,16 @@ type UpdateShowtimeRequest struct {
 }
 
 type GetShowtimesQuery struct {
-	Page     int            `form:"page,default=1" binding:"min=1"`
-	Size     int            `form:"size,default=10" binding:"min=1,max=100"`
-	Search   string         `form:"search"`
-	MovieId  string         `form:"movie_id"`
-	RoomId   string         `form:"room_id"`
-	Format   ShowtimeFormat `form:"format"`
-	Status   ShowtimeStatus `form:"status"`
-	DateFrom string         `form:"date_from"`
-	DateTo   string         `form:"date_to"`
+	Page         int            `form:"page,default=1" binding:"min=1"`
+	Size         int            `form:"size,default=10" binding:"min=1,max=100"`
+	Search       string         `form:"search"`
+	MovieId      string         `form:"movie_id"`
+	RoomId       string         `form:"room_id"`
+	Format       ShowtimeFormat `form:"format"`
+	Status       ShowtimeStatus `form:"status"`
+	DateFrom     string         `form:"date_from"`
+	DateTo       string         `form:"date_to"`
+	ExcludeEnded bool           `form:"exclude_ended"`
 }
 
 type ShowtimeResponse struct {

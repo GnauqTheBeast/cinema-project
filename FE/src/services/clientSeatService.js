@@ -27,16 +27,7 @@ clientSeatApi.interceptors.request.use(
 export const clientSeatService = {
   getSeatsByRoom: async (roomId) => {
     try {
-      const response = await clientSeatApi.get(`/rooms/${roomId}/seats`)
-      return response.data
-    } catch (error) {
-      throw error
-    }
-  },
-
-  getSeatsByShowtime: async (showtimeId) => {
-    try {
-      const response = await clientSeatApi.get(`/showtimes/${showtimeId}/seats`)
+      const response = await clientSeatApi.get(`/seats?room_id=${roomId}&size=500`)
       return response.data
     } catch (error) {
       throw error

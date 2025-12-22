@@ -32,6 +32,18 @@ func CreateTicketTable(ctx context.Context, db *bun.DB) error {
 	if err != nil {
 		return fmt.Errorf("failed to create tickets table: %w", err)
 	}
+
+	_, err = db.NewCreateIndex().
+		Model((*models.Ticket)(nil)).
+		Column("showtime_id", "seat_id").
+		Index("idx_uniq_ticket_showtime_seat").
+		Unique().
+		IfNotExists().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create index tickets table: %w", err)
+	}
+
 	return nil
 }
 

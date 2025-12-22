@@ -6,25 +6,12 @@ import SeatGrid from '../../components/SeatGrid'
 import { showtimeService } from '../../services/showtimeApi'
 import { clientSeatService } from '../../services/clientSeatService'
 import { bookingService } from '../../services/bookingService'
+import { getSeatTypeLabel, getSeatPrice, calculateBookingTotal } from '../../constants/seatConstants'
+import { formatPrice } from '../../utils/formatters'
 
 const BookingPage = () => {
   const { showtimeId } = useParams()
   const navigate = useNavigate()
-  
-  const seatTypeMultipliers = {
-    'REGULAR': 1.0,
-    'VIP': 1.5,
-    'COUPLE': 2.5
-  }
-
-  const getSeatTypeLabel = (type) => {
-    const labels = {
-      'REGULAR': 'Ghế thường',
-      'VIP': 'Ghế VIP',
-      'COUPLE': 'Ghế đôi'
-    }
-    return labels[type] || type
-  }
 
   const [movie, setMovie] = useState(null)
   const [showtime, setShowtime] = useState(null)
@@ -125,25 +112,14 @@ const BookingPage = () => {
     }
   }
 
-  const getSeatPrice = (seatType) => {
-    if (!showtime || !showtime.base_price) {
-      return 0
-    }
-    const multiplier = seatTypeMultipliers[seatType] || 1.0
-    return showtime.base_price * multiplier
+  const getPrice = (seatType) => {
+    if (!showtime || !showtime.base_price) return 0
+    return getSeatPrice(seatType, showtime.base_price)
   }
 
   const calculateTotal = () => {
-    return selectedSeats.reduce((total, seat) => {
-      return total + getSeatPrice(seat.seat_type)
-    }, 0)
-  }
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(price)
+    if (!showtime || !showtime.base_price) return 0
+    return calculateBookingTotal(selectedSeats, showtime.base_price)
   }
 
   const handleProceedToPayment = async () => {
@@ -287,15 +263,15 @@ const BookingPage = () => {
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-300">Ghế thường:</span>
-                      <span className="text-white">{formatPrice(getSeatPrice('regular'))}</span>
+                      <span className="text-white">{formatPrice(getPrice('REGULAR'))}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-300">Ghế VIP:</span>
-                      <span className="text-white">{formatPrice(getSeatPrice('vip'))}</span>
+                      <span className="text-white">{formatPrice(getPrice('VIP'))}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-300">Ghế đôi:</span>
-                      <span className="text-white">{formatPrice(getSeatPrice('COUPLE'))}</span>
+                      <span className="text-white">{formatPrice(getPrice('COUPLE'))}</span>
                     </div>
                   </div>
                 </div>
@@ -337,7 +313,7 @@ const BookingPage = () => {
                             {seat.row_number}{seat.seat_number.toString().padStart(2, '0')} - {getSeatTypeLabel(seat.seat_type)}
                           </span>
                           <span className="text-red-400 font-medium">
-                            {formatPrice(getSeatPrice(seat.seat_type))}
+                            {formatPrice(getPrice(seat.seat_type))}
                           </span>
                         </div>
                       ))}
@@ -403,7 +379,7 @@ const BookingPage = () => {
                     {selectedSeats.map((seat) => (
                       <div key={seat.id} className="flex justify-between text-sm">
                         <span className="text-gray-300">{seat.row_number}{seat.seat_number.toString().padStart(2, '0')}</span>
-                        <span className="text-red-400">{formatPrice(getSeatPrice(seat.seat_type))}</span>
+                        <span className="text-red-400">{formatPrice(getPrice(seat.seat_type))}</span>
                       </div>
                     ))}
                   </div>

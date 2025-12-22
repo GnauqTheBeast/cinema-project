@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"worker-service/internal/datastore"
 	"worker-service/internal/grpc"
 	"worker-service/internal/models"
 	"worker-service/internal/pkg/logger"
@@ -13,24 +14,19 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/samber/do"
-	"github.com/uptrace/bun"
 )
 
 type Worker struct {
-	db            *bun.DB
-	logger        logger.Logger
-	pubsub        pubsub.PubSub
-	redisClient   redis.UniversalClient
-	bookingClient *grpc.BookingClient
-	userClient    *grpc.UserClient
+	logger         logger.Logger
+	pubsub         pubsub.PubSub
+	redisClient    redis.UniversalClient
+	bookingClient  *grpc.BookingClient
+	userClient     *grpc.UserClient
+	movieClient    *grpc.MovieClient
+	outboxRepo     datastore.OutboxRepository
 }
 
 func NewWorker(ctn *do.Injector) (*Worker, error) {
-	db, err := do.Invoke[*bun.DB](ctn)
-	if err != nil {
-		return nil, err
-	}
-
 	log, err := do.Invoke[logger.Logger](ctn)
 	if err != nil {
 		return nil, err
@@ -46,6 +42,11 @@ func NewWorker(ctn *do.Injector) (*Worker, error) {
 		return nil, err
 	}
 
+	outboxRepo, err := do.Invoke[datastore.OutboxRepository](ctn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get outbox repository: %w", err)
+	}
+
 	bookingClient, err := grpc.NewBookingClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create booking client: %w", err)
@@ -56,13 +57,19 @@ func NewWorker(ctn *do.Injector) (*Worker, error) {
 		return nil, fmt.Errorf("failed to create user client: %w", err)
 	}
 
+	movieClient, err := grpc.NewMovieClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create movie client: %w", err)
+	}
+
 	return &Worker{
-		db:            db,
 		logger:        log,
 		pubsub:        pubsub,
 		redisClient:   redisClient,
+		outboxRepo:    outboxRepo,
 		bookingClient: bookingClient,
 		userClient:    userClient,
+		movieClient:   movieClient,
 	}, nil
 }
 
@@ -86,16 +93,9 @@ func (w *Worker) Start(ctx context.Context) error {
 }
 
 func (w *Worker) processEvents(ctx context.Context) error {
-	events := make([]models.OutboxEvent, 0)
-
-	err := w.db.NewSelect().
-		Model(&events).
-		Where("status = ?", models.OutboxStatusPending).
-		OrderExpr("id ASC").
-		Limit(100).
-		Scan(ctx)
+	events, err := w.outboxRepo.GetPendingEvents(ctx, 100)
 	if err != nil {
-		return fmt.Errorf("failed to query outbox events: %w", err)
+		return err
 	}
 
 	if len(events) == 0 {
@@ -146,12 +146,10 @@ func (w *Worker) handleBookingCreated(ctx context.Context, event models.OutboxEv
 	seatIds := data.SeatIds
 	showtimeId := data.ShowtimeId
 
-	w.logger.Info("Handling booking created event for booking ID: %s", bookingID)
-
 	for _, seatId := range seatIds {
 		lockKey := fmt.Sprintf("seat_lock:%s:%s", showtimeId, seatId)
 
-		if err := w.redisClient.Set(ctx, lockKey, bookingID, 15*time.Minute).Err(); err != nil {
+		if err := w.redisClient.Set(ctx, lockKey, bookingID, 5*time.Minute).Err(); err != nil {
 			w.logger.Error("Failed to cache seat lock %s: %v", lockKey, err)
 		}
 	}
@@ -185,16 +183,19 @@ func (w *Worker) handlePaymentCompleted(ctx context.Context, event models.Outbox
 		amount = float64(amountInt)
 	}
 
-	// use enum uppercase
 	resp, err := w.bookingClient.UpdateBookingStatusWithResponse(ctx, bookingID, "CONFIRMED")
 	if err != nil {
-		return fmt.Errorf("failed to update booking status: %w", err)
+		return err
+	}
+
+	if err = w.extendSeatLocksUntilMovieEnds(ctx, bookingID); err != nil {
+		w.logger.Error("Failed to extend seat locks for booking %s: %v", bookingID, err)
 	}
 
 	userID := resp.UserId
 	userEmail, err := w.userClient.GetUserEmailById(ctx, userID)
 	if err != nil {
-		return fmt.Errorf("failed to get user email: %w", err)
+		return err
 	}
 
 	ticketResp, err := w.bookingClient.CreateTicketsWithDetails(ctx, bookingID)
@@ -216,7 +217,7 @@ func (w *Worker) handlePaymentCompleted(ctx context.Context, event models.Outbox
 	emailData := map[string]interface{}{
 		"user_id":    userID,
 		"user_email": userEmail,
-		"to":         userEmail, // Use the email from user service, not from booking details
+		"to":         userEmail,
 		"booking_id": bookingID,
 	}
 
@@ -260,28 +261,53 @@ func (w *Worker) handlePaymentCompleted(ctx context.Context, event models.Outbox
 	return w.pubsub.Publish(ctx, userMessage)
 }
 
-func (w *Worker) markEventAsSent(ctx context.Context, eventID int) error {
-	_, err := w.db.NewUpdate().
-		Model((*models.OutboxEvent)(nil)).
-		Set("status = ?", models.OutboxStatusSent).
-		Set("updated_at = ?", time.Now()).
-		Where("id = ?", eventID).
-		Exec(ctx)
-
-	return err
-}
-
-func (w *Worker) markEventAsFailed(ctx context.Context, eventID int, err error) error {
-	_, updateErr := w.db.NewUpdate().
-		Model((*models.OutboxEvent)(nil)).
-		Set("status = ?", models.OutboxStatusFailed).
-		Set("updated_at = ?", time.Now()).
-		Where("id = ?", eventID).
-		Exec(ctx)
-
-	if updateErr != nil {
-		w.logger.Error("Failed to mark event %d as failed: %v", eventID, updateErr)
+func (w *Worker) extendSeatLocksUntilMovieEnds(ctx context.Context, bookingID string) error {
+	event, err := w.outboxRepo.GetBookingEventByBookingID(ctx, bookingID)
+	if err != nil {
+		return err
 	}
 
-	return updateErr
+	eventData := new(models.BookingEventData)
+	if err = json.Unmarshal([]byte(event.Payload), eventData); err != nil {
+		return fmt.Errorf("failed to unmarshal event data: %w", err)
+	}
+
+	seatIds := eventData.SeatIds
+	if len(seatIds) == 0 {
+		return fmt.Errorf("no seats found for booking %s", bookingID)
+	}
+
+	showtimeData, err := w.movieClient.GetShowtime(ctx, eventData.ShowtimeId)
+	if err != nil {
+		return fmt.Errorf("failed to get showtime data: %w", err)
+	}
+
+	showtimeStr := fmt.Sprintf("%s %s", showtimeData.ShowtimeDate, showtimeData.ShowtimeTime)
+	showtimeStart, err := time.Parse("2006-01-02 15:04:05", showtimeStr)
+	if err != nil {
+		return fmt.Errorf("failed to parse showtime: %w", err)
+	}
+
+	duration := time.Second * time.Duration(showtimeData.DurationSeconds)
+	movieEndTime := showtimeStart.Add(duration)
+	ttl := time.Until(movieEndTime)
+
+	for _, seatId := range seatIds {
+		lockKey := fmt.Sprintf("seat_lock:%s:%s", eventData.ShowtimeId, seatId)
+
+		err = w.redisClient.Expire(ctx, lockKey, ttl).Err()
+		if err != nil {
+			return fmt.Errorf("failed to extend lock for seat %s: %w", seatId, err)
+		}
+	}
+
+	return nil
+}
+
+func (w *Worker) markEventAsSent(ctx context.Context, eventID int) error {
+	return w.outboxRepo.MarkEventAsSent(ctx, eventID)
+}
+
+func (w *Worker) markEventAsFailed(ctx context.Context, eventID int, _ error) error {
+	return w.outboxRepo.MarkEventAsFailed(ctx, eventID)
 }

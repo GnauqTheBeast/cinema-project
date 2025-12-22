@@ -40,6 +40,7 @@ message ShowtimeData {
   string movie_title = 6;
   string room_number = 7;
   repeated string seat_numbers = 8;
+  int64 duration_seconds = 9;
 }
 
 message GetSeatsWithPriceRequest {

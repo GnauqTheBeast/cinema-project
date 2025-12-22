@@ -1,4 +1,5 @@
 import { FaCouch } from 'react-icons/fa'
+import { COUPLE_ROWS, getSeatTypeLabel } from '../constants/seatConstants'
 
 const SeatGrid = ({
   seats = [],
@@ -13,7 +14,7 @@ const SeatGrid = ({
   interactive = true,
   className = ''
 }) => {
-  const coupleRows = ['M', 'N', 'O']
+  const coupleRows = COUPLE_ROWS
 
   const createSeatGrid = () => {
     if (!seats || !Array.isArray(seats) || seats.length === 0) {
@@ -104,15 +105,6 @@ const SeatGrid = ({
       default:
         return 'bg-green-600 border-green-500 text-white hover:bg-green-500 cursor-pointer'
     }
-  }
-
-  const getSeatTypeLabel = (type) => {
-    const labels = {
-      'REGULAR': 'Ghế thường',
-      'VIP': 'Ghế VIP',
-      'COUPLE': 'Ghế đôi'
-    }
-    return labels[type] || type
   }
 
   const handleSeatClick = (seat) => {

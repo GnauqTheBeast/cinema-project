@@ -102,10 +102,15 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*entity.Showtime, 
 	return showtime, nil
 }
 
-func (r *Repository) GetMany(ctx context.Context, limit, offset int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) ([]*entity.Showtime, error) {
+func (r *Repository) GetMany(ctx context.Context, limit, offset int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time, excludeEnded bool) ([]*entity.Showtime, error) {
 	query := r.roDb.
 		NewSelect().
 		Model((*entity.Showtime)(nil))
+
+	// Only get showtimes that haven't ended yet (for client API)
+	if excludeEnded {
+		query = query.Where("end_time > ?", time.Now())
+	}
 
 	if search != "" {
 		searchPattern := "%" + strings.ToLower(search) + "%"
@@ -149,10 +154,15 @@ func (r *Repository) GetMany(ctx context.Context, limit, offset int, search, mov
 	return showtimes, nil
 }
 
-func (r *Repository) GetTotalCount(ctx context.Context, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) (int, error) {
+func (r *Repository) GetTotalCount(ctx context.Context, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time, excludeEnded bool) (int, error) {
 	query := r.roDb.
 		NewSelect().
 		Model((*entity.Showtime)(nil))
+
+	// Only get showtimes that haven't ended yet (for client API)
+	if excludeEnded {
+		query = query.Where("end_time > ?", time.Now())
+	}
 
 	if search != "" {
 		searchPattern := "%" + strings.ToLower(search) + "%"
