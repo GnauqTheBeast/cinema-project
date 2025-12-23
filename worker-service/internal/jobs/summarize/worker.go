@@ -47,7 +47,6 @@ func (w *Worker) Start(ctx context.Context) error {
 	ticker := time.NewTicker(w.checkInterval)
 	defer ticker.Stop()
 
-	// Run once immediately
 	if err := w.processPendingArticles(ctx); err != nil {
 		logrus.Errorf("Initial processing failed: %v", err)
 	}

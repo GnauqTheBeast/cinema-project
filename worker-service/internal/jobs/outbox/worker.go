@@ -17,13 +17,13 @@ import (
 )
 
 type Worker struct {
-	logger         logger.Logger
-	pubsub         pubsub.PubSub
-	redisClient    redis.UniversalClient
-	bookingClient  *grpc.BookingClient
-	userClient     *grpc.UserClient
-	movieClient    *grpc.MovieClient
-	outboxRepo     datastore.OutboxRepository
+	logger        logger.Logger
+	pubsub        pubsub.PubSub
+	redisClient   redis.UniversalClient
+	bookingClient *grpc.BookingClient
+	userClient    *grpc.UserClient
+	movieClient   *grpc.MovieClient
+	outboxRepo    datastore.OutboxRepository
 }
 
 func NewWorker(ctn *do.Injector) (*Worker, error) {

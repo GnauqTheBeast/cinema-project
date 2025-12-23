@@ -33,7 +33,6 @@ func (w *Worker) Start(ctx context.Context) error {
 	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
 
-	// Run once immediately
 	if err := w.crawl(ctx); err != nil {
 		logrus.Errorf("Initial crawl failed: %v", err)
 	}
@@ -54,12 +53,10 @@ func (w *Worker) Start(ctx context.Context) error {
 func (w *Worker) crawl(ctx context.Context) error {
 	logrus.Info("Starting crawl job...")
 
-	// Get all configured news sources
 	sources := GetNewsSources()
 	totalArticles := 0
 	totalErrors := 0
 
-	// Crawl each source
 	for _, source := range sources {
 		logrus.Infof("Crawling source: %s (%s)", source.Name, source.URL)
 

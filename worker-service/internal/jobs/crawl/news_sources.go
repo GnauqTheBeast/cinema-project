@@ -19,7 +19,6 @@ import (
 
 var reImage = regexp.MustCompile(`<img[^>]+src="([^"]+)"`)
 
-// RSS Feed Structures
 type RSSFeed struct {
 	XMLName xml.Name `xml:"rss"`
 	Channel Channel  `xml:"channel"`
@@ -108,7 +107,6 @@ func GetNewsSources() []NewsSource {
 	}
 }
 
-// FetchRSSFeed fetches and parses an RSS feed
 func FetchRSSFeed(ctx context.Context, url string) (*RSSFeed, error) {
 	client := &http.Client{
 		Timeout: 30 * time.Second,
@@ -137,14 +135,13 @@ func FetchRSSFeed(ctx context.Context, url string) (*RSSFeed, error) {
 	}
 
 	var feed RSSFeed
-	if err := xml.Unmarshal(body, &feed); err != nil {
+	if err = xml.Unmarshal(body, &feed); err != nil {
 		return nil, fmt.Errorf("failed to parse RSS feed: %w", err)
 	}
 
 	return &feed, nil
 }
 
-// ParseRSSToArticles converts RSS items to NewsArticle models
 func ParseRSSToArticles(feed *RSSFeed, source NewsSource) ([]*models.NewsArticle, error) {
 	articles := make([]*models.NewsArticle, 0, len(feed.Channel.Items))
 
@@ -204,10 +201,7 @@ func ParseRSSToArticles(feed *RSSFeed, source NewsSource) ([]*models.NewsArticle
 	return articles, nil
 }
 
-// Helper functions
-
 func parseDate(dateStr string) (time.Time, error) {
-	// Try common date formats
 	formats := []string{
 		time.RFC1123Z,
 		time.RFC1123,
