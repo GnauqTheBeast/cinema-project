@@ -12,9 +12,9 @@ FROM alpine:latest
 RUN apk add ca-certificates multirun
 WORKDIR /app
 COPY --from=builder /app/outbox ./
-COPY --from=builder /app/crawl ./
-COPY --from=builder /app/summarize ./
+#COPY --from=builder /app/crawl ./
+#COPY --from=builder /app/summarize ./
 
 EXPOSE 8087 50083
-CMD ["multirun", "./outbox", "./crawl", "./summarize"]
-#CMD ["multirun", "./outbox"]
+#CMD ["multirun", "./outbox", "./crawl", "./summarize"]
+CMD ["multirun", "./outbox"]
