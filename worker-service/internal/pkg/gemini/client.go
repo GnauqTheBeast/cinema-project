@@ -123,13 +123,17 @@ func (c *Client) GenerateTopicTitle(ctx context.Context, titles []string, langua
 
 %s
 
-Hãy tạo một tiêu đề ngắn gọn hơn (tối đa 10 từ) giữ nguyên nội dung chính.`, titles[0])
+Tạo một tiêu đề ngắn gọn hơn (tối đa 10 từ) giữ nguyên nội dung chính.
+
+CHỈ trả về tiêu đề, KHÔNG thêm bất kỳ văn bản giải thích, gợi ý hay phần mở đầu nào khác.`, titles[0])
 		} else {
 			prompt = fmt.Sprintf(`Based on this article title:
 
 %s
 
-Create a shorter, concise title (max 10 words) keeping the main content.`, titles[0])
+Create a shorter, concise title (max 10 words) keeping the main content.
+
+ONLY return the title itself, NO explanations, suggestions, or introductory text.`, titles[0])
 		}
 	} else {
 		if language == "vi" {
@@ -137,13 +141,17 @@ Create a shorter, concise title (max 10 words) keeping the main content.`, title
 
 %s
 
-Hãy tạo một tiêu đề ngắn gọn (tối đa 10 từ) tóm tắt chủ đề chung.`, len(titles), formatTitles(titles))
+Tạo một tiêu đề ngắn gọn (tối đa 10 từ) tóm tắt chủ đề chung.
+
+CHỈ trả về tiêu đề, KHÔNG thêm bất kỳ văn bản giải thích, gợi ý hay phần mở đầu nào khác.`, len(titles), formatTitles(titles))
 		} else {
 			prompt = fmt.Sprintf(`Based on these %d article titles:
 
 %s
 
-Create a concise title (max 10 words) summarizing the main topic.`, len(titles), formatTitles(titles))
+Create a concise title (max 10 words) summarizing the main topic.
+
+ONLY return the title itself, NO explanations, suggestions, or introductory text.`, len(titles), formatTitles(titles))
 		}
 	}
 

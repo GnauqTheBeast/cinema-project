@@ -109,6 +109,8 @@ func (w *Worker) processPendingArticles(ctx context.Context) error {
 		// Generate summary for all groups (including single articles)
 		summary, err := w.createSummaryForGroup(ctx, group)
 		if err != nil {
+			logrus.Errorf("Failed to create summary for group (category: %s, language: %s, articles: %d): %v",
+				group.Category, group.Language, len(group.Articles), err)
 			_ = w.markArticlesProcessed(ctx, group.Articles, "")
 			continue
 		}
