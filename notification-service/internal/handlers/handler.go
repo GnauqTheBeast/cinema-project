@@ -71,7 +71,7 @@ func New(cfg *Config) (http.Handler, error) {
 
 	// WebSocket endpoint for real-time notifications
 	groupWebSocket := NewGroupWebSocket(cfg.Container)
-	r.GET("/api/v1/notifications/ws", groupWebSocket.WebsocketHandleConnection)
+	r.GET("/ws/v1/notifications/", groupWebSocket.WebsocketHandleConnection)
 
 	return r, nil
 }
