@@ -62,12 +62,6 @@ const ShowtimeFormPage = () => {
     }
   }, [formData.movie_id, movies])
 
-  useEffect(() => {
-    if (formData.room_id && formData.start_time && formData.end_time) {
-      checkTimeConflict()
-    }
-  }, [formData.room_id, formData.start_time, formData.end_time])
-
   const fetchRooms = async () => {
     try {
       const response = await roomService.getRooms(1, 100)
@@ -111,7 +105,6 @@ const ShowtimeFormPage = () => {
       }
     } catch (err) {
       setError('Có lỗi xảy ra khi tải dữ liệu')
-      console.error('Error fetching showtime:', err)
     } finally {
       setLoading(false)
     }
@@ -148,28 +141,6 @@ const ShowtimeFormPage = () => {
     }
 
     setTimeInfo(info)
-  }
-
-  const checkTimeConflict = async () => {
-    try {
-      const startTime = new Date(formData.start_time).toISOString()
-      const endTime = new Date(formData.end_time).toISOString()
-
-      const response = await showtimeService.checkTimeConflict(
-        formData.room_id,
-        startTime,
-        endTime,
-        isEditing ? id : '',
-      )
-
-      if (response.success && response.data.has_conflict) {
-        setConflictWarning('⚠️ Thời gian này đã có lịch chiếu khác trong phòng!')
-      } else {
-        setConflictWarning('')
-      }
-    } catch (err) {
-      console.error('Error checking time conflict:', err)
-    }
   }
 
   const handleSubmit = async (e) => {
@@ -240,7 +211,7 @@ const ShowtimeFormPage = () => {
       navigate('/admin/showtimes')
     } catch (err) {
       if (err.response?.data?.message?.includes('conflicts')) {
-        setError('Lịch chiếu bị trung với lịch chiếu khác trong phòng')
+        setError('Lịch chiếu bị trùng với lịch chiếu khác trong phòng')
       } else if (err.response?.data?.message?.includes('past')) {
         setError('Không thể tạo lịch chiếu trong quá khứ')
       } else {
@@ -309,7 +280,6 @@ const ShowtimeFormPage = () => {
     setFormData((prev) => {
       let newEndTime = prev.end_time
 
-      // Auto-adjust end time when movie changes and start time exists
       if (prev.start_time && movie?.duration) {
         newEndTime = calculateEndTime(prev.start_time, movie.duration)
       }

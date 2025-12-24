@@ -114,15 +114,6 @@ export const showtimeService = {
     return response.data
   },
 
-  checkTimeConflict: async (roomId, startTime, endTime, excludeId = '') => {
-    let url = `/showtimes/conflict-check?room_id=${roomId}&start_time=${startTime}&end_time=${endTime}`
-    if (excludeId) {
-      url += `&exclude_id=${excludeId}`
-    }
-    const response = await showtimeApi.get(url)
-    return response.data
-  },
-
   getShowtimeFormats: () => [
     { value: '2D', label: '2D' },
     { value: '3D', label: '3D' },
