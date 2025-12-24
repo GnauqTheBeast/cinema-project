@@ -164,7 +164,9 @@ services:
       - redis
 
   nginx:
-    image: nginx:alpine
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
     container_name: nginx
     ports:
       - "80:80"
