@@ -5,25 +5,27 @@ import (
 	"fmt"
 	"time"
 
+	"worker-service/internal/datastore"
 	"worker-service/internal/models"
 
 	"github.com/samber/do"
 	"github.com/sirupsen/logrus"
-	"github.com/uptrace/bun"
 )
 
+const MaxArticlesPerSource = 5
+
 type Worker struct {
-	db *bun.DB
+	newsRepo datastore.NewsArticleRepository
 }
 
 func NewWorker(ctn *do.Injector) (*Worker, error) {
-	db, err := do.Invoke[*bun.DB](ctn)
+	newsRepo, err := do.Invoke[datastore.NewsArticleRepository](ctn)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Worker{
-		db: db,
+		newsRepo: newsRepo,
 	}, nil
 }
 
@@ -67,7 +69,11 @@ func (w *Worker) crawl(ctx context.Context) error {
 			continue
 		}
 
-		// Save articles to database
+		if len(articles) > MaxArticlesPerSource {
+			articles = articles[:MaxArticlesPerSource]
+			logrus.Infof("Limited to top %d articles from %s", MaxArticlesPerSource, source.Name)
+		}
+
 		saved, err := w.saveArticles(ctx, articles)
 		if err != nil {
 			logrus.Errorf("Failed to save articles from %s: %v", source.Name, err)
@@ -93,13 +99,11 @@ func (w *Worker) crawlSource(ctx context.Context, source NewsSource) ([]*models.
 }
 
 func (w *Worker) crawlRSSSource(ctx context.Context, source NewsSource) ([]*models.NewsArticle, error) {
-	// Fetch RSS feed
 	feed, err := FetchRSSFeed(ctx, source.URL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch RSS feed: %w", err)
 	}
 
-	// Parse RSS items to articles
 	articles, err := ParseRSSToArticles(feed, source)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse RSS feed: %w", err)
@@ -115,35 +119,10 @@ func (w *Worker) saveArticles(ctx context.Context, articles []*models.NewsArticl
 
 	saved := 0
 	for _, article := range articles {
-		// Check if article already exists
-		exists, err := w.db.NewSelect().
-			Model((*models.NewsArticle)(nil)).
-			Where("source_url = ?", article.SourceURL).
-			Exists(ctx)
+		err := w.newsRepo.UpsertArticle(ctx, article)
 		if err != nil {
-			logrus.Error("Failed to check article existence: %v", err)
+			logrus.Errorf("Failed to save article %s: %v", article.SourceURL, err)
 			continue
-		}
-
-		if exists {
-			// Update existing article
-			_, err = w.db.NewUpdate().
-				Model(article).
-				Where("source_url = ?", article.SourceURL).
-				Exec(ctx)
-			if err != nil {
-				logrus.Error("Failed to update article: %v", err)
-				continue
-			}
-		} else {
-			// Insert new article
-			_, err = w.db.NewInsert().
-				Model(article).
-				Exec(ctx)
-			if err != nil {
-				logrus.Error("Failed to insert article: %v", err)
-				continue
-			}
 		}
 
 		saved++

@@ -45,6 +45,7 @@ func New() *do.Injector {
 
 	do.Provide(injector, provideRedisPubsub)
 	do.Provide(injector, provideOutboxRepository)
+	do.Provide(injector, provideNewsArticleRepository)
 
 	return injector
 }
@@ -141,4 +142,8 @@ func provideRedisPubsub(i *do.Injector) (pubsub.PubSub, error) {
 
 func provideOutboxRepository(i *do.Injector) (datastore.OutboxRepository, error) {
 	return datastore.NewOutboxRepository(i)
+}
+
+func provideNewsArticleRepository(i *do.Injector) (datastore.NewsArticleRepository, error) {
+	return datastore.NewNewsArticleRepository(i)
 }

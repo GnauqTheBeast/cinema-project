@@ -15,11 +15,10 @@ export default function MovieListItem({
     setIsLoadingShowtimes(true)
     try {
       const response = await showtimeService.getShowtimesByMovie(movie.id, true)
-      // Handle both possible response formats
+
       const showtimesData = response.data?.data || response.data || []
       onShowtimesLoaded(movie.id, showtimesData)
     } catch (error) {
-      console.error('Failed to fetch showtimes:', error)
       onShowtimesLoaded(movie.id, [])
     } finally {
       setIsLoadingShowtimes(false)
