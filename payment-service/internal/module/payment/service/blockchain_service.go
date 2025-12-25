@@ -69,12 +69,6 @@ func (s *blockchainService) VerifyTransaction(ctx context.Context, txHash string
 		return fmt.Errorf("amount must be positive: %f", expectedAmountFloat)
 	}
 
-	// If RPC client is not available, only do basic validation
-	if s.rpcClient == nil {
-		fmt.Println("Warning: RPC client not available, skipping on-chain verification")
-		return nil
-	}
-
 	// Convert expectedAmount (ETH) to Wei for comparison
 	// 1 ETH = 10^18 Wei
 	expectedWei := new(big.Float).Mul(

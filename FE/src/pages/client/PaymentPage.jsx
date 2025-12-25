@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { FaArrowLeft, FaCopy, FaWallet, FaCheck } from 'react-icons/fa'
 import { ethers } from 'ethers'
 import Header from '../../components/Header'
+import Toast from '../../components/Toast'
 import { bookingService } from '../../services/bookingService'
 
 // Helper function to get booking code without hyphens (bank transfer compatible)
@@ -31,16 +32,26 @@ const PaymentPage = () => {
   const [vndUsdRate, setVndUsdRate] = useState(0)
   const [loadingPrice, setLoadingPrice] = useState(true)
 
+  const [toast, setToast] = useState(null)
+
   const PAYMENT_RECEIVER = '0x6721aDe7bfB76c6cfD97635Dc177Cb797F434087'
   const SEPOLIA_CHAIN_ID = '0xaa36a7' // 11155111 in decimal
 
+  const showToast = (message, type = 'info', txHash = null) => {
+    setToast({ message, type, txHash })
+  }
+
+  const closeToast = () => {
+    setToast(null)
+  }
+
   useEffect(() => {
-    fetchBooking()
-    fetchCryptoPrices()
+    fetchBooking().then(r)
+    fetchCryptoPrices().then()
   }, [bookingId])
 
   useEffect(() => {
-    checkWalletConnection()
+    checkWalletConnection().then()
   }, [])
 
   useEffect(() => {
@@ -57,11 +68,7 @@ const PaymentPage = () => {
     try {
       setLoading(true)
 
-      console.log('Fetching booking with ID:', bookingId)
-
       const bookingResponse = await bookingService.getBookingById(bookingId)
-
-      console.log('Booking response:', bookingResponse)
 
       // Backend returns {code, message, data}, not {success, data}
       if (!bookingResponse.data || bookingResponse.code !== 200) {
@@ -97,8 +104,7 @@ const PaymentPage = () => {
         console.log('Payment record created:', paymentData)
       } catch (paymentErr) {
         console.error('Error creating payment:', paymentErr)
-        // Continue anyway - QR code will still work, but might need manual verification
-        alert('Cảnh báo: Không thể tạo payment record. Vui lòng liên hệ admin nếu thanh toán không được tự động xác nhận.')
+        showToast('Cảnh báo: Không thể tạo payment record. Vui lòng liên hệ admin nếu thanh toán không được tự động xác nhận.', 'warning')
       }
 
       // Generate QR code URL (client-side only, no API call needed)
@@ -174,7 +180,7 @@ const PaymentPage = () => {
 
   const connectWallet = async () => {
     if (typeof window.ethereum === 'undefined') {
-      alert('Please install MetaMask to use crypto payment!')
+      showToast('Please install MetaMask to use crypto payment!', 'warning')
       window.open('https://metamask.io/download/', '_blank')
       return
     }
@@ -219,13 +225,13 @@ const PaymentPage = () => {
               })
             } catch (addError) {
               console.error('Error adding Sepolia network:', addError)
-              alert('Failed to add Sepolia network to MetaMask')
+              showToast('Failed to add Sepolia network to MetaMask', 'error')
               setIsConnecting(false)
               return
             }
           } else {
             console.error('Error switching to Sepolia:', switchError)
-            alert('Failed to switch to Sepolia network')
+            showToast('Failed to switch to Sepolia network', 'error')
             setIsConnecting(false)
             return
           }
@@ -238,7 +244,7 @@ const PaymentPage = () => {
       console.log('Wallet connected to Sepolia:', address)
     } catch (err) {
       console.error('Error connecting wallet:', err)
-      alert('Failed to connect wallet: ' + err.message)
+      showToast('Failed to connect wallet: ' + err.message, 'error')
     } finally {
       setIsConnecting(false)
     }
@@ -250,7 +256,7 @@ const PaymentPage = () => {
 
   const handleCryptoPayment = async () => {
     if (!walletAddress) {
-      alert('Please connect your wallet first!')
+      showToast('Please connect your wallet first!', 'warning')
       return
     }
 
@@ -267,8 +273,7 @@ const PaymentPage = () => {
         value: ethers.parseEther(cryptoAmount.toFixed(6)),
       })
 
-      console.log('Transaction sent:', tx.hash)
-      alert(`Transaction sent! Hash: ${tx.hash}`)
+      showToast(`Transaction sent! Hash: ${tx.hash.substring(0, 10)}...`, 'success', tx.hash)
 
       // Wait for confirmation
       const receipt = await tx.wait()
@@ -300,11 +305,10 @@ const PaymentPage = () => {
         console.log('Backend verification successful')
       } catch (verifyErr) {
         console.error('Error verifying with backend:', verifyErr)
-        // Continue anyway - transaction was successful on chain
       }
 
       setPaymentSuccess(true)
-      alert('Payment successful! Transaction confirmed.')
+      showToast('Payment successful! Transaction confirmed.', 'success')
 
       // Redirect after 2 seconds
       setTimeout(() => {
@@ -313,7 +317,7 @@ const PaymentPage = () => {
 
     } catch (err) {
       console.error('Error sending payment:', err)
-      alert('Payment failed: ' + err.message)
+      showToast('Payment failed: ' + err.message, 'error')
     } finally {
       setIsPaying(false)
     }
@@ -328,7 +332,7 @@ const PaymentPage = () => {
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text)
-    alert('Đã sao chép!')
+    showToast('Đã sao chép!', 'success')
   }
 
   const shortenAddress = (address) => {
@@ -362,6 +366,15 @@ const PaymentPage = () => {
   return (
     <div className="min-h-screen bg-black">
       <Header />
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          txHash={toast.txHash}
+          onClose={closeToast}
+        />
+      )}
 
       <div className="bg-gray-900 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

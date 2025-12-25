@@ -136,26 +136,19 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 		"timestamp":      time.Now().Unix(),
 	}
 
-	err = b.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
-		fields := map[string]interface{}{
-			"transaction_id": transactionId,
-			"payload":        payload,
-			"status":         entity.PaymentStatusPending,
-			"payment_method": entity.PaymentMethodBankTransfer,
-			"updated_at":     time.Now(),
-		}
+	fields := map[string]interface{}{
+		"transaction_id": transactionId,
+		"payload":        payload,
+		"status":         entity.PaymentStatusPending,
+		"payment_method": entity.PaymentMethodBankTransfer,
+		"updated_at":     time.Now(),
+	}
 
-		if err = b.repo.UpdatePaymentFields(ctx, tx, payment.Id, fields); err != nil {
-			return err
-		}
+	if err = b.repo.UpdatePaymentFields(ctx, b.db, payment.Id, fields); err != nil {
+		return err
+	}
 
-		// Alert: This grpc call to external service
-		// Don't put any logic after CreateOutboxEvent in Tx and if Tx failed
-		// Then EventCreated would not be rolled back
-		return b.outboxClient.CreateOutboxEvent(ctx, string(entity.EventTypePaymentCompleted), eventData)
-	})
-
-	return err
+	return b.outboxClient.CreateOutboxEvent(ctx, string(entity.EventTypePaymentCompleted), eventData)
 }
 
 func (b *paymentBiz) VerifyCryptoPayment(ctx context.Context, req *entity.CryptoVerificationRequest) error {
