@@ -146,13 +146,11 @@ func SeedPermissions(ctx context.Context, db *bun.DB) error {
 }
 
 func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
-	// Fetch roles
 	var roles []models.Role
 	if err := db.NewSelect().Model(&roles).Scan(ctx); err != nil {
 		return fmt.Errorf("failed to get roles: %w", err)
 	}
 
-	// Fetch permissions
 	var permissions []models.Permission
 	if err := db.NewSelect().Model(&permissions).Scan(ctx); err != nil {
 		return fmt.Errorf("failed to get permissions: %w", err)
@@ -162,7 +160,6 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 		return fmt.Errorf("roles or permissions missing; seed roles and permissions first")
 	}
 
-	// Build lookup maps
 	roleNameToId := map[string]string{}
 	for _, r := range roles {
 		roleNameToId[r.Name] = r.Id
@@ -173,7 +170,6 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 		permCodeToId[p.Code] = p.Id
 	}
 
-	// Group permissions per role per the specification
 	allCodes := []string{}
 	for code := range permCodeToId {
 		allCodes = append(allCodes, code)
@@ -261,6 +257,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 	releaseDate1 := time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC)
 	releaseDate2 := time.Date(2024, 4, 20, 0, 0, 0, 0, time.UTC)
 	releaseDate3 := time.Date(2024, 5, 10, 0, 0, 0, 0, time.UTC)
+	releaseDate4 := time.Date(2025, 6, 15, 0, 0, 0, 0, time.UTC)
 
 	movies := []*models.Movie{
 		{
@@ -336,6 +333,21 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			TrailerURL:  "https://www.youtube.com/watch?v=mqqft2x_Aa4",
 			PosterURL:   "https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg",
 			Status:      "SHOWING",
+			CreatedAt:   &now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Title:       "Zootopia",
+			Slug:        "zootopia",
+			Director:    "Byron Howard, Rich Moore",
+			Cast:        "Ginnifer Goodwin, Jason Bateman, Idris Elba, Jenny Slate",
+			Genre:       "Animation, Comedy, Adventure, Family",
+			Duration:    108,
+			ReleaseDate: &releaseDate4,
+			Description: "In a city of anthropomorphic animals, a rookie bunny cop and a cynical con artist fox must work together to uncover a conspiracy.",
+			TrailerURL:  "https://www.youtube.com/watch?v=jWM0ct-OLsM",
+			PosterURL:   "https://image.tmdb.org/t/p/w500/hlK0e0wAQ3VLuJcsfziYP2kbNPC.jpg",
+			Status:      "UPCOMING",
 			CreatedAt:   &now,
 		},
 	}
@@ -896,6 +908,10 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 		currentDate := now.AddDate(0, 0, day)
 
 		for movieIdx, movie := range movies {
+			if movie.ReleaseDate != nil && movie.ReleaseDate.After(now) {
+				continue
+			}
+
 			for roomIdx, room := range rooms {
 				// Determine which format to use for this movie+room combination
 				// Ensure each time slot has only ONE format per movie per room per day
@@ -1115,33 +1131,32 @@ func SeedMovieGenres(ctx context.Context, db *bun.DB) error {
 		return fmt.Errorf("movies or genres missing; seed movies and genres first")
 	}
 
-	// Build genre lookup map
 	genreNameToId := map[string]string{}
 	for _, g := range genres {
 		genreNameToId[g.Name] = g.Id
 	}
 
-	// Parse existing genre strings from movies and create movie_genres entries
 	var movieGenres []*models.MovieGenre
 	for _, movie := range movies {
 		if movie.Genre == "" {
 			continue
 		}
 
-		// Parse genres from the genre string (comma-separated)
-		genreNames := []string{}
-		if movie.Genre == "Action, Adventure, Drama" {
+		var genreNames []string
+		switch movie.Genre {
+		case "Action, Adventure, Drama":
 			genreNames = []string{"Action", "Adventure", "Drama"}
-		} else if movie.Genre == "Action, Adventure, Sci-Fi" {
+		case "Action, Adventure, Sci-Fi":
 			genreNames = []string{"Action", "Adventure", "Sci-Fi"}
-		} else if movie.Genre == "Action, Drama" {
+		case "Action, Drama":
 			genreNames = []string{"Action", "Drama"}
-		} else if movie.Genre == "Action, Adventure, Drama, Sci-Fi" {
+		case "Action, Adventure, Drama, Sci-Fi":
 			genreNames = []string{"Action", "Adventure", "Drama", "Sci-Fi"}
-		} else if movie.Genre == "Action, Crime, Drama" {
+		case "Action, Crime, Drama":
 			genreNames = []string{"Action", "Crime", "Drama"}
-		} else {
-			// Default to Drama if unknown
+		case "Animation, Comedy, Adventure, Family":
+			genreNames = []string{"Animation", "Comedy", "Adventure", "Family"}
+		default:
 			genreNames = []string{"Drama"}
 		}
 
