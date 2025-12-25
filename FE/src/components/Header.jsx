@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { FaBars, FaBell, FaMapMarkerAlt, FaSearch, FaTimes, FaUser } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
 import NotificationPanel from './NotificationPanel'
@@ -10,7 +10,24 @@ export default function Header() {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const token = localStorage.getItem('token')
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+
+  const user = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem('user') || '{}')
+    } catch {
+      return {}
+    }
+  }, [token])
+
+  const loadUnreadCount = async () => {
+    if (!user.id) return
+    try {
+      const response = await notificationService.getUnreadCount(user.id)
+      setUnreadCount(response.data?.count || 0)
+    } catch (error) {
+      console.error('Failed to load unread count:', error)
+    }
+  }
 
   useEffect(() => {
     if (token && user.id) {
@@ -26,17 +43,8 @@ export default function Header() {
         websocketService.removeNotificationListener(handleNotification)
       }
     }
-  }, [token, user.id])
-
-  const loadUnreadCount = async () => {
-    if (!user.id) return
-    try {
-      const response = await notificationService.getUnreadCount(user.id)
-      setUnreadCount(response.data?.count || 0)
-    } catch (error) {
-      console.error('Failed to load unread count:', error)
-    }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token])
 
   const handleLogout = () => {
     localStorage.removeItem('token')

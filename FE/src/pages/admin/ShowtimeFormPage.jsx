@@ -42,10 +42,10 @@ const ShowtimeFormPage = () => {
   const showtimeStatuses = showtimeService.getShowtimeStatuses()
 
   useEffect(() => {
-    fetchRooms()
-    fetchMovies()
+    fetchRooms().then()
+    fetchMovies().then()
     if (isEditing) {
-      fetchShowtime()
+      fetchShowtime().then()
     }
   }, [id, isEditing])
 
@@ -176,7 +176,6 @@ const ShowtimeFormPage = () => {
       return
     }
 
-    // Validate movie duration
     if (selectedMovie && selectedMovie.duration) {
       const scheduledDuration = (endTime.getTime() - startTime.getTime()) / (1000 * 60)
 
@@ -260,7 +259,6 @@ const ShowtimeFormPage = () => {
     const startTime = e.target.value
     let endTime = formData.end_time
 
-    // Always auto-set end time when start time changes
     if (startTime) {
       const movieDuration = selectedMovie?.duration
       endTime = calculateEndTime(startTime, movieDuration)
