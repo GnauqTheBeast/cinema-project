@@ -46,12 +46,12 @@ const PaymentPage = () => {
   }
 
   useEffect(() => {
-    fetchBooking().then(r)
-    fetchCryptoPrices().then()
+    fetchBooking()
+    fetchCryptoPrices()
   }, [bookingId])
 
   useEffect(() => {
-    checkWalletConnection().then()
+    checkWalletConnection()
   }, [])
 
   useEffect(() => {
