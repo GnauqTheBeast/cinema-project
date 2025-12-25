@@ -43,7 +43,6 @@ export default function Header() {
         websocketService.removeNotificationListener(handleNotification)
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
   const handleLogout = () => {
