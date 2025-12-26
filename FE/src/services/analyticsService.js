@@ -23,21 +23,6 @@ const analyticsService = {
     return response.data
   },
 
-  getRevenueByShowtime: async (startDate, endDate, showtimeId = null, limit = 50) => {
-    const params = {
-      start_date: startDate,
-      end_date: endDate,
-      limit,
-    }
-
-    if (showtimeId) {
-      params.showtime_id = showtimeId
-    }
-
-    const response = await apiClient.get('/analytics/revenue/by-showtime', { params })
-    return response.data
-  },
-
   getRevenueByGenre: async (startDate, endDate) => {
     const params = {
       start_date: startDate,
@@ -45,16 +30,6 @@ const analyticsService = {
     }
 
     const response = await apiClient.get('/analytics/revenue/by-genre', { params })
-    return response.data
-  },
-
-  getRevenueByBookingType: async (startDate, endDate) => {
-    const params = {
-      start_date: startDate,
-      end_date: endDate,
-    }
-
-    const response = await apiClient.get('/analytics/revenue/by-booking-type', { params })
     return response.data
   },
 

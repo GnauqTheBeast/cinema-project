@@ -68,7 +68,6 @@ export const movieService = {
     }
   },
 
-  // Get showtimes
   getShowtimes: async (movieId = null, roomId = null, excludeEnded = false) => {
     try {
       let url = '/showtimes'
@@ -90,7 +89,6 @@ export const movieService = {
     }
   },
 
-  // Get upcoming showtimes
   getUpcomingShowtimes: async () => {
     try {
       const response = await movieApi.get('/showtimes/upcoming')
@@ -101,7 +99,6 @@ export const movieService = {
     }
   },
 
-  // Get rooms
   getRooms: async () => {
     try {
       const response = await movieApi.get('/rooms')
@@ -112,7 +109,6 @@ export const movieService = {
     }
   },
 
-  // Get room seats
   getRoomSeats: async (roomId) => {
     try {
       const response = await movieApi.get(`/seats?room_id=${roomId}&size=500`)
@@ -123,7 +119,6 @@ export const movieService = {
     }
   },
 
-  // Get room showtimes
   getRoomShowtimes: async (roomId) => {
     try {
       const response = await movieApi.get(`/rooms/${roomId}/showtimes`)
@@ -134,7 +129,6 @@ export const movieService = {
     }
   },
 
-  // Search movies
   searchMovies: async (query) => {
     try {
       const response = await movieApi.get(`/movies?search=${encodeURIComponent(query)}`)
@@ -145,7 +139,6 @@ export const movieService = {
     }
   },
 
-  // Get movies by genre
   getMoviesByGenre: async (genre) => {
     try {
       const response = await movieApi.get(`/movies?genre=${encodeURIComponent(genre)}`)
@@ -157,7 +150,6 @@ export const movieService = {
   },
 }
 
-// Export individual functions for backward compatibility
 export const {
   getAllMovies,
   getShowingMovies,

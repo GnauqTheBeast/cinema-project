@@ -26,7 +26,6 @@ function App() {
     return () => window.removeEventListener('tokenChange', handler)
   }, [])
 
-  // WebSocket connection management
   useEffect(() => {
     const user = localStorage.getItem('user')
     if (token && user) {
