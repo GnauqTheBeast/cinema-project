@@ -105,9 +105,6 @@ export default function ShowtimePage() {
       setLoading(true)
       setError(null)
 
-      const dateTo = new Date(selectedDate)
-      dateTo.setDate(dateTo.getDate() + 1)
-
       const response = await showtimeService.getShowtimes(
         currentPage,
         12, // Show 12 showtimes per page
@@ -117,7 +114,7 @@ export default function ShowtimePage() {
         selectedFormat,
         'SCHEDULED', // Only show scheduled showtimes
         selectedDate,
-        dateTo.toISOString().split('T')[0],
+        selectedDate, // date_to same as date_from for same-day showtimes
         true, // excludeEnded - only show showtimes that haven't ended
       )
 
