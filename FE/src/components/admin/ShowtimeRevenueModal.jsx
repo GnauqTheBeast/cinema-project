@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import LoadingSpinner from '../common/LoadingSpinner'
 
 export default function ShowtimeRevenueModal({
   movie,
@@ -40,356 +41,136 @@ export default function ShowtimeRevenueModal({
     }
   }
 
+  const getOccupancyBadgeClass = (rate) => {
+    if (rate >= 80) return 'bg-green-50 text-green-700 border-green-300'
+    if (rate >= 50) return 'bg-amber-50 text-amber-700 border-amber-300'
+    return 'bg-red-50 text-red-700 border-red-300'
+  }
+
   return (
     <div
       onClick={handleBackdropClick}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        padding: '20px',
-      }}
+      className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-5"
     >
-      <div
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          maxWidth: '1200px',
-          width: '100%',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-        }}
-      >
-        <div
-          style={{
-            position: 'sticky',
-            top: 0,
-            backgroundColor: 'white',
-            borderBottom: '1px solid #e0e0e0',
-            padding: '24px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            zIndex: 10,
-          }}
-        >
+      <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-6 flex justify-between items-center z-10 rounded-t-2xl">
           <div>
-            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
-              {movie.title} - Showtime Analytics
+            <h2 className="text-2xl font-semibold text-gray-900">
+              {movie.title}
             </h2>
-            <p style={{ margin: '4px 0 0 0', color: '#666', fontSize: '14px' }}>
+            <p className="mt-1 text-gray-500 text-sm">
               {formatDate(dateRange.startDate)} - {formatDate(dateRange.endDate)}
             </p>
           </div>
           <button
             onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '32px',
-              cursor: 'pointer',
-              color: '#666',
-              lineHeight: 1,
-              padding: '0',
-              width: '40px',
-              height: '40px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '4px',
-              transition: 'background-color 0.2s',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f5f5f5')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+            className="text-gray-400 hover:bg-gray-100 hover:text-gray-600 text-2xl leading-none p-0 w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-150"
           >
             ×
           </button>
         </div>
 
-        <div style={{ padding: '24px' }}>
+        <div className="p-6">
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
-              <div
-                style={{
-                  border: '4px solid #f3f3f3',
-                  borderTop: '4px solid #1976d2',
-                  borderRadius: '50%',
-                  width: '48px',
-                  height: '48px',
-                  animation: 'spin 1s linear infinite',
-                  margin: '0 auto',
-                }}
-              ></div>
-              <style>
-                {`
-                  @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                  }
-                `}
-              </style>
-              <p style={{ marginTop: '16px', color: '#666' }}>Loading showtime analytics...</p>
+            <div className="text-center py-16 px-6">
+              <LoadingSpinner text="Loading showtime analytics..." />
             </div>
           ) : sortedShowtimes.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+            <div className="text-center py-16 px-6 text-gray-400">
               <p>No showtime data available for this movie in the selected date range</p>
             </div>
           ) : (
             <>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                  gap: '16px',
-                  marginBottom: '32px',
-                }}
-              >
-                <div
-                  style={{
-                    backgroundColor: 'white',
-                    padding: '24px',
-                    borderRadius: '8px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    borderLeft: '4px solid #4caf50',
-                  }}
-                >
-                  <h3 style={{ margin: '0 0 8px 0', color: '#4caf50', fontSize: '14px' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                  <h3 className="mb-2 text-gray-500 text-xs font-semibold tracking-wider uppercase">
                     Total Revenue
                   </h3>
-                  <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
+                  <p className="text-3xl font-bold text-gray-900">
                     {formatCurrency(summaryStats.totalRevenue)}
                   </p>
                 </div>
 
-                <div
-                  style={{
-                    backgroundColor: 'white',
-                    padding: '24px',
-                    borderRadius: '8px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    borderLeft: '4px solid #2196f3',
-                  }}
-                >
-                  <h3 style={{ margin: '0 0 8px 0', color: '#2196f3', fontSize: '14px' }}>
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                  <h3 className="mb-2 text-gray-500 text-xs font-semibold tracking-wider uppercase">
                     Total Tickets
                   </h3>
-                  <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
+                  <p className="text-3xl font-bold text-gray-900">
                     {summaryStats.totalTickets.toLocaleString()}
                   </p>
                 </div>
 
-                <div
-                  style={{
-                    backgroundColor: 'white',
-                    padding: '24px',
-                    borderRadius: '8px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    borderLeft: '4px solid #9c27b0',
-                  }}
-                >
-                  <h3 style={{ margin: '0 0 8px 0', color: '#9c27b0', fontSize: '14px' }}>
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                  <h3 className="mb-2 text-gray-500 text-xs font-semibold tracking-wider uppercase">
                     Total Showtimes
                   </h3>
-                  <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
+                  <p className="text-3xl font-bold text-gray-900">
                     {summaryStats.totalShowtimes}
                   </p>
                 </div>
 
-                <div
-                  style={{
-                    backgroundColor: 'white',
-                    padding: '24px',
-                    borderRadius: '8px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    borderLeft: '4px solid #ff9800',
-                  }}
-                >
-                  <h3 style={{ margin: '0 0 8px 0', color: '#ff9800', fontSize: '14px' }}>
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                  <h3 className="mb-2 text-gray-500 text-xs font-semibold tracking-wider uppercase">
                     Avg Occupancy
                   </h3>
-                  <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
+                  <p className="text-3xl font-bold text-gray-900">
                     {summaryStats.avgOccupancy.toFixed(1)}%
                   </p>
                 </div>
               </div>
 
-              <div
-                style={{
-                  backgroundColor: 'white',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  overflow: 'hidden',
-                }}
-              >
-                <h3 style={{ margin: 0, padding: '20px 24px', borderBottom: '1px solid #e0e0e0' }}>
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <h3 className="m-0 px-6 py-5 border-b border-gray-200 text-lg font-semibold text-gray-900">
                   Showtime Details
                 </h3>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
                     <thead>
-                      <tr style={{ backgroundColor: '#f5f5f5' }}>
-                        <th
-                          style={{
-                            padding: '12px 16px',
-                            textAlign: 'left',
-                            borderBottom: '2px solid #ddd',
-                            fontWeight: 'bold',
-                            fontSize: '14px',
-                          }}
-                        >
+                      <tr className="bg-gray-50">
+                        <th className="px-4 py-4 text-left border-b border-gray-200 text-xs font-semibold text-gray-500 tracking-wider uppercase">
                           Date
                         </th>
-                        <th
-                          style={{
-                            padding: '12px 16px',
-                            textAlign: 'left',
-                            borderBottom: '2px solid #ddd',
-                            fontWeight: 'bold',
-                            fontSize: '14px',
-                          }}
-                        >
+                        <th className="px-4 py-4 text-left border-b border-gray-200 text-xs font-semibold text-gray-500 tracking-wider uppercase">
                           Time
                         </th>
-                        <th
-                          style={{
-                            padding: '12px 16px',
-                            textAlign: 'left',
-                            borderBottom: '2px solid #ddd',
-                            fontWeight: 'bold',
-                            fontSize: '14px',
-                          }}
-                        >
+                        <th className="px-4 py-4 text-left border-b border-gray-200 text-xs font-semibold text-gray-500 tracking-wider uppercase">
                           Room
                         </th>
-                        <th
-                          style={{
-                            padding: '12px 16px',
-                            textAlign: 'right',
-                            borderBottom: '2px solid #ddd',
-                            fontWeight: 'bold',
-                            fontSize: '14px',
-                          }}
-                        >
+                        <th className="px-4 py-4 text-right border-b border-gray-200 text-xs font-semibold text-gray-500 tracking-wider uppercase">
                           Revenue
                         </th>
-                        <th
-                          style={{
-                            padding: '12px 16px',
-                            textAlign: 'right',
-                            borderBottom: '2px solid #ddd',
-                            fontWeight: 'bold',
-                            fontSize: '14px',
-                          }}
-                        >
+                        <th className="px-4 py-4 text-right border-b border-gray-200 text-xs font-semibold text-gray-500 tracking-wider uppercase">
                           Tickets
                         </th>
-                        <th
-                          style={{
-                            padding: '12px 16px',
-                            textAlign: 'right',
-                            borderBottom: '2px solid #ddd',
-                            fontWeight: 'bold',
-                            fontSize: '14px',
-                          }}
-                        >
+                        <th className="px-4 py-4 text-right border-b border-gray-200 text-xs font-semibold text-gray-500 tracking-wider uppercase">
                           Occupancy
                         </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {sortedShowtimes.map((showtime, index) => (
+                      {sortedShowtimes.map((showtime) => (
                         <tr
                           key={showtime.showtime_id}
-                          style={{
-                            backgroundColor: index % 2 === 0 ? 'white' : '#fafafa',
-                            transition: 'background-color 0.2s',
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f5f5f5')}
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.backgroundColor =
-                              index % 2 === 0 ? 'white' : '#fafafa')
-                          }
+                          className="border-b border-gray-100 transition-colors duration-150 hover:bg-gray-50"
                         >
-                          <td
-                            style={{
-                              padding: '12px 16px',
-                              borderBottom: '1px solid #e0e0e0',
-                              fontSize: '14px',
-                            }}
-                          >
+                          <td className="px-4 py-4 text-sm text-gray-900">
                             {formatDate(showtime.showtime_date)}
                           </td>
-                          <td
-                            style={{
-                              padding: '12px 16px',
-                              borderBottom: '1px solid #e0e0e0',
-                              fontSize: '14px',
-                            }}
-                          >
+                          <td className="px-4 py-4 text-sm text-gray-900">
                             {showtime.showtime_time}
                           </td>
-                          <td
-                            style={{
-                              padding: '12px 16px',
-                              borderBottom: '1px solid #e0e0e0',
-                              fontSize: '14px',
-                            }}
-                          >
+                          <td className="px-4 py-4 text-sm text-gray-900">
                             {showtime.room_number}
                           </td>
-                          <td
-                            style={{
-                              padding: '12px 16px',
-                              textAlign: 'right',
-                              borderBottom: '1px solid #e0e0e0',
-                              fontSize: '14px',
-                              fontWeight: '600',
-                            }}
-                          >
+                          <td className="px-4 py-4 text-right text-sm font-semibold text-gray-900">
                             {formatCurrency(showtime.total_revenue)}
                           </td>
-                          <td
-                            style={{
-                              padding: '12px 16px',
-                              textAlign: 'right',
-                              borderBottom: '1px solid #e0e0e0',
-                              fontSize: '14px',
-                            }}
-                          >
+                          <td className="px-4 py-4 text-right text-sm text-gray-900">
                             {showtime.total_tickets.toLocaleString()}
                           </td>
-                          <td
-                            style={{
-                              padding: '12px 16px',
-                              textAlign: 'right',
-                              borderBottom: '1px solid #e0e0e0',
-                              fontSize: '14px',
-                            }}
-                          >
+                          <td className="px-4 py-4 text-right">
                             <span
-                              style={{
-                                backgroundColor:
-                                  showtime.occupancy_rate >= 80
-                                    ? '#e8f5e9'
-                                    : showtime.occupancy_rate >= 50
-                                      ? '#fff3e0'
-                                      : '#ffebee',
-                                color:
-                                  showtime.occupancy_rate >= 80
-                                    ? '#2e7d32'
-                                    : showtime.occupancy_rate >= 50
-                                      ? '#e65100'
-                                      : '#c62828',
-                                padding: '4px 8px',
-                                borderRadius: '4px',
-                                fontWeight: '600',
-                              }}
+                              className={`px-3 py-1 rounded-full font-semibold text-xs border ${getOccupancyBadgeClass(showtime.occupancy_rate)}`}
                             >
                               {showtime.occupancy_rate.toFixed(1)}%
                             </span>

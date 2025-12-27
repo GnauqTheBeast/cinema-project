@@ -22,11 +22,9 @@ export default function AdminLayout({ children }) {
   const location = useLocation()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
-  // Read admin role from localStorage (set at login)
   const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}')
   const role = adminUser?.role || ''
 
-  // Visible menus by role
   const visiblePathsByRole = {
     admin: 'all',
     manager_staff: new Set([
@@ -127,121 +125,302 @@ export default function AdminLayout({ children }) {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-red-600 to-red-800 text-white shadow-lg sticky top-0 z-50">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+    <div style={{ minHeight: '100vh', backgroundColor: '#F9FAFB' }}>
+      <header
+        style={{
+          background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 50%, #B91C1C 100%)',
+          color: '#FFFFFF',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.08)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 30,
+          height: '64px',
+        }}
+      >
+        <div style={{ padding: '0 24px', height: '100%', display: 'flex', alignItems: 'center' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <button
                 type="button"
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="lg:hidden p-2 rounded-lg hover:bg-red-700 transition-colors duration-200"
+                style={{
+                  padding: '8px',
+                  borderRadius: '8px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                  transition: 'background-color 150ms ease-in-out',
+                  display: window.innerWidth >= 1024 ? 'none' : 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.1)')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
                 {isSidebarOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
               </button>
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center shadow-lg">
-                  <FaFilm className="text-white text-lg" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    background: 'linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  }}
+                >
+                  <FaFilm style={{ color: '#FFFFFF', fontSize: '18px' }} />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold">HQ Cinema Admin</h1>
-                  <p className="text-red-100 text-sm">Hệ thống quản lý rạp chiếu phim</p>
+                  <h1
+                    style={{
+                      fontSize: '20px',
+                      fontWeight: 700,
+                      fontFamily: "'Poppins', sans-serif",
+                      margin: 0,
+                    }}
+                  >
+                    HQ Cinema Admin
+                  </h1>
+                  <p
+                    style={{
+                      fontSize: '13px',
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      margin: 0,
+                      fontFamily: "'Open Sans', sans-serif",
+                    }}
+                  >
+                    Hệ thống quản lý rạp chiếu phim
+                  </p>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <div className="hidden md:flex items-center space-x-2 text-red-100">
-                <FaUser className="text-sm" />
-                <span className="text-sm">Admin</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                }}
+              >
+                <FaUser style={{ fontSize: '14px' }} />
+                <span style={{ fontSize: '14px', fontFamily: "'Open Sans', sans-serif" }}>
+                  {adminUser?.name || 'Admin'}
+                </span>
               </div>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="flex items-center space-x-2 bg-red-700 hover:bg-red-800 px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'rgba(0, 0, 0, 0.2)',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                  transition: 'all 200ms ease-in-out',
+                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                  fontFamily: "'Open Sans', sans-serif",
+                  fontSize: '14px',
+                  fontWeight: 500,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)'
+                  e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.15)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.2)'
+                  e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+                }}
               >
                 <FaSignOutAlt size={16} />
-                <span className="hidden sm:block">Đăng xuất</span>
+                <span>Đăng xuất</span>
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="flex">
-        {/* Sidebar */}
+      <div style={{ display: 'flex' }}>
         <aside
-          className={`${
-            isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } fixed lg:static lg:translate-x-0 z-40 w-64 h-screen transition-transform duration-300 ease-in-out bg-white border-r border-gray-200 shadow-lg lg:shadow-none`}
+          style={{
+            position: window.innerWidth >= 1024 ? 'static' : 'fixed',
+            transform:
+              window.innerWidth >= 1024 || isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+            zIndex: 40,
+            width: '256px',
+            height: 'calc(100vh - 64px)',
+            transition: 'transform 300ms ease-in-out',
+            backgroundColor: '#FFFFFF',
+            borderRight: '1px solid #E5E7EB',
+            overflowY: 'auto',
+          }}
         >
-          {/* Overlay for mobile */}
-          {isSidebarOpen && (
+          {isSidebarOpen && window.innerWidth < 1024 && (
             <div
-              type="onKeyPress"
-              className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+              style={{
+                position: 'fixed',
+                inset: 0,
+                backgroundColor: 'rgba(17, 24, 39, 0.5)',
+                zIndex: 30,
+                backdropFilter: 'blur(2px)',
+              }}
               onClick={() => setIsSidebarOpen(false)}
             />
           )}
 
-          <div className="relative z-40 h-full bg-white">
-            <nav className="p-4 space-y-2">
-              <div className="mb-6">
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 40,
+              height: '100%',
+              backgroundColor: '#FFFFFF',
+            }}
+          >
+            <nav style={{ padding: '24px 0' }}>
+              <div style={{ marginBottom: '24px', padding: '0 16px' }}>
                 <button
                   type="button"
                   onClick={() => navigate('/')}
-                  className="flex items-center space-x-3 w-full p-3 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    width: '100%',
+                    padding: '12px 16px',
+                    color: '#6B7280',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 150ms ease-in-out',
+                    fontFamily: "'Open Sans', sans-serif",
+                    fontSize: '14px',
+                    fontWeight: 500,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#F9FAFB'
+                    e.currentTarget.style.color = '#111827'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                    e.currentTarget.style.color = '#6B7280'
+                  }}
                 >
                   <FaHome size={18} />
                   <span>Về trang chủ</span>
                 </button>
               </div>
 
-              {navItems.map((item) => {
-                const IconComponent = item.icon
-                const isActive = isActiveRoute(item.path)
+              <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {navItems.map((item) => {
+                  const IconComponent = item.icon
+                  const isActive = isActiveRoute(item.path)
 
-                if (!isItemVisibleForRole(item.path)) return null
+                  if (!isItemVisibleForRole(item.path)) return null
 
-                if (item.path === '/admin/box-office' && role !== 'ticket_staff') return null
+                  if (item.path === '/admin/box-office' && role !== 'ticket_staff') return null
 
-                return (
-                  <button
-                    type="button"
-                    key={item.path}
-                    onClick={() => {
-                      navigate(item.path)
-                      setIsSidebarOpen(false)
-                    }}
-                    className={`flex items-center space-x-3 w-full p-3 rounded-lg transition-all duration-200 ${
-                      isActive
-                        ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md'
-                        : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
-                    }`}
-                  >
-                    <IconComponent size={18} />
-                    <span className="font-medium">{item.label}</span>
-                    {isActive && <div className="ml-auto w-2 h-2 bg-white rounded-full" />}
-                  </button>
-                )
-              })}
+                  return (
+                    <button
+                      type="button"
+                      key={item.path}
+                      onClick={() => {
+                        navigate(item.path)
+                        setIsSidebarOpen(false)
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        width: '100%',
+                        padding: '12px 16px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        transition: 'all 150ms ease-in-out',
+                        fontFamily: "'Open Sans', sans-serif",
+                        fontSize: '14px',
+                        fontWeight: isActive ? 600 : 500,
+                        background: isActive
+                          ? 'linear-gradient(135deg, #FEE2E2 0%, #FEF2F2 100%)'
+                          : 'transparent',
+                        color: isActive ? '#DC2626' : '#6B7280',
+                        borderLeft: isActive ? '3px solid #EF4444' : '3px solid transparent',
+                        position: 'relative',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.backgroundColor = '#F9FAFB'
+                          e.currentTarget.style.color = '#111827'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.backgroundColor = 'transparent'
+                          e.currentTarget.style.color = '#6B7280'
+                        }
+                      }}
+                    >
+                      <IconComponent size={18} />
+                      <span>{item.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
             </nav>
 
-            {/* Sidebar Footer */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gray-50 border-t border-gray-200">
-              <div className="text-center text-xs text-gray-500">
-                <p>HQ Cinema Admin v1.0</p>
-                <p className="mt-1">© 2025 All rights reserved</p>
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                padding: '16px',
+                backgroundColor: '#F9FAFB',
+                borderTop: '1px solid #E5E7EB',
+              }}
+            >
+              <div
+                style={{
+                  textAlign: 'center',
+                  fontSize: '12px',
+                  color: '#9CA3AF',
+                  fontFamily: "'Open Sans', sans-serif",
+                }}
+              >
+                <p style={{ margin: 0 }}>HQ Cinema Admin v1.0</p>
+                <p style={{ margin: '4px 0 0 0' }}>© 2025 All rights reserved</p>
               </div>
             </div>
           </div>
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 min-h-screen bg-gray-50">
-          <div className="p-6 lg:p-8">
-            <div className="max-w-7xl mx-auto">{children}</div>
+        <main
+          style={{
+            flex: 1,
+            minHeight: 'calc(100vh - 64px)',
+            backgroundColor: '#F9FAFB',
+          }}
+        >
+          <div style={{ padding: '32px' }}>
+            <div style={{ maxWidth: '1400px', margin: '0 auto' }}>{children}</div>
           </div>
         </main>
       </div>

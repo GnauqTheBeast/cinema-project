@@ -1,19 +1,16 @@
 import { useNavigate } from 'react-router-dom'
+import Badge from '../common/Badge'
 
 export default function MovieCard({ movie }) {
   const navigate = useNavigate()
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'UPCOMING':
-        return '#ff9800'
-      case 'SHOWING':
-        return '#4caf50'
-      case 'ENDED':
-        return '#f44336'
-      default:
-        return '#757575'
+  const getStatusBadge = (status) => {
+    const styles = {
+      UPCOMING: 'warning',
+      SHOWING: 'success',
+      ENDED: 'default',
     }
+    return styles[status] || 'default'
   }
 
   const formatDate = (dateString) => {
@@ -29,73 +26,47 @@ export default function MovieCard({ movie }) {
 
   return (
     <div
-      className="movie-card"
       onClick={() => navigate(`/admin/movies/${movie.id}`)}
-      style={{
-        border: '1px solid #ddd',
-        borderRadius: '8px',
-        padding: '16px',
-        margin: '8px',
-        cursor: 'pointer',
-        transition: 'transform 0.2s, box-shadow 0.2s',
-        backgroundColor: '#fff',
-        minHeight: '200px',
-      }}
-      onMouseEnter={(e) => {
-        e.target.style.transform = 'translateY(-2px)'
-        e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
-      }}
-      onMouseLeave={(e) => {
-        e.target.style.transform = 'translateY(0)'
-        e.target.style.boxShadow = 'none'
-      }}
+      className="bg-white border border-gray-100 rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg flex flex-col h-full"
     >
       {movie.poster_url && (
-        <img
-          src={movie.poster_url}
-          alt={movie.title}
-          style={{
-            width: '100%',
-            height: '150px',
-            objectFit: 'cover',
-            borderRadius: '4px',
-            marginBottom: '12px',
-          }}
-        />
+        <div className="w-full h-72 overflow-hidden bg-gray-100">
+          <img
+            src={movie.poster_url}
+            alt={movie.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
       )}
 
-      <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 'bold' }}>{movie.title}</h3>
+      <div className="p-4 flex-1 flex flex-direction-column">
+        <h3 className="text-base font-semibold text-gray-900 mb-3 line-clamp-2 min-h-[3rem]">
+          {movie.title}
+        </h3>
 
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-        <span
-          style={{
-            backgroundColor: getStatusColor(movie.status),
-            color: 'white',
-            padding: '2px 8px',
-            borderRadius: '12px',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-          }}
-        >
-          {movie.status?.replace('_', ' ')}
-        </span>
-      </div>
+        <div className="mb-3">
+          <Badge variant={getStatusBadge(movie.status)}>
+            {movie.status?.replace('_', ' ')}
+          </Badge>
+        </div>
 
-      <div style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>
-        <strong>Director:</strong> {movie.director || 'Unknown'}
-      </div>
+        <div className="text-sm text-gray-600 space-y-1.5">
+          <div>
+            <span className="font-medium text-gray-700">Director:</span> {movie.director || 'Unknown'}
+          </div>
 
-      <div style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>
-        <strong>Genre:</strong> {movie.genre || 'Unknown'}
-      </div>
+          <div>
+            <span className="font-medium text-gray-700">Genre:</span> {movie.genre || 'Unknown'}
+          </div>
 
-      <div style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>
-        <strong>Duration:</strong> {formatDuration(movie.duration)}
-      </div>
+          <div>
+            <span className="font-medium text-gray-700">Duration:</span> {formatDuration(movie.duration)}
+          </div>
 
-      <div style={{ fontSize: '14px', color: '#666' }}>
-        <strong>Release:</strong> {formatDate(movie.release_date)}
+          <div>
+            <span className="font-medium text-gray-700">Release:</span> {formatDate(movie.release_date)}
+          </div>
+        </div>
       </div>
     </div>
   )

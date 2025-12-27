@@ -1,68 +1,58 @@
+import LoadingSpinner from '../../common/LoadingSpinner'
+
 export default function MovieStatsGrid({ stats, loading }) {
   const statsData = [
     {
       label: 'Total Movies',
       value: stats.total,
-      color: '#1976d2',
-      bg: '#e3f2fd',
+      colorClass: 'text-red-600',
+      bgClass: 'bg-red-50',
+      borderClass: 'border-red-200',
     },
     {
       label: 'Now Showing',
       value: stats.by_status?.showing || 0,
-      color: '#4caf50',
-      bg: '#e8f5e9',
+      colorClass: 'text-green-600',
+      bgClass: 'bg-green-50',
+      borderClass: 'border-green-200',
     },
     {
       label: 'Upcoming',
       value: stats.by_status?.upcoming || 0,
-      color: '#ff9800',
-      bg: '#fff3e0',
+      colorClass: 'text-amber-600',
+      bgClass: 'bg-amber-50',
+      borderClass: 'border-amber-200',
     },
     {
       label: 'Ended',
       value: stats.by_status?.ended || 0,
-      color: '#f44336',
-      bg: '#ffebee',
+      colorClass: 'text-gray-600',
+      bgClass: 'bg-gray-100',
+      borderClass: 'border-gray-200',
     },
   ]
 
   return (
-    <div
-      style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        padding: '24px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-      }}
-    >
-      <h3
-        style={{
-          margin: '0 0 20px 0',
-          fontSize: '20px',
-          fontWeight: 'bold',
-        }}
-      >
-        📽️ Movie Statistics
+    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+      <h3 className="mb-6 text-lg font-semibold text-gray-900">
+        Movie Statistics
       </h3>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '20px' }}>Loading...</div>
+        <div className="text-center py-16 px-6">
+          <LoadingSpinner />
+        </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div className="grid grid-cols-2 gap-3">
           {statsData.map((stat, idx) => (
             <div
               key={idx}
-              style={{
-                padding: '16px',
-                backgroundColor: stat.bg,
-                borderRadius: '8px',
-                textAlign: 'center',
-              }}
+              className={`py-5 px-4 ${stat.bgClass} border ${stat.borderClass} rounded-lg text-center transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md`}
             >
-              <div style={{ fontSize: '28px', fontWeight: 'bold', color: stat.color }}>
+              <div className={`text-3xl font-bold ${stat.colorClass} leading-tight`}>
                 {stat.value}
               </div>
-              <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
+              <div className="text-xs text-gray-500 mt-2 font-medium">
                 {stat.label}
               </div>
             </div>
