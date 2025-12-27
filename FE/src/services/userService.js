@@ -35,7 +35,12 @@ export const userService = {
 
   updateUser: async (id, userData) => {
     try {
-      const response = await userApi.put(`/users/${id}`, userData)
+      const adminToken = localStorage.getItem('adminToken')
+      const response = await userApi.put(`/users/${id}`, userData, {
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
+      })
       return response.data
     } catch (error) {
       console.error(`Error updating user ${id}:`, error)
@@ -64,6 +69,31 @@ export const userService = {
       return response.data
     } catch (error) {
       console.error('Error fetching all users:', error)
+      throw error
+    }
+  },
+
+  getAllStaffs: async (page = 1, size = 10, role = '', search = '') => {
+    try {
+      const adminToken = localStorage.getItem('adminToken')
+      const config = {
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
+      }
+
+      let url = `/users/admin/staffs?page=${page}&size=${size}`
+      if (role) {
+        url += `&role=${encodeURIComponent(role)}`
+      }
+      if (search) {
+        url += `&search=${encodeURIComponent(search)}`
+      }
+
+      const response = await userApi.get(url, config)
+      return response.data
+    } catch (error) {
+      console.error('Error fetching all staffs:', error)
       throw error
     }
   },
@@ -108,6 +138,13 @@ export const userService = {
   getRoles: () => [
     { value: '', label: 'Tất cả vai trò' },
     { value: 'customer', label: 'Khách hàng' },
+    { value: 'ticket_staff', label: 'Nhân viên bán vé' },
+    { value: 'manager_staff', label: 'Quản lý rạp' },
+    { value: 'admin', label: 'Quản trị viên' },
+  ],
+
+  getStaffRoles: () => [
+    { value: '', label: 'Tất cả vai trò' },
     { value: 'ticket_staff', label: 'Nhân viên bán vé' },
     { value: 'manager_staff', label: 'Quản lý rạp' },
     { value: 'admin', label: 'Quản trị viên' },

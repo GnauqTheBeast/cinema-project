@@ -2,58 +2,61 @@ import { useEffect, useState } from 'react'
 import { FaEdit, FaEye, FaPlus, FaSearch, FaTrash, FaUser } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
 import AdminLayout from '../../components/admin/AdminLayout'
+import StaffDetailDrawer from '../../components/admin/StaffDetailDrawer'
 import { userService } from '../../services/userService'
 
 const StaffPage = () => {
-  const [users, setUsers] = useState([])
+  const [staffs, setStaffs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [search, setSearch] = useState('')
   const [selectedRole, setSelectedRole] = useState('')
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [selectedStaff, setSelectedStaff] = useState(null)
 
-  const roles = userService.getRoles()
+  const roles = userService.getStaffRoles()
 
-  const fetchUsers = async () => {
+  const fetchStaffs = async () => {
     try {
       setLoading(true)
       setError('')
-      const response = await userService.getAllUsers(currentPage, 10, selectedRole, search)
+      const response = await userService.getAllStaffs(currentPage, 10, selectedRole, search)
 
       if (!response.success) {
-        setError('Không thể tải danh sách người dùng')
+        setError('Không thể tải danh sách nhân viên')
         return
       }
 
       if (!response.data) {
-        setUsers([])
+        setStaffs([])
         return
       }
 
       if (Array.isArray(response.data)) {
-        setUsers(response.data)
+        setStaffs(response.data)
         setTotalPages(1)
         return
       }
 
       if (response.data.data && Array.isArray(response.data.data)) {
-        setUsers(response.data.data)
+        setStaffs(response.data.data)
         setTotalPages(response.data.paging?.total_pages || 1)
         return
       }
 
-      setUsers([])
+      setStaffs([])
     } catch (err) {
       setError('Có lỗi xảy ra khi tải dữ liệu')
-      console.error('Error fetching users:', err)
+      console.error('Error fetching staffs:', err)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchUsers()
+    fetchStaffs()
   }, [currentPage, search, selectedRole])
 
   const handleSearch = (e) => {
@@ -61,16 +64,26 @@ const StaffPage = () => {
     setCurrentPage(1)
   }
 
+  const handleViewDetails = (staff) => {
+    setSelectedStaff(staff)
+    setIsDrawerOpen(true)
+  }
+
+  const handleCloseDrawer = () => {
+    setIsDrawerOpen(false)
+    setSelectedStaff(null)
+  }
+
   const handleDelete = async (id, userName) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa người dùng "${userName}"?`)) {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa nhân viên "${userName}"?`)) {
       return
     }
 
     try {
       await userService.deleteUser(id)
-      fetchUsers()
+      fetchStaffs()
     } catch (err) {
-      alert('Có lỗi xảy ra khi xóa người dùng')
+      alert('Có lỗi xảy ra khi xóa nhân viên')
       console.error('Error deleting user:', err)
     }
   }
@@ -83,8 +96,6 @@ const StaffPage = () => {
         return 'bg-blue-100 text-blue-800'
       case 'ticket_staff':
         return 'bg-green-100 text-green-800'
-      case 'customer':
-        return 'bg-gray-100 text-gray-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -107,7 +118,7 @@ const StaffPage = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Quản lý Nhân viên</h1>
-            <p className="text-gray-600">Quản lý tài khoản người dùng và nhân viên hệ thống</p>
+            <p className="text-gray-600">Quản lý tài khoản nhân viên và admin hệ thống</p>
           </div>
           <Link
             to="/admin/staff/new"
@@ -176,7 +187,7 @@ const StaffPage = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Người dùng
+                      Nhân viên
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Email
@@ -196,7 +207,7 @@ const StaffPage = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user) => (
+                  {staffs.map((user) => (
                     <tr key={user.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -229,13 +240,13 @@ const StaffPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">
-                          <Link
-                            to={`/admin/staff/${user.id}`}
+                          <button
+                            onClick={() => handleViewDetails(user)}
                             className="text-blue-600 hover:text-blue-900"
                             title="Xem chi tiết"
                           >
                             <FaEye />
-                          </Link>
+                          </button>
                           <Link
                             to={`/admin/staff/${user.id}/edit`}
                             className="text-indigo-600 hover:text-indigo-900"
@@ -259,9 +270,9 @@ const StaffPage = () => {
                 </tbody>
               </table>
 
-              {users.length === 0 && (
+              {staffs.length === 0 && (
                 <div className="text-center py-12">
-                  <p className="text-gray-500">Không có người dùng nào</p>
+                  <p className="text-gray-500">Không có nhân viên nào</p>
                 </div>
               )}
             </div>
@@ -341,34 +352,31 @@ const StaffPage = () => {
 
             {/* Statistics */}
             <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">{users.length}</div>
-                  <div className="text-sm text-gray-600">Tổng số người dùng</div>
+                  <div className="text-2xl font-bold text-gray-900">{staffs.length}</div>
+                  <div className="text-sm text-gray-600">Tổng số nhân viên</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">
-                    {users.filter((u) => u.role_id === 'manager_staff').length}
+                    {staffs.filter((u) => u.role_id === 'manager_staff').length}
                   </div>
                   <div className="text-sm text-gray-600">Quản lý rạp</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">
-                    {users.filter((u) => u.role_id === 'ticket_staff').length}
+                    {staffs.filter((u) => u.role_id === 'ticket_staff').length}
                   </div>
                   <div className="text-sm text-gray-600">Nhân viên bán vé</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-600">
-                    {users.filter((u) => u.role_id === 'customer').length}
-                  </div>
-                  <div className="text-sm text-gray-600">Khách hàng</div>
                 </div>
               </div>
             </div>
           </>
         )}
       </div>
+
+      {/* Staff Detail Drawer */}
+      <StaffDetailDrawer staff={selectedStaff} isOpen={isDrawerOpen} onClose={handleCloseDrawer} />
     </AdminLayout>
   )
 }

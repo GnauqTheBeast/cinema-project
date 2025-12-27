@@ -15,7 +15,6 @@ import SeatFormPage from '../pages/admin/SeatFormPage'
 import SeatsPage from '../pages/admin/SeatsPage'
 import ShowtimeFormPage from '../pages/admin/ShowtimeFormPage'
 import ShowtimesPage from '../pages/admin/ShowtimesPage'
-import StaffManagementPage from '../pages/admin/StaffManagementPage'
 import StaffPage from '../pages/admin/StaffPage'
 import StaffFormPage from '../pages/admin/StaffFormPage'
 import BookingPage from '../pages/client/BookingPage'
@@ -304,14 +303,6 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
         element={
           <AdminRoute>
             <StaffFormPage />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/admin/staff-old"
-        element={
-          <AdminRoute>
-            <StaffManagementPage />
           </AdminRoute>
         }
       />
