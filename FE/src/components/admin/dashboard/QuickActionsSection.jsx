@@ -7,79 +7,34 @@ export default function QuickActionsSection() {
     {
       label: 'View All Movies',
       path: '/admin/movies',
-      icon: '🎬',
-      gradient: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+      bgClass: 'bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800',
     },
     {
       label: 'Add New Movie',
       path: '/admin/movies/new',
-      icon: '➕',
-      gradient: 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)',
+      bgClass: 'bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800',
     },
     {
       label: 'Revenue Analytics',
       path: '/admin/revenue',
-      icon: '💰',
-      gradient: 'linear-gradient(135deg, #ff9800 0%, #ffa726 100%)',
+      bgClass: 'bg-gradient-to-br from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800',
     },
   ]
 
   return (
-    <div
-      style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        padding: '24px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-      }}
-    >
-      <h3
-        style={{
-          margin: '0 0 20px 0',
-          fontSize: '20px',
-          fontWeight: 'bold',
-        }}
-      >
-        ⚡ Quick Actions
+    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+      <h3 className="mb-6 text-lg font-semibold text-gray-900">
+        Quick Actions
       </h3>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '16px',
-        }}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {actions.map((action) => (
           <button
             key={action.path}
             onClick={() => navigate(action.path)}
-            style={{
-              background: action.gradient,
-              color: 'white',
-              border: 'none',
-              padding: '20px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)'
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'
-            }}
+            className={`${action.bgClass} text-white px-5 py-4 rounded-lg text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md`}
           >
-            <span style={{ fontSize: '24px' }}>{action.icon}</span>
-            <span>{action.label}</span>
+            {action.label}
           </button>
         ))}
       </div>

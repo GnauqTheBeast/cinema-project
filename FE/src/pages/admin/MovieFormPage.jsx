@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { movieService } from '../../services/movieApi'
+import Button from '../../components/common/Button'
+import Input from '../../components/common/Input'
+import Select from '../../components/common/Select'
+import Textarea from '../../components/common/Textarea'
+import Card from '../../components/common/Card'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
 
 export default function MovieFormPage() {
   const { id } = useParams()
@@ -75,10 +81,8 @@ export default function MovieFormPage() {
       return
     }
 
-    // Convert date to RFC3339 format if provided
     let release_date = null
     if (formData.release_date) {
-      // Convert YYYY-MM-DD to RFC3339 format (YYYY-MM-DDTHH:MM:SSZ)
       release_date = new Date(formData.release_date + 'T00:00:00Z').toISOString()
     }
 
@@ -109,319 +113,138 @@ export default function MovieFormPage() {
   if (loading) {
     return (
       <AdminLayout>
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          <div>Loading movie...</div>
-        </div>
+        <LoadingSpinner size="lg" text="Loading movie..." />
       </AdminLayout>
     )
   }
 
   return (
     <AdminLayout>
-      <div>
-        {/* Header */}
-        <div style={{ marginBottom: '24px' }}>
-          <button
-            onClick={() => navigate('/admin/movies')}
-            style={{
-              background: 'none',
-              border: '1px solid #ddd',
-              padding: '8px 16px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              marginBottom: '16px',
-            }}
-          >
+      <div className="space-y-6">
+        <div>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/admin/movies')} className="mb-4">
             ← Back to Movies
-          </button>
-          <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold' }}>
+          </Button>
+          <h1 className="text-3xl font-bold text-gray-900">
             {isEditing ? 'Edit Movie' : 'Add New Movie'}
           </h1>
         </div>
 
         {error && (
-          <div
-            style={{
-              backgroundColor: '#ffebee',
-              color: '#c62828',
-              padding: '12px',
-              borderRadius: '4px',
-              marginBottom: '24px',
-            }}
-          >
-            {error}
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+            <div className="flex items-start">
+              <span className="text-red-500 text-xl mr-3">⚠</span>
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
           </div>
         )}
 
-        <div
-          style={{
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            padding: '32px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          }}
-        >
-          <form onSubmit={handleSubmit}>
-            {/* Title */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                Title *
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
+        <Card>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <Input
+              label="Title"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              required
+              placeholder="Enter movie title"
+            />
+
+            <Input
+              label="Director"
+              name="director"
+              value={formData.director}
+              onChange={handleChange}
+              placeholder="Enter director name"
+            />
+
+            <Input
+              label="Cast"
+              name="cast"
+              value={formData.cast}
+              onChange={handleChange}
+              placeholder="Enter main cast (comma separated)"
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="Genre"
+                name="genre"
+                value={formData.genre}
+                onChange={handleChange}
+                placeholder="e.g., Action, Drama, Comedy"
+              />
+
+              <Input
+                label="Duration (minutes)"
+                name="duration"
+                type="number"
+                value={formData.duration}
                 onChange={handleChange}
                 required
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  fontSize: '16px',
-                  boxSizing: 'border-box',
-                }}
-                placeholder="Enter movie title"
+                min="1"
+                placeholder="120"
               />
             </div>
 
-            {/* Director */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                Director
-              </label>
-              <input
-                type="text"
-                name="director"
-                value={formData.director}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="Release Date"
+                name="release_date"
+                type="date"
+                value={formData.release_date}
                 onChange={handleChange}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  fontSize: '16px',
-                  boxSizing: 'border-box',
-                }}
-                placeholder="Enter director name"
               />
-            </div>
 
-            {/* Cast */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                Cast
-              </label>
-              <input
-                type="text"
-                name="cast"
-                value={formData.cast}
+              <Select
+                label="Status"
+                name="status"
+                value={formData.status}
                 onChange={handleChange}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  fontSize: '16px',
-                  boxSizing: 'border-box',
-                }}
-                placeholder="Enter main cast (comma separated)"
-              />
-            </div>
-
-            {/* Genre and Duration */}
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                  Genre
-                </label>
-                <input
-                  type="text"
-                  name="genre"
-                  value={formData.genre}
-                  onChange={handleChange}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '16px',
-                    boxSizing: 'border-box',
-                  }}
-                  placeholder="e.g., Action, Drama, Comedy"
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                  Duration (minutes) *
-                </label>
-                <input
-                  type="number"
-                  name="duration"
-                  value={formData.duration}
-                  onChange={handleChange}
-                  required
-                  min="1"
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '16px',
-                    boxSizing: 'border-box',
-                  }}
-                  placeholder="120"
-                />
-              </div>
-            </div>
-
-            {/* Release Date and Status */}
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                  Release Date
-                </label>
-                <input
-                  type="date"
-                  name="release_date"
-                  value={formData.release_date}
-                  onChange={handleChange}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '16px',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                  Status
-                </label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '16px',
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  <option value="UPCOMING">Upcoming</option>
-                  <option value="SHOWING">Now Showing</option>
-                  <option value="ENDED">Ended</option>
-                </select>
-              </div>
-            </div>
-
-            {/* URLs */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                Poster URL
-              </label>
-              <input
-                type="url"
-                name="poster_url"
-                value={formData.poster_url}
-                onChange={handleChange}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  fontSize: '16px',
-                  boxSizing: 'border-box',
-                }}
-                placeholder="https://example.com/poster.jpg"
-              />
-            </div>
-
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                Trailer URL
-              </label>
-              <input
-                type="url"
-                name="trailer_url"
-                value={formData.trailer_url}
-                onChange={handleChange}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  fontSize: '16px',
-                  boxSizing: 'border-box',
-                }}
-                placeholder="https://www.youtube.com/watch?v=..."
-              />
-            </div>
-
-            {/* Description */}
-            <div style={{ marginBottom: '32px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                Description
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows="4"
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  fontSize: '16px',
-                  boxSizing: 'border-box',
-                  resize: 'vertical',
-                  fontFamily: 'inherit',
-                }}
-                placeholder="Enter movie description..."
-              />
-            </div>
-
-            {/* Submit Buttons */}
-            <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                onClick={() => navigate('/admin/movies')}
-                style={{
-                  padding: '12px 24px',
-                  border: '1px solid #ddd',
-                  backgroundColor: 'white',
-                  color: '#333',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '16px',
-                }}
               >
+                <option value="UPCOMING">Upcoming</option>
+                <option value="SHOWING">Now Showing</option>
+                <option value="ENDED">Ended</option>
+              </Select>
+            </div>
+
+            <Input
+              label="Poster URL"
+              name="poster_url"
+              type="url"
+              value={formData.poster_url}
+              onChange={handleChange}
+              placeholder="https://example.com/poster.jpg"
+            />
+
+            <Input
+              label="Trailer URL"
+              name="trailer_url"
+              type="url"
+              value={formData.trailer_url}
+              onChange={handleChange}
+              placeholder="https://www.youtube.com/watch?v=..."
+            />
+
+            <Textarea
+              label="Description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows={5}
+              placeholder="Enter movie description..."
+            />
+
+            <div className="flex gap-3 justify-end pt-4">
+              <Button variant="secondary" onClick={() => navigate('/admin/movies')}>
                 Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                style={{
-                  padding: '12px 24px',
-                  border: 'none',
-                  backgroundColor: saving ? '#ccc' : '#1976d2',
-                  color: 'white',
-                  borderRadius: '4px',
-                  cursor: saving ? 'not-allowed' : 'pointer',
-                  fontSize: '16px',
-                }}
-              >
+              </Button>
+              <Button type="submit" disabled={saving}>
                 {saving ? 'Saving...' : isEditing ? 'Update Movie' : 'Create Movie'}
-              </button>
+              </Button>
             </div>
           </form>
-        </div>
+        </Card>
       </div>
     </AdminLayout>
   )

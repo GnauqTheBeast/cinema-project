@@ -137,13 +137,6 @@ export default function DashboardPage() {
     }
   }
 
-  const gradients = {
-    revenue: 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)',
-    tickets: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
-    bookings: 'linear-gradient(135deg, #9c27b0 0%, #ba68c8 100%)',
-    avgPrice: 'linear-gradient(135deg, #ff9800 0%, #ffa726 100%)',
-  }
-
   if (!user) return null
 
   return (
@@ -151,32 +144,57 @@ export default function DashboardPage() {
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         <div
           style={{
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            padding: '20px 24px',
-            marginBottom: '24px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E5E7EB',
+            borderRadius: '12px',
+            padding: '24px',
+            marginBottom: '32px',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.08)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '16px',
           }}
         >
           <div>
-            <h2 style={{ margin: '0 0 4px 0', fontSize: '24px', fontWeight: 'bold' }}>
+            <h1
+              style={{
+                margin: '0 0 8px 0',
+                fontSize: '32px',
+                fontWeight: 700,
+                color: '#111827',
+                fontFamily: "'Open Sans', sans-serif",
+                letterSpacing: '-0.025em',
+              }}
+            >
               Welcome back, {user.fullName?.firstName || user.email}!
-            </h2>
-            <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>
-              📅{' '}
+            </h1>
+            <p
+              style={{
+                margin: 0,
+                color: '#6B7280',
+                fontSize: '14px',
+                fontFamily: "'Open Sans', sans-serif",
+              }}
+            >
               {weekRange.startDate
                 ? getWeekDisplayString(weekRange.startDate, weekRange.endDate)
                 : 'Loading...'}
             </p>
           </div>
           {!loading && (
-            <div style={{ textAlign: 'right', color: '#666', fontSize: '14px' }}>
-              <div>Email: {user.email}</div>
+            <div
+              style={{
+                textAlign: 'right',
+                color: '#6B7280',
+                fontSize: '14px',
+                fontFamily: "'Open Sans', sans-serif",
+              }}
+            >
+              <div style={{ fontWeight: 500, color: '#111827' }}>{user.email}</div>
               {user.fullName && (
-                <div>
+                <div style={{ marginTop: '4px' }}>
                   {user.fullName.firstName} {user.fullName.lastName}
                 </div>
               )}
@@ -188,8 +206,8 @@ export default function DashboardPage() {
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '16px',
-            marginBottom: '24px',
+            gap: '24px',
+            marginBottom: '32px',
           }}
         >
           {loading ? (
@@ -206,7 +224,6 @@ export default function DashboardPage() {
                 value={metrics.revenue}
                 change={metrics.revenueChange}
                 icon="💰"
-                gradient={gradients.revenue}
                 formatValue={formatCurrency}
               />
               <MetricCard
@@ -214,7 +231,6 @@ export default function DashboardPage() {
                 value={metrics.tickets}
                 change={metrics.ticketsChange}
                 icon="🎫"
-                gradient={gradients.tickets}
                 formatValue={(v) => v.toLocaleString()}
               />
               <MetricCard
@@ -222,7 +238,6 @@ export default function DashboardPage() {
                 value={metrics.bookings}
                 change={metrics.bookingsChange}
                 icon="📊"
-                gradient={gradients.bookings}
                 formatValue={(v) => v.toLocaleString()}
               />
               <MetricCard
@@ -230,7 +245,6 @@ export default function DashboardPage() {
                 value={metrics.avgPrice}
                 change={metrics.avgPriceChange}
                 icon="📈"
-                gradient={gradients.avgPrice}
                 formatValue={formatCurrency}
               />
             </>
@@ -244,7 +258,7 @@ export default function DashboardPage() {
             display: 'grid',
             gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1.5fr 1fr',
             gap: '24px',
-            marginBottom: '24px',
+            marginBottom: '32px',
           }}
         >
           <TopMoviesList movies={topMovies} loading={loading} />
@@ -253,15 +267,6 @@ export default function DashboardPage() {
 
         <QuickActionsSection />
       </div>
-
-      <style>
-        {`
-          @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-          }
-        `}
-      </style>
     </AdminLayout>
   )
 }

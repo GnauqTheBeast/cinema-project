@@ -3,6 +3,9 @@ import { FaCalendarAlt, FaClock, FaEdit, FaEye, FaPlus, FaSearch, FaTrash } from
 import { Link } from 'react-router-dom'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { showtimeService } from '../../services/showtimeApi'
+import Card from '../../components/common/Card'
+import Button from '../../components/common/Button'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
 
 const ShowtimesPage = () => {
   const [showtimes, setShowtimes] = useState([])
@@ -162,32 +165,31 @@ const ShowtimesPage = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Quản lý Lịch chiếu</h1>
-            <p className="text-gray-600">Quản lý lịch chiếu phim với tính năng làm tròn 30 phút</p>
+        <Card>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Quản lý Lịch chiếu</h1>
+              <p className="text-gray-600">Quản lý lịch chiếu phim với tính năng làm tròn 30 phút</p>
+            </div>
+            <Link to="/admin/showtimes/new">
+              <Button>
+                <FaPlus />
+                <span>Thêm lịch chiếu mới</span>
+              </Button>
+            </Link>
           </div>
-          <Link
-            to="/admin/showtimes/new"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <FaPlus />
-            Thêm lịch chiếu mới
-          </Link>
-        </div>
+        </Card>
 
-        {/* Filters */}
-        <div className="bg-white p-4 rounded-lg shadow-sm">
+        <Card>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div className="relative">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Tìm kiếm lịch chiếu..."
                 value={search}
                 onChange={handleSearch}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
               />
             </div>
 
@@ -197,7 +199,7 @@ const ShowtimesPage = () => {
                 setSelectedMovie(e.target.value)
                 setCurrentPage(1)
               }}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
             >
               <option value="">Tất cả phim</option>
               {movies.map((movie) => (
@@ -213,7 +215,7 @@ const ShowtimesPage = () => {
                 setSelectedRoom(e.target.value)
                 setCurrentPage(1)
               }}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
             >
               <option value="">Tất cả phòng</option>
               {rooms.map((room) => (
@@ -229,7 +231,7 @@ const ShowtimesPage = () => {
                 setSelectedFormat(e.target.value)
                 setCurrentPage(1)
               }}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
             >
               <option value="">Tất cả định dạng</option>
               {showtimeFormats.map((format) => (
@@ -247,7 +249,7 @@ const ShowtimesPage = () => {
                 setSelectedStatus(e.target.value)
                 setCurrentPage(1)
               }}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
             >
               <option value="">Tất cả trạng thái</option>
               {showtimeStatuses.map((status) => (
@@ -258,7 +260,7 @@ const ShowtimesPage = () => {
             </select>
 
             <div className="relative">
-              <FaCalendarAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="date"
                 value={dateFrom}
@@ -266,13 +268,13 @@ const ShowtimesPage = () => {
                   setDateFrom(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
                 placeholder="Từ ngày"
               />
             </div>
 
             <div className="relative">
-              <FaCalendarAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="date"
                 value={dateTo}
@@ -280,12 +282,13 @@ const ShowtimesPage = () => {
                   setDateTo(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
                 placeholder="Đến ngày"
               />
             </div>
 
-            <button
+            <Button
+              variant="secondary"
               onClick={() => {
                 setSearch('')
                 setSelectedMovie('')
@@ -296,26 +299,27 @@ const ShowtimesPage = () => {
                 setDateTo('')
                 setCurrentPage(1)
               }}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
             >
               Xóa bộ lọc
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
 
-        {/* Content */}
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
+          <LoadingSpinner size="lg" text="Đang tải danh sách lịch chiếu..." />
         ) : error ? (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+            <div className="flex items-start">
+              <span className="text-red-500 text-xl mr-3">⚠</span>
+              <div>
+                <h3 className="text-sm font-semibold text-red-800">Lỗi tải dữ liệu</h3>
+                <p className="text-sm text-red-700 mt-1">{error}</p>
+              </div>
+            </div>
           </div>
         ) : (
           <>
-            {/* Showtimes Table */}
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <Card padding="none">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -425,22 +429,26 @@ const ShowtimesPage = () => {
 
               {showtimes.length === 0 && (
                 <div className="text-center py-12">
-                  <p className="text-gray-500">Không có lịch chiếu nào</p>
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-3xl">🎬</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Chưa có lịch chiếu nào</h3>
+                  <p className="text-gray-500">Hãy thêm lịch chiếu đầu tiên vào hệ thống</p>
                 </div>
               )}
-            </div>
+            </Card>
 
-            {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center">
-                <nav className="flex space-x-2">
-                  <button
-                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Trước
-                  </button>
+              <Card>
+                <div className="flex justify-center">
+                  <nav className="flex space-x-2">
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      ← Trước
+                    </button>
 
                   {(() => {
                     const delta = 2 // Số trang hiện thị ở mỗi bên của trang hiện tại
@@ -486,10 +494,10 @@ const ShowtimesPage = () => {
                         <button
                           key={page}
                           onClick={() => setCurrentPage(page)}
-                          className={`px-3 py-2 text-sm font-medium rounded-md ${
+                          className={`px-3 py-2 text-sm rounded-lg transition-colors ${
                             currentPage === page
-                              ? 'text-blue-600 bg-blue-50 border border-blue-300'
-                              : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                              ? 'bg-blue-600 text-white font-semibold'
+                              : 'text-gray-600 hover:bg-gray-100'
                           }`}
                         >
                           {page}
@@ -498,15 +506,16 @@ const ShowtimesPage = () => {
                     })
                   })()}
 
-                  <button
-                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Sau
-                  </button>
-                </nav>
-              </div>
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Sau →
+                    </button>
+                  </nav>
+                </div>
+              </Card>
             )}
           </>
         )}
