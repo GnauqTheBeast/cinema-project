@@ -36,7 +36,7 @@ func NewWorker(ctn *do.Injector, geminiAPIKeys []string) (*Worker, error) {
 	return &Worker{
 		db:            db,
 		geminiClient:  gemini.NewClient(geminiAPIKeys),
-		batchSize:     50, // Process 50 articles at a time
+		batchSize:     10, // Process 10 articles at a time (reduced to save Gemini quota)
 		checkInterval: 30 * time.Minute,
 	}, nil
 }

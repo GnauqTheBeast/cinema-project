@@ -42,6 +42,21 @@ const analyticsService = {
     const response = await apiClient.get('/analytics/revenue/total', { params })
     return response.data
   },
+
+  getRevenueByShowtime: async (startDate, endDate, movieId = null, limit = 100) => {
+    const params = {
+      start_date: startDate,
+      end_date: endDate,
+      limit,
+    }
+
+    if (movieId) {
+      params.movie_id = movieId
+    }
+
+    const response = await apiClient.get('/analytics/revenue/by-showtime', { params })
+    return response.data
+  },
 }
 
 export default analyticsService

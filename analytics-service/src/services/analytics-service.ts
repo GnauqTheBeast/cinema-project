@@ -104,7 +104,15 @@ class AnalyticsService {
 
         const showtimeMap = new Map(showtimes.map((st) => [st.id, st]))
 
-        const result = rawData.map((item) => {
+        let filteredData = rawData
+        if (filters.movie_id) {
+            filteredData = rawData.filter((item) => {
+                const showtime = showtimeMap.get(item.showtime_id)
+                return showtime && showtime.movie_id === filters.movie_id
+            })
+        }
+
+        const result = filteredData.map((item) => {
             const showtime = showtimeMap.get(item.showtime_id)
 
             if (!showtime) {
