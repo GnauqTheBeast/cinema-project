@@ -18,7 +18,7 @@ import AdminLayout from '../../components/admin/AdminLayout'
 import ShowtimeRevenueModal from '../../components/admin/ShowtimeRevenueModal'
 import analyticsService from '../../services/analyticsService'
 
-const COLORS = ['#EF4444', '#F97316', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899']
+const COLORS = ['#10B981', '#22C55E', '#34D399', '#6EE7B7', '#A7F3D0', '#D1FAE5']
 
 export default function RevenueStatsPage() {
   const [monthlyData, setMonthlyData] = useState([])
@@ -201,7 +201,7 @@ export default function RevenueStatsPage() {
           <div
             style={{
               border: '3px solid #F3F4F6',
-              borderTop: '3px solid #EF4444',
+              borderTop: '3px solid #10B981',
               borderRadius: '50%',
               width: '40px',
               height: '40px',
@@ -271,7 +271,7 @@ export default function RevenueStatsPage() {
                 flex: 1,
                 padding: '12px 24px',
                 border: 'none',
-                background: activeTab === tab.id ? 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)' : 'transparent',
+                background: activeTab === tab.id ? 'linear-gradient(135deg, #10B981 0%, #DC2626 100%)' : 'transparent',
                 color: activeTab === tab.id ? '#FFFFFF' : '#6B7280',
                 borderRadius: '8px',
                 cursor: 'pointer',
@@ -335,7 +335,7 @@ export default function RevenueStatsPage() {
                     margin: 0,
                     fontSize: '28px',
                     fontWeight: 700,
-                    color: '#111827',
+                    color: '#10B981',
                     fontFamily: "'Poppins', sans-serif",
                   }}
                 >
@@ -528,9 +528,9 @@ export default function RevenueStatsPage() {
                     <Line
                       type="monotone"
                       dataKey="revenue"
-                      stroke="#EF4444"
+                      stroke="#10B981"
                       strokeWidth={3}
-                      dot={{ fill: '#FFFFFF', stroke: '#EF4444', strokeWidth: 2, r: 5 }}
+                      dot={{ fill: '#FFFFFF', stroke: '#10B981', strokeWidth: 2, r: 5 }}
                       name="Revenue"
                     />
                   </LineChart>
@@ -576,7 +576,7 @@ export default function RevenueStatsPage() {
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ fontFamily: "'Open Sans', sans-serif", fontSize: 14 }} />
-                <Bar dataKey="revenue" fill="#EF4444" name="Revenue" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="revenue" fill="#10B981" name="Revenue" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -621,7 +621,7 @@ export default function RevenueStatsPage() {
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ fontFamily: "'Open Sans', sans-serif", fontSize: 14 }} />
-                <Bar dataKey="revenue" fill="#EF4444" name="Revenue" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="revenue" fill="#10B981" name="Revenue" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
 

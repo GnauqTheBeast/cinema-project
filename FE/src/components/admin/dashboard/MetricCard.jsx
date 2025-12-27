@@ -1,5 +1,6 @@
 export default function MetricCard({ title, value, change, icon, formatValue = (v) => v }) {
   const isPositive = change >= 0
+  const isRevenue = title.toLowerCase().includes('revenue')
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
@@ -10,7 +11,7 @@ export default function MetricCard({ title, value, change, icon, formatValue = (
         <span className="text-3xl">{icon}</span>
       </div>
 
-      <div className="text-3xl font-bold text-gray-900 mb-3 leading-tight">
+      <div className={`text-3xl font-bold mb-3 leading-tight ${isRevenue ? 'text-green-600' : 'text-gray-900'}`}>
         {formatValue(value)}
       </div>
 

@@ -10,7 +10,7 @@ export default function RevenueTrendChart({ data, loading }) {
           <p className="mb-1 font-semibold text-xs text-gray-900">
             {payload[0].payload.day}
           </p>
-          <p className="text-red-600 text-base font-bold">
+          <p className="text-green-600 text-base font-bold">
             {formatCurrency(payload[0].value)}
           </p>
         </div>
@@ -55,10 +55,10 @@ export default function RevenueTrendChart({ data, loading }) {
             <Line
               type="monotone"
               dataKey="revenue"
-              stroke="#EF4444"
+              stroke="#10B981"
               strokeWidth={3}
-              dot={{ fill: '#FFFFFF', stroke: '#EF4444', strokeWidth: 2, r: 5 }}
-              activeDot={{ r: 7, fill: '#EF4444' }}
+              dot={{ fill: '#FFFFFF', stroke: '#10B981', strokeWidth: 2, r: 5 }}
+              activeDot={{ r: 7, fill: '#10B981' }}
             />
           </LineChart>
         </ResponsiveContainer>

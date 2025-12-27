@@ -3,9 +3,9 @@ import LoadingSpinner from '../../common/LoadingSpinner'
 
 export default function TopMoviesList({ movies, loading }) {
   const getRankBadgeClasses = (index) => {
-    if (index === 0) return 'bg-gradient-to-br from-red-500 to-red-600'
-    if (index === 1) return 'bg-gradient-to-br from-orange-500 to-orange-600'
-    if (index === 2) return 'bg-gradient-to-br from-amber-500 to-amber-600'
+    if (index === 0) return 'bg-gradient-to-br from-green-500 to-emerald-600'
+    if (index === 1) return 'bg-gradient-to-br from-blue-500 to-indigo-600'
+    if (index === 2) return 'bg-gradient-to-br from-purple-500 to-purple-600'
     return 'bg-gray-400'
   }
 
@@ -45,7 +45,7 @@ export default function TopMoviesList({ movies, loading }) {
                 </div>
               </div>
 
-              <div className="text-sm font-bold text-red-600 flex-shrink-0">
+              <div className="text-sm font-bold text-green-600 flex-shrink-0">
                 {formatCurrency(movie.total_revenue)}
               </div>
             </div>
