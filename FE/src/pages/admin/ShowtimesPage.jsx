@@ -189,7 +189,7 @@ const ShowtimesPage = () => {
                 placeholder="Tìm kiếm lịch chiếu..."
                 value={search}
                 onChange={handleSearch}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 outline-none"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
               />
             </div>
 
@@ -199,7 +199,7 @@ const ShowtimesPage = () => {
                 setSelectedMovie(e.target.value)
                 setCurrentPage(1)
               }}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 outline-none"
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
             >
               <option value="">Tất cả phim</option>
               {movies.map((movie) => (
@@ -215,7 +215,7 @@ const ShowtimesPage = () => {
                 setSelectedRoom(e.target.value)
                 setCurrentPage(1)
               }}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 outline-none"
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
             >
               <option value="">Tất cả phòng</option>
               {rooms.map((room) => (
@@ -231,7 +231,7 @@ const ShowtimesPage = () => {
                 setSelectedFormat(e.target.value)
                 setCurrentPage(1)
               }}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 outline-none"
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
             >
               <option value="">Tất cả định dạng</option>
               {showtimeFormats.map((format) => (
@@ -249,7 +249,7 @@ const ShowtimesPage = () => {
                 setSelectedStatus(e.target.value)
                 setCurrentPage(1)
               }}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 outline-none"
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
             >
               <option value="">Tất cả trạng thái</option>
               {showtimeStatuses.map((status) => (
@@ -268,7 +268,7 @@ const ShowtimesPage = () => {
                   setDateFrom(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 outline-none"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
                 placeholder="Từ ngày"
               />
             </div>
@@ -282,7 +282,7 @@ const ShowtimesPage = () => {
                   setDateTo(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 outline-none"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
                 placeholder="Đến ngày"
               />
             </div>
@@ -496,7 +496,7 @@ const ShowtimesPage = () => {
                           onClick={() => setCurrentPage(page)}
                           className={`px-3 py-2 text-sm rounded-lg transition-colors ${
                             currentPage === page
-                              ? 'bg-red-600 text-white font-semibold'
+                              ? 'bg-blue-600 text-white font-semibold'
                               : 'text-gray-600 hover:bg-gray-100'
                           }`}
                         >

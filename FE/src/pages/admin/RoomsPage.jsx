@@ -181,7 +181,7 @@ const RoomsPage = () => {
                 placeholder="Tìm kiếm phòng..."
                 value={search}
                 onChange={handleSearch}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 outline-none"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
               />
             </div>
 
@@ -191,7 +191,7 @@ const RoomsPage = () => {
                 setSelectedRoomType(e.target.value)
                 setCurrentPage(1)
               }}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 outline-none"
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
             >
               <option value="">Tất cả loại phòng</option>
               {roomTypes.map((type) => (
@@ -207,7 +207,7 @@ const RoomsPage = () => {
                 setSelectedStatus(e.target.value)
                 setCurrentPage(1)
               }}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 outline-none"
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
             >
               <option value="">Tất cả trạng thái</option>
               {roomStatuses.map((status) => (
@@ -262,7 +262,7 @@ const RoomsPage = () => {
                         onClick={() => setCurrentPage(page)}
                         className={`px-3 py-2 text-sm rounded-lg transition-colors ${
                           currentPage === page
-                            ? 'bg-red-600 text-white font-semibold'
+                            ? 'bg-blue-600 text-white font-semibold'
                             : 'text-gray-600 hover:bg-gray-100'
                         }`}
                       >

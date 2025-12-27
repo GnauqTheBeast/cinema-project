@@ -125,129 +125,44 @@ export default function AdminLayout({ children }) {
   ]
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#F9FAFB' }}>
-      <header
-        style={{
-          background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 50%, #B91C1C 100%)',
-          color: '#FFFFFF',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.08)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 30,
-          height: '64px',
-        }}
-      >
-        <div style={{ padding: '0 24px', height: '100%', display: 'flex', alignItems: 'center' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              width: '100%',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50">
+      <header className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 text-white shadow-lg sticky top-0 z-50 h-16 border-b border-slate-600/50">
+        <div className="px-6 h-full flex items-center">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-4">
               <button
                 type="button"
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                style={{
-                  padding: '8px',
-                  borderRadius: '8px',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#FFFFFF',
-                  cursor: 'pointer',
-                  transition: 'background-color 150ms ease-in-out',
-                  display: window.innerWidth >= 1024 ? 'none' : 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.1)')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                className="lg:hidden p-2 rounded-lg bg-transparent border-none text-white cursor-pointer transition-colors duration-150 hover:bg-white/10 flex items-center justify-center"
               >
                 {isSidebarOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
               </button>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div
-                  style={{
-                    width: '40px',
-                    height: '40px',
-                    background: 'linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%)',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  }}
-                >
-                  <FaFilm style={{ color: '#FFFFFF', fontSize: '18px' }} />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
+                  <FaFilm className="text-white text-lg" />
                 </div>
                 <div>
-                  <h1
-                    style={{
-                      fontSize: '20px',
-                      fontWeight: 700,
-                      fontFamily: "'Poppins', sans-serif",
-                      margin: 0,
-                    }}
-                  >
+                  <h1 className="text-xl font-bold m-0">
                     HQ Cinema Admin
                   </h1>
-                  <p
-                    style={{
-                      fontSize: '13px',
-                      color: 'rgba(255, 255, 255, 0.9)',
-                      margin: 0,
-                      fontFamily: "'Open Sans', sans-serif",
-                    }}
-                  >
+                  <p className="text-xs text-slate-300 m-0">
                     Hệ thống quản lý rạp chiếu phim
                   </p>
                 </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: 'rgba(255, 255, 255, 0.9)',
-                }}
-              >
-                <FaUser style={{ fontSize: '14px' }} />
-                <span style={{ fontSize: '14px', fontFamily: "'Open Sans', sans-serif" }}>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg">
+                <FaUser className="text-sm text-blue-300" />
+                <span className="text-sm text-white">
                   {adminUser?.name || 'Admin'}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={handleLogout}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: 'rgba(0, 0, 0, 0.2)',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  color: '#FFFFFF',
-                  cursor: 'pointer',
-                  transition: 'all 200ms ease-in-out',
-                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-                  fontFamily: "'Open Sans', sans-serif",
-                  fontSize: '14px',
-                  fontWeight: 500,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)'
-                  e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.15)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.2)'
-                  e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
-                }}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium"
               >
                 <FaSignOutAlt size={16} />
                 <span>Đăng xuất</span>
@@ -257,78 +172,33 @@ export default function AdminLayout({ children }) {
         </div>
       </header>
 
-      <div style={{ display: 'flex' }}>
+      <div className="flex">
         <aside
-          style={{
-            position: window.innerWidth >= 1024 ? 'static' : 'fixed',
-            transform:
-              window.innerWidth >= 1024 || isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-            zIndex: 40,
-            width: '256px',
-            height: 'calc(100vh - 64px)',
-            transition: 'transform 300ms ease-in-out',
-            backgroundColor: '#FFFFFF',
-            borderRight: '1px solid #E5E7EB',
-            overflowY: 'auto',
-          }}
+          className={`${
+            isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } lg:translate-x-0 fixed lg:static z-40 w-64 h-[calc(100vh-4rem)] transition-transform duration-300 bg-white border-r border-gray-200 overflow-y-auto`}
         >
-          {isSidebarOpen && window.innerWidth < 1024 && (
+          {isSidebarOpen && (
             <div
-              style={{
-                position: 'fixed',
-                inset: 0,
-                backgroundColor: 'rgba(17, 24, 39, 0.5)',
-                zIndex: 30,
-                backdropFilter: 'blur(2px)',
-              }}
+              className="lg:hidden fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-30"
               onClick={() => setIsSidebarOpen(false)}
             />
           )}
 
-          <div
-            style={{
-              position: 'relative',
-              zIndex: 40,
-              height: '100%',
-              backgroundColor: '#FFFFFF',
-            }}
-          >
-            <nav style={{ padding: '24px 0' }}>
-              <div style={{ marginBottom: '24px', padding: '0 16px' }}>
+          <div className="relative z-40 h-full bg-white">
+            <nav className="py-6">
+              <div className="mb-6 px-4">
                 <button
                   type="button"
                   onClick={() => navigate('/')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    width: '100%',
-                    padding: '12px 16px',
-                    color: '#6B7280',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    transition: 'all 150ms ease-in-out',
-                    fontFamily: "'Open Sans', sans-serif",
-                    fontSize: '14px',
-                    fontWeight: 500,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#F9FAFB'
-                    e.currentTarget.style.color = '#111827'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent'
-                    e.currentTarget.style.color = '#6B7280'
-                  }}
+                  className="flex items-center gap-3 w-full px-4 py-3 text-gray-500 bg-transparent border-none rounded-lg cursor-pointer transition-all duration-150 hover:bg-gray-50 hover:text-gray-900 text-sm font-medium"
                 >
                   <FaHome size={18} />
                   <span>Về trang chủ</span>
                 </button>
               </div>
 
-              <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div className="px-4 flex flex-col gap-1">
                 {navItems.map((item) => {
                   const IconComponent = item.icon
                   const isActive = isActiveRoute(item.path)
@@ -345,38 +215,11 @@ export default function AdminLayout({ children }) {
                         navigate(item.path)
                         setIsSidebarOpen(false)
                       }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        width: '100%',
-                        padding: '12px 16px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        transition: 'all 150ms ease-in-out',
-                        fontFamily: "'Open Sans', sans-serif",
-                        fontSize: '14px',
-                        fontWeight: isActive ? 600 : 500,
-                        background: isActive
-                          ? 'linear-gradient(135deg, #FEE2E2 0%, #FEF2F2 100%)'
-                          : 'transparent',
-                        color: isActive ? '#DC2626' : '#6B7280',
-                        borderLeft: isActive ? '3px solid #EF4444' : '3px solid transparent',
-                        position: 'relative',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isActive) {
-                          e.currentTarget.style.backgroundColor = '#F9FAFB'
-                          e.currentTarget.style.color = '#111827'
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive) {
-                          e.currentTarget.style.backgroundColor = 'transparent'
-                          e.currentTarget.style.color = '#6B7280'
-                        }
-                      }}
+                      className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg border-none cursor-pointer transition-all duration-150 text-sm relative ${
+                        isActive
+                          ? 'bg-gradient-to-r from-blue-50 to-indigo-50/50 text-blue-700 font-semibold border-l-4 border-blue-600'
+                          : 'bg-transparent text-gray-500 font-medium border-l-4 border-transparent hover:bg-gray-50 hover:text-gray-900'
+                      }`}
                     >
                       <IconComponent size={18} />
                       <span>{item.label}</span>
@@ -386,41 +229,18 @@ export default function AdminLayout({ children }) {
               </div>
             </nav>
 
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                padding: '16px',
-                backgroundColor: '#F9FAFB',
-                borderTop: '1px solid #E5E7EB',
-              }}
-            >
-              <div
-                style={{
-                  textAlign: 'center',
-                  fontSize: '12px',
-                  color: '#9CA3AF',
-                  fontFamily: "'Open Sans', sans-serif",
-                }}
-              >
-                <p style={{ margin: 0 }}>HQ Cinema Admin v1.0</p>
-                <p style={{ margin: '4px 0 0 0' }}>© 2025 All rights reserved</p>
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gray-50 border-t border-gray-200">
+              <div className="text-center text-xs text-gray-400">
+                <p className="m-0">HQ Cinema Admin v1.0</p>
+                <p className="mt-1 m-0">© 2025 All rights reserved</p>
               </div>
             </div>
           </div>
         </aside>
 
-        <main
-          style={{
-            flex: 1,
-            minHeight: 'calc(100vh - 64px)',
-            backgroundColor: '#F9FAFB',
-          }}
-        >
-          <div style={{ padding: '32px' }}>
-            <div style={{ maxWidth: '1400px', margin: '0 auto' }}>{children}</div>
+        <main className="flex-1 min-h-[calc(100vh-4rem)] bg-gray-50">
+          <div className="p-8">
+            <div className="max-w-[1400px] mx-auto">{children}</div>
           </div>
         </main>
       </div>

@@ -39,7 +39,7 @@ export default function MovieCard({ movie }) {
         </div>
       )}
 
-      <div className="p-4 flex-1 flex flex-direction-column">
+      <div className="p-4 flex-1 flex flex-col">
         <h3 className="text-base font-semibold text-gray-900 mb-3 line-clamp-2 min-h-[3rem]">
           {movie.title}
         </h3>
@@ -51,19 +51,25 @@ export default function MovieCard({ movie }) {
         </div>
 
         <div className="text-sm text-gray-600 space-y-1.5">
-          <div>
-            <span className="font-medium text-gray-700">Director:</span> {movie.director || 'Unknown'}
+          <div className="truncate">
+            <span className="font-medium text-gray-700">Director:</span>{' '}
+            <span className="truncate" title={movie.director}>
+              {movie.director || 'Unknown'}
+            </span>
           </div>
 
-          <div>
-            <span className="font-medium text-gray-700">Genre:</span> {movie.genre || 'Unknown'}
+          <div className="truncate">
+            <span className="font-medium text-gray-700">Genre:</span>{' '}
+            <span className="truncate" title={movie.genre}>
+              {movie.genre || 'Unknown'}
+            </span>
           </div>
 
-          <div>
+          <div className="truncate">
             <span className="font-medium text-gray-700">Duration:</span> {formatDuration(movie.duration)}
           </div>
 
-          <div>
+          <div className="truncate">
             <span className="font-medium text-gray-700">Release:</span> {formatDate(movie.release_date)}
           </div>
         </div>

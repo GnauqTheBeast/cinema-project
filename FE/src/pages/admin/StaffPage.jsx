@@ -141,7 +141,7 @@ const StaffPage = () => {
                 placeholder="Tìm kiếm theo tên, email..."
                 value={search}
                 onChange={handleSearch}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 outline-none"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
               />
             </div>
 
@@ -151,7 +151,7 @@ const StaffPage = () => {
                 setSelectedRole(e.target.value)
                 setCurrentPage(1)
               }}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 outline-none"
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
             >
               {roles.map((role) => (
                 <option key={role.value} value={role.value}>
@@ -339,7 +339,7 @@ const StaffPage = () => {
                         onClick={() => setCurrentPage(page)}
                         className={`px-3 py-2 text-sm rounded-lg transition-colors ${
                           currentPage === page
-                            ? 'bg-red-600 text-white font-semibold'
+                            ? 'bg-blue-600 text-white font-semibold'
                             : 'text-gray-600 hover:bg-gray-100'
                         }`}
                       >
@@ -363,13 +363,13 @@ const StaffPage = () => {
             <Card>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-gray-900 mb-2">{staffs.length}</div>
+                  <div className="text-3xl font-bold text-slate-900 mb-2">{staffs.length}</div>
                   <div className="text-sm text-gray-600 uppercase tracking-wide font-medium">
                     Tổng số nhân viên
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-red-600 mb-2">
+                  <div className="text-3xl font-bold text-blue-600 mb-2">
                     {staffs.filter((u) => u.role_id === 'manager_staff').length}
                   </div>
                   <div className="text-sm text-gray-600 uppercase tracking-wide font-medium">
@@ -377,7 +377,7 @@ const StaffPage = () => {
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-red-600 mb-2">
+                  <div className="text-3xl font-bold text-indigo-600 mb-2">
                     {staffs.filter((u) => u.role_id === 'ticket_staff').length}
                   </div>
                   <div className="text-sm text-gray-600 uppercase tracking-wide font-medium">
