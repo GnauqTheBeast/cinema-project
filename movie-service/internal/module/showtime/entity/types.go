@@ -50,6 +50,8 @@ type ShowtimeResponse struct {
 	Duration  string         `json:"duration"`
 	CreatedAt string         `json:"created_at"`
 	UpdatedAt *string        `json:"updated_at,omitempty"`
+	Movie     *Movie         `json:"movie,omitempty"`
+	Room      *Room          `json:"room,omitempty"`
 }
 
 type ShowtimesResponse struct {
@@ -123,6 +125,8 @@ func ToShowtimeResponse(showtime *Showtime) *ShowtimeResponse {
 		Status:    showtime.Status,
 		Duration:  showtime.CalculateDuration().String(),
 		CreatedAt: showtime.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		Movie:     showtime.Movie,
+		Room:      showtime.Room,
 	}
 
 	if showtime.UpdatedAt != nil {

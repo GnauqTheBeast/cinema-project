@@ -7,6 +7,8 @@ import (
 )
 
 type Movie struct {
+	bun.BaseModel `bun:"table:movies"`
+
 	Id          string    `bun:"id,pk" json:"id"`
 	Title       string    `bun:"title" json:"title"`
 	Description string    `bun:"description" json:"description"`
@@ -21,6 +23,8 @@ type Movie struct {
 }
 
 type Room struct {
+	bun.BaseModel `bun:"table:rooms"`
+
 	Id         string `bun:"id,pk" json:"id"`
 	RoomNumber int    `bun:"room_number" json:"room_number"`
 	Capacity   int    `bun:"capacity" json:"capacity"`

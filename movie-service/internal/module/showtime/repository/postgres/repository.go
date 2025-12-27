@@ -105,45 +105,46 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*entity.Showtime, 
 func (r *Repository) GetMany(ctx context.Context, limit, offset int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time, excludeEnded bool) ([]*entity.Showtime, error) {
 	query := r.roDb.
 		NewSelect().
-		Model((*entity.Showtime)(nil))
+		Model((*entity.Showtime)(nil)).
+		Relation("Movie").
+		Relation("Room")
 
-	// Only get showtimes that haven't ended yet (for client API)
 	if excludeEnded {
-		query = query.Where("end_time > ?", time.Now())
+		query = query.Where("st.end_time > ?", time.Now())
 	}
 
 	if search != "" {
 		searchPattern := "%" + strings.ToLower(search) + "%"
-		query = query.Where("LOWER(format) LIKE ? OR LOWER(status) LIKE ?", searchPattern, searchPattern)
+		query = query.Where("LOWER(st.format) LIKE ? OR LOWER(st.status) LIKE ?", searchPattern, searchPattern)
 	}
 
 	if movieId != "" {
-		query = query.Where("movie_id = ?", movieId)
+		query = query.Where("st.movie_id = ?", movieId)
 	}
 
 	if roomId != "" {
-		query = query.Where("room_id = ?", roomId)
+		query = query.Where("st.room_id = ?", roomId)
 	}
 
 	if format != "" {
-		query = query.Where("format = ?", format)
+		query = query.Where("st.format = ?", format)
 	}
 
 	if status != "" {
-		query = query.Where("status = ?", status)
+		query = query.Where("st.status = ?", status)
 	}
 
 	if dateFrom != nil {
-		query = query.Where("start_time >= ?", *dateFrom)
+		query = query.Where("st.start_time >= ?", *dateFrom)
 	}
 
 	if dateTo != nil {
-		query = query.Where("start_time <= ?", *dateTo)
+		query = query.Where("st.start_time <= ?", *dateTo)
 	}
 
 	var showtimes []*entity.Showtime
 	err := query.
-		Order("start_time ASC").
+		Order("st.start_time ASC").
 		Limit(limit).
 		Offset(offset).
 		Scan(ctx, &showtimes)
@@ -159,38 +160,37 @@ func (r *Repository) GetTotalCount(ctx context.Context, search, movieId, roomId 
 		NewSelect().
 		Model((*entity.Showtime)(nil))
 
-	// Only get showtimes that haven't ended yet (for client API)
 	if excludeEnded {
-		query = query.Where("end_time > ?", time.Now())
+		query = query.Where("st.end_time > ?", time.Now())
 	}
 
 	if search != "" {
 		searchPattern := "%" + strings.ToLower(search) + "%"
-		query = query.Where("LOWER(format) LIKE ? OR LOWER(status) LIKE ?", searchPattern, searchPattern)
+		query = query.Where("LOWER(st.format) LIKE ? OR LOWER(st.status) LIKE ?", searchPattern, searchPattern)
 	}
 
 	if movieId != "" {
-		query = query.Where("movie_id = ?", movieId)
+		query = query.Where("st.movie_id = ?", movieId)
 	}
 
 	if roomId != "" {
-		query = query.Where("room_id = ?", roomId)
+		query = query.Where("st.room_id = ?", roomId)
 	}
 
 	if format != "" {
-		query = query.Where("format = ?", format)
+		query = query.Where("st.format = ?", format)
 	}
 
 	if status != "" {
-		query = query.Where("status = ?", status)
+		query = query.Where("st.status = ?", status)
 	}
 
 	if dateFrom != nil {
-		query = query.Where("start_time >= ?", *dateFrom)
+		query = query.Where("st.start_time >= ?", *dateFrom)
 	}
 
 	if dateTo != nil {
-		query = query.Where("start_time <= ?", *dateTo)
+		query = query.Where("st.start_time <= ?", *dateTo)
 	}
 
 	count, err := query.Count(ctx)

@@ -168,7 +168,7 @@ func (b *business) CreateShowtime(ctx context.Context, showtime *entity.Showtime
 		return ErrTimeConflict
 	}
 
-	if err := b.repository.Create(ctx, showtime); err != nil {
+	if err = b.repository.Create(ctx, showtime); err != nil {
 		return fmt.Errorf("failed to create showtime: %w", err)
 	}
 

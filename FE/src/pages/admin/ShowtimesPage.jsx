@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react'
 import { FaCalendarAlt, FaClock, FaEdit, FaEye, FaPlus, FaSearch, FaTrash } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { movieService } from '../../services/movieApi'
-import { roomService } from '../../services/roomApi'
 import { showtimeService } from '../../services/showtimeApi'
 
 const ShowtimesPage = () => {
@@ -41,8 +39,28 @@ const ShowtimesPage = () => {
       )
 
       if (response.success) {
-        setShowtimes(response.data.data || [])
+        const showtimesData = response.data.data || []
+        setShowtimes(showtimesData)
         setTotalPages(response.data.paging?.total_pages || 1)
+
+        const uniqueMovies = []
+        const uniqueRooms = []
+        const movieIds = new Set()
+        const roomIds = new Set()
+
+        showtimesData.forEach((showtime) => {
+          if (showtime.movie && !movieIds.has(showtime.movie.id)) {
+            uniqueMovies.push(showtime.movie)
+            movieIds.add(showtime.movie.id)
+          }
+          if (showtime.room && !roomIds.has(showtime.room.id)) {
+            uniqueRooms.push(showtime.room)
+            roomIds.add(showtime.room.id)
+          }
+        })
+
+        setMovies(uniqueMovies)
+        setRooms(uniqueRooms)
       } else {
         setError('Không thể tải danh sách lịch chiếu')
       }
@@ -53,33 +71,6 @@ const ShowtimesPage = () => {
       setLoading(false)
     }
   }
-
-  const fetchRooms = async () => {
-    try {
-      const response = await roomService.getRooms(1, 100)
-      if (response.success) {
-        setRooms(response.data.data || [])
-      }
-    } catch (err) {
-      console.error('Error fetching rooms:', err)
-    }
-  }
-
-  const fetchMovies = async () => {
-    try {
-      const response = await movieService.getMovies(1, 100)
-      if (response.success) {
-        setMovies(response.data.movies || [])
-      }
-    } catch (err) {
-      console.error('Error fetching movies:', err)
-    }
-  }
-
-  useEffect(() => {
-    fetchRooms()
-    fetchMovies()
-  }, [])
 
   useEffect(() => {
     fetchShowtimes()
@@ -143,14 +134,12 @@ const ShowtimesPage = () => {
     return formatObj ? formatObj.label : format
   }
 
-  const getRoomName = (roomId) => {
-    const room = rooms.find((r) => r.id === roomId)
-    return room ? `Phòng ${room.room_number}` : roomId
+  const getRoomName = (showtime) => {
+    return showtime.room ? `Phòng ${showtime.room.room_number}` : showtime.room_id
   }
 
-  const getMovieName = (movieId) => {
-    const movie = movies.find((m) => m.id === movieId)
-    return movie ? movie.title : movieId
+  const getMovieName = (showtime) => {
+    return showtime.movie ? showtime.movie.title : showtime.movie_id
   }
 
   const formatDateTime = (dateTimeStr) => {
@@ -361,11 +350,11 @@ const ShowtimesPage = () => {
                     >
                       <td className="px-6 py-4">
                         <div className="text-sm font-medium text-gray-900">
-                          {getMovieName(showtime.movie_id)}
+                          {getMovieName(showtime)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{getRoomName(showtime.room_id)}</div>
+                        <div className="text-sm text-gray-900">{getRoomName(showtime)}</div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">
