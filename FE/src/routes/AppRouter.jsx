@@ -6,6 +6,8 @@ import DashboardPage from '../pages/admin/DashboardPage'
 import MovieDetailPage from '../pages/admin/MovieDetailPage'
 import MovieFormPage from '../pages/admin/MovieFormPage'
 import AdminMoviesPage from '../pages/admin/MoviesPage'
+import AdminNewsPage from '../pages/admin/NewsPage'
+import NewsFormPage from '../pages/admin/NewsFormPage'
 import RevenueStatsPage from '../pages/admin/RevenueStatsPage'
 import RoomFormPage from '../pages/admin/RoomFormPage'
 import RoomsPage from '../pages/admin/RoomsPage'
@@ -162,6 +164,24 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
         element={
           <AdminRoute>
             <MovieFormPage />
+          </AdminRoute>
+        }
+      />
+
+      {/* News Routes */}
+      <Route
+        path="/admin/news"
+        element={
+          <AdminRoute>
+            <AdminNewsPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/news/:id/edit"
+        element={
+          <AdminRoute>
+            <NewsFormPage />
           </AdminRoute>
         }
       />

@@ -20,6 +20,7 @@ type NewsSummary struct {
 	Tags        []string   `bun:"tags,array" json:"tags"`
 	ImageURL    string     `bun:"image_url" json:"image_url"` // Featured image from one of the articles
 	Status      string     `bun:"status,notnull,default:'published'" json:"status"`
+	IsActive    *bool      `bun:"is_active,notnull,default:true" json:"is_active"`
 	CreatedAt   *time.Time `bun:"created_at,nullzero,default:current_timestamp" json:"created_at"`
 	UpdatedAt   *time.Time `bun:"updated_at" json:"updated_at"`
 }

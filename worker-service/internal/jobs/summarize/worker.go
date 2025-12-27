@@ -191,6 +191,7 @@ func (w *Worker) createSummaryForGroup(ctx context.Context, group *ArticleGroup)
 	}
 
 	now := time.Now()
+	isActive := true
 	summary := &models.NewsSummary{
 		Id:          uuid.New().String(),
 		Title:       topicTitle,
@@ -202,6 +203,7 @@ func (w *Worker) createSummaryForGroup(ctx context.Context, group *ArticleGroup)
 		Tags:        tags,
 		ImageURL:    imageURL,
 		Status:      "published",
+		IsActive:    &isActive,
 		CreatedAt:   &now,
 		UpdatedAt:   &now,
 	}

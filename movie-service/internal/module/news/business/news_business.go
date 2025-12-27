@@ -10,6 +10,11 @@ import (
 type NewsBusiness interface {
 	GetNewsSummaries(ctx context.Context, category string, page int, pageSize int) ([]*entity.NewsSummaryWithSources, int, error)
 	GetNewsSummaryByID(ctx context.Context, id string) (*entity.NewsSummaryWithSources, error)
+
+	// Admin methods
+	GetAllNewsSummaries(ctx context.Context, category string, page int, pageSize int) ([]*entity.NewsSummaryWithSources, int, error)
+	UpdateNewsSummaryTitle(ctx context.Context, id string, title string) error
+	ToggleNewsSummaryActive(ctx context.Context, id string, isActive bool) error
 }
 
 type newsBusiness struct {
@@ -82,4 +87,48 @@ func derefArticles(articles []*entity.NewsArticle) []entity.NewsArticle {
 		result[i] = *article
 	}
 	return result
+}
+
+// Admin methods
+
+func (b *newsBusiness) GetAllNewsSummaries(ctx context.Context, category string, page int, pageSize int) ([]*entity.NewsSummaryWithSources, int, error) {
+	offset := (page - 1) * pageSize
+
+	summaries, err := b.repo.GetAllNewsSummaries(ctx, category, pageSize, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	total, err := b.repo.CountAllSummaries(ctx, category)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Enrich summaries with source articles
+	result := make([]*entity.NewsSummaryWithSources, 0, len(summaries))
+	for _, summary := range summaries {
+		articles, err := b.repo.GetArticlesByIDs(ctx, summary.ArticleIDs)
+		if err != nil {
+			result = append(result, &entity.NewsSummaryWithSources{
+				NewsSummary: *summary,
+				Sources:     []entity.NewsArticle{},
+			})
+			continue
+		}
+
+		result = append(result, &entity.NewsSummaryWithSources{
+			NewsSummary: *summary,
+			Sources:     derefArticles(articles),
+		})
+	}
+
+	return result, total, nil
+}
+
+func (b *newsBusiness) UpdateNewsSummaryTitle(ctx context.Context, id string, title string) error {
+	return b.repo.UpdateNewsSummaryTitle(ctx, id, title)
+}
+
+func (b *newsBusiness) ToggleNewsSummaryActive(ctx context.Context, id string, isActive bool) error {
+	return b.repo.UpdateNewsSummaryIsActive(ctx, id, isActive)
 }

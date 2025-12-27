@@ -13,6 +13,7 @@ type NewsSummary struct {
 	Tags        []string  `bun:"tags,array" json:"tags"`
 	ImageURL    string    `bun:"image_url" json:"image_url"`
 	Status      string    `bun:"status" json:"status"`
+	IsActive    bool      `bun:"is_active" json:"is_active"`
 	CreatedAt   time.Time `bun:"created_at" json:"created_at"`
 	UpdatedAt   time.Time `bun:"updated_at" json:"updated_at"`
 }

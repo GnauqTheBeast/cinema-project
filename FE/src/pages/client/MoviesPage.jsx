@@ -22,10 +22,10 @@ export default function MoviesPage() {
       setLoading(true)
       let response
       switch (filter) {
-        case 'showing':
+        case 'SHOWING':
           response = await movieService.getShowingMovies()
           break
-        case 'upcoming':
+        case 'UPCOMING':
           response = await movieService.getUpcomingMovies()
           break
         default:

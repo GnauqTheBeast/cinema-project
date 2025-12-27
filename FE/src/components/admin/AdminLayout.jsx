@@ -8,6 +8,7 @@ import {
   FaFilm,
   FaHome,
   FaMoneyBillWave,
+  FaNewspaper,
   FaRobot,
   FaShoppingCart,
   FaSignOutAlt,
@@ -31,6 +32,7 @@ export default function AdminLayout({ children }) {
     manager_staff: new Set([
       '/admin/dashboard',
       '/admin/movies',
+      '/admin/news',
       '/admin/rooms',
       '/admin/seats',
       '/admin/showtimes',
@@ -73,6 +75,12 @@ export default function AdminLayout({ children }) {
       label: 'Quản lý phim',
       icon: FaFilm,
       permission: 'movie_manage',
+    },
+    {
+      path: '/admin/news',
+      label: 'Tin tức',
+      icon: FaNewspaper,
+      permission: 'news_manage',
     },
     {
       path: '/admin/rooms',

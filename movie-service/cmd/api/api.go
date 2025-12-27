@@ -112,5 +112,14 @@ func startRouteV1(group *gin.RouterGroup) {
 	{
 		news.GET("/summaries", newsApi.GetNewsSummaries)
 		news.GET("/summaries/:id", newsApi.GetNewsSummaryByID)
+
+		// Admin news endpoints
+		// TODO: Add middleware for admin/manager_staff authentication
+		newsAdmin := news.Group("/admin")
+		{
+			newsAdmin.GET("/summaries", newsApi.GetAllNewsSummaries)
+			newsAdmin.PUT("/summaries/:id/title", newsApi.UpdateNewsSummaryTitle)
+			newsAdmin.PUT("/summaries/:id/active", newsApi.ToggleNewsSummaryActive)
+		}
 	}
 }

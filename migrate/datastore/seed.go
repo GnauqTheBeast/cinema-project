@@ -134,6 +134,13 @@ func SeedPermissions(ctx context.Context, db *bun.DB) error {
 			Description: stringPtr("Manage staff accounts"),
 			CreatedAt:   time.Now(),
 		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "News Manage",
+			Code:        "news_manage",
+			Description: stringPtr("Manage news articles and summaries"),
+			CreatedAt:   time.Now(),
+		},
 	}
 
 	_, err := db.NewInsert().Model(&permissions).Exec(ctx)
@@ -179,6 +186,7 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 		"movie_manage",
 		"showtime_manage",
 		"seat_manage",
+		"news_manage",
 		"report_view",
 		"profile_view",
 		"profile_update",
@@ -346,7 +354,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			ReleaseDate: &releaseDate4,
 			Description: "In a city of anthropomorphic animals, a rookie bunny cop and a cynical con artist fox must work together to uncover a conspiracy.",
 			TrailerURL:  "https://www.youtube.com/watch?v=jWM0ct-OLsM",
-			PosterURL:   "https://image.tmdb.org/t/p/w500/hlK0e0wAQ3VLuJcsfziYP2kbNPC.jpg",
+			PosterURL:   "https://artofthemovies.co.uk/cdn/shop/files/IMG_1521_1024x1024@2x.jpg?v=1762441851",
 			Status:      "UPCOMING",
 			CreatedAt:   &now,
 		},
@@ -853,11 +861,10 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 }
 
 func SeedShowtimes(ctx context.Context, db *bun.DB) error {
-	// Get all movies and rooms first
 	var movies []models.Movie
 	var rooms []models.Room
 
-	err := db.NewSelect().Model(&movies).Where("status IN (?)", bun.In([]string{"SHOWING", "UPCOMING"})).Scan(ctx)
+	err := db.NewSelect().Model(&movies).Where("status IN (?)", bun.In([]string{"SHOWING"})).Scan(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get movies: %w", err)
 	}
@@ -878,7 +885,6 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 	now := time.Now()
 	var showtimes []*models.Showtime
 
-	// Price configuration based on room type and time
 	priceConfig := map[string]map[string]float64{
 		"STANDARD": {
 			"morning":   8000,
@@ -897,7 +903,6 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 		},
 	}
 
-	// Time slots for different periods
 	timeSlots := map[string][]string{
 		"morning":   {"09:00", "11:30"},
 		"afternoon": {"14:00", "16:30"},
@@ -923,7 +928,6 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 					formats = []string{"2D", "3D"}
 				}
 
-				// Select format based on movie and room index to avoid duplicates
 				selectedFormat := formats[(movieIdx+roomIdx+day)%len(formats)]
 
 				for period, times := range timeSlots {

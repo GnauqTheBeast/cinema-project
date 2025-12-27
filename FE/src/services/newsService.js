@@ -52,6 +52,55 @@ export const newsService = {
       throw error
     }
   },
+
+  // Admin methods
+
+  // Get all news summaries (including inactive)
+  getAllNewsSummaries: async (category = 'all', page = 1, pageSize = 12) => {
+    try {
+      const token = localStorage.getItem('adminToken')
+      const response = await newsApi.get('/news/admin/summaries', {
+        params: { category, page, page_size: pageSize },
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error fetching all news summaries:', error)
+      throw error
+    }
+  },
+
+  // Update news title
+  updateNewsTitle: async (id, title) => {
+    try {
+      const token = localStorage.getItem('adminToken')
+      const response = await newsApi.put(
+        `/news/admin/summaries/${id}/title`,
+        { title },
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error updating news title:', error)
+      throw error
+    }
+  },
+
+  // Toggle news active status
+  toggleNewsActive: async (id, isActive) => {
+    try {
+      const token = localStorage.getItem('adminToken')
+      const response = await newsApi.put(
+        `/news/admin/summaries/${id}/active`,
+        { is_active: isActive },
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error toggling news status:', error)
+      throw error
+    }
+  },
 }
 
 export default newsService

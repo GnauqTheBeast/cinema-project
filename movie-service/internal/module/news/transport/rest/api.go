@@ -97,3 +97,93 @@ func (a *API) GetNewsSummaryByID(c *gin.Context) {
 		"data": summary,
 	})
 }
+
+// Admin endpoints
+
+func (a *API) GetAllNewsSummaries(c *gin.Context) {
+	category := c.DefaultQuery("category", "all")
+
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	if err != nil || pageSize < 1 || pageSize > 50 {
+		pageSize = 10
+	}
+
+	summaries, total, err := a.biz.GetAllNewsSummaries(c.Request.Context(), category, page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch news summaries",
+		})
+		return
+	}
+
+	totalPages := (total + pageSize - 1) / pageSize
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": summaries,
+		"pagination": gin.H{
+			"current_page": page,
+			"page_size":    pageSize,
+			"total":        total,
+			"total_pages":  totalPages,
+		},
+	})
+}
+
+func (a *API) UpdateNewsSummaryTitle(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		Title string `json:"title" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request body",
+		})
+		return
+	}
+
+	err := a.biz.UpdateNewsSummaryTitle(c.Request.Context(), id, req.Title)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to update news title",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "News title updated successfully",
+	})
+}
+
+func (a *API) ToggleNewsSummaryActive(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		IsActive bool `json:"is_active"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request body",
+		})
+		return
+	}
+
+	err := a.biz.ToggleNewsSummaryActive(c.Request.Context(), id, req.IsActive)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to update news status",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "News status updated successfully",
+	})
+}

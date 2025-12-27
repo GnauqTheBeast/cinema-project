@@ -18,6 +18,15 @@ func CreateNewsSummaryTable(ctx context.Context, db *bun.DB) error {
 		return fmt.Errorf("failed to create news_summaries table: %w", err)
 	}
 
+	// Add is_active column if not exists (for existing tables)
+	_, err = db.ExecContext(ctx, `
+		ALTER TABLE news_summaries
+		ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true;
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to add is_active column to news_summaries table: %w", err)
+	}
+
 	// Create indexes
 	_, err = db.ExecContext(ctx, `
 		CREATE INDEX IF NOT EXISTS idx_news_summaries_status ON news_summaries(status);

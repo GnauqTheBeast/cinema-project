@@ -13,7 +13,6 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-// ArticleGroup represents a group of related articles
 type ArticleGroup struct {
 	Articles []*models.NewsArticle
 	Keywords []string
@@ -21,7 +20,6 @@ type ArticleGroup struct {
 	Language string
 }
 
-// GroupArticles groups similar articles together using TF-IDF and cosine similarity
 func GroupArticles(articles []*models.NewsArticle) []*ArticleGroup {
 	if len(articles) == 0 {
 		return nil
@@ -30,7 +28,6 @@ func GroupArticles(articles []*models.NewsArticle) []*ArticleGroup {
 	groups := make([]*ArticleGroup, 0)
 	processed := make(map[string]bool)
 
-	// Build TF-IDF vectors for all articles
 	tfidfVectors := buildTFIDFVectors(articles)
 
 	for i, article := range articles {
@@ -38,7 +35,6 @@ func GroupArticles(articles []*models.NewsArticle) []*ArticleGroup {
 			continue
 		}
 
-		// Create new group with this article
 		group := &ArticleGroup{
 			Articles: []*models.NewsArticle{article},
 			Keywords: extractKeywords(article.Title),
@@ -48,23 +44,19 @@ func GroupArticles(articles []*models.NewsArticle) []*ArticleGroup {
 
 		processed[article.Id] = true
 
-		// Find similar articles using cosine similarity
 		for j, other := range articles {
 			if processed[other.Id] {
 				continue
 			}
 
-			// Must be same category and language
 			if other.Category != article.Category || other.Language != article.Language {
 				continue
 			}
 
-			// Check time proximity (within 3 days for tighter grouping)
 			if !isTimeProximate(article.PublishedAt, other.PublishedAt, 3*24*time.Hour) {
 				continue
 			}
 
-			// Calculate cosine similarity between article vectors
 			similarity := cosineSimilarity(tfidfVectors[i], tfidfVectors[j])
 
 			// Threshold: 0.5 means articles share 50%+ similar content
@@ -80,7 +72,6 @@ func GroupArticles(articles []*models.NewsArticle) []*ArticleGroup {
 	return groups
 }
 
-// truncateContent returns first n characters of content
 func truncateContent(content string, n int) string {
 	if len(content) <= n {
 		return content
@@ -88,15 +79,11 @@ func truncateContent(content string, n int) string {
 	return content[:n]
 }
 
-// extractKeywords extracts important keywords from title
 func extractKeywords(title string) []string {
-	// Normalize text
 	normalized := normalizeText(title)
 
-	// Split into words
 	words := strings.Fields(normalized)
 
-	// Filter out stop words and short words
 	stopWords := getStopWords()
 	keywords := make([]string, 0)
 
@@ -128,17 +115,11 @@ func isTimeProximate(t1, t2 *time.Time, duration time.Duration) bool {
 }
 
 func normalizeText(text string) string {
-	// Remove accents
 	t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
 	result, _, _ := transform.String(t, text)
-
-	// Convert to lowercase
-	result = strings.ToLower(result)
-
-	return result
+	return strings.ToLower(result)
 }
 
-// getStopWords returns common stop words for Vietnamese and English
 func getStopWords() map[string]bool {
 	return map[string]bool{
 		// English
@@ -159,11 +140,9 @@ func getStopWords() map[string]bool {
 }
 
 func buildTFIDFVectors(articles []*models.NewsArticle) []map[string]float64 {
-	// Step 1: Build vocabulary and document frequency (DF)
 	vocabulary := make(map[string]int) // word -> document frequency
 	docTerms := make([]map[string]int, len(articles))
 
-	// Count term frequency for each document
 	for i, article := range articles {
 		text := article.Title + " " + truncateContent(article.Content, 500)
 		terms := extractKeywords(text)
@@ -174,13 +153,11 @@ func buildTFIDFVectors(articles []*models.NewsArticle) []map[string]float64 {
 		}
 		docTerms[i] = termCount
 
-		// Update document frequency
 		for term := range termCount {
 			vocabulary[term]++
 		}
 	}
 
-	// Step 2: Calculate TF-IDF for each document
 	numDocs := float64(len(articles))
 	tfidfVectors := make([]map[string]float64, len(articles))
 
@@ -209,13 +186,11 @@ func buildTFIDFVectors(articles []*models.NewsArticle) []map[string]float64 {
 	return tfidfVectors
 }
 
-// cosineSimilarity calculates cosine similarity between two TF-IDF vectors
 func cosineSimilarity(vec1, vec2 map[string]float64) float64 {
 	if len(vec1) == 0 || len(vec2) == 0 {
 		return 0.0
 	}
 
-	// Calculate dot product and magnitudes
 	dotProduct := 0.0
 	magnitude1 := 0.0
 	magnitude2 := 0.0

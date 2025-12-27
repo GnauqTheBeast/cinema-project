@@ -13,6 +13,12 @@ type NewsRepository interface {
 	GetNewsSummaryByID(ctx context.Context, id string) (*entity.NewsSummary, error)
 	GetArticlesByIDs(ctx context.Context, ids []string) ([]*entity.NewsArticle, error)
 	CountSummaries(ctx context.Context, category string) (int, error)
+
+	// Admin methods
+	GetAllNewsSummaries(ctx context.Context, category string, limit int, offset int) ([]*entity.NewsSummary, error)
+	UpdateNewsSummaryTitle(ctx context.Context, id string, title string) error
+	UpdateNewsSummaryIsActive(ctx context.Context, id string, isActive bool) error
+	CountAllSummaries(ctx context.Context, category string) (int, error)
 }
 
 type newsRepository struct {
@@ -29,6 +35,7 @@ func (r *newsRepository) GetNewsSummaries(ctx context.Context, category string, 
 	query := r.db.NewSelect().
 		Model(&summaries).
 		Where("status = ?", "published").
+		Where("is_active = ?", true).
 		Order("created_at DESC").
 		Limit(limit).
 		Offset(offset)
@@ -74,6 +81,68 @@ func (r *newsRepository) GetArticlesByIDs(ctx context.Context, ids []string) ([]
 }
 
 func (r *newsRepository) CountSummaries(ctx context.Context, category string) (int, error) {
+	query := r.db.NewSelect().
+		Model((*entity.NewsSummary)(nil)).
+		Where("status = ?", "published").
+		Where("is_active = ?", true)
+
+	if category != "" && category != "all" {
+		query = query.Where("category = ?", category)
+	}
+
+	count, err := query.Count(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+// Admin methods
+
+func (r *newsRepository) GetAllNewsSummaries(ctx context.Context, category string, limit int, offset int) ([]*entity.NewsSummary, error) {
+	var summaries []*entity.NewsSummary
+
+	query := r.db.NewSelect().
+		Model(&summaries).
+		Where("status = ?", "published").
+		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset)
+
+	if category != "" && category != "all" {
+		query = query.Where("category = ?", category)
+	}
+
+	err := query.Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return summaries, nil
+}
+
+func (r *newsRepository) UpdateNewsSummaryTitle(ctx context.Context, id string, title string) error {
+	_, err := r.db.NewUpdate().
+		Model((*entity.NewsSummary)(nil)).
+		Set("title = ?", title).
+		Set("updated_at = NOW()").
+		Where("id = ?", id).
+		Exec(ctx)
+	return err
+}
+
+func (r *newsRepository) UpdateNewsSummaryIsActive(ctx context.Context, id string, isActive bool) error {
+	_, err := r.db.NewUpdate().
+		Model((*entity.NewsSummary)(nil)).
+		Set("is_active = ?", isActive).
+		Set("updated_at = NOW()").
+		Where("id = ?", id).
+		Exec(ctx)
+	return err
+}
+
+func (r *newsRepository) CountAllSummaries(ctx context.Context, category string) (int, error) {
 	query := r.db.NewSelect().
 		Model((*entity.NewsSummary)(nil)).
 		Where("status = ?", "published")
