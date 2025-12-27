@@ -15,6 +15,7 @@ import {
   YAxis,
 } from 'recharts'
 import AdminLayout from '../../components/admin/AdminLayout'
+import ShowtimeRevenueModal from '../../components/admin/ShowtimeRevenueModal'
 import analyticsService from '../../services/analyticsService'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D']
@@ -32,6 +33,9 @@ export default function RevenueStatsPage() {
       .split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
   })
+  const [selectedMovie, setSelectedMovie] = useState(null)
+  const [showtimeData, setShowtimeData] = useState([])
+  const [showtimeLoading, setShowtimeLoading] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -71,6 +75,7 @@ export default function RevenueStatsPage() {
         const movies =
           movieRevenueData.success && movieRevenueData.data
             ? movieRevenueData.data.map((movie) => ({
+                movie_id: movie.movie_id,
                 title: movie.movie_title,
                 revenue: movie.total_revenue,
                 revenueFormatted: formatCurrency(movie.total_revenue),
@@ -125,6 +130,34 @@ export default function RevenueStatsPage() {
       currency: 'VND',
       minimumFractionDigits: 0,
     }).format(value)
+  }
+
+  const handleMovieClick = async (movie) => {
+    setSelectedMovie(movie)
+    setShowtimeLoading(true)
+
+    try {
+      const result = await analyticsService.getRevenueByShowtime(
+        dateRange.startDate,
+        dateRange.endDate,
+        movie.movie_id,
+        1000,
+      )
+
+      if (result.success) {
+        setShowtimeData(result.data)
+      }
+    } catch (error) {
+      console.error('Error loading showtime analytics:', error)
+      setShowtimeData([])
+    } finally {
+      setShowtimeLoading(false)
+    }
+  }
+
+  const handleCloseModal = () => {
+    setSelectedMovie(null)
+    setShowtimeData([])
   }
 
   const CustomTooltip = ({ active, payload, label }) => {
@@ -393,7 +426,10 @@ export default function RevenueStatsPage() {
             </ResponsiveContainer>
 
             <div style={{ marginTop: '24px' }}>
-              <h4>Detailed Movie Statistics</h4>
+              <h4 style={{ margin: '0 0 4px 0' }}>Detailed Movie Statistics</h4>
+              <p style={{ fontSize: '14px', color: '#666', margin: '0 0 16px 0' }}>
+                Click on any movie to view showtime-level details
+              </p>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
@@ -414,7 +450,16 @@ export default function RevenueStatsPage() {
                   </thead>
                   <tbody>
                     {movieData.map((movie, index) => (
-                      <tr key={index}>
+                      <tr
+                        key={index}
+                        onClick={() => handleMovieClick(movie)}
+                        style={{
+                          cursor: 'pointer',
+                          transition: 'background-color 0.2s',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f5f5f5')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'white')}
+                      >
                         <td style={{ padding: '12px', border: '1px solid #ddd' }}>{movie.title}</td>
                         <td style={{ padding: '12px', border: '1px solid #ddd' }}>{movie.genre}</td>
                         <td
@@ -510,6 +555,17 @@ export default function RevenueStatsPage() {
           </div>
         )}
       </div>
+
+      {selectedMovie && (
+        <ShowtimeRevenueModal
+          movie={selectedMovie}
+          showtimes={showtimeData}
+          dateRange={dateRange}
+          onClose={handleCloseModal}
+          formatCurrency={formatCurrency}
+          loading={showtimeLoading}
+        />
+      )}
     </AdminLayout>
   )
 }
