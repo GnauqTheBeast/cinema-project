@@ -16,7 +16,7 @@ type NewsRepository interface {
 
 	// Admin methods
 	GetAllNewsSummaries(ctx context.Context, category string, limit int, offset int) ([]*entity.NewsSummary, error)
-	UpdateNewsSummaryTitle(ctx context.Context, id string, title string) error
+	UpdateNewsSummary(ctx context.Context, id string, title string, summary string) error
 	UpdateNewsSummaryIsActive(ctx context.Context, id string, isActive bool) error
 	CountAllSummaries(ctx context.Context, category string) (int, error)
 }
@@ -122,10 +122,11 @@ func (r *newsRepository) GetAllNewsSummaries(ctx context.Context, category strin
 	return summaries, nil
 }
 
-func (r *newsRepository) UpdateNewsSummaryTitle(ctx context.Context, id string, title string) error {
+func (r *newsRepository) UpdateNewsSummary(ctx context.Context, id string, title string, summary string) error {
 	_, err := r.db.NewUpdate().
 		Model((*entity.NewsSummary)(nil)).
 		Set("title = ?", title).
+		Set("summary = ?", summary).
 		Set("updated_at = NOW()").
 		Where("id = ?", id).
 		Exec(ctx)

@@ -118,7 +118,7 @@ func startRouteV1(group *gin.RouterGroup) {
 		newsAdmin := news.Group("/admin")
 		{
 			newsAdmin.GET("/summaries", newsApi.GetAllNewsSummaries)
-			newsAdmin.PUT("/summaries/:id/title", newsApi.UpdateNewsSummaryTitle)
+			newsAdmin.PUT("/summaries/:id", newsApi.UpdateNewsSummary)
 			newsAdmin.PUT("/summaries/:id/active", newsApi.ToggleNewsSummaryActive)
 		}
 	}

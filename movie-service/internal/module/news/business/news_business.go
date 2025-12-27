@@ -13,7 +13,7 @@ type NewsBusiness interface {
 
 	// Admin methods
 	GetAllNewsSummaries(ctx context.Context, category string, page int, pageSize int) ([]*entity.NewsSummaryWithSources, int, error)
-	UpdateNewsSummaryTitle(ctx context.Context, id string, title string) error
+	UpdateNewsSummary(ctx context.Context, id string, title string, summary string) error
 	ToggleNewsSummaryActive(ctx context.Context, id string, isActive bool) error
 }
 
@@ -125,8 +125,8 @@ func (b *newsBusiness) GetAllNewsSummaries(ctx context.Context, category string,
 	return result, total, nil
 }
 
-func (b *newsBusiness) UpdateNewsSummaryTitle(ctx context.Context, id string, title string) error {
-	return b.repo.UpdateNewsSummaryTitle(ctx, id, title)
+func (b *newsBusiness) UpdateNewsSummary(ctx context.Context, id string, title string, summary string) error {
+	return b.repo.UpdateNewsSummary(ctx, id, title, summary)
 }
 
 func (b *newsBusiness) ToggleNewsSummaryActive(ctx context.Context, id string, isActive bool) error {

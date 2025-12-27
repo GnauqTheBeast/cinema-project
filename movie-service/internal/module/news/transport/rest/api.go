@@ -134,11 +134,12 @@ func (a *API) GetAllNewsSummaries(c *gin.Context) {
 	})
 }
 
-func (a *API) UpdateNewsSummaryTitle(c *gin.Context) {
+func (a *API) UpdateNewsSummary(c *gin.Context) {
 	id := c.Param("id")
 
 	var req struct {
-		Title string `json:"title" binding:"required"`
+		Title   string `json:"title" binding:"required"`
+		Summary string `json:"summary" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -148,16 +149,16 @@ func (a *API) UpdateNewsSummaryTitle(c *gin.Context) {
 		return
 	}
 
-	err := a.biz.UpdateNewsSummaryTitle(c.Request.Context(), id, req.Title)
+	err := a.biz.UpdateNewsSummary(c.Request.Context(), id, req.Title, req.Summary)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to update news title",
+			"error": "Failed to update news",
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "News title updated successfully",
+		"message": "News updated successfully",
 	})
 }
 

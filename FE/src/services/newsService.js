@@ -70,18 +70,18 @@ export const newsService = {
     }
   },
 
-  // Update news title
-  updateNewsTitle: async (id, title) => {
+  // Update news summary
+  updateNewsSummary: async (id, title, summary) => {
     try {
       const token = localStorage.getItem('adminToken')
       const response = await newsApi.put(
-        `/news/admin/summaries/${id}/title`,
-        { title },
+        `/news/admin/summaries/${id}`,
+        { title, summary },
         { headers: { Authorization: `Bearer ${token}` } },
       )
       return response.data
     } catch (error) {
-      console.error('Error updating news title:', error)
+      console.error('Error updating news:', error)
       throw error
     }
   },

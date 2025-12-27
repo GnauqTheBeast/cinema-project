@@ -263,7 +263,7 @@ func (b *business) DeleteShowtime(ctx context.Context, id string) error {
 		return fmt.Errorf("failed to get showtime: %w", err)
 	}
 
-	if err := b.repository.Delete(ctx, id); err != nil {
+	if err = b.repository.Delete(ctx, id); err != nil {
 		return fmt.Errorf("failed to delete showtime: %w", err)
 	}
 

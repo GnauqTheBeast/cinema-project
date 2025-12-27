@@ -67,9 +67,14 @@ export default function NewsFormPage() {
       return
     }
 
+    if (!formData.summary?.trim()) {
+      setError('Summary is required')
+      return
+    }
+
     try {
       setSaving(true)
-      await newsService.updateNewsTitle(id, formData.title)
+      await newsService.updateNewsSummary(id, formData.title, formData.summary)
       navigate('/admin/news')
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update news')
@@ -103,7 +108,7 @@ export default function NewsFormPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Chỉnh sửa tin tức</h1>
-              <p className="text-gray-600">Cập nhật tiêu đề tin tức AI tổng hợp</p>
+              <p className="text-gray-600">Cập nhật tiêu đề và nội dung tin tức AI tổng hợp</p>
             </div>
           </div>
         </div>
@@ -133,19 +138,20 @@ export default function NewsFormPage() {
               />
             </div>
 
-            {/* Summary (Read-only) */}
+            {/* Summary (Editable) */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-900 mb-2">Tóm tắt</label>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Tóm tắt <span className="text-red-600">*</span>
+              </label>
               <textarea
                 name="summary"
                 value={formData.summary}
-                readOnly
-                rows="4"
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
+                onChange={handleChange}
+                required
+                rows="6"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                placeholder="Nhập nội dung tóm tắt..."
               />
-              <p className="mt-1 text-xs text-gray-500">
-                Nội dung tóm tắt được tạo bởi AI, không thể chỉnh sửa
-              </p>
             </div>
 
             {/* Category (Read-only) */}
