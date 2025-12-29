@@ -1,11 +1,10 @@
 import { Pool } from 'pg'
 import crypto from 'crypto'
 import { GoogleGenAI } from '@google/genai'
-import { Chat, DocumentChunk } from '../models/index.js'
+import { Chat } from '../models/index.js'
 import { ChatDatastore, ChunkDatastore } from '../datastore/index.js'
 import {
     CACHE_TTL_12_HOUR,
-    CACHE_TTL_15_MINS,
     CACHE_TTL_5_MINS,
     CacheManager,
 } from '../pkg/caching/index.js'
@@ -158,7 +157,6 @@ Hãy trả lời câu hỏi của khách hàng dựa trên thông tin tham khả
 
         const prompt = systemRole + userDataSection
 
-        // Get next API key from rotation pool
         const apiKey = this.keyManager.getNextKey()
         if (!apiKey) {
             throw new Error('No Gemini API key available')
@@ -196,42 +194,12 @@ Hãy trả lời câu hỏi của khách hàng dựa trên thông tin tham khả
         threshold: number,
         limit: number,
     ): Promise<SimilarDocument[]> {
-        const cacheKey = 'document_chunks'
-        const chunks = await this.cacheManager.getWithCache<DocumentChunk[]>(
-            cacheKey,
-            CACHE_TTL_15_MINS,
-            async () => {
-                return this.chunkDatastore.getAllChunks()
-            },
-        )
-
-        const similarities: SimilarDocument[] = []
-
-        for (const chunk of chunks) {
-            if (!chunk.embedding) {
-                continue
-            }
-
-            try {
-                const embeddingValues: number[] = JSON.parse(chunk.embedding)
-                const similarity = cosineSimilarity(questionEmbedding, embeddingValues)
-
-                if (similarity > threshold) {
-                    similarities.push({
-                        content: chunk.content,
-                        similarity,
-                    })
-                }
-            } catch (error) {
-                logger.warn('Failed to parse chunk embedding', { chunkId: chunk.id, error })
-            }
+        try {
+            return await this.chunkDatastore.findSimilarChunks(questionEmbedding, threshold, limit)
+        } catch (error) {
+            logger.error('Failed to find similar chunks', { error })
+            return []
         }
-
-        // Sort by similarity (highest first)
-        similarities.sort((a, b) => b.similarity - a.similarity)
-
-        // Return top N
-        return similarities.slice(0, limit)
     }
 
     private async findSimilarQuestionsInMemory(

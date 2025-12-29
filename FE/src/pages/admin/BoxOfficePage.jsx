@@ -239,7 +239,7 @@ const BoxOfficePage = () => {
 
   const calculateTotal = () => {
     if (!selectedShowtime || selectedSeats.length === 0) return 0
-    const basePrice = selectedShowtime.price || 50000
+    const basePrice = selectedShowtime.base_price || 0
     return calculateBookingTotal(selectedSeats, basePrice)
   }
 

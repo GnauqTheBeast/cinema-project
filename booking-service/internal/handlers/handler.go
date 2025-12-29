@@ -63,6 +63,12 @@ func New(cfg *Config) (http.Handler, error) {
 			routesBooking.GET("/:id", bookingHandler.GetBookingByID, internalMiddleware.RequireAuth(authClient, cacheService))
 			routesBooking.POST("", bookingHandler.CreateBooking, internalMiddleware.RequireAuth(authClient, cacheService))
 		}
+
+		routesTicket := routesAPIv1.Group("/tickets")
+		{
+			routesTicket.GET("/search", bookingHandler.SearchTickets, internalMiddleware.RequireAuth(authClient, cacheService))
+			routesTicket.PATCH("/:id/mark-used", bookingHandler.MarkTicketAsUsed, internalMiddleware.RequireAuth(authClient, cacheService))
+		}
 	}
 
 	return r, nil

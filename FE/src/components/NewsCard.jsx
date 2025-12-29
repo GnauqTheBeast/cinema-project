@@ -17,9 +17,6 @@ export default function NewsCard({ item, onClick, formatDate }) {
             alt={item.title}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
-          <div className="absolute top-2 right-2 bg-red-600 px-3 py-1 rounded-full text-xs font-bold text-white">
-            {item.source_count} nguồn
-          </div>
         </div>
       ) : (
         <div className="h-48 bg-gradient-to-br from-red-900/30 to-purple-900/30 flex items-center justify-center">

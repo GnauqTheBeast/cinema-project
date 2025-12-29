@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"notification-service/internal/datastore"
 	"notification-service/internal/models"
@@ -82,6 +83,12 @@ var emailTemplates = map[string]emailTemplate{
 		NotiTitle:   models.NotificationBookingSuccess,
 		NotiContent: "Scan the bar code to get tickets",
 	},
+	"staff_welcome": {
+		Subject:     "Welcome to HQ Cinema Staff",
+		BodyFunc:    staffWelcomeBody,
+		NotiTitle:   models.NotificationEmailVerified,
+		NotiContent: "Your staff account has been created",
+	},
 }
 
 type TopicHandler struct {
@@ -100,6 +107,11 @@ func (e *EmailService) SubscribeEmailNotificationQueue(ctx context.Context) erro
 		{
 			Topics:      []string{"booking_success"},
 			UnmarshalFn: types.UnmarshalBookingSuccess,
+			HandleFn:    e.handleTemplatedEmail,
+		},
+		{
+			Topics:      []string{"staff_welcome"},
+			UnmarshalFn: types.UnmarshalStaffWelcome,
 			HandleFn:    e.handleTemplatedEmail,
 		},
 	}
@@ -141,6 +153,8 @@ func (e *EmailService) consumeLoop(ctx context.Context, sub pubsub.Subscriber, h
 			if err := handler(ctx, msg); err != nil {
 				logrus.Warnf("handle msg topic=%s err=%v", msg.Topic, err)
 			}
+		default:
+			time.Sleep(1 * time.Second)
 		}
 	}
 }
@@ -186,6 +200,8 @@ func extractToEmail(msg *pubsub.Message) string {
 			return data.To
 		}
 		return data.UserEmail
+	case *types.StaffWelcomeMessage:
+		return data.To
 	}
 	return ""
 }
@@ -196,12 +212,13 @@ func extractUserID(msg *pubsub.Message) string {
 		return data.UserId
 	case *types.BookingSuccessMessage:
 		return data.UserId
+	case *types.StaffWelcomeMessage:
+		return data.UserId
 	}
 	return ""
 }
 
 func (e *EmailService) sendEmail(p types.EmailPayload) error {
-	// Build email with proper headers and body separation
 	headers := fmt.Sprintf(
 		"MIME-Version: 1.0\r\n"+
 			"Content-Type: text/html; charset=\"UTF-8\"\r\n"+
@@ -250,6 +267,11 @@ func bookingSuccessBody(data any) string {
 	return renderBookingSuccess(m)
 }
 
+func staffWelcomeBody(data any) string {
+	m := data.(*types.StaffWelcomeMessage)
+	return renderStaffWelcome(m)
+}
+
 func renderVerifyEmail(otp, url string) string {
 	return emailTemplateHTML("🎬 Welcome to HQ Cinema", `
 		<p>Thank you for signing up! Verify your account:</p>
@@ -291,6 +313,23 @@ func renderBookingSuccess(m *types.BookingSuccessMessage) string {
 		</div>
 		<p>Enjoy your movie!</p>
 	`, m.BookingId, barcodeURL, showtime, seats))
+}
+
+func renderStaffWelcome(m *types.StaffWelcomeMessage) string {
+	return emailTemplateHTML("Welcome to HQ Cinema Team!", fmt.Sprintf(`
+		<p>Welcome aboard, <strong>%s</strong>!</p>
+		<p>Your staff account has been created successfully. You can now access the cinema management system.</p>
+		<div class="section">
+			<h3>Your Login Credentials</h3>
+			<p><strong>Email:</strong> %s</p>
+			<p><strong>Password:</strong> <span class="otp">%s</span></p>
+			<p><strong>Role:</strong> %s</p>
+		</div>
+		<div class="tip">
+			<strong>Important:</strong> Please change your password after your first login for security purposes.
+		</div>
+		<p>If you have any questions, please contact your manager.</p>
+	`, m.Name, m.Email, m.Password, m.Role))
 }
 
 func renderSeats(seats []types.SeatInfo) string {

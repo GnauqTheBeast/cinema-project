@@ -30,10 +30,7 @@ func main() {
 		log.Fatal("At least one valid Gemini API key is required")
 	}
 
-	log.Printf("Loaded %d Gemini API key(s) for round-robin usage", len(geminiAPIKeys))
-
 	ctn := container.New()
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -52,7 +49,6 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
 
-	log.Println("Shutting down summarization worker...")
 	cancel()
 	time.Sleep(2 * time.Second)
 }

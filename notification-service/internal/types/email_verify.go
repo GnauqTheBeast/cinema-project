@@ -56,6 +56,15 @@ type (
 	ShowtimeInfo = BookingShowtimeDetail
 )
 
+type StaffWelcomeMessage struct {
+	UserId   string `json:"user_id"`
+	To       string `json:"to"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Role     string `json:"role"`
+}
+
 func UnmarshalEmailVerify(data []byte) (interface{}, error) {
 	emailVerify := new(EmailVerifyMessage)
 	if err := json.Unmarshal(data, emailVerify); err != nil {
@@ -91,4 +100,12 @@ func UnmarshalBookingSuccess(data []byte) (interface{}, error) {
 	}
 
 	return bookingSuccess, nil
+}
+
+func UnmarshalStaffWelcome(data []byte) (interface{}, error) {
+	staffWelcome := new(StaffWelcomeMessage)
+	if err := json.Unmarshal(data, staffWelcome); err != nil {
+		return nil, err
+	}
+	return staffWelcome, nil
 }

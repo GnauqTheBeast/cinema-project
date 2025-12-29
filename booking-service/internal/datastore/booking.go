@@ -84,6 +84,24 @@ func GetBookingById(ctx context.Context, db *bun.DB, id string) (*models.Booking
 	return booking, nil
 }
 
+func GetBookingsByIds(ctx context.Context, db bun.IDB, ids []string) ([]*models.Booking, error) {
+	if len(ids) == 0 {
+		return []*models.Booking{}, nil
+	}
+
+	bookings := make([]*models.Booking, 0)
+
+	err := db.NewSelect().
+		Model(&bookings).
+		Where("id IN (?)", bun.In(ids)).
+		Scan(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get bookings by ids: %w", err)
+	}
+
+	return bookings, nil
+}
+
 func CreateBooking(ctx context.Context, db bun.IDB, booking *models.Booking) error {
 	_, err := db.NewInsert().
 		Model(booking).
@@ -106,4 +124,33 @@ func UpdateBookingStatus(ctx context.Context, db *bun.DB, bookingId string, stat
 	}
 
 	return nil
+}
+
+func GetBookingsByShowtimeId(ctx context.Context, db *bun.DB, showtimeId string, limit, offset int) ([]*models.Booking, error) {
+	bookings := make([]*models.Booking, 0)
+
+	err := db.NewSelect().
+		Model(&bookings).
+		Where("showtime_id = ?", showtimeId).
+		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Scan(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get bookings by showtime id: %w", err)
+	}
+
+	return bookings, nil
+}
+
+func CountBookingsByShowtimeId(ctx context.Context, db *bun.DB, showtimeId string) (int, error) {
+	count, err := db.NewSelect().
+		Model((*models.Booking)(nil)).
+		Where("showtime_id = ?", showtimeId).
+		Count(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count bookings by showtime id: %w", err)
+	}
+
+	return count, nil
 }

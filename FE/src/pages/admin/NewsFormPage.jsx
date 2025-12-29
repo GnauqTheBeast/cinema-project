@@ -16,7 +16,6 @@ export default function NewsFormPage() {
     title: '',
     summary: '',
     category: '',
-    source_count: 0,
     is_active: true,
     created_at: '',
   })
@@ -37,7 +36,6 @@ export default function NewsFormPage() {
         title: newsItem.title || '',
         summary: newsItem.summary || '',
         category: newsItem.category || '',
-        source_count: newsItem.source_count || 0,
         is_active: newsItem.is_active !== undefined ? newsItem.is_active : true,
         created_at: newsItem.created_at || '',
       })
@@ -166,18 +164,7 @@ export default function NewsFormPage() {
             </div>
 
             {/* Info Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Số nguồn tin
-                </label>
-                <input
-                  type="text"
-                  value={formData.source_count}
-                  readOnly
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
-                />
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">Trạng thái</label>
                 <input

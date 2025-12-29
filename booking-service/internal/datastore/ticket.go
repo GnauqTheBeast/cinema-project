@@ -9,19 +9,6 @@ import (
 	"github.com/uptrace/bun"
 )
 
-// CreateTicket creates a new ticket in the database
-func CreateTicket(ctx context.Context, db bun.IDB, ticket *models.Ticket) error {
-	_, err := db.NewInsert().
-		Model(ticket).
-		Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to create ticket: %w", err)
-	}
-
-	return nil
-}
-
-// CreateTickets creates multiple tickets in a single transaction
 func CreateTickets(ctx context.Context, db bun.IDB, tickets []*models.Ticket) error {
 	if len(tickets) == 0 {
 		return nil
@@ -37,7 +24,6 @@ func CreateTickets(ctx context.Context, db bun.IDB, tickets []*models.Ticket) er
 	return nil
 }
 
-// GetTicketsByBookingId retrieves all tickets for a booking
 func GetTicketsByBookingId(ctx context.Context, db bun.IDB, bookingId string) ([]*models.Ticket, error) {
 	var tickets []*models.Ticket
 
@@ -52,7 +38,6 @@ func GetTicketsByBookingId(ctx context.Context, db bun.IDB, bookingId string) ([
 	return tickets, nil
 }
 
-// UpdateTicketStatus updates the status of a ticket
 func UpdateTicketStatus(ctx context.Context, db bun.IDB, ticketId string, status models.TicketStatus) error {
 	_, err := db.NewUpdate().
 		Model((*models.Ticket)(nil)).
@@ -90,4 +75,35 @@ func GetBookedSeatsForShowtime(ctx context.Context, db bun.IDB, showtimeId strin
 	}
 
 	return bookedSeats, nil
+}
+
+func GetTicketById(ctx context.Context, db bun.IDB, ticketId string) (*models.Ticket, error) {
+	ticket := new(models.Ticket)
+
+	err := db.NewSelect().
+		Model(ticket).
+		Where("id = ?", ticketId).
+		Scan(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ticket by id: %w", err)
+	}
+
+	return ticket, nil
+}
+
+func GetTicketsByShowtimeId(ctx context.Context, db bun.IDB, showtimeId string) ([]*models.Ticket, error) {
+	var tickets []*models.Ticket
+
+	err := db.NewSelect().
+		TableExpr("tickets t").
+		ColumnExpr("t.*").
+		Join("INNER JOIN bookings b ON b.id = t.booking_id").
+		Where("b.showtime_id = ?", showtimeId).
+		Where("b.status IN (?, ?)", models.BookingStatusPending, models.BookingStatusConfirmed).
+		Scan(ctx, &tickets)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tickets by showtime id: %w", err)
+	}
+
+	return tickets, nil
 }

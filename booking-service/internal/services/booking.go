@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -24,6 +23,7 @@ import (
 var (
 	ErrInvalidBookingData = fmt.Errorf("invalid booking data")
 	ErrBookingNotFound    = fmt.Errorf("booking not found")
+	ErrTicketNotFound     = fmt.Errorf("ticket not found")
 	ErrSeatAlreadyLocked  = fmt.Errorf("one or more seats are already locked")
 	ErrSeatAlreadyBooked  = fmt.Errorf("one or more seats are already booked")
 )
@@ -73,11 +73,7 @@ func NewBookingService(container *do.Injector) (*BookingService, error) {
 	}, nil
 }
 
-func (s *BookingService) GetUserBookings(ctx context.Context, userId string, page, size int, status string) ([]*types.BookingHistory, int, error) {
-	if userId == "" {
-		return nil, 0, ErrInvalidBookingData
-	}
-
+func (s *BookingService) normalizePagination(page, size int) (int, int, int, int) {
 	if page <= 0 {
 		page = 1
 	}
@@ -87,9 +83,13 @@ func (s *BookingService) GetUserBookings(ctx context.Context, userId string, pag
 	if size > 100 {
 		size = 100
 	}
-
 	limit := size
 	offset := (page - 1) * size
+	return page, size, limit, offset
+}
+
+func (s *BookingService) GetUserBookings(ctx context.Context, userId string, page, size int, status string) ([]*types.BookingHistory, int, error) {
+	page, size, limit, offset := s.normalizePagination(page, size)
 
 	var bookings []*models.Booking
 	var total int
@@ -364,54 +364,15 @@ type ShowtimeDetail struct {
 	RoomName   string
 }
 
-func (s *BookingService) CreateTicketsForBooking(ctx context.Context, bookingId string) (int, error) {
-	if bookingId == "" {
-		return 0, ErrInvalidBookingData
-	}
-
-	booking, err := datastore.GetBookingById(ctx, s.roDb, bookingId)
-	if err != nil {
-		return 0, fmt.Errorf("booking not found: %w", err)
-	}
-
-	if booking.Status != models.BookingStatusConfirmed {
-		return 0, fmt.Errorf("booking must be confirmed to create tickets, current status: %s", booking.Status)
-	}
-
-	existingTickets, err := datastore.GetTicketsByBookingId(ctx, s.roDb, bookingId)
-	if err == nil && len(existingTickets) > 0 {
-		return len(existingTickets), nil
-	}
-
-	var event models.OutboxEvent
-	err = s.roDb.NewSelect().
-		Model(&event).
-		Where("event_type = ?", models.EventTypeBookingCreated).
-		Where("payload::jsonb->>'booking_id' = ?", bookingId).
-		Order("id DESC").
-		Limit(1).
-		Scan(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("failed to get booking event: %w", err)
-	}
-
-	var eventData models.BookingEventData
-	if err := json.Unmarshal([]byte(event.Payload), &eventData); err != nil {
-		return 0, fmt.Errorf("failed to unmarshal event data: %w", err)
-	}
-
-	seatIds := eventData.SeatIds
-	if len(seatIds) == 0 {
-		return 0, fmt.Errorf("no seats found for booking %s", bookingId)
-	}
-
+func (s *BookingService) CreateTicketsForBooking(ctx context.Context, bookingId, showtimeId string, seatIds []string) (int, error) {
 	tickets := make([]*models.Ticket, 0, len(seatIds))
 	for _, seatId := range seatIds {
 		ticket := &models.Ticket{
-			Id:        uuid.New().String(),
-			BookingId: bookingId,
-			SeatId:    seatId,
-			Status:    models.TicketStatusUnused,
+			Id:         uuid.New().String(),
+			BookingId:  bookingId,
+			ShowtimeId: showtimeId,
+			SeatId:     seatId,
+			Status:     models.TicketStatusUnused,
 		}
 		tickets = append(tickets, ticket)
 	}
@@ -420,53 +381,30 @@ func (s *BookingService) CreateTicketsForBooking(ctx context.Context, bookingId 
 		return 0, fmt.Errorf("failed to create tickets: %w", err)
 	}
 
-	fmt.Printf("Created %d tickets for booking %s\n", len(tickets), bookingId)
 	return len(tickets), nil
 }
 
-func (s *BookingService) CreateTicketsWithDetails(ctx context.Context, bookingId string) (*BookingDetailsResult, int, error) {
-	ticketsCreated, err := s.CreateTicketsForBooking(ctx, bookingId)
+func (s *BookingService) CreateTicketsWithDetails(ctx context.Context, bookingId string, seatIds []string) (*BookingDetailsResult, int, error) {
+	booking, err := datastore.GetBookingById(ctx, s.roDb, bookingId)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get booking: %w", err)
+	}
+
+	ticketsCreated, err := s.CreateTicketsForBooking(ctx, bookingId, booking.ShowtimeId, seatIds)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// Get booking
-	booking, err := datastore.GetBookingById(ctx, s.roDb, bookingId)
-	if err != nil {
-		return nil, ticketsCreated, fmt.Errorf("failed to get booking: %w", err)
-	}
-
-	// Get showtime data with seats
 	showtimeData, err := s.movieClient.GetShowtime(ctx, booking.ShowtimeId)
 	if err != nil {
 		return nil, ticketsCreated, fmt.Errorf("failed to get showtime: %w", err)
 	}
 
-	// Get seat IDs from event
-	var event models.OutboxEvent
-	err = s.roDb.NewSelect().
-		Model(&event).
-		Where("event_type = ?", models.EventTypeBookingCreated).
-		Where("payload::jsonb->>'booking_id' = ?", bookingId).
-		Order("id DESC").
-		Limit(1).
-		Scan(ctx)
-	if err != nil {
-		return nil, ticketsCreated, fmt.Errorf("failed to get booking event: %w", err)
-	}
-
-	var eventData models.BookingEventData
-	if err := json.Unmarshal([]byte(event.Payload), &eventData); err != nil {
-		return nil, ticketsCreated, fmt.Errorf("failed to unmarshal event data: %w", err)
-	}
-
-	// Get seat details from movie-service
-	seats, err := s.movieClient.GetSeatDetails(ctx, eventData.SeatIds)
+	seats, err := s.movieClient.GetSeatDetails(ctx, seatIds)
 	if err != nil {
 		return nil, ticketsCreated, fmt.Errorf("failed to get seat details: %w", err)
 	}
 
-	// Build seat details
 	seatDetails := make([]SeatDetail, 0, len(seats))
 	for _, seat := range seats {
 		seatDetails = append(seatDetails, SeatDetail{
@@ -476,7 +414,6 @@ func (s *BookingService) CreateTicketsWithDetails(ctx context.Context, bookingId
 		})
 	}
 
-	// Build showtime details
 	showtimeDetail := ShowtimeDetail{
 		ShowtimeId: showtimeData.Id,
 		StartTime:  fmt.Sprintf("%s %s", showtimeData.ShowtimeDate, showtimeData.ShowtimeTime),
@@ -490,4 +427,119 @@ func (s *BookingService) CreateTicketsWithDetails(ctx context.Context, bookingId
 	}
 
 	return result, ticketsCreated, nil
+}
+
+func (s *BookingService) SearchTickets(ctx context.Context, ticketId, showtimeId string) ([]*types.TicketWithBookingInfo, error) {
+	var tickets []*models.Ticket
+	var err error
+
+	if ticketId != "" {
+		ticket, err := datastore.GetTicketById(ctx, s.roDb, ticketId)
+		if err != nil {
+			return nil, err
+		}
+		if ticket == nil {
+			return []*types.TicketWithBookingInfo{}, nil
+		}
+		tickets = []*models.Ticket{ticket}
+	} else {
+		tickets, err = datastore.GetTicketsByShowtimeId(ctx, s.roDb, showtimeId)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return s.enrichTicketsWithBookingData(ctx, tickets)
+}
+
+func (s *BookingService) enrichTicketsWithBookingData(ctx context.Context, tickets []*models.Ticket) ([]*types.TicketWithBookingInfo, error) {
+	bookingIds := make([]string, 0, len(tickets))
+	showtimeIds := make([]string, 0, len(tickets))
+	seatIds := make([]string, 0, len(tickets))
+
+	for _, ticket := range tickets {
+		bookingIds = append(bookingIds, ticket.BookingId)
+		showtimeIds = append(showtimeIds, ticket.ShowtimeId)
+		seatIds = append(seatIds, ticket.SeatId)
+	}
+
+	bookings, err := datastore.GetBookingsByIds(ctx, s.roDb, bookingIds)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get bookings: %w", err)
+	}
+
+	bookingMap := make(map[string]*models.Booking)
+	for _, booking := range bookings {
+		bookingMap[booking.Id] = booking
+	}
+
+	showtimes, err := s.movieClient.GetShowtimes(ctx, showtimeIds)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get showtimes: %w", err)
+	}
+
+	showtimeMap := make(map[string]*pb.ShowtimeData)
+	for _, showtime := range showtimes {
+		showtimeMap[showtime.Id] = showtime
+	}
+
+	seats, err := s.movieClient.GetSeatDetails(ctx, seatIds)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get seat details: %w", err)
+	}
+
+	seatMap := make(map[string]*pb.SeatDetailData)
+	for _, seat := range seats {
+		seatMap[seat.SeatId] = seat
+	}
+
+	enrichedTickets := make([]*types.TicketWithBookingInfo, 0, len(tickets))
+	for _, ticket := range tickets {
+		enrichedTicket := &types.TicketWithBookingInfo{
+			Id:         ticket.Id,
+			BookingId:  ticket.BookingId,
+			ShowtimeId: ticket.ShowtimeId,
+			SeatId:     ticket.SeatId,
+			Status:     string(ticket.Status),
+			CreatedAt:  ticket.CreatedAt,
+			UpdatedAt:  ticket.UpdatedAt,
+		}
+
+		if booking, exists := bookingMap[ticket.BookingId]; exists {
+			enrichedTicket.BookingType = string(booking.BookingType)
+			enrichedTicket.TotalAmount = booking.TotalAmount
+		}
+
+		if showtime, exists := showtimeMap[ticket.ShowtimeId]; exists {
+			enrichedTicket.MovieTitle = showtime.MovieTitle
+			enrichedTicket.ShowtimeDate = showtime.ShowtimeDate
+			enrichedTicket.ShowtimeTime = showtime.ShowtimeTime
+		}
+
+		if seat, exists := seatMap[ticket.SeatId]; exists {
+			enrichedTicket.SeatRow = seat.SeatRow
+			enrichedTicket.SeatNumber = fmt.Sprintf("%d", seat.SeatNumber)
+			enrichedTicket.SeatType = seat.SeatType
+		}
+
+		enrichedTickets = append(enrichedTickets, enrichedTicket)
+	}
+
+	return enrichedTickets, nil
+}
+
+func (s *BookingService) MarkTicketAsUsed(ctx context.Context, ticketId string) error {
+	if ticketId == "" {
+		return ErrInvalidBookingData
+	}
+
+	ticket, err := datastore.GetTicketById(ctx, s.db, ticketId)
+	if err != nil {
+		return fmt.Errorf("failed to get ticket: %w", err)
+	}
+	if ticket == nil {
+		return ErrTicketNotFound
+	}
+
+	return datastore.UpdateTicketStatus(ctx, s.db, ticketId, models.TicketStatusUsed)
 }

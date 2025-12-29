@@ -17,8 +17,6 @@ import (
 	"worker-service/internal/models"
 )
 
-var reImage = regexp.MustCompile(`<img[^>]+src="([^"]+)"`)
-
 type RSSFeed struct {
 	XMLName xml.Name `xml:"rss"`
 	Channel Channel  `xml:"channel"`
@@ -32,13 +30,33 @@ type Channel struct {
 }
 
 type Item struct {
-	Title       string `xml:"title"`
-	Link        string `xml:"link"`
-	Description string `xml:"description"`
-	Content     string `xml:"encoded"`
-	PubDate     string `xml:"pubDate"`
-	Author      string `xml:"author"`
-	GUID        string `xml:"guid"`
+	Title           string          `xml:"title"`
+	Link            string          `xml:"link"`
+	Description     string          `xml:"description"`
+	Content         string          `xml:"encoded"`
+	PubDate         string          `xml:"pubDate"`
+	Author          string          `xml:"author"`
+	GUID            string          `xml:"guid"`
+	MediaThumbnail  MediaThumbnail  `xml:"http://search.yahoo.com/mrss/ thumbnail"`
+	MediaContent    MediaContent    `xml:"http://search.yahoo.com/mrss/ content"`
+	Enclosure       Enclosure       `xml:"enclosure"`
+}
+
+type MediaThumbnail struct {
+	URL    string `xml:"url,attr"`
+	Width  string `xml:"width,attr"`
+	Height string `xml:"height,attr"`
+}
+
+type MediaContent struct {
+	URL    string `xml:"url,attr"`
+	Medium string `xml:"medium,attr"`
+	Type   string `xml:"type,attr"`
+}
+
+type Enclosure struct {
+	URL  string `xml:"url,attr"`
+	Type string `xml:"type,attr"`
 }
 
 // NewsSource defines a news source configuration
@@ -158,20 +176,19 @@ func ParseRSSToArticles(feed *RSSFeed, source NewsSource) ([]*models.NewsArticle
 			}
 		}
 
-		// Extract content (prefer encoded content over description)
 		content := item.Content
 		if content == "" {
 			content = item.Description
 		}
 
 		content = stripHTMLTags(content)
-		content = cleanText(content) // Decode URL and HTML entities in content
+		content = cleanText(content)
 
 		articleID := generateIDFromURL(item.Link)
 
 		slug := generateSlug(item.Title)
 
-		imageURL := extractImageURL(item.Description + item.Content)
+		imageURL := extractImageFromItem(item)
 
 		tags := extractTags(item.Title + " " + content)
 
@@ -223,11 +240,9 @@ func parseDate(dateStr string) (time.Time, error) {
 }
 
 func stripHTMLTags(html string) string {
-	// Remove HTML tags
 	re := regexp.MustCompile(`<[^>]*>`)
 	text := re.ReplaceAllString(html, "")
 
-	// Decode HTML entities
 	text = strings.ReplaceAll(text, "&nbsp;", " ")
 	text = strings.ReplaceAll(text, "&amp;", "&")
 	text = strings.ReplaceAll(text, "&lt;", "<")
@@ -235,7 +250,6 @@ func stripHTMLTags(html string) string {
 	text = strings.ReplaceAll(text, "&quot;", "\"")
 	text = strings.ReplaceAll(text, "&#39;", "'")
 
-	// Clean up whitespace
 	text = strings.TrimSpace(text)
 	re = regexp.MustCompile(`\s+`)
 	text = re.ReplaceAllString(text, " ")
@@ -249,24 +263,18 @@ func generateIDFromURL(url string) string {
 }
 
 func generateSlug(title string) string {
-	// Convert to lowercase
 	slug := strings.ToLower(title)
 
-	// Remove special characters (keep Vietnamese characters)
 	re := regexp.MustCompile(`[^\p{L}\p{N}\s-]`)
 	slug = re.ReplaceAllString(slug, "")
 
-	// Replace spaces with hyphens
 	slug = strings.ReplaceAll(slug, " ", "-")
 
-	// Remove multiple hyphens
 	re = regexp.MustCompile(`-+`)
 	slug = re.ReplaceAllString(slug, "-")
 
-	// Trim hyphens from ends
 	slug = strings.Trim(slug, "-")
 
-	// Limit length
 	if len(slug) > 100 {
 		slug = slug[:100]
 	}
@@ -274,16 +282,62 @@ func generateSlug(title string) string {
 	return slug
 }
 
-func extractImageURL(html string) string {
-	matches := reImage.FindStringSubmatch(html)
-	if len(matches) > 1 {
-		return matches[1]
+func extractImageFromItem(item Item) string {
+	if item.MediaThumbnail.URL != "" {
+		return item.MediaThumbnail.URL
 	}
+
+	if item.MediaContent.URL != "" {
+		if item.MediaContent.Medium == "image" ||
+		   strings.Contains(item.MediaContent.Type, "image") {
+			return item.MediaContent.URL
+		}
+		if isImageURL(item.MediaContent.URL) {
+			return item.MediaContent.URL
+		}
+	}
+
+	if item.Enclosure.URL != "" && strings.Contains(item.Enclosure.Type, "image") {
+		return item.Enclosure.URL
+	}
+
+	imageURL := extractImageURL(item.Content)
+	if imageURL != "" {
+		return imageURL
+	}
+
+	return extractImageURL(item.Description)
+}
+
+func isImageURL(url string) bool {
+	lower := strings.ToLower(url)
+	imageExts := []string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp"}
+	for _, ext := range imageExts {
+		if strings.Contains(lower, ext) {
+			return true
+		}
+	}
+	return false
+}
+
+func extractImageURL(html string) string {
+	patterns := []string{
+		`<img[^>]+src=["']([^"']+)["']`,
+		`<img[^>]+src=([^\s>]+)`,
+	}
+
+	for _, pattern := range patterns {
+		re := regexp.MustCompile(pattern)
+		matches := re.FindStringSubmatch(html)
+		if len(matches) > 1 {
+			return matches[1]
+		}
+	}
+
 	return ""
 }
 
 func extractTags(text string) []string {
-	// Simple keyword extraction (can be improved with NLP)
 	movieKeywords := []string{
 		"phim", "movie", "film", "cinema", "box office", "premiere",
 		"trailer", "review", "actor", "actress", "director", "hollywood",
@@ -299,7 +353,6 @@ func extractTags(text string) []string {
 		}
 	}
 
-	// Limit to 10 tags
 	if len(tags) > 10 {
 		tags = tags[:10]
 	}
@@ -308,16 +361,13 @@ func extractTags(text string) []string {
 }
 
 func cleanText(text string) string {
-	// First decode URL encoding
 	urlDecoded, err := url.QueryUnescape(text)
 	if err != nil {
 		urlDecoded = text
 	}
 
-	// Then decode HTML entities
 	htmlDecoded := html.UnescapeString(urlDecoded)
 
-	// Trim and clean whitespace
 	htmlDecoded = strings.TrimSpace(htmlDecoded)
 	re := regexp.MustCompile(`\s+`)
 	htmlDecoded = re.ReplaceAllString(htmlDecoded, " ")

@@ -144,6 +144,7 @@ func (x *UpdateBookingStatusResponse) GetBookingId() string {
 type CreateTicketsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	BookingId     string                 `protobuf:"bytes,1,opt,name=booking_id,json=bookingId,proto3" json:"booking_id,omitempty"`
+	SeatIds       []string               `protobuf:"bytes,2,rep,name=seat_ids,json=seatIds,proto3" json:"seat_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -183,6 +184,13 @@ func (x *CreateTicketsRequest) GetBookingId() string {
 		return x.BookingId
 	}
 	return ""
+}
+
+func (x *CreateTicketsRequest) GetSeatIds() []string {
+	if x != nil {
+		return x.SeatIds
+	}
+	return nil
 }
 
 type CreateTicketsResponse struct {
@@ -463,10 +471,11 @@ const file_booking_proto_rawDesc = "" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x17\n" +
 	"\auser_id\x18\x03 \x01(\tR\x06userId\x12\x1d\n" +
 	"\n" +
-	"booking_id\x18\x04 \x01(\tR\tbookingId\"5\n" +
+	"booking_id\x18\x04 \x01(\tR\tbookingId\"P\n" +
 	"\x14CreateTicketsRequest\x12\x1d\n" +
 	"\n" +
-	"booking_id\x18\x01 \x01(\tR\tbookingId\"\xb1\x01\n" +
+	"booking_id\x18\x01 \x01(\tR\tbookingId\x12\x19\n" +
+	"\bseat_ids\x18\x02 \x03(\tR\aseatIds\"\xb1\x01\n" +
 	"\x15CreateTicketsResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12'\n" +

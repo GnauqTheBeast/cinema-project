@@ -3,9 +3,9 @@
 # ===== CẤU HÌNH =====
 API_URL="http://localhost:8000"
 CONCURRENT_USERS=10
-SHOWTIME_ID="4f35d835-b52f-4d59-b2cc-eb7690b22765"
-SEAT_IDS="d26ae73d-adc4-4ab7-8073-060db55a0404"
-PRICE=10000
+SHOWTIME_ID=""
+SEAT_IDS=""
+PRICE=
 
 USERS=(
     "alice@email.com:password"

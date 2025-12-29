@@ -145,3 +145,49 @@ func (h *BookingHandler) GetBookingByID(c echo.Context) error {
 
 	return response.SuccessWithMessage(c, "Booking fetched successfully", booking)
 }
+
+func (h *BookingHandler) SearchTickets(c echo.Context) error {
+	bookingService, err := do.Invoke[*services.BookingService](h.container)
+	if err != nil {
+		return response.InternalServerError(c, "Failed to get booking service")
+	}
+
+	var query struct {
+		TicketId   string `query:"ticket_id"`
+		ShowtimeId string `query:"showtime_id"`
+	}
+	if err := c.Bind(&query); err != nil {
+		return response.BadRequest(c, fmt.Sprintf("Invalid query parameters: %s", err.Error()))
+	}
+
+	tickets, err := bookingService.SearchTickets(c.Request().Context(), query.TicketId, query.ShowtimeId)
+	if err != nil {
+		return response.ErrorWithMessage(c, "Failed to search tickets")
+	}
+
+	return response.SuccessWithMessage(c, "Tickets fetched successfully", map[string]interface{}{
+		"tickets": tickets,
+	})
+}
+
+func (h *BookingHandler) MarkTicketAsUsed(c echo.Context) error {
+	bookingService, err := do.Invoke[*services.BookingService](h.container)
+	if err != nil {
+		return response.InternalServerError(c, "Failed to get booking service")
+	}
+
+	ticketId := c.Param("id")
+	if ticketId == "" {
+		return response.BadRequest(c, "Ticket ID is required")
+	}
+
+	err = bookingService.MarkTicketAsUsed(c.Request().Context(), ticketId)
+	if err != nil {
+		if errors.Is(err, services.ErrTicketNotFound) {
+			return response.NotFound(c, services.ErrTicketNotFound)
+		}
+		return response.ErrorWithMessage(c, fmt.Sprintf("Failed to mark ticket as used: %s", err.Error()))
+	}
+
+	return response.SuccessWithMessage(c, "Ticket marked as used successfully", nil)
+}

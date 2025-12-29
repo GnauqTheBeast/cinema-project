@@ -106,7 +106,6 @@ func (w *Worker) processEvents(ctx context.Context) error {
 
 	for _, event := range events {
 		if err = w.processEvent(ctx, event); err != nil {
-			w.logger.Error("Failed to process event %d: %v", event.ID, err)
 			err = w.markEventAsFailed(ctx, event.ID, err)
 			if err != nil {
 				return err
@@ -183,12 +182,26 @@ func (w *Worker) handlePaymentCompleted(ctx context.Context, event models.Outbox
 		amount = float64(amountInt)
 	}
 
+	bookingEvent, err := w.outboxRepo.GetBookingEventByBookingID(ctx, bookingID)
+	if err != nil {
+		return fmt.Errorf("failed to get booking event: %w", err)
+	}
+
+	bookingEventData := new(models.BookingEventData)
+	if err = json.Unmarshal([]byte(bookingEvent.Payload), bookingEventData); err != nil {
+		return fmt.Errorf("failed to unmarshal booking event data: %w", err)
+	}
+
+	if len(bookingEventData.SeatIds) == 0 {
+		return fmt.Errorf("no seats found for booking %s", bookingID)
+	}
+
 	resp, err := w.bookingClient.UpdateBookingStatusWithResponse(ctx, bookingID, "CONFIRMED")
 	if err != nil {
 		return err
 	}
 
-	if err = w.extendSeatLocksUntilMovieEnds(ctx, bookingID); err != nil {
+	if err = w.extendSeatLocksUntilMovieEnds(ctx, bookingEventData); err != nil {
 		w.logger.Error("Failed to extend seat locks for booking %s: %v", bookingID, err)
 	}
 
@@ -198,7 +211,7 @@ func (w *Worker) handlePaymentCompleted(ctx context.Context, event models.Outbox
 		return err
 	}
 
-	ticketResp, err := w.bookingClient.CreateTicketsWithDetails(ctx, bookingID)
+	ticketResp, err := w.bookingClient.CreateTicketsWithDetails(ctx, bookingID, bookingEventData.SeatIds)
 	if err != nil {
 		w.logger.Error("Failed to create tickets for booking %s: %v", bookingID, err)
 	}
@@ -261,22 +274,7 @@ func (w *Worker) handlePaymentCompleted(ctx context.Context, event models.Outbox
 	return w.pubsub.Publish(ctx, userMessage)
 }
 
-func (w *Worker) extendSeatLocksUntilMovieEnds(ctx context.Context, bookingID string) error {
-	event, err := w.outboxRepo.GetBookingEventByBookingID(ctx, bookingID)
-	if err != nil {
-		return err
-	}
-
-	eventData := new(models.BookingEventData)
-	if err = json.Unmarshal([]byte(event.Payload), eventData); err != nil {
-		return fmt.Errorf("failed to unmarshal event data: %w", err)
-	}
-
-	seatIds := eventData.SeatIds
-	if len(seatIds) == 0 {
-		return fmt.Errorf("no seats found for booking %s", bookingID)
-	}
-
+func (w *Worker) extendSeatLocksUntilMovieEnds(ctx context.Context, eventData *models.BookingEventData) error {
 	showtimeData, err := w.movieClient.GetShowtime(ctx, eventData.ShowtimeId)
 	if err != nil {
 		return fmt.Errorf("failed to get showtime data: %w", err)
@@ -292,7 +290,7 @@ func (w *Worker) extendSeatLocksUntilMovieEnds(ctx context.Context, bookingID st
 	movieEndTime := showtimeStart.Add(duration)
 	ttl := time.Until(movieEndTime)
 
-	for _, seatId := range seatIds {
+	for _, seatId := range eventData.SeatIds {
 		lockKey := fmt.Sprintf("seat_lock:%s:%s", eventData.ShowtimeId, seatId)
 
 		err = w.redisClient.Expire(ctx, lockKey, ttl).Err()

@@ -225,13 +225,22 @@ const PaymentPage = () => {
               })
             } catch (addError) {
               console.error('Error adding Sepolia network:', addError)
-              showToast('Failed to add Sepolia network to MetaMask', 'error')
+              if (addError.code === 4001) {
+                showToast('Bạn đã từ chối thêm mạng Sepolia vào MetaMask', 'warning')
+              } else {
+                showToast('Không thể thêm mạng Sepolia vào MetaMask', 'error')
+              }
               setIsConnecting(false)
               return
             }
+          } else if (switchError.code === 4001) {
+            console.log('User rejected network switch')
+            showToast('Bạn đã từ chối chuyển sang mạng Sepolia. Vui lòng chuyển mạng thủ công để sử dụng thanh toán crypto.', 'warning')
+            setIsConnecting(false)
+            return
           } else {
             console.error('Error switching to Sepolia:', switchError)
-            showToast('Failed to switch to Sepolia network', 'error')
+            showToast('Không thể chuyển sang mạng Sepolia', 'error')
             setIsConnecting(false)
             return
           }
@@ -244,7 +253,20 @@ const PaymentPage = () => {
       console.log('Wallet connected to Sepolia:', address)
     } catch (err) {
       console.error('Error connecting wallet:', err)
-      showToast('Failed to connect wallet: ' + err.message, 'error')
+
+      let errorMessage = 'Không thể kết nối ví'
+
+      if (err.code === 4001 || err.code === 'ACTION_REJECTED') {
+        errorMessage = 'Bạn đã từ chối kết nối ví.'
+      } else if (err.message) {
+        if (err.message.includes('user rejected') || err.message.includes('User denied')) {
+          errorMessage = 'Bạn đã từ chối kết nối ví.'
+        } else {
+          errorMessage = `Lỗi kết nối ví: ${err.message.substring(0, 100)}`
+        }
+      }
+
+      showToast(errorMessage, 'error')
     } finally {
       setIsConnecting(false)
     }
@@ -317,7 +339,28 @@ const PaymentPage = () => {
 
     } catch (err) {
       console.error('Error sending payment:', err)
-      showToast('Payment failed: ' + err.message, 'error')
+
+      let errorMessage = 'Thanh toán thất bại'
+
+      if (err.code === 'ACTION_REJECTED' || err.code === 4001) {
+        errorMessage = 'Bạn đã từ chối giao dịch. Vui lòng thử lại nếu muốn thanh toán.'
+      } else if (err.code === 'INSUFFICIENT_FUNDS') {
+        errorMessage = 'Số dư trong ví không đủ để thực hiện giao dịch.'
+      } else if (err.code === 'NETWORK_ERROR') {
+        errorMessage = 'Lỗi kết nối mạng. Vui lòng kiểm tra kết nối và thử lại.'
+      } else if (err.code === 'UNPREDICTABLE_GAS_LIMIT') {
+        errorMessage = 'Không thể ước tính phí gas. Vui lòng kiểm tra lại thông tin giao dịch.'
+      } else if (err.message) {
+        if (err.message.includes('user rejected') || err.message.includes('User denied')) {
+          errorMessage = 'Bạn đã từ chối giao dịch.'
+        } else if (err.message.includes('insufficient funds')) {
+          errorMessage = 'Số dư trong ví không đủ.'
+        } else {
+          errorMessage = `Lỗi: ${err.message.substring(0, 100)}`
+        }
+      }
+
+      showToast(errorMessage, 'error')
     } finally {
       setIsPaying(false)
     }

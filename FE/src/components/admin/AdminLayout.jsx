@@ -10,6 +10,7 @@ import {
   FaMoneyBillWave,
   FaNewspaper,
   FaRobot,
+  FaSearch,
   FaShoppingCart,
   FaSignOutAlt,
   FaTimes,
@@ -40,6 +41,7 @@ export default function AdminLayout({ children }) {
       '/admin/dashboard',
       '/admin/showtimes',
       '/admin/box-office',
+      '/admin/ticket-search',
     ]),
   }
 
@@ -102,6 +104,12 @@ export default function AdminLayout({ children }) {
       path: '/admin/box-office',
       label: 'Bán vé tại quầy',
       icon: FaShoppingCart,
+      permission: 'ticket_sell',
+    },
+    {
+      path: '/admin/ticket-search',
+      label: 'Tìm kiếm vé',
+      icon: FaSearch,
       permission: 'ticket_sell',
     },
     {
@@ -206,6 +214,7 @@ export default function AdminLayout({ children }) {
                   if (!isItemVisibleForRole(item.path)) return null
 
                   if (item.path === '/admin/box-office' && role !== 'ticket_staff') return null
+                  if (item.path === '/admin/ticket-search' && role !== 'ticket_staff') return null
 
                   return (
                     <button

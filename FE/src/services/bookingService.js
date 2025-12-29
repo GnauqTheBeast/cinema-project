@@ -54,7 +54,7 @@ export const bookingService = {
       if (!token) {
         throw new Error('Token not found')
       }
-      
+
       const response = await apiClient.get(`/bookings/${bookingId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -63,6 +63,35 @@ export const bookingService = {
       return response.data
     } catch (error) {
       console.error('Error fetching booking:', error)
+      throw error
+    }
+  },
+
+  searchTickets: async (ticketId = '', showtimeId = '') => {
+    try {
+      const params = new URLSearchParams()
+
+      if (ticketId) {
+        params.append('ticket_id', ticketId)
+      }
+      if (showtimeId) {
+        params.append('showtime_id', showtimeId)
+      }
+
+      const response = await apiClient.get(`/tickets/search?${params.toString()}`)
+      return response.data
+    } catch (error) {
+      console.error('Error searching tickets:', error)
+      throw error
+    }
+  },
+
+  markTicketAsUsed: async (ticketId) => {
+    try {
+      const response = await apiClient.patch(`/tickets/${ticketId}/mark-used`)
+      return response.data
+    } catch (error) {
+      console.error('Error marking ticket as used:', error)
       throw error
     }
   },

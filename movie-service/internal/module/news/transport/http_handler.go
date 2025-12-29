@@ -17,17 +17,6 @@ func NewHTTPHandler(biz business.NewsBusiness) *HTTPHandler {
 	return &HTTPHandler{biz: biz}
 }
 
-// GetNewsSummaries godoc
-// @Summary Get news summaries
-// @Description Get paginated list of news summaries with their source articles
-// @Tags news
-// @Accept json
-// @Produce json
-// @Param category query string false "Category filter (domestic, international, all)" default(all)
-// @Param page query int false "Page number" default(1)
-// @Param page_size query int false "Page size" default(10)
-// @Success 200 {object} map[string]interface{}
-// @Router /news/summaries [get]
 func (h *HTTPHandler) GetNewsSummaries(c echo.Context) error {
 	category := c.QueryParam("category")
 	if category == "" {
@@ -44,7 +33,7 @@ func (h *HTTPHandler) GetNewsSummaries(c echo.Context) error {
 		pageSize = 10
 	}
 
-	summaries, total, err := h.biz.GetNewsSummaries(c.Request().Context(), category, page, pageSize)
+	summaries, total, err := h.biz.GetNewsSummaries(c.Request().Context(), category, page, pageSize, false)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
 			"error": "Failed to fetch news summaries",
@@ -64,15 +53,6 @@ func (h *HTTPHandler) GetNewsSummaries(c echo.Context) error {
 	})
 }
 
-// GetNewsSummaryByID godoc
-// @Summary Get news summary by ID
-// @Description Get a single news summary with its source articles
-// @Tags news
-// @Accept json
-// @Produce json
-// @Param id path string true "Summary ID"
-// @Success 200 {object} entity.NewsSummaryWithSources
-// @Router /news/summaries/{id} [get]
 func (h *HTTPHandler) GetNewsSummaryByID(c echo.Context) error {
 	id := c.Param("id")
 
@@ -88,7 +68,6 @@ func (h *HTTPHandler) GetNewsSummaryByID(c echo.Context) error {
 	})
 }
 
-// RegisterRoutes registers all news routes
 func (h *HTTPHandler) RegisterRoutes(g *echo.Group) {
 	news := g.Group("/news")
 	{

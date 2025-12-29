@@ -18,10 +18,6 @@ export class UserController {
     this.userService = new UserService(models);
   }
 
-  /**
-   * Get user by ID
-   * Route: GET /users/:userId
-   */
   public getUserById: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { userId } = req.params;
@@ -61,10 +57,6 @@ export class UserController {
     }
   };
 
-  /**
-   * Update user profile
-   * Route: PUT /users/:userId
-   */
   public updateUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { userId } = req.params;
@@ -121,10 +113,6 @@ export class UserController {
     }
   };
 
-  /**
-   * Get all users with pagination and filtering (Admin/Manager only)
-   * Route: GET /users/admin/users
-   */
   public getAllUsers = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const authenticatedUser = req.user;
@@ -176,10 +164,6 @@ export class UserController {
     }
   };
 
-  /**
-   * Get all staff users (excluding customers) with pagination and filtering (Admin/Manager only)
-   * Route: GET /users/admin/staffs
-   */
   public getAllStaffs = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const authenticatedUser = req.user;
@@ -231,10 +215,6 @@ export class UserController {
     }
   };
 
-  /**
-   * Delete user by ID (Admin only)
-   * Route: DELETE /users/:userId
-   */
   public deleteUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { userId } = req.params;

@@ -141,60 +141,23 @@ export default function DashboardPage() {
 
   return (
     <AdminLayout>
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #E5E7EB',
-            borderRadius: '12px',
-            padding: '24px',
-            marginBottom: '32px',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.08)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '16px',
-          }}
-        >
+      <div className="max-w-[1400px] mx-auto">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8 shadow-sm flex justify-between items-center flex-wrap gap-4">
           <div>
-            <h1
-              style={{
-                margin: '0 0 8px 0',
-                fontSize: '32px',
-                fontWeight: 700,
-                color: '#111827',
-                fontFamily: "'Open Sans', sans-serif",
-                letterSpacing: '-0.025em',
-              }}
-            >
+            <h1 className="m-0 mb-2 text-3xl font-bold text-gray-900 tracking-tight">
               Welcome back, {user.fullName?.firstName || user.email}!
             </h1>
-            <p
-              style={{
-                margin: 0,
-                color: '#6B7280',
-                fontSize: '14px',
-                fontFamily: "'Open Sans', sans-serif",
-              }}
-            >
+            <p className="m-0 text-gray-500 text-sm">
               {weekRange.startDate
                 ? getWeekDisplayString(weekRange.startDate, weekRange.endDate)
                 : 'Loading...'}
             </p>
           </div>
           {!loading && (
-            <div
-              style={{
-                textAlign: 'right',
-                color: '#6B7280',
-                fontSize: '14px',
-                fontFamily: "'Open Sans', sans-serif",
-              }}
-            >
-              <div style={{ fontWeight: 500, color: '#111827' }}>{user.email}</div>
+            <div className="text-right text-gray-500 text-sm">
+              <div className="font-medium text-gray-900">{user.email}</div>
               {user.fullName && (
-                <div style={{ marginTop: '4px' }}>
+                <div className="mt-1">
                   {user.fullName.firstName} {user.fullName.lastName}
                 </div>
               )}
@@ -202,14 +165,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '24px',
-            marginBottom: '32px',
-          }}
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {loading ? (
             <>
               <MetricCardSkeleton />
@@ -253,14 +209,7 @@ export default function DashboardPage() {
 
         <RevenueTrendChart data={dailyData} loading={loading} />
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1.5fr 1fr',
-            gap: '24px',
-            marginBottom: '32px',
-          }}
-        >
+        <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-6 mb-8">
           <TopMoviesList movies={topMovies} loading={loading} />
           <MovieStatsGrid stats={movieStats} loading={loading} />
         </div>

@@ -52,16 +52,29 @@ export default function MovieDetailPage() {
     }
   }
 
-  const getStatusColor = (status) => {
+  const getStatusColorClasses = (status) => {
     switch (status) {
       case 'upcoming':
-        return '#ff9800'
+        return 'bg-orange-500'
       case 'showing':
-        return '#4caf50'
+        return 'bg-green-500'
       case 'ended':
-        return '#f44336'
+        return 'bg-red-500'
       default:
-        return '#757575'
+        return 'bg-gray-500'
+    }
+  }
+
+  const getStatusBorderClasses = (status) => {
+    switch (status) {
+      case 'upcoming':
+        return 'border-orange-500'
+      case 'showing':
+        return 'border-green-500'
+      case 'ended':
+        return 'border-red-500'
+      default:
+        return 'border-gray-500'
     }
   }
 
@@ -83,7 +96,7 @@ export default function MovieDetailPage() {
   if (loading) {
     return (
       <AdminLayout>
-        <div style={{ textAlign: 'center', padding: '40px' }}>
+        <div className="text-center py-10">
           <div>Loading movie...</div>
         </div>
       </AdminLayout>
@@ -94,27 +107,12 @@ export default function MovieDetailPage() {
     return (
       <AdminLayout>
         <div>
-          <div
-            style={{
-              backgroundColor: '#ffebee',
-              color: '#c62828',
-              padding: '16px',
-              borderRadius: '4px',
-              marginBottom: '24px',
-            }}
-          >
+          <div className="bg-red-50 text-red-800 p-4 rounded mb-6">
             {error || 'Movie not found'}
           </div>
           <button
             onClick={() => navigate('/admin/movies')}
-            style={{
-              background: '#1976d2',
-              color: 'white',
-              border: 'none',
-              padding: '12px 24px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
+            className="bg-blue-600 text-white border-none py-3 px-6 rounded cursor-pointer hover:bg-blue-700 transition-colors"
           >
             Back to Movies
           </button>
@@ -127,135 +125,90 @@ export default function MovieDetailPage() {
     <AdminLayout>
       <div>
         {/* Navigation */}
-        <div style={{ marginBottom: '24px' }}>
+        <div className="mb-6">
           <button
             onClick={() => navigate('/admin/movies')}
-            style={{
-              background: 'none',
-              border: '1px solid #ddd',
-              padding: '8px 16px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              marginRight: '16px',
-            }}
+            className="bg-transparent border border-gray-300 py-2 px-4 rounded cursor-pointer mr-4 hover:bg-gray-50 transition-colors"
           >
             ← Back to Movies
           </button>
           <button
             onClick={() => navigate(`/admin/movies/${id}/edit`)}
-            style={{
-              background: '#ff9800',
-              color: 'white',
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              marginRight: '16px',
-            }}
+            className="bg-orange-500 text-white border-none py-2 px-4 rounded cursor-pointer mr-4 hover:bg-orange-600 transition-colors"
           >
             Edit Movie
           </button>
           <button
             onClick={handleDelete}
-            style={{
-              background: '#f44336',
-              color: 'white',
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
+            className="bg-red-500 text-white border-none py-2 px-4 rounded cursor-pointer hover:bg-red-600 transition-colors"
           >
             Delete Movie
           </button>
         </div>
 
-        <div
-          style={{
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            padding: '32px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          }}
-        >
-          <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
+        <div className="bg-white rounded-lg p-8 shadow-md">
+          <div className="flex gap-8 flex-wrap">
             {/* Poster */}
             {movie.poster_url && (
-              <div style={{ flex: '0 0 300px' }}>
+              <div className="flex-none w-[300px]">
                 <img
                   src={movie.poster_url}
                   alt={movie.title}
-                  style={{
-                    width: '100%',
-                    height: 'auto',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                  }}
+                  className="w-full h-auto rounded-lg shadow-lg"
                 />
               </div>
             )}
 
             {/* Details */}
-            <div style={{ flex: '1', minWidth: '300px' }}>
-              <h1 style={{ margin: '0 0 16px 0', fontSize: '32px', fontWeight: 'bold' }}>
+            <div className="flex-1 min-w-[300px]">
+              <h1 className="m-0 mb-4 text-3xl font-bold">
                 {movie.title}
               </h1>
 
               {/* Status */}
-              <div style={{ marginBottom: '24px' }}>
+              <div className="mb-6">
                 <span
-                  style={{
-                    backgroundColor: getStatusColor(movie.status),
-                    color: 'white',
-                    padding: '6px 12px',
-                    borderRadius: '16px',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    textTransform: 'uppercase',
-                  }}
+                  className={`${getStatusColorClasses(movie.status)} text-white py-1.5 px-3 rounded-full text-sm font-bold uppercase inline-block`}
                 >
                   {movie.status?.replace('_', ' ')}
                 </span>
               </div>
 
               {/* Basic Info */}
-              <div style={{ marginBottom: '24px' }}>
-                <div style={{ marginBottom: '12px' }}>
+              <div className="mb-6">
+                <div className="mb-3">
                   <strong>Đạo diễn:</strong> {movie.director || 'Unknown'}
                 </div>
-                <div style={{ marginBottom: '12px' }}>
+                <div className="mb-3">
                   <strong>Diễn viên:</strong> {movie.cast || 'Unknown'}
                 </div>
-                <div style={{ marginBottom: '12px' }}>
+                <div className="mb-3">
                   <strong>Thể loại:</strong> {movie.genre || 'Unknown'}
                 </div>
-                <div style={{ marginBottom: '12px' }}>
+                <div className="mb-3">
                   <strong>Thời lượng:</strong> {formatDuration(movie.duration)}
                 </div>
-                <div style={{ marginBottom: '12px' }}>
+                <div className="mb-3">
                   <strong>Ngày ra mắt:</strong> {formatDate(movie.release_date)}
                 </div>
               </div>
 
               {/* Status Update */}
-              <div style={{ marginBottom: '24px' }}>
+              <div className="mb-6">
                 <strong>Thay đổi trạng thái:</strong>
-                <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div className="mt-2 flex gap-2 flex-wrap">
                   {['upcoming', 'showing', 'ended'].map((status) => (
                     <button
                       key={status}
                       onClick={() => handleStatusChange(status)}
                       disabled={updating || movie.status === status}
-                      style={{
-                        backgroundColor: movie.status === status ? getStatusColor(status) : 'white',
-                        color: movie.status === status ? 'white' : '#333',
-                        border: `2px solid ${getStatusColor(status)}`,
-                        padding: '6px 12px',
-                        borderRadius: '4px',
-                        cursor: updating || movie.status === status ? 'not-allowed' : 'pointer',
-                        opacity: updating || movie.status === status ? 0.6 : 1,
-                        textTransform: 'capitalize',
-                      }}
+                      className={`
+                        ${movie.status === status ? `${getStatusColorClasses(status)} text-white` : 'bg-white text-gray-800'}
+                        border-2 ${getStatusBorderClasses(status)}
+                        py-1.5 px-3 rounded capitalize
+                        ${updating || movie.status === status ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:opacity-80'}
+                        transition-opacity
+                      `}
                     >
                       {status.replace('_', ' ')}
                     </button>
@@ -267,25 +220,21 @@ export default function MovieDetailPage() {
 
           {/* Description */}
           {movie.description && (
-            <div style={{ marginTop: '32px' }}>
-              <h3 style={{ marginBottom: '12px' }}>Thông tin</h3>
-              <p style={{ lineHeight: '1.6', color: '#666' }}>{movie.description}</p>
+            <div className="mt-8">
+              <h3 className="mb-3 font-semibold text-lg">Thông tin</h3>
+              <p className="leading-relaxed text-gray-600">{movie.description}</p>
             </div>
           )}
 
           {/* Trailer */}
           {movie.trailer_url && (
-            <div style={{ marginTop: '32px' }}>
-              <h3 style={{ marginBottom: '12px' }}>Trailer</h3>
+            <div className="mt-8">
+              <h3 className="mb-3 font-semibold text-lg">Trailer</h3>
               <a
                 href={movie.trailer_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{
-                  color: '#1976d2',
-                  textDecoration: 'none',
-                  fontSize: '16px',
-                }}
+                className="text-blue-600 no-underline text-base hover:text-blue-700 hover:underline transition-colors"
               >
                 🎬 Watch Trailer
               </a>
@@ -293,15 +242,7 @@ export default function MovieDetailPage() {
           )}
 
           {/* Timestamps */}
-          <div
-            style={{
-              marginTop: '32px',
-              paddingTop: '24px',
-              borderTop: '1px solid #eee',
-              fontSize: '14px',
-              color: '#999',
-            }}
-          >
+          <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-400">
             <div>Ngày tạo: {formatDate(movie.created_at)}</div>
             {movie.updated_at && movie.updated_at !== movie.created_at && (
               <div>Ngày chỉnh sửa: {formatDate(movie.updated_at)}</div>
