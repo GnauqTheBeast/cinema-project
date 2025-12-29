@@ -8,9 +8,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/joho/godotenv"
+
 	"worker-service/internal/container"
 	"worker-service/internal/jobs/crawl"
 )
+
+func init() {
+	godotenv.Load(".env")
+}
 
 func main() {
 	ctn := container.New()
@@ -23,7 +29,7 @@ func main() {
 		log.Fatal("Failed to create crawl worker:", err)
 	}
 
-	if err := crawlWorker.Start(ctx); err != nil {
+	if err = crawlWorker.Start(ctx); err != nil {
 		log.Fatal("Failed to start crawl worker:", err)
 	}
 

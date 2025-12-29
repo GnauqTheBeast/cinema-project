@@ -3,6 +3,7 @@ package rest
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"movie-service/internal/module/showtime/business"
@@ -42,6 +43,9 @@ func (h *handler) GetShowtimes(c *gin.Context) {
 		query.Size = 10
 	}
 
+	query.Format = entity.ShowtimeFormat(strings.ToUpper(string(query.Format)))
+	query.Status = entity.ShowtimeStatus(strings.ToUpper(string(query.Status)))
+
 	var dateFrom, dateTo *time.Time
 	if query.DateFrom != "" {
 		parsed, err := time.Parse("2006-01-02", query.DateFrom)
@@ -61,7 +65,7 @@ func (h *handler) GetShowtimes(c *gin.Context) {
 		dateTo = &parsed
 	}
 
-	showtimes, total, err := h.biz.GetShowtimes(c.Request.Context(), query.Page, query.Size, query.Search, query.MovieId, query.RoomId, query.Format, query.Status, dateFrom, dateTo)
+	showtimes, total, err := h.biz.GetShowtimes(c.Request.Context(), query.Page, query.Size, query.Search, query.MovieId, query.RoomId, query.Format, query.Status, dateFrom, dateTo, query.ExcludeEnded)
 	if err != nil {
 		response.ErrorWithMessage(c, "Failed to get showtimes")
 		return
@@ -89,65 +93,8 @@ func (h *handler) GetShowtimeById(c *gin.Context) {
 		return
 	}
 
-	resp := entity.ToShowtimeResponse(showtime)
+	resp := entity.ToShowtimeBookingResponse(showtime)
 	response.Success(c, resp)
-}
-
-func (h *handler) GetShowtimesByMovie(c *gin.Context) {
-	movieId := c.Param("id")
-	if movieId == "" {
-		response.BadRequest(c, "Movie ID is required")
-		return
-	}
-
-	showtimes, err := h.biz.GetShowtimesByMovie(c.Request.Context(), movieId)
-	if err != nil {
-		response.ErrorWithMessage(c, "Failed to get showtimes by movie")
-		return
-	}
-
-	responses := make([]*entity.ShowtimeResponse, len(showtimes))
-	for i, showtime := range showtimes {
-		responses[i] = entity.ToShowtimeResponse(showtime)
-	}
-
-	response.Success(c, map[string]interface{}{
-		"data": responses,
-	})
-}
-
-func (h *handler) GetShowtimesByRoom(c *gin.Context) {
-	roomId := c.Param("id")
-	if roomId == "" {
-		response.BadRequest(c, "Room ID is required")
-		return
-	}
-
-	dateStr := c.Query("date")
-	if dateStr == "" {
-		dateStr = time.Now().Format("2006-01-02")
-	}
-
-	date, err := time.Parse("2006-01-02", dateStr)
-	if err != nil {
-		response.BadRequest(c, "Invalid date format, use YYYY-MM-DD")
-		return
-	}
-
-	showtimes, err := h.biz.GetShowtimesByRoom(c.Request.Context(), roomId, date)
-	if err != nil {
-		response.ErrorWithMessage(c, "Failed to get showtimes by room")
-		return
-	}
-
-	responses := make([]*entity.ShowtimeResponse, len(showtimes))
-	for i, showtime := range showtimes {
-		responses[i] = entity.ToShowtimeResponse(showtime)
-	}
-
-	response.Success(c, map[string]interface{}{
-		"data": responses,
-	})
 }
 
 func (h *handler) GetUpcomingShowtimes(c *gin.Context) {

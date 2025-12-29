@@ -12,7 +12,7 @@ type OutboxEvent struct {
 	ID        int               `bun:"id,pk,autoincrement" json:"id"`
 	EventType OutboxEventType   `bun:"event_type,notnull" json:"event_type"`
 	Payload   string            `bun:"payload,notnull" json:"payload"`
-	Status    OutboxEventStatus `bun:"status,notnull,default:'pending'" json:"status"`
+	Status    OutboxEventStatus `bun:"status,notnull,default:'PENNG'" json:"status"`
 	CreatedAt time.Time         `bun:"created_at,notnull,default:now()" json:"created_at"`
 	UpdatedAt time.Time         `bun:"updated_at,notnull,default:now()" json:"updated_at"`
 }
@@ -20,17 +20,17 @@ type OutboxEvent struct {
 type OutboxEventType string
 
 const (
-	EventTypeBookingCreated   OutboxEventType = "BookingCreated"
-	EventTypePaymentCompleted OutboxEventType = "PaymentCompleted"
-	EventTypeSeatReserved     OutboxEventType = "SeatReserved"
-	EventTypeSeatReleased     OutboxEventType = "SeatReleased"
-	EventTypeNotificationSent OutboxEventType = "NotificationSent"
+	EventTypeBookingCreated   OutboxEventType = "BOOKING_CREATED"
+	EventTypePaymentCompleted OutboxEventType = "PAYMENT_COMPLETED"
+	EventTypeSeatReserved     OutboxEventType = "SEAT_RESERVED"
+	EventTypeSeatReleased     OutboxEventType = "SEAT_RELEASED"
+	EventTypeNotificationSent OutboxEventType = "NOTIFICATION_SENT"
 )
 
 type OutboxEventStatus string
 
 const (
-	OutboxStatusPending OutboxEventStatus = "pending"
-	OutboxStatusSent    OutboxEventStatus = "sent"
-	OutboxStatusFailed  OutboxEventStatus = "failed"
+	OutboxStatusPending OutboxEventStatus = "PENDING"
+	OutboxStatusSent    OutboxEventStatus = "SENT"
+	OutboxStatusFailed  OutboxEventStatus = "FAILED"
 )

@@ -3,6 +3,7 @@ package rest
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"movie-service/internal/module/seat/business"
 	"movie-service/internal/module/seat/entity"
@@ -41,6 +42,9 @@ func (h *handler) GetSeats(c *gin.Context) {
 		query.Size = 10
 	}
 
+	query.SeatType = entity.SeatType(strings.ToUpper(string(query.SeatType)))
+	query.Status = entity.SeatStatus(strings.ToUpper(string(query.Status)))
+
 	seats, total, err := h.biz.GetSeats(c.Request.Context(), query.Page, query.Size, query.Search, query.RoomId, query.RowNumber, query.SeatType, query.Status)
 	if err != nil {
 		response.ErrorWithMessage(c, "Failed to get seats")
@@ -73,62 +77,20 @@ func (h *handler) GetSeatById(c *gin.Context) {
 	response.Success(c, resp)
 }
 
-func (h *handler) GetSeatsByRoom(c *gin.Context) {
-	roomId := c.Param("id")
-	if roomId == "" {
-		response.BadRequest(c, "Room ID is required")
-		return
-	}
-
-	seatsDetail, err := h.biz.GetSeatsByRoom(c.Request.Context(), roomId)
-	if err != nil {
-		response.ErrorWithMessage(c, "Failed to get seats by room")
-		return
-	}
-
-	responses := make([]*entity.SeatResponse, len(seatsDetail.Seats))
-	for i, seat := range seatsDetail.Seats {
-		responses[i] = entity.ToSeatResponse(seat)
-	}
-
-	lockedResponses := make([]*entity.SeatResponse, len(seatsDetail.LockedSeats))
-	for i, seat := range seatsDetail.LockedSeats {
-		lockedResponses[i] = entity.ToSeatResponse(seat)
-	}
-
-	response.Success(c, map[string]interface{}{
-		"seats":        responses,
-		"locked_seats": lockedResponses,
-	})
-}
-
-func (h *handler) GetSeatsByShowtime(c *gin.Context) {
-	showtimeId := c.Param("id")
+func (h *handler) GetLockedSeats(c *gin.Context) {
+	showtimeId := c.Query("showtime_id")
 	if showtimeId == "" {
-		response.BadRequest(c, "Showtime ID is required")
+		response.BadRequest(c, "showtime_id query parameter is required")
 		return
 	}
 
-	seatsDetail, err := h.biz.GetSeatsByShowtime(c.Request.Context(), showtimeId)
+	lockedSeatsResponse, err := h.biz.GetLockedSeatsByShowtime(c.Request.Context(), showtimeId)
 	if err != nil {
-		response.ErrorWithMessage(c, "Failed to get seats by showtime")
+		response.ErrorWithMessage(c, "Failed to get locked seats")
 		return
 	}
 
-	responses := make([]*entity.SeatResponse, len(seatsDetail.Seats))
-	for i, seat := range seatsDetail.Seats {
-		responses[i] = entity.ToSeatResponse(seat)
-	}
-
-	lockedResponses := make([]*entity.SeatResponse, len(seatsDetail.LockedSeats))
-	for i, seat := range seatsDetail.LockedSeats {
-		lockedResponses[i] = entity.ToSeatResponse(seat)
-	}
-
-	response.Success(c, map[string]interface{}{
-		"seats":        responses,
-		"locked_seats": lockedResponses,
-	})
+	response.Success(c, lockedSeatsResponse)
 }
 
 func (h *handler) CreateSeat(c *gin.Context) {

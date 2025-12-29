@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { FaExclamationTriangle, FaFilm, FaPlus, FaSearch, FaSpinner } from 'react-icons/fa'
+import { FaPlus, FaSearch } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../../components/admin/AdminLayout'
 import MovieCard from '../../components/admin/MovieCard'
 import { movieService } from '../../services/movieApi'
+import Button from '../../components/common/Button'
+import Card from '../../components/common/Card'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
 
 export default function MoviesPage() {
   const [movies, setMovies] = useState([])
@@ -63,61 +66,43 @@ export default function MoviesPage() {
   if (loading && !searching) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-96">
-          <div className="text-center">
-            <FaSpinner className="animate-spin text-4xl text-red-600 mx-auto mb-4" />
-            <p className="text-gray-600 text-lg">Đang tải danh sách phim...</p>
-          </div>
-        </div>
+        <LoadingSpinner size="lg" text="Đang tải danh sách phim..." />
       </AdminLayout>
     )
   }
 
   return (
     <AdminLayout>
-      <div className="space-y-8">
-        {/* Page Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div className="space-y-6">
+        <Card>
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
-                <FaFilm className="text-white text-xl" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Quản lý phim</h1>
-                <p className="text-gray-600">Quản lý danh sách phim trong hệ thống rạp</p>
-              </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Quản lý phim</h1>
+              <p className="text-gray-600">Quản lý danh sách phim trong hệ thống rạp</p>
             </div>
 
-            <button
-              onClick={() => navigate('/admin/movies/new')}
-              className="flex items-center space-x-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
-            >
+            <Button onClick={() => navigate('/admin/movies/new')}>
               <FaPlus size={16} />
               <span>Thêm phim mới</span>
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
 
-        {/* Search Bar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <Card>
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaSearch className="h-5 w-5 text-gray-400" />
-              </div>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={handleSearchChange}
                 placeholder="Tìm kiếm phim theo tên..."
-                className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={clearSearch}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
@@ -130,30 +115,17 @@ export default function MoviesPage() {
                 </button>
               )}
             </div>
-            <button
-              type="submit"
-              disabled={searching}
-              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-            >
-              {searching ? (
-                <>
-                  <FaSpinner className="animate-spin" />
-                  <span>Đang tìm...</span>
-                </>
-              ) : (
-                <>
-                  <FaSearch />
-                  <span>Tìm kiếm</span>
-                </>
-              )}
-            </button>
+            <Button type="submit" disabled={searching}>
+              <FaSearch />
+              <span>{searching ? 'Đang tìm...' : 'Tìm kiếm'}</span>
+            </Button>
           </form>
 
           {searchQuery && (
             <div className="mt-3 text-sm text-gray-600">
               {searching ? (
-                <div className="flex items-center space-x-2">
-                  <FaSpinner className="animate-spin" />
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-gray-200 border-t-red-600 rounded-full animate-spin"></div>
                   <span>Đang tìm kiếm...</span>
                 </div>
               ) : (
@@ -164,30 +136,27 @@ export default function MoviesPage() {
               )}
             </div>
           )}
-        </div>
+        </Card>
 
         {error && (
-          <div className="bg-gradient-to-r from-red-50 to-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
             <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <FaExclamationTriangle className="h-5 w-5 text-red-500 mt-0.5" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Lỗi tải dữ liệu</h3>
-                <div className="mt-1 text-sm text-red-700">{error}</div>
+              <span className="text-red-500 text-xl mr-3">⚠</span>
+              <div>
+                <h3 className="text-sm font-semibold text-red-800">Lỗi tải dữ liệu</h3>
+                <p className="text-sm text-red-700 mt-1">{error}</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Movies Grid */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <Card padding="none">
           {movies.length === 0 ? (
             <div className="p-12 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FaFilm className="text-gray-400 text-2xl" />
+                <span className="text-3xl">🎬</span>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 {searchQuery ? 'Không tìm thấy phim nào' : 'Chưa có phim nào'}
               </h3>
               <p className="text-gray-500 mb-6">
@@ -196,13 +165,10 @@ export default function MoviesPage() {
                   : 'Hãy thêm phim đầu tiên vào hệ thống'}
               </p>
               {!searchQuery && (
-                <button
-                  onClick={() => navigate('/admin/movies/new')}
-                  className="inline-flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
-                >
+                <Button onClick={() => navigate('/admin/movies/new')}>
                   <FaPlus />
                   <span>Thêm phim đầu tiên</span>
-                </button>
+                </Button>
               )}
             </div>
           ) : (
@@ -214,26 +180,25 @@ export default function MoviesPage() {
               </div>
             </div>
           )}
-        </div>
+        </Card>
 
-        {/* Pagination */}
         {meta.total_pages > 1 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <Card>
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
               <div className="text-sm text-gray-600">
                 Trang {meta.page} / {meta.total_pages} • Tổng {meta.total} phim
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => handlePageChange(meta.page - 1)}
                   disabled={meta.page <= 1}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   ← Trước
                 </button>
 
-                <div className="flex items-center space-x-1">
+                <div className="flex gap-1">
                   {Array.from({ length: Math.min(5, meta.total_pages) }, (_, i) => {
                     const pageNum = Math.max(1, meta.page - 2) + i
                     if (pageNum > meta.total_pages) return null
@@ -242,9 +207,9 @@ export default function MoviesPage() {
                       <button
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
-                        className={`px-3 py-2 text-sm rounded-lg transition-colors duration-200 ${
+                        className={`px-3 py-2 text-sm rounded-lg transition-colors ${
                           meta.page === pageNum
-                            ? 'bg-red-600 text-white'
+                            ? 'bg-red-600 text-white font-semibold'
                             : 'text-gray-600 hover:bg-gray-100'
                         }`}
                       >
@@ -257,13 +222,13 @@ export default function MoviesPage() {
                 <button
                   onClick={() => handlePageChange(meta.page + 1)}
                   disabled={meta.page >= meta.total_pages}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Sau →
                 </button>
               </div>
             </div>
-          </div>
+          </Card>
         )}
       </div>
     </AdminLayout>

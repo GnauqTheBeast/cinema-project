@@ -15,9 +15,10 @@ import {
   YAxis,
 } from 'recharts'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { mockDataService } from '../../services/mockData'
+import ShowtimeRevenueModal from '../../components/admin/ShowtimeRevenueModal'
+import analyticsService from '../../services/analyticsService'
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D']
+const COLORS = ['#10B981', '#22C55E', '#34D399', '#6EE7B7', '#A7F3D0', '#D1FAE5']
 
 export default function RevenueStatsPage() {
   const [monthlyData, setMonthlyData] = useState([])
@@ -26,21 +27,93 @@ export default function RevenueStatsPage() {
   const [overallStats, setOverallStats] = useState({})
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
+  const [dateRange, setDateRange] = useState({
+    startDate: new Date(new Date().setMonth(new Date().getMonth() - 6))
+      .toISOString()
+      .split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+  })
+  const [selectedMovie, setSelectedMovie] = useState(null)
+  const [showtimeData, setShowtimeData] = useState([])
+  const [showtimeLoading, setShowtimeLoading] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true)
 
-        const monthly = mockDataService.getRevenueByMonth()
-        const movies = mockDataService.getRevenueByMovie()
-        const genres = mockDataService.getRevenueByGenre()
-        const stats = mockDataService.getOverallStats()
+        const [timeData, movieRevenueData, genreRevenueData, totalRevenueData] =
+          await Promise.all([
+            analyticsService.getRevenueByTime(dateRange.startDate, dateRange.endDate, 180),
+            analyticsService.getRevenueByMovie(dateRange.startDate, dateRange.endDate, 10),
+            analyticsService.getRevenueByGenre(dateRange.startDate, dateRange.endDate),
+            analyticsService.getTotalRevenue(dateRange.startDate, dateRange.endDate),
+          ])
+
+        const monthlyGrouped = {}
+        if (timeData.success && timeData.data) {
+          timeData.data.forEach((item) => {
+            const date = new Date(item.time_period)
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+            const monthName = date.toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' })
+
+            if (!monthlyGrouped[monthKey]) {
+              monthlyGrouped[monthKey] = {
+                monthName,
+                revenue: 0,
+                bookings: 0,
+              }
+            }
+
+            monthlyGrouped[monthKey].revenue += item.total_revenue
+            monthlyGrouped[monthKey].bookings += item.total_bookings
+          })
+        }
+
+        const monthly = Object.values(monthlyGrouped)
+
+        const movies =
+          movieRevenueData.success && movieRevenueData.data
+            ? movieRevenueData.data.map((movie) => ({
+                movie_id: movie.movie_id,
+                title: movie.movie_title,
+                revenue: movie.total_revenue,
+                revenueFormatted: formatCurrency(movie.total_revenue),
+                ticketsSold: movie.total_tickets,
+                genre: 'N/A',
+              }))
+            : []
+
+        const genres =
+          genreRevenueData.success && genreRevenueData.data
+            ? genreRevenueData.data.map((genre) => ({
+                genre: genre.genre,
+                revenue: genre.total_revenue,
+                revenueFormatted: formatCurrency(genre.total_revenue),
+              }))
+            : []
+
+        const totalRevenue = totalRevenueData.success ? totalRevenueData.data.total_revenue : 0
+        const totalTickets =
+          movieRevenueData.success && movieRevenueData.data
+            ? movieRevenueData.data.reduce((sum, movie) => sum + movie.total_tickets, 0)
+            : 0
+        const totalBookings =
+          movieRevenueData.success && movieRevenueData.data
+            ? movieRevenueData.data.reduce((sum, movie) => sum + movie.total_bookings, 0)
+            : 0
 
         setMonthlyData(monthly)
-        setMovieData(movies.slice(0, 10)) // Top 10 movies
+        setMovieData(movies)
         setGenreData(genres)
-        setOverallStats(stats)
+        setOverallStats({
+          totalRevenue,
+          totalRevenueFormatted: formatCurrency(totalRevenue),
+          totalTickets,
+          totalBookings,
+          averageTicketPriceFormatted:
+            totalTickets > 0 ? formatCurrency(totalRevenue / totalTickets) : formatCurrency(0),
+        })
       } catch (error) {
         console.error('Error loading revenue data:', error)
       } finally {
@@ -49,7 +122,7 @@ export default function RevenueStatsPage() {
     }
 
     loadData()
-  }, [])
+  }, [dateRange])
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -59,21 +132,52 @@ export default function RevenueStatsPage() {
     }).format(value)
   }
 
+  const handleMovieClick = async (movie) => {
+    setSelectedMovie(movie)
+    setShowtimeLoading(true)
+
+    try {
+      const result = await analyticsService.getRevenueByShowtime(
+        dateRange.startDate,
+        dateRange.endDate,
+        movie.movie_id,
+        1000,
+      )
+
+      if (result.success) {
+        setShowtimeData(result.data)
+      }
+    } catch (error) {
+      console.error('Error loading showtime analytics:', error)
+      setShowtimeData([])
+    } finally {
+      setShowtimeLoading(false)
+    }
+  }
+
+  const handleCloseModal = () => {
+    setSelectedMovie(null)
+    setShowtimeData([])
+  }
+
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
         <div
           style={{
-            backgroundColor: 'white',
-            padding: '10px',
-            border: '1px solid #ccc',
-            borderRadius: '4px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            backgroundColor: '#FFFFFF',
+            padding: '12px',
+            border: '1px solid #E5E7EB',
+            borderRadius: '8px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.08)',
+            fontFamily: "'Open Sans', sans-serif",
           }}
         >
-          <p style={{ margin: '0 0 5px 0', fontWeight: 'bold' }}>{label}</p>
+          <p style={{ margin: '0 0 8px 0', fontWeight: 600, color: '#111827', fontSize: '13px' }}>
+            {label}
+          </p>
           {payload.map((entry, index) => (
-            <p key={index} style={{ margin: '0', color: entry.color }}>
+            <p key={index} style={{ margin: '0', color: entry.color, fontSize: '13px' }}>
               {entry.name}: {formatCurrency(entry.value)}
             </p>
           ))}
@@ -84,17 +188,36 @@ export default function RevenueStatsPage() {
   }
 
   const tabs = [
-    { id: 'overview', label: '📊 Overview', icon: '📊' },
-    { id: 'monthly', label: '📅 Monthly', icon: '📅' },
-    { id: 'movies', label: '🎬 By Movies', icon: '🎬' },
-    { id: 'genres', label: '🎭 By Genres', icon: '🎭' },
+    { id: 'overview', label: 'Overview' },
+    { id: 'monthly', label: 'Monthly' },
+    { id: 'movies', label: 'By Movies' },
+    { id: 'genres', label: 'By Genres' },
   ]
 
   if (loading) {
     return (
       <AdminLayout>
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          <div>Loading revenue statistics...</div>
+        <div style={{ textAlign: 'center', padding: '64px 24px' }}>
+          <div
+            style={{
+              border: '3px solid #F3F4F6',
+              borderTop: '3px solid #10B981',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              animation: 'spin 800ms linear infinite',
+              margin: '0 auto',
+            }}
+          ></div>
+          <p
+            style={{
+              marginTop: '16px',
+              color: '#6B7280',
+              fontFamily: "'Open Sans', sans-serif",
+            }}
+          >
+            Loading revenue statistics...
+          </p>
         </div>
       </AdminLayout>
     )
@@ -103,24 +226,41 @@ export default function RevenueStatsPage() {
   return (
     <AdminLayout>
       <div>
-        {/* Page Header */}
-        <div style={{ marginBottom: '24px' }}>
-          <h2 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: 'bold' }}>
+        <div style={{ marginBottom: '32px' }}>
+          <h2
+            style={{
+              margin: '0 0 8px 0',
+              fontSize: '32px',
+              fontWeight: 700,
+              letterSpacing: '-0.025em',
+              color: '#111827',
+              fontFamily: "'Poppins', sans-serif",
+            }}
+          >
             Revenue Statistics
           </h2>
-          <p style={{ margin: 0, color: '#666' }}>Comprehensive revenue analysis and insights</p>
+          <p
+            style={{
+              margin: 0,
+              color: '#6B7280',
+              fontSize: '14px',
+              fontFamily: "'Open Sans', sans-serif",
+            }}
+          >
+            Comprehensive revenue analysis and insights
+          </p>
         </div>
 
-        {/* Tabs */}
         <div
           style={{
             display: 'flex',
             gap: '8px',
             marginBottom: '24px',
-            borderBottom: '1px solid #e0e0e0',
-            backgroundColor: 'white',
-            padding: '16px',
-            borderRadius: '8px 8px 0 0',
+            backgroundColor: '#FFFFFF',
+            padding: '8px',
+            borderRadius: '12px',
+            border: '1px solid #E5E7EB',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.08)',
           }}
         >
           {tabs.map((tab) => (
@@ -128,15 +268,29 @@ export default function RevenueStatsPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               style={{
+                flex: 1,
                 padding: '12px 24px',
                 border: 'none',
-                backgroundColor: activeTab === tab.id ? '#1976d2' : 'transparent',
-                color: activeTab === tab.id ? 'white' : '#666',
-                borderRadius: '4px',
+                background: activeTab === tab.id ? 'linear-gradient(135deg, #10B981 0%, #DC2626 100%)' : 'transparent',
+                color: activeTab === tab.id ? '#FFFFFF' : '#6B7280',
+                borderRadius: '8px',
                 cursor: 'pointer',
                 fontSize: '14px',
-                fontWeight: activeTab === tab.id ? 'bold' : 'normal',
-                transition: 'all 0.2s',
+                fontWeight: activeTab === tab.id ? 600 : 500,
+                transition: 'all 150ms ease-in-out',
+                fontFamily: "'Open Sans', sans-serif",
+              }}
+              onMouseEnter={(e) => {
+                if (activeTab !== tab.id) {
+                  e.currentTarget.style.backgroundColor = '#F9FAFB'
+                  e.currentTarget.style.color = '#111827'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== tab.id) {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                  e.currentTarget.style.color = '#6B7280'
+                }
               }}
             >
               {tab.label}
@@ -144,10 +298,8 @@ export default function RevenueStatsPage() {
           ))}
         </div>
 
-        {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div>
-            {/* Stats Cards */}
             <div
               style={{
                 display: 'grid',
@@ -158,76 +310,166 @@ export default function RevenueStatsPage() {
             >
               <div
                 style={{
-                  backgroundColor: 'white',
+                  backgroundColor: '#FFFFFF',
                   padding: '24px',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  borderLeft: '4px solid #4caf50',
+                  borderRadius: '12px',
+                  border: '1px solid #E5E7EB',
+                  boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
                 }}
               >
-                <h3 style={{ margin: '0 0 8px 0', color: '#4caf50' }}>Total Revenue</h3>
-                <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
+                <h3
+                  style={{
+                    margin: '0 0 8px 0',
+                    color: '#6B7280',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    letterSpacing: '0.025em',
+                    textTransform: 'uppercase',
+                    fontFamily: "'Open Sans', sans-serif",
+                  }}
+                >
+                  Total Revenue
+                </h3>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: '28px',
+                    fontWeight: 700,
+                    color: '#10B981',
+                    fontFamily: "'Poppins', sans-serif",
+                  }}
+                >
                   {overallStats.totalRevenueFormatted}
                 </p>
               </div>
 
               <div
                 style={{
-                  backgroundColor: 'white',
+                  backgroundColor: '#FFFFFF',
                   padding: '24px',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  borderLeft: '4px solid #2196f3',
+                  borderRadius: '12px',
+                  border: '1px solid #E5E7EB',
+                  boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
                 }}
               >
-                <h3 style={{ margin: '0 0 8px 0', color: '#2196f3' }}>Total Tickets</h3>
-                <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
+                <h3
+                  style={{
+                    margin: '0 0 8px 0',
+                    color: '#6B7280',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    letterSpacing: '0.025em',
+                    textTransform: 'uppercase',
+                    fontFamily: "'Open Sans', sans-serif",
+                  }}
+                >
+                  Total Tickets
+                </h3>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: '28px',
+                    fontWeight: 700,
+                    color: '#111827',
+                    fontFamily: "'Poppins', sans-serif",
+                  }}
+                >
                   {overallStats.totalTickets?.toLocaleString()}
                 </p>
               </div>
 
               <div
                 style={{
-                  backgroundColor: 'white',
+                  backgroundColor: '#FFFFFF',
                   padding: '24px',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  borderLeft: '4px solid #ff9800',
+                  borderRadius: '12px',
+                  border: '1px solid #E5E7EB',
+                  boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
                 }}
               >
-                <h3 style={{ margin: '0 0 8px 0', color: '#ff9800' }}>Avg Ticket Price</h3>
-                <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
+                <h3
+                  style={{
+                    margin: '0 0 8px 0',
+                    color: '#6B7280',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    letterSpacing: '0.025em',
+                    textTransform: 'uppercase',
+                    fontFamily: "'Open Sans', sans-serif",
+                  }}
+                >
+                  Avg Ticket Price
+                </h3>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: '28px',
+                    fontWeight: 700,
+                    color: '#111827',
+                    fontFamily: "'Poppins', sans-serif",
+                  }}
+                >
                   {overallStats.averageTicketPriceFormatted}
                 </p>
               </div>
 
               <div
                 style={{
-                  backgroundColor: 'white',
+                  backgroundColor: '#FFFFFF',
                   padding: '24px',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  borderLeft: '4px solid #9c27b0',
+                  borderRadius: '12px',
+                  border: '1px solid #E5E7EB',
+                  boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
                 }}
               >
-                <h3 style={{ margin: '0 0 8px 0', color: '#9c27b0' }}>Total Bookings</h3>
-                <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
+                <h3
+                  style={{
+                    margin: '0 0 8px 0',
+                    color: '#6B7280',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    letterSpacing: '0.025em',
+                    textTransform: 'uppercase',
+                    fontFamily: "'Open Sans', sans-serif",
+                  }}
+                >
+                  Total Bookings
+                </h3>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: '28px',
+                    fontWeight: 700,
+                    color: '#111827',
+                    fontFamily: "'Poppins', sans-serif",
+                  }}
+                >
                   {overallStats.totalBookings?.toLocaleString()}
                 </p>
               </div>
             </div>
 
-            {/* Quick Charts */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div
                 style={{
-                  backgroundColor: 'white',
+                  backgroundColor: '#FFFFFF',
                   padding: '24px',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  borderRadius: '12px',
+                  border: '1px solid #E5E7EB',
+                  boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
                 }}
               >
-                <h3 style={{ margin: '0 0 16px 0' }}>Revenue by Genre</h3>
+                <h3
+                  style={{
+                    margin: '0 0 16px 0',
+                    fontSize: '18px',
+                    fontWeight: 600,
+                    color: '#111827',
+                    fontFamily: "'Poppins', sans-serif",
+                  }}
+                >
+                  Revenue by Genre
+                </h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -235,7 +477,7 @@ export default function RevenueStatsPage() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ genre, revenue }) => `${genre}: ${formatCurrency(revenue)}`}
+                      label={({ genre }) => genre}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="revenue"
@@ -251,25 +493,45 @@ export default function RevenueStatsPage() {
 
               <div
                 style={{
-                  backgroundColor: 'white',
+                  backgroundColor: '#FFFFFF',
                   padding: '24px',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  borderRadius: '12px',
+                  border: '1px solid #E5E7EB',
+                  boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
                 }}
               >
-                <h3 style={{ margin: '0 0 16px 0' }}>Monthly Trend</h3>
+                <h3
+                  style={{
+                    margin: '0 0 16px 0',
+                    fontSize: '18px',
+                    fontWeight: 600,
+                    color: '#111827',
+                    fontFamily: "'Poppins', sans-serif",
+                  }}
+                >
+                  Monthly Trend
+                </h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="monthName" />
-                    <YAxis tickFormatter={formatCurrency} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                    <XAxis
+                      dataKey="monthName"
+                      tick={{ fontFamily: "'Open Sans', sans-serif", fontSize: 12, fill: '#6B7280' }}
+                      stroke="#E5E7EB"
+                    />
+                    <YAxis
+                      tickFormatter={formatCurrency}
+                      tick={{ fontFamily: "'Open Sans', sans-serif", fontSize: 12, fill: '#6B7280' }}
+                      stroke="#E5E7EB"
+                    />
                     <Tooltip content={<CustomTooltip />} />
                     <Line
                       type="monotone"
                       dataKey="revenue"
-                      stroke="#1976d2"
+                      stroke="#10B981"
                       strokeWidth={3}
-                      dot={{ fill: '#1976d2', strokeWidth: 2, r: 4 }}
+                      dot={{ fill: '#FFFFFF', stroke: '#10B981', strokeWidth: 2, r: 5 }}
+                      name="Revenue"
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -278,84 +540,239 @@ export default function RevenueStatsPage() {
           </div>
         )}
 
-        {/* Monthly Tab */}
         {activeTab === 'monthly' && (
           <div
             style={{
-              backgroundColor: 'white',
+              backgroundColor: '#FFFFFF',
               padding: '24px',
-              borderRadius: '0 0 8px 8px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              borderRadius: '12px',
+              border: '1px solid #E5E7EB',
+              boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
             }}
           >
-            <h3 style={{ margin: '0 0 16px 0' }}>Monthly Revenue Breakdown</h3>
+            <h3
+              style={{
+                margin: '0 0 16px 0',
+                fontSize: '18px',
+                fontWeight: 600,
+                color: '#111827',
+                fontFamily: "'Poppins', sans-serif",
+              }}
+            >
+              Monthly Revenue Breakdown
+            </h3>
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="monthName" />
-                <YAxis tickFormatter={formatCurrency} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                <XAxis
+                  dataKey="monthName"
+                  tick={{ fontFamily: "'Open Sans', sans-serif", fontSize: 12, fill: '#6B7280' }}
+                  stroke="#E5E7EB"
+                />
+                <YAxis
+                  tickFormatter={formatCurrency}
+                  tick={{ fontFamily: "'Open Sans', sans-serif", fontSize: 12, fill: '#6B7280' }}
+                  stroke="#E5E7EB"
+                />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Bar dataKey="revenue" fill="#1976d2" name="Revenue" />
+                <Legend wrapperStyle={{ fontFamily: "'Open Sans', sans-serif", fontSize: 14 }} />
+                <Bar dataKey="revenue" fill="#10B981" name="Revenue" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         )}
 
-        {/* Movies Tab */}
         {activeTab === 'movies' && (
           <div
             style={{
-              backgroundColor: 'white',
+              backgroundColor: '#FFFFFF',
               padding: '24px',
-              borderRadius: '0 0 8px 8px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              borderRadius: '12px',
+              border: '1px solid #E5E7EB',
+              boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
             }}
           >
-            <h3 style={{ margin: '0 0 16px 0' }}>Top 10 Movies by Revenue</h3>
+            <h3
+              style={{
+                margin: '0 0 16px 0',
+                fontSize: '18px',
+                fontWeight: 600,
+                color: '#111827',
+                fontFamily: "'Poppins', sans-serif",
+              }}
+            >
+              Top 10 Movies by Revenue
+            </h3>
             <ResponsiveContainer width="100%" height={500}>
               <BarChart data={movieData} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" tickFormatter={formatCurrency} />
-                <YAxis dataKey="title" type="category" width={150} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                <XAxis
+                  type="number"
+                  tickFormatter={formatCurrency}
+                  tick={{ fontFamily: "'Open Sans', sans-serif", fontSize: 12, fill: '#6B7280' }}
+                  stroke="#E5E7EB"
+                />
+                <YAxis
+                  dataKey="title"
+                  type="category"
+                  width={150}
+                  tick={{ fontFamily: "'Open Sans', sans-serif", fontSize: 12, fill: '#6B7280' }}
+                  stroke="#E5E7EB"
+                />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Bar dataKey="revenue" fill="#4caf50" name="Revenue" />
+                <Legend wrapperStyle={{ fontFamily: "'Open Sans', sans-serif", fontSize: 14 }} />
+                <Bar dataKey="revenue" fill="#10B981" name="Revenue" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
 
-            <div style={{ marginTop: '24px' }}>
-              <h4>Detailed Movie Statistics</h4>
-              <div style={{ overflowX: 'auto' }}>
+            <div style={{ marginTop: '32px' }}>
+              <h4
+                style={{
+                  margin: '0 0 4px 0',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: '#111827',
+                  fontFamily: "'Poppins', sans-serif",
+                }}
+              >
+                Detailed Movie Statistics
+              </h4>
+              <p
+                style={{
+                  fontSize: '14px',
+                  color: '#6B7280',
+                  margin: '0 0 16px 0',
+                  fontFamily: "'Open Sans', sans-serif",
+                }}
+              >
+                Click on any movie to view showtime-level details
+              </p>
+              <div
+                style={{
+                  overflowX: 'auto',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                }}
+              >
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ backgroundColor: '#f5f5f5' }}>
-                      <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>
+                    <tr style={{ backgroundColor: '#F9FAFB' }}>
+                      <th
+                        style={{
+                          padding: '16px',
+                          textAlign: 'left',
+                          borderBottom: '1px solid #E5E7EB',
+                          fontFamily: "'Open Sans', sans-serif",
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: '#6B7280',
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
                         Movie
                       </th>
-                      <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>
+                      <th
+                        style={{
+                          padding: '16px',
+                          textAlign: 'left',
+                          borderBottom: '1px solid #E5E7EB',
+                          fontFamily: "'Open Sans', sans-serif",
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: '#6B7280',
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
                         Genre
                       </th>
-                      <th style={{ padding: '12px', textAlign: 'right', border: '1px solid #ddd' }}>
+                      <th
+                        style={{
+                          padding: '16px',
+                          textAlign: 'right',
+                          borderBottom: '1px solid #E5E7EB',
+                          fontFamily: "'Open Sans', sans-serif",
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: '#6B7280',
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
                         Revenue
                       </th>
-                      <th style={{ padding: '12px', textAlign: 'right', border: '1px solid #ddd' }}>
+                      <th
+                        style={{
+                          padding: '16px',
+                          textAlign: 'right',
+                          borderBottom: '1px solid #E5E7EB',
+                          fontFamily: "'Open Sans', sans-serif",
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: '#6B7280',
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
                         Tickets Sold
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {movieData.map((movie, index) => (
-                      <tr key={index}>
-                        <td style={{ padding: '12px', border: '1px solid #ddd' }}>{movie.title}</td>
-                        <td style={{ padding: '12px', border: '1px solid #ddd' }}>{movie.genre}</td>
+                      <tr
+                        key={index}
+                        onClick={() => handleMovieClick(movie)}
+                        style={{
+                          cursor: 'pointer',
+                          transition: 'background-color 150ms ease-in-out',
+                          borderBottom: '1px solid #F3F4F6',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F9FAFB')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
                         <td
-                          style={{ padding: '12px', textAlign: 'right', border: '1px solid #ddd' }}
+                          style={{
+                            padding: '16px',
+                            fontFamily: "'Open Sans', sans-serif",
+                            fontSize: '14px',
+                            color: '#111827',
+                          }}
+                        >
+                          {movie.title}
+                        </td>
+                        <td
+                          style={{
+                            padding: '16px',
+                            fontFamily: "'Open Sans', sans-serif",
+                            fontSize: '14px',
+                            color: '#6B7280',
+                          }}
+                        >
+                          {movie.genre}
+                        </td>
+                        <td
+                          style={{
+                            padding: '16px',
+                            textAlign: 'right',
+                            fontFamily: "'Open Sans', sans-serif",
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            color: '#111827',
+                          }}
                         >
                           {movie.revenueFormatted}
                         </td>
                         <td
-                          style={{ padding: '12px', textAlign: 'right', border: '1px solid #ddd' }}
+                          style={{
+                            padding: '16px',
+                            textAlign: 'right',
+                            fontFamily: "'Open Sans', sans-serif",
+                            fontSize: '14px',
+                            color: '#111827',
+                          }}
                         >
                           {movie.ticketsSold.toLocaleString()}
                         </td>
@@ -368,17 +785,27 @@ export default function RevenueStatsPage() {
           </div>
         )}
 
-        {/* Genres Tab */}
         {activeTab === 'genres' && (
           <div
             style={{
-              backgroundColor: 'white',
+              backgroundColor: '#FFFFFF',
               padding: '24px',
-              borderRadius: '0 0 8px 8px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              borderRadius: '12px',
+              border: '1px solid #E5E7EB',
+              boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
             }}
           >
-            <h3 style={{ margin: '0 0 16px 0' }}>Revenue by Genre</h3>
+            <h3
+              style={{
+                margin: '0 0 16px 0',
+                fontSize: '18px',
+                fontWeight: 600,
+                color: '#111827',
+                fontFamily: "'Poppins', sans-serif",
+              }}
+            >
+              Revenue by Genre
+            </h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
               <ResponsiveContainer width="100%" height={400}>
                 <PieChart>
@@ -399,12 +826,22 @@ export default function RevenueStatsPage() {
                     ))}
                   </Pie>
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontFamily: "'Open Sans', sans-serif", fontSize: 14 }} />
                 </PieChart>
               </ResponsiveContainer>
 
               <div>
-                <h4>Genre Breakdown</h4>
+                <h4
+                  style={{
+                    margin: '0 0 16px 0',
+                    fontSize: '16px',
+                    fontWeight: 600,
+                    color: '#111827',
+                    fontFamily: "'Poppins', sans-serif",
+                  }}
+                >
+                  Genre Breakdown
+                </h4>
                 {genreData.map((genre, index) => (
                   <div
                     key={index}
@@ -412,26 +849,51 @@ export default function RevenueStatsPage() {
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      padding: '12px',
+                      padding: '12px 16px',
                       marginBottom: '8px',
-                      backgroundColor: '#f9f9f9',
-                      borderRadius: '4px',
+                      backgroundColor: '#F9FAFB',
+                      borderRadius: '8px',
+                      border: '1px solid #E5E7EB',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div
                         style={{
                           width: '16px',
                           height: '16px',
                           backgroundColor: COLORS[index % COLORS.length],
-                          borderRadius: '50%',
+                          borderRadius: '4px',
                         }}
                       ></div>
-                      <span style={{ fontWeight: 'bold' }}>{genre.genre}</span>
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          color: '#111827',
+                          fontFamily: "'Open Sans', sans-serif",
+                          fontSize: '14px',
+                        }}
+                      >
+                        {genre.genre}
+                      </span>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: 'bold' }}>{genre.revenueFormatted}</div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          color: '#111827',
+                          fontFamily: "'Poppins', sans-serif",
+                          fontSize: '16px',
+                        }}
+                      >
+                        {genre.revenueFormatted}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '12px',
+                          color: '#6B7280',
+                          fontFamily: "'Open Sans', sans-serif",
+                        }}
+                      >
                         {((genre.revenue / overallStats.totalRevenue) * 100).toFixed(1)}%
                       </div>
                     </div>
@@ -442,6 +904,17 @@ export default function RevenueStatsPage() {
           </div>
         )}
       </div>
+
+      {selectedMovie && (
+        <ShowtimeRevenueModal
+          movie={selectedMovie}
+          showtimes={showtimeData}
+          dateRange={dateRange}
+          onClose={handleCloseModal}
+          formatCurrency={formatCurrency}
+          loading={showtimeLoading}
+        />
+      )}
     </AdminLayout>
   )
 }

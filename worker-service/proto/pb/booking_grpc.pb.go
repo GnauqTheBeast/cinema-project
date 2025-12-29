@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	BookingService_UpdateBookingStatus_FullMethodName = "/pb.BookingService/UpdateBookingStatus"
+	BookingService_CreateTickets_FullMethodName       = "/pb.BookingService/CreateTickets"
 )
 
 // BookingServiceClient is the client API for BookingService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BookingServiceClient interface {
 	UpdateBookingStatus(ctx context.Context, in *UpdateBookingStatusRequest, opts ...grpc.CallOption) (*UpdateBookingStatusResponse, error)
+	CreateTickets(ctx context.Context, in *CreateTicketsRequest, opts ...grpc.CallOption) (*CreateTicketsResponse, error)
 }
 
 type bookingServiceClient struct {
@@ -47,11 +49,22 @@ func (c *bookingServiceClient) UpdateBookingStatus(ctx context.Context, in *Upda
 	return out, nil
 }
 
+func (c *bookingServiceClient) CreateTickets(ctx context.Context, in *CreateTicketsRequest, opts ...grpc.CallOption) (*CreateTicketsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateTicketsResponse)
+	err := c.cc.Invoke(ctx, BookingService_CreateTickets_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BookingServiceServer is the server API for BookingService service.
 // All implementations must embed UnimplementedBookingServiceServer
 // for forward compatibility.
 type BookingServiceServer interface {
 	UpdateBookingStatus(context.Context, *UpdateBookingStatusRequest) (*UpdateBookingStatusResponse, error)
+	CreateTickets(context.Context, *CreateTicketsRequest) (*CreateTicketsResponse, error)
 	mustEmbedUnimplementedBookingServiceServer()
 }
 
@@ -64,6 +77,9 @@ type UnimplementedBookingServiceServer struct{}
 
 func (UnimplementedBookingServiceServer) UpdateBookingStatus(context.Context, *UpdateBookingStatusRequest) (*UpdateBookingStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateBookingStatus not implemented")
+}
+func (UnimplementedBookingServiceServer) CreateTickets(context.Context, *CreateTicketsRequest) (*CreateTicketsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateTickets not implemented")
 }
 func (UnimplementedBookingServiceServer) mustEmbedUnimplementedBookingServiceServer() {}
 func (UnimplementedBookingServiceServer) testEmbeddedByValue()                        {}
@@ -104,6 +120,24 @@ func _BookingService_UpdateBookingStatus_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BookingService_CreateTickets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateTicketsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BookingServiceServer).CreateTickets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BookingService_CreateTickets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BookingServiceServer).CreateTickets(ctx, req.(*CreateTicketsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BookingService_ServiceDesc is the grpc.ServiceDesc for BookingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var BookingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateBookingStatus",
 			Handler:    _BookingService_UpdateBookingStatus_Handler,
+		},
+		{
+			MethodName: "CreateTickets",
+			Handler:    _BookingService_CreateTickets_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

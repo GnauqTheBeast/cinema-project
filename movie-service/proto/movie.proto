@@ -8,6 +8,7 @@ service MovieService {
   rpc GetShowtime(GetShowtimeRequest) returns (GetShowtimeResponse);
   rpc GetShowtimes(GetShowtimesRequest) returns (GetShowtimesResponse);
   rpc GetSeatsWithPrice(GetSeatsWithPriceRequest) returns (GetSeatsWithPriceResponse);
+  rpc GetSeatDetails(GetSeatDetailsRequest) returns (GetSeatDetailsResponse);
 }
 
 message GetShowtimeRequest {
@@ -39,6 +40,7 @@ message ShowtimeData {
   string movie_title = 6;
   string room_number = 7;
   repeated string seat_numbers = 8;
+  int64 duration_seconds = 9;
 }
 
 message GetSeatsWithPriceRequest {
@@ -59,4 +61,22 @@ message SeatPriceData {
   string seat_type = 3;
   double price = 4;
   bool available = 5;
+  string seat_row = 6;
+}
+
+message GetSeatDetailsRequest {
+  repeated string seat_ids = 1;
+}
+
+message GetSeatDetailsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated SeatDetailData data = 3;
+}
+
+message SeatDetailData {
+  string seat_id = 1;
+  string seat_row = 2;
+  int32 seat_number = 3;
+  string seat_type = 4;
 }

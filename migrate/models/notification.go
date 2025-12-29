@@ -9,11 +9,11 @@ import (
 type NotificationStatus string
 
 const (
-	NotificationStatusPending NotificationStatus = "pending"
-	NotificationStatusSent    NotificationStatus = "sent"
-	NotificationStatusFailed  NotificationStatus = "failed"
-	NotificationStatusRead    NotificationStatus = "read"
-	NotificationStatusDeleted NotificationStatus = "deleted"
+	NotificationStatusPending NotificationStatus = "PENDING"
+	NotificationStatusSent    NotificationStatus = "SENT"
+	NotificationStatusFailed  NotificationStatus = "FAILED"
+	NotificationStatusRead    NotificationStatus = "READ"
+	NotificationStatusDeleted NotificationStatus = "DELETED"
 )
 
 type Notification struct {

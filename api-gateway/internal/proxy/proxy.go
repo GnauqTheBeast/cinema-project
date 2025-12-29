@@ -57,7 +57,6 @@ func (p *Proxy) createServiceProxy(name string, endpoint config.ServiceEndpoint)
 // ProxyRequest handles the main proxy logic
 func (p *Proxy) ProxyRequest(c *gin.Context) {
 	path := c.Request.URL.Path
-	method := c.Request.Method
 
 	service, targetPath := p.getTargetService(path)
 	if service == nil {
@@ -98,7 +97,7 @@ func (p *Proxy) ProxyRequest(c *gin.Context) {
 	var resp *resty.Response
 	var err error
 
-	switch method {
+	switch c.Request.Method {
 	case "GET":
 		resp, err = req.Get(targetPath)
 	case "POST":
@@ -133,12 +132,10 @@ func (p *Proxy) ProxyRequest(c *gin.Context) {
 		}
 	}
 
-	// Set response
 	c.Data(resp.StatusCode(), resp.Header().Get("Content-Type"), resp.Body())
 
-	// Log the request
 	p.logger.Info("Request proxied",
-		"method", method,
+		"method", c.Request.Method,
 		"path", path,
 		"target_path", targetPath,
 		"service", service.Name,
@@ -162,7 +159,8 @@ func (p *Proxy) getTargetService(path string) (*ServiceInfo, string) {
 	case strings.HasPrefix(path, "/api/v1/movies"),
 		strings.HasPrefix(path, "/api/v1/rooms"),
 		strings.HasPrefix(path, "/api/v1/seats"),
-		strings.HasPrefix(path, "/api/v1/showtimes"):
+		strings.HasPrefix(path, "/api/v1/showtimes"),
+		strings.HasPrefix(path, "/api/v1/news"):
 		return &ServiceInfo{
 			Name:     "movie-service",
 			Endpoint: p.config.Services.MovieService,
@@ -190,6 +188,18 @@ func (p *Proxy) getTargetService(path string) (*ServiceInfo, string) {
 		return &ServiceInfo{
 			Name:     "payment-service",
 			Endpoint: p.config.Services.PaymentService,
+		}, path
+
+	case strings.HasPrefix(path, "/api/v1/analytics"):
+		return &ServiceInfo{
+			Name:     "analytics-service",
+			Endpoint: p.config.Services.AnalyticsService,
+		}, path
+
+	case strings.HasPrefix(path, "/api/v1/chatbot"):
+		return &ServiceInfo{
+			Name:     "chatbot",
+			Endpoint: p.config.Services.Chatbot,
 		}, path
 
 	default:
@@ -235,6 +245,7 @@ func (p *Proxy) HealthCheck() map[string]bool {
 		"movie-service":        p.config.Services.MovieService,
 		"notification-service": p.config.Services.NotificationService,
 		"user-service":         p.config.Services.UserService,
+		"analytics-service":    p.config.Services.AnalyticsService,
 	}
 
 	results := make(map[string]bool)

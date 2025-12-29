@@ -3,11 +3,6 @@ package container
 import (
 	"os"
 
-	"movie-service/internal/module/movie/repository/grpc"
-
-	"movie-service/internal/module/movie/business"
-	"movie-service/internal/module/movie/repository/postgres"
-
 	roomBusiness "movie-service/internal/module/room/business"
 	roomPostgres "movie-service/internal/module/room/repository/postgres"
 
@@ -17,16 +12,16 @@ import (
 	showtimeBusiness "movie-service/internal/module/showtime/business"
 	showtimePostgres "movie-service/internal/module/showtime/repository/postgres"
 
+	"movie-service/internal/module/movie/business"
+	"movie-service/internal/module/movie/repository/grpc"
+	"movie-service/internal/module/movie/repository/postgres"
 	"movie-service/internal/pkg/caching"
-
+	"movie-service/internal/pkg/db"
 	"movie-service/internal/pkg/pubsub"
 	redisPubsub "movie-service/internal/pkg/pubsub/redis"
-
-	"github.com/redis/go-redis/v9"
-
-	"movie-service/internal/pkg/db"
 	"movie-service/internal/utils/env"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/samber/do"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/extra/bundebug"
@@ -175,7 +170,7 @@ func provideReadisCacheReadOnly(i *do.Injector) (caching.ReadOnlyCache, error) {
 	if err != nil {
 		return nil, err
 	}
-	return caching.NewRedisClient(redisCacheReadOnly, true)
+	return caching.NewRedisClient(redisCacheReadOnly, false)
 }
 
 func provideRedisPubsubDb(_ *do.Injector) (redis.UniversalClient, error) {

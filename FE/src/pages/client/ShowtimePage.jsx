@@ -8,12 +8,13 @@ import {
   FaSpinner,
   FaTicketAlt,
 } from 'react-icons/fa'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import Header from '../../components/Header'
 import { movieService } from '../../services/movieService'
 import { showtimeService } from '../../services/showtimeApi'
 
 export default function ShowtimePage() {
+  const [searchParams] = useSearchParams()
   const [showtimes, setShowtimes] = useState([])
   const [movies, setMovies] = useState([])
   const [loading, setLoading] = useState(true)
@@ -71,30 +72,30 @@ export default function ShowtimePage() {
 
   const getFormatLabel = (format) => {
     const formatMap = {
-      '2d': '2D',
-      '3d': '3D',
-      imax: 'IMAX',
-      '4dx': '4DX',
+      '2D': '2D',
+      '3D': '3D',
+      'IMAX': 'IMAX',
+      '4DX': '4DX',
     }
     return formatMap[format] || format
   }
 
   const getStatusColor = (status) => {
     const statusColors = {
-      scheduled: 'bg-blue-600',
-      ongoing: 'bg-green-600',
-      completed: 'bg-gray-600',
-      canceled: 'bg-red-600',
+      'SCHEDULED': 'bg-blue-600',
+      'ONGOING': 'bg-green-600',
+      'COMPLETED': 'bg-gray-600',
+      'CANCELED': 'bg-red-600',
     }
     return statusColors[status] || 'bg-gray-600'
   }
 
   const getStatusLabel = (status) => {
     const statusLabels = {
-      scheduled: 'Đã lên lịch',
-      ongoing: 'Đang chiếu',
-      completed: 'Hoàn thành',
-      canceled: 'Đã hủy',
+      'SCHEDULED': 'Đã lên lịch',
+      'ONGOING': 'Đang chiếu',
+      'COMPLETED': 'Hoàn thành',
+      'CANCELED': 'Đã hủy',
     }
     return statusLabels[status] || status
   }
@@ -114,9 +115,10 @@ export default function ShowtimePage() {
         selectedMovie,
         '', // roomId
         selectedFormat,
-        'scheduled', // Only show scheduled showtimes
+        'SCHEDULED', // Only show scheduled showtimes
         selectedDate,
         dateTo.toISOString().split('T')[0],
+        true, // excludeEnded - only show showtimes that haven't ended
       )
 
       if (response.data) {
@@ -146,7 +148,12 @@ export default function ShowtimePage() {
 
   useEffect(() => {
     fetchMovies()
-  }, [])
+    // Check if movie_id is in URL query parameters
+    const movieId = searchParams.get('movie_id')
+    if (movieId) {
+      setSelectedMovie(movieId)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     fetchShowtimes()
@@ -269,10 +276,10 @@ export default function ShowtimePage() {
                 className="w-full bg-gray-800 border border-gray-600 text-white px-3 py-2 rounded-lg focus:outline-none focus:border-red-600"
               >
                 <option value="">Tất cả định dạng</option>
-                <option value="2d">2D</option>
-                <option value="3d">3D</option>
-                <option value="imax">IMAX</option>
-                <option value="4dx">4DX</option>
+                <option value="2D">2D</option>
+                <option value="3D">3D</option>
+                <option value="IMAX">IMAX</option>
+                <option value="4DX">4DX</option>
               </select>
             </div>
 

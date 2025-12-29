@@ -29,6 +29,7 @@ type WSConnection struct {
 	responseChan chan *WSResponse
 	handler      *WebSocketHandler
 	running      uint32
+	writeMu      sync.Mutex // Protects writes to wsconn
 }
 
 func NewWebSocketConnection(ctx context.Context, container *do.Injector, wsconn *websocket.Conn) (*WSConnection, error) {
@@ -104,6 +105,8 @@ func (wsc *WSConnection) writeMessage() error {
 		ticker.Stop()
 	}()
 
+	ctx := wsc.Context()
+
 	for {
 		select {
 		case msg, ok := <-wsc.responseChan:
@@ -121,14 +124,26 @@ func (wsc *WSConnection) writeMessage() error {
 				return err
 			}
 
-			if err := wsc.wsconn.WriteMessage(websocket.TextMessage, rspByte); err != nil {
+			wsc.writeMu.Lock()
+			err = wsc.wsconn.WriteMessage(websocket.TextMessage, rspByte)
+			wsc.writeMu.Unlock()
+			if err != nil {
 				return err
 			}
 
 		case <-ticker.C:
-			if err := wsc.wsconn.WriteMessage(websocket.PingMessage, nil); err != nil {
+			logrus.Info("[WebSocket] Sending PING to client")
+			wsc.writeMu.Lock()
+			err := wsc.wsconn.WriteMessage(websocket.PingMessage, nil)
+			wsc.writeMu.Unlock()
+			if err != nil {
+				logrus.Errorf("[WebSocket] Failed to send PING: %v", err)
 				return err
 			}
+
+		case <-ctx.Done():
+			logrus.Info("[WebSocket] Write goroutine stopping due to context cancellation")
+			return nil
 		}
 	}
 }
@@ -191,15 +206,23 @@ func (wsc *WSConnection) CloseConnection() {
 		return
 	}
 
-	close(wsc.requestChan)
-
-	if err := wsc.wsconn.WriteMessage(websocket.CloseMessage, nil); err != nil {
-		logrus.Warn(err)
-		return
-	}
-
+	// Cancel context first to signal all goroutines to stop
 	if wsc.ctx != nil {
 		wsc.cancel()
+	}
+
+	// Close channels to signal goroutines
+	close(wsc.requestChan)
+
+	// Give a brief moment for write goroutine to notice context cancellation
+	time.Sleep(10 * time.Millisecond)
+
+	// Safely write close message with mutex protection
+	wsc.writeMu.Lock()
+	err := wsc.wsconn.WriteMessage(websocket.CloseMessage, nil)
+	wsc.writeMu.Unlock()
+	if err != nil {
+		logrus.Warn(err)
 	}
 
 	if err := wsc.wsconn.Close(); err != nil {
@@ -211,6 +234,6 @@ func (wsc *WSConnection) CloseConnection() {
 }
 
 func (wsc *WSConnection) pongHandler(msg string) error {
-	logrus.Println(msg)
+	logrus.Info("[WebSocket] Received PONG from client, resetting read deadline")
 	return wsc.wsconn.SetReadDeadline(time.Now().Add(pongWait))
 }

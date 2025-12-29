@@ -87,7 +87,7 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*entity.Movie, err
 	return &movie, nil
 }
 
-func (r *Repository) GetMany(ctx context.Context, limit, offset int, search string) ([]*entity.Movie, error) {
+func (r *Repository) GetMany(ctx context.Context, limit, offset int, search string, status string) ([]*entity.Movie, error) {
 	query := r.roDb.NewSelect().
 		Model((*entity.Movie)(nil)).
 		Order("created_at DESC").
@@ -100,6 +100,10 @@ func (r *Repository) GetMany(ctx context.Context, limit, offset int, search stri
 			searchPattern, searchPattern, searchPattern, searchPattern)
 	}
 
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
 	var movies []*entity.Movie
 	err := query.Scan(ctx, &movies)
 	if err != nil {
@@ -109,7 +113,7 @@ func (r *Repository) GetMany(ctx context.Context, limit, offset int, search stri
 	return movies, nil
 }
 
-func (r *Repository) GetTotalCount(ctx context.Context, search string) (int, error) {
+func (r *Repository) GetTotalCount(ctx context.Context, search string, status string) (int, error) {
 	query := r.roDb.NewSelect().
 		Model((*entity.Movie)(nil))
 
@@ -117,6 +121,10 @@ func (r *Repository) GetTotalCount(ctx context.Context, search string) (int, err
 		searchPattern := "%" + strings.ToLower(search) + "%"
 		query = query.Where(`LOWER("title") LIKE ? OR LOWER("director") LIKE ? OR LOWER("cast") LIKE ? OR LOWER("genre") LIKE ?`,
 			searchPattern, searchPattern, searchPattern, searchPattern)
+	}
+
+	if status != "" {
+		query = query.Where("status = ?", status)
 	}
 
 	count, err := query.Count(ctx)

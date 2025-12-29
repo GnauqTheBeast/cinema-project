@@ -9,12 +9,15 @@ const movieApi = axios.create({
   },
 })
 
-// Add request interceptor to include auth token if available
 movieApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    const isAdminPage = window.location.pathname.startsWith('/admin')
+    const authToken = isAdminPage
+      ? localStorage.getItem('adminToken')
+      : localStorage.getItem('token')
+
+    if (authToken) {
+      config.headers.Authorization = `Bearer ${authToken}`
     }
     return config
   },
@@ -23,9 +26,7 @@ movieApi.interceptors.request.use(
   },
 )
 
-// Movie Service API calls
 export const movieService = {
-  // Get all movies (now showing)
   getAllMovies: async () => {
     try {
       const response = await movieApi.get('/movies')
@@ -37,10 +38,9 @@ export const movieService = {
     }
   },
 
-  // Get now showing movies
-  getNowShowingMovies: async () => {
+  getShowingMovies: async () => {
     try {
-      const response = await movieApi.get('/movies?status=showing')
+      const response = await movieApi.get('/movies?status=SHOWING')
       return response.data
     } catch (error) {
       console.error('Error fetching now showing movies:', error)
@@ -48,18 +48,16 @@ export const movieService = {
     }
   },
 
-  // Get coming soon movies
-  getComingSoonMovies: async () => {
+  getUpcomingMovies: async () => {
     try {
-      const response = await movieApi.get('/movies?status=coming_soon')
+      const response = await movieApi.get('/movies?status=UPCOMING')
       return response.data
     } catch (error) {
-      console.error('Error fetching coming soon movies:', error)
+      console.error('Error fetching upcoming movies:', error)
       throw error
     }
   },
 
-  // Get movie by ID
   getMovieById: async (id) => {
     try {
       const response = await movieApi.get(`/movies/${id}`)
@@ -70,14 +68,14 @@ export const movieService = {
     }
   },
 
-  // Get showtimes
-  getShowtimes: async (movieId = null, roomId = null) => {
+  getShowtimes: async (movieId = null, roomId = null, excludeEnded = false) => {
     try {
       let url = '/showtimes'
       const params = new URLSearchParams()
 
       if (movieId) params.append('movie_id', movieId)
       if (roomId) params.append('room_id', roomId)
+      if (excludeEnded) params.append('exclude_ended', 'true')
 
       if (params.toString()) {
         url += `?${params.toString()}`
@@ -91,7 +89,6 @@ export const movieService = {
     }
   },
 
-  // Get upcoming showtimes
   getUpcomingShowtimes: async () => {
     try {
       const response = await movieApi.get('/showtimes/upcoming')
@@ -102,7 +99,6 @@ export const movieService = {
     }
   },
 
-  // Get rooms
   getRooms: async () => {
     try {
       const response = await movieApi.get('/rooms')
@@ -113,10 +109,9 @@ export const movieService = {
     }
   },
 
-  // Get room seats
   getRoomSeats: async (roomId) => {
     try {
-      const response = await movieApi.get(`/rooms/${roomId}/seats`)
+      const response = await movieApi.get(`/seats?room_id=${roomId}&size=500`)
       return response.data
     } catch (error) {
       console.error(`Error fetching seats for room ${roomId}:`, error)
@@ -124,7 +119,6 @@ export const movieService = {
     }
   },
 
-  // Get room showtimes
   getRoomShowtimes: async (roomId) => {
     try {
       const response = await movieApi.get(`/rooms/${roomId}/showtimes`)
@@ -135,7 +129,6 @@ export const movieService = {
     }
   },
 
-  // Search movies
   searchMovies: async (query) => {
     try {
       const response = await movieApi.get(`/movies?search=${encodeURIComponent(query)}`)
@@ -146,7 +139,6 @@ export const movieService = {
     }
   },
 
-  // Get movies by genre
   getMoviesByGenre: async (genre) => {
     try {
       const response = await movieApi.get(`/movies?genre=${encodeURIComponent(genre)}`)
@@ -158,11 +150,10 @@ export const movieService = {
   },
 }
 
-// Export individual functions for backward compatibility
 export const {
   getAllMovies,
-  getNowShowingMovies,
-  getComingSoonMovies,
+  getShowingMovies,
+  getUpcomingMovies,
   getMovieById,
   getShowtimes,
   getUpcomingShowtimes,

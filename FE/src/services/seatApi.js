@@ -11,9 +11,13 @@ const seatApi = axios.create({
 
 seatApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('adminToken')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    const isAdminPage = window.location.pathname.startsWith('/admin')
+    const authToken = isAdminPage
+      ? localStorage.getItem('adminToken')
+      : localStorage.getItem('token')
+
+    if (authToken) {
+      config.headers.Authorization = `Bearer ${authToken}`
     }
     return config
   },
@@ -56,7 +60,7 @@ export const seatService = {
   },
 
   getSeatsByRoom: async (roomId) => {
-    const response = await seatApi.get(`/rooms/${roomId}/seats`)
+    const response = await seatApi.get(`/seats?room_id=${roomId}&size=500`)
     return response.data
   },
 
@@ -82,16 +86,16 @@ export const seatService = {
 
   // Seat types and statuses for form options
   getSeatTypes: () => [
-    { value: 'regular', label: 'Thường' },
-    { value: 'vip', label: 'VIP' },
-    { value: 'couple', label: 'Đôi' },
+    { value: 'REGULAR', label: 'Thường' },
+    { value: 'VIP', label: 'VIP' },
+    { value: 'COUPLE', label: 'Đôi' },
   ],
 
   getSeatStatuses: () => [
-    { value: 'available', label: 'Có sẵn' },
-    { value: 'occupied', label: 'Đã đặt' },
-    { value: 'maintenance', label: 'Bảo trì' },
-    { value: 'blocked', label: 'Bị khóa' },
+    { value: 'AVAILABLE', label: 'Có sẵn' },
+    { value: 'OCCUPIED', label: 'Đã đặt' },
+    { value: 'MAINTENANCE', label: 'Bảo trì' },
+    { value: 'BLOCKED', label: 'Bị khóa' },
   ],
 }
 

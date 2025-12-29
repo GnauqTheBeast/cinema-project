@@ -3,18 +3,18 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/google/uuid"
 	"notification-service/internal/datastore"
 	"notification-service/internal/models"
-
-	"github.com/sirupsen/logrus"
-	"notification-service/internal/pkg/pubsub"
-
-	"github.com/samber/do"
-	"github.com/uptrace/bun"
 	"notification-service/internal/pkg/email"
+	"notification-service/internal/pkg/pubsub"
 	"notification-service/internal/types"
+
+	"github.com/google/uuid"
+	"github.com/samber/do"
+	"github.com/sirupsen/logrus"
+	"github.com/uptrace/bun"
 )
 
 type EmailService struct {
@@ -23,7 +23,7 @@ type EmailService struct {
 	db           *bun.DB
 	pubsub       pubsub.PubSub
 	Notification *NotificationService
-	email        *email.EmailClient
+	emailClient  *email.EmailClient
 }
 
 func NewEmailService(i *do.Injector) (*EmailService, error) {
@@ -37,203 +37,310 @@ func NewEmailService(i *do.Injector) (*EmailService, error) {
 		return nil, err
 	}
 
-	email, err := email.NewEmailClient(email.NewEmailConfig())
+	emailClient, err := email.NewEmailClient(email.NewEmailConfig())
 	if err != nil {
 		return nil, err
 	}
 
-	pubsub, err := do.Invoke[pubsub.PubSub](i)
+	ps, err := do.Invoke[pubsub.PubSub](i)
 	if err != nil {
 		return nil, err
 	}
 
 	return &EmailService{
-		container:  i,
-		readonlyDb: readonlyDb,
-		db:         db,
-		email:      email,
-		pubsub:     pubsub,
+		container:   i,
+		readonlyDb:  readonlyDb,
+		db:          db,
+		emailClient: emailClient,
+		pubsub:      ps,
 	}, nil
 }
 
-func (e *EmailService) SubscribeNotificationQueue(ctx context.Context) error {
-	emailVerifyTopic := "email_verify"
-	forgotPasswordTopic := "forgot_password"
-	bookingSuccessTopic := "booking_success"
+type emailTemplate struct {
+	Subject     string
+	BodyFunc    func(data any) string
+	NotiTitle   models.NotificationTitle
+	NotiContent string
+}
 
-	subscriber, err := e.pubsub.Subscribe(ctx, []string{emailVerifyTopic, forgotPasswordTopic, bookingSuccessTopic}, types.UnmarshalEmailVerify)
-	if err != nil {
-		return fmt.Errorf("failed to subscribe to emailVerifyTopic %s: %w", emailVerifyTopic, err)
+var emailTemplates = map[string]emailTemplate{
+	"email_verify": {
+		Subject:     "Verify your email",
+		BodyFunc:    verifyEmailBody,
+		NotiTitle:   models.NotificationEmailVerified,
+		NotiContent: "Please verify your email with code",
+	},
+	"forgot_password": {
+		Subject:     "Forgot your password?",
+		BodyFunc:    forgotPasswordBody,
+		NotiTitle:   models.NotificationForgotPassword,
+		NotiContent: "Please reset your password with code",
+	},
+	"booking_success": {
+		Subject:     "Booking success",
+		BodyFunc:    bookingSuccessBody,
+		NotiTitle:   models.NotificationBookingSuccess,
+		NotiContent: "Scan the bar code to get tickets",
+	},
+}
+
+type TopicHandler struct {
+	Topics      []string
+	UnmarshalFn func([]byte) (interface{}, error)
+	HandleFn    func(ctx context.Context, msg *pubsub.Message) error
+}
+
+func (e *EmailService) SubscribeEmailNotificationQueue(ctx context.Context) error {
+	handlers := []TopicHandler{
+		{
+			Topics:      []string{"email_verify", "forgot_password"},
+			UnmarshalFn: types.UnmarshalEmailVerify,
+			HandleFn:    e.handleTemplatedEmail,
+		},
+		{
+			Topics:      []string{"booking_success"},
+			UnmarshalFn: types.UnmarshalBookingSuccess,
+			HandleFn:    e.handleTemplatedEmail,
+		},
 	}
 
-	logrus.Printf("Subscribed to topics: %s, %s, %s\n", emailVerifyTopic, forgotPasswordTopic, bookingSuccessTopic)
+	for _, h := range handlers {
+		if err := e.subscribeAndHandle(ctx, h); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-	go func() {
-		defer func() {
-			if err := subscriber.Unsubscribe(ctx); err != nil {
-				logrus.Warnf("Error unsubscribing: %v\n", err)
-			}
-		}()
+func (e *EmailService) subscribeAndHandle(ctx context.Context, h TopicHandler) error {
+	sub, err := e.pubsub.Subscribe(ctx, h.Topics, h.UnmarshalFn)
+	if err != nil {
+		return fmt.Errorf("subscribe %v: %w", h.Topics, err)
+	}
+	logrus.Infof("Subscribed to topics: %v", h.Topics)
 
-		channel := subscriber.MessageChan()
+	go e.consumeLoop(ctx, sub, h.HandleFn)
+	return nil
+}
 
-		for {
-			select {
-			case <-ctx.Done():
-				logrus.Println("Context done, stopping subscriber")
-				return
-			case msg := <-channel:
-				receiveMsg, ok := msg.Data.(*types.EmailVerifyMessage)
-				if !ok {
-					logrus.Warnf("Received message with wrong type: %T\n", msg.Data)
-					continue
-				}
-
-				emailVerify := &types.EmailVerify{
-					From:       "quangnguyenngoc314@gmail.com",
-					To:         receiveMsg.To,
-					VerifyCode: receiveMsg.VerifyCode,
-					VerifyURL:  receiveMsg.VerifyURL,
-					BookingId:  receiveMsg.BookingId,
-				}
-
-				noti := &models.Notification{
-					Id:     uuid.NewString(),
-					UserId: receiveMsg.UserId,
-				}
-
-				switch msg.Topic {
-				case emailVerifyTopic:
-					emailVerify.Subject = "Verify your email"
-					noti.Title = models.NotificationEmailVerified
-					noti.Content = fmt.Sprintf("Please verify your email with code")
-				case forgotPasswordTopic:
-					emailVerify.Subject = "Forgot your password?"
-					noti.Title = models.NotificationForgotPassword
-					noti.Content = fmt.Sprintf("Please reset your password with code")
-				case bookingSuccessTopic:
-					emailVerify.Subject = "Booking success"
-					noti.Title = models.NotificationBookingSuccess
-					noti.Content = fmt.Sprintf("Scan the bar code below to get tickets")
-				}
-
-				if err := e.SendEmail(emailVerify); err != nil {
-					logrus.Warnf("Error sending verify email: %v\n", err)
-					continue
-				}
-
-				go func() {
-					if err = datastore.CreateNotification(ctx, e.db, noti); err != nil {
-						logrus.Warnf("Error creating notification: %v\n", err)
-					}
-				}()
-			}
+func (e *EmailService) consumeLoop(ctx context.Context, sub pubsub.Subscriber, handler func(context.Context, *pubsub.Message) error) {
+	defer func() {
+		if err := sub.Unsubscribe(ctx); err != nil {
+			logrus.Warnf("unsubscribe error: %v", err)
 		}
 	}()
+
+	messageChan := sub.MessageChan()
+
+	for {
+		select {
+		case <-ctx.Done():
+			logrus.Info("stopping subscriber")
+			return
+		case msg := <-messageChan:
+			if err := handler(ctx, msg); err != nil {
+				logrus.Warnf("handle msg topic=%s err=%v", msg.Topic, err)
+			}
+		}
+	}
+}
+
+func (e *EmailService) handleTemplatedEmail(ctx context.Context, msg *pubsub.Message) error {
+	tmpl, ok := emailTemplates[msg.Topic]
+	if !ok {
+		return fmt.Errorf("no template for topic %s", msg.Topic)
+	}
+
+	// Extract and sanitize email addresses
+	toEmail := extractToEmail(msg)
+	toEmail = strings.ReplaceAll(toEmail, "\r", "")
+	toEmail = strings.ReplaceAll(toEmail, "\n", "")
+	toEmail = strings.TrimSpace(toEmail)
+
+	if toEmail == "" {
+		return fmt.Errorf("recipient email is empty for topic %s", msg.Topic)
+	}
+
+	payload := types.EmailPayload{
+		From:    "quangnguyenngoc314@gmail.com",
+		To:      toEmail,
+		Subject: tmpl.Subject,
+		Body:    tmpl.BodyFunc(msg.Data),
+	}
+
+	if err := e.sendEmail(payload); err != nil {
+		return fmt.Errorf("send email [%s]: %w", msg.Topic, err)
+	}
+
+	go e.createNotificationAsync(ctx, extractUserID(msg), tmpl.NotiTitle, tmpl.NotiContent)
 
 	return nil
 }
 
-func (e *EmailService) SendEmail(email *types.EmailVerify) error {
-	switch email.Subject {
-	case "Verify your email":
-		email.Body = defaultVerifyContent(email.VerifyCode, email.VerifyURL)
-	case "Forgot your password?":
-		email.Body = defaultForgotPasswordContent(email.VerifyCode, email.VerifyURL)
-	case "Booking success":
-		email.Body = defaultBookingSuccessContent(email.BookingId)
+func extractToEmail(msg *pubsub.Message) string {
+	switch data := msg.Data.(type) {
+	case *types.EmailVerifyMessage:
+		return data.To
+	case *types.BookingSuccessMessage:
+		if data.To != "" {
+			return data.To
+		}
+		return data.UserEmail
 	}
+	return ""
+}
 
-	msg := fmt.Sprintf(
-		"MIME-Version: 1.0\r	\n"+
+func extractUserID(msg *pubsub.Message) string {
+	switch data := msg.Data.(type) {
+	case *types.EmailVerifyMessage:
+		return data.UserId
+	case *types.BookingSuccessMessage:
+		return data.UserId
+	}
+	return ""
+}
+
+func (e *EmailService) sendEmail(p types.EmailPayload) error {
+	// Build email with proper headers and body separation
+	headers := fmt.Sprintf(
+		"MIME-Version: 1.0\r\n"+
 			"Content-Type: text/html; charset=\"UTF-8\"\r\n"+
 			"From: %s\r\n"+
 			"To: %s\r\n"+
-			"Subject: %s\r\n\r\n"+
-			"%s",
-		email.From, email.To, email.Subject, email.Body)
+			"Subject: %s\r\n",
+		p.From, p.To, p.Subject,
+	)
 
-	return e.email.SendEmail(email.From, email.To, []byte(msg))
+	// Ensure body uses proper line endings (SMTP requires \r\n)
+	// Replace all \n with \r\n, but avoid double \r\r\n
+	body := p.Body
+	body = strings.ReplaceAll(body, "\r\n", "\n") // Normalize first
+	body = strings.ReplaceAll(body, "\n", "\r\n") // Then convert to SMTP format
+
+	// Combine headers and body with proper separator
+	msg := headers + "\r\n" + body
+
+	return e.emailClient.SendEmail(p.From, p.To, []byte(msg))
 }
 
-func defaultVerifyContent(otp, verifyUrl string) string {
-	return `
-<html>
-  <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-    <div style="max-width: 600px; margin: auto; background: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-      <h2 style="color: #e50914;">🎬 Welcome to HQ Cinema</h2>
-      <p>Hi there,</p>
-      <p>Thank you for signing up! To continue, please verify your account using one of the following options:</p>
-
-      <h3 style="color: #333;">🔐 Your OTP Code:</h3>
-      <p style="font-size: 24px; font-weight: bold; background: #f1f1f1; padding: 10px 20px; border-radius: 8px; display: inline-block;">` + otp + `</p>
-
-      <p style="margin-top: 30px;">OR click the button below to verify instantly:</p>
-      <a href="` + verifyUrl + `" style="display: inline-block; padding: 12px 24px; background-color: #e50914; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Verify My Account</a>
-
-      <p style="margin-top: 30px; color: #888;">If you didn't sign up for this account, please ignore this email.</p>
-      <p>– The HQ Cinema Team</p>
-    </div>
-  </body>
-</html>`
+func (e *EmailService) createNotificationAsync(ctx context.Context, userID string, title models.NotificationTitle, content string) {
+	if err := datastore.CreateNotification(ctx, e.db, &models.Notification{
+		Id:      uuid.NewString(),
+		UserId:  userID,
+		Title:   title,
+		Content: content,
+		Status:  models.NotificationStatusSent,
+	}); err != nil {
+		logrus.Warnf("create notification failed: %v", err)
+	}
 }
 
-func defaultForgotPasswordContent(otp, resetUrl string) string {
-	return `
-<html>
-  <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-    <div style="max-width: 600px; margin: auto; background: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-      <h2 style="color: #e50914;">🔑 Password Reset Request</h2>
-      <p>Hi there,</p>
-      <p>We received a request to reset your password. You can reset it using one of the following methods:</p>
-
-      <h3 style="color: #333;">📮 Your OTP Code:</h3>
-      <p style="font-size: 24px; font-weight: bold; background: #f1f1f1; padding: 10px 20px; border-radius: 8px; display: inline-block;">` + otp + `</p>
-
-      <p style="margin-top: 30px;">OR click the button below to reset your password instantly:</p>
-      <a href="` + resetUrl + `" style="display: inline-block; padding: 12px 24px; background-color: #e50914; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset My Password</a>
-
-      <p style="margin-top: 30px; color: #888;">If you did not request a password reset, you can safely ignore this email.</p>
-      <p>– The HQ Cinema Team</p>
-    </div>
-  </body>
-</html>`
+func verifyEmailBody(data any) string {
+	m := data.(*types.EmailVerifyMessage)
+	return renderVerifyEmail(m.VerifyCode, m.VerifyURL)
 }
 
-func defaultBookingSuccessContent(bookingId string) string {
-	if len(bookingId) < 8 {
+func forgotPasswordBody(data any) string {
+	m := data.(*types.EmailVerifyMessage)
+	return renderForgotPassword(m.VerifyCode, m.VerifyURL)
+}
+
+func bookingSuccessBody(data any) string {
+	m := data.(*types.BookingSuccessMessage)
+	return renderBookingSuccess(m)
+}
+
+func renderVerifyEmail(otp, url string) string {
+	return emailTemplateHTML("🎬 Welcome to HQ Cinema", `
+		<p>Thank you for signing up! Verify your account:</p>
+		<h3>🔐 OTP Code:</h3>
+		<p class="otp">`+otp+`</p>
+		<p>OR click below:</p>
+		<a href="`+url+`" class="btn">Verify My Account</a>
+	`)
+}
+
+func renderForgotPassword(otp, url string) string {
+	return emailTemplateHTML("🔑 Password Reset Request", `
+		<p>Reset your password:</p>
+		<h3>📮 OTP Code:</h3>
+		<p class="otp">`+otp+`</p>
+		<p>OR click below:</p>
+		<a href="`+url+`" class="btn">Reset My Password</a>
+	`)
+}
+
+func renderBookingSuccess(m *types.BookingSuccessMessage) string {
+	barcodeURL := fmt.Sprintf("https://bwipjs-api.metafloor.com/?bcid=code128&text=%s&scale=3&height=15&includetext", m.BookingId)
+	seats := renderSeats(m.Seats)
+	showtime := renderShowtime(&m.Showtime)
+
+	return emailTemplateHTML("🎬 Booking Confirmed!", fmt.Sprintf(`
+		<p>Your booking is confirmed!</p>
+		<div class="code-block">
+			<h3>Your Booking Code</h3>
+			<p class="code">%s</p>
+		</div>
+		<h3 style="text-align:center;">📱 Show this barcode</h3>
+		<div class="barcode">
+			<img src="%s" alt="Barcode" />
+		</div>
+		%s %s
+		<div class="tip">
+			<strong>💡 Important:</strong> Arrive 15 mins early. Show barcode at counter.
+		</div>
+		<p>Enjoy your movie!</p>
+	`, m.BookingId, barcodeURL, showtime, seats))
+}
+
+func renderSeats(seats []types.SeatInfo) string {
+	if len(seats) == 0 {
 		return ""
 	}
-	shortCode := bookingId[len(bookingId)-8:]
-	shortCode = fmt.Sprintf("%s", shortCode)
+	html := `<div class="section"><h3>🎟️ Your Seats:</h3><div class="seats">`
+	for _, s := range seats {
+		html += fmt.Sprintf(`<span class="seat">%s-%d (%s)</span>`, s.SeatRow, s.SeatNumber, s.SeatType)
+	}
+	return html + `</div></div>`
+}
 
-	// Use free barcode API to generate barcode image
-	// Format: https://bwipjs-api.metafloor.com/?bcid=code128&text=YOUR_TEXT&scale=3&height=15&includetext
-	barcodeURL := fmt.Sprintf("https://bwipjs-api.metafloor.com/?bcid=code128&text=%s&scale=3&height=15&includetext", shortCode)
+func renderShowtime(st *types.ShowtimeInfo) string {
+	if st.MovieName == "" {
+		return ""
+	}
+	return fmt.Sprintf(`
+		<div class="section movie">
+			<h3>🎬 Movie Details:</h3>
+			<p><strong>Movie:</strong> %s</p>
+			<p><strong>Room:</strong> %s</p>
+			<p><strong>Showtime:</strong> %s</p>
+		</div>`, st.MovieName, st.RoomName, st.StartTime)
+}
 
+func emailTemplateHTML(title, content string) string {
 	return `
 <html>
-  <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-    <div style="max-width: 600px; margin: auto; background: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-      <h2 style="color: #e50914;">🎬 Booking Confirmed!</h2>
+  <head>
+    <style>
+      body {font-family: Arial, sans-serif; background:#f4f4f4; padding:20px;}
+      .wrapper {max-width:600px; margin:auto; background:#fff; border-radius:10px; padding:30px; box-shadow:0 4px 8px rgba(0,0,0,0.1);}
+      h2 {color:#e50914;}
+      .btn {display:inline-block; padding:12px 24px; background:#e50914; color:#fff; text-decoration:none; border-radius:5px; font-weight:bold;}
+      .otp {font-size:24px; font-weight:bold; background:#f1f1f1; padding:10px 20px; border-radius:8px; display:inline-block;}
+      .code-block {background:linear-gradient(135deg,#e50914,#b20710); padding:20px; border-radius:10px; text-align:center; color:#fff;}
+      .code {font-size:28px; font-weight:bold; letter-spacing:4px;}
+      .barcode {text-align:center; background:#f9f9f9; padding:20px; border-radius:8px;}
+      .section {margin:20px 0; background:#f0f0f0; padding:15px; border-radius:8px;}
+      .seats {padding:10px;}
+      .seat {display:inline-block; background:#e50914; color:#fff; padding:8px 15px; margin:5px; border-radius:5px; font-weight:bold;}
+      .tip {background:#fff3cd; border-left:4px solid #ffc107; padding:15px; color:#856404;}
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <h2>` + title + `</h2>
       <p>Hi there,</p>
-      <p>Your cinema booking has been confirmed! We're excited to see you at the theater.</p>
-
-      <div style="background: linear-gradient(135deg, #e50914 0%, #b20710 100%); padding: 20px; border-radius: 10px; margin: 30px 0; text-align: center;">
-        <h3 style="color: white; margin: 0 0 10px 0;">Your Booking Code</h3>
-        <p style="color: white; font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 4px;">` + shortCode + `</p>
-      </div>
-
-      <h3 style="color: #333; text-align: center;">📱 Show this barcode at the counter</h3>
-      <div style="text-align: center; background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-        <img src="` + barcodeURL + `" alt="Booking Barcode" style="max-width: 100%; height: auto;" />
-      </div>
-
-      <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
-        <p style="margin: 0; color: #856404;"><strong>💡 Important:</strong> Please arrive at least 15 minutes before the showtime. Show this barcode at the counter to collect your tickets.</p>
-      </div>
-
-      <p style="margin-top: 30px;">Enjoy your movie!</p>
+      ` + content + `
       <p>– The HQ Cinema Team</p>
     </div>
   </body>

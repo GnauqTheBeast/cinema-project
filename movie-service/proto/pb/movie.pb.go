@@ -230,17 +230,18 @@ func (x *GetShowtimesResponse) GetData() []*ShowtimeData {
 }
 
 type ShowtimeData struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	MovieId       string                 `protobuf:"bytes,2,opt,name=movie_id,json=movieId,proto3" json:"movie_id,omitempty"`
-	RoomId        string                 `protobuf:"bytes,3,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
-	ShowtimeDate  string                 `protobuf:"bytes,4,opt,name=showtime_date,json=showtimeDate,proto3" json:"showtime_date,omitempty"`
-	ShowtimeTime  string                 `protobuf:"bytes,5,opt,name=showtime_time,json=showtimeTime,proto3" json:"showtime_time,omitempty"`
-	MovieTitle    string                 `protobuf:"bytes,6,opt,name=movie_title,json=movieTitle,proto3" json:"movie_title,omitempty"`
-	RoomNumber    string                 `protobuf:"bytes,7,opt,name=room_number,json=roomNumber,proto3" json:"room_number,omitempty"`
-	SeatNumbers   []string               `protobuf:"bytes,8,rep,name=seat_numbers,json=seatNumbers,proto3" json:"seat_numbers,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	MovieId         string                 `protobuf:"bytes,2,opt,name=movie_id,json=movieId,proto3" json:"movie_id,omitempty"`
+	RoomId          string                 `protobuf:"bytes,3,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
+	ShowtimeDate    string                 `protobuf:"bytes,4,opt,name=showtime_date,json=showtimeDate,proto3" json:"showtime_date,omitempty"`
+	ShowtimeTime    string                 `protobuf:"bytes,5,opt,name=showtime_time,json=showtimeTime,proto3" json:"showtime_time,omitempty"`
+	MovieTitle      string                 `protobuf:"bytes,6,opt,name=movie_title,json=movieTitle,proto3" json:"movie_title,omitempty"`
+	RoomNumber      string                 `protobuf:"bytes,7,opt,name=room_number,json=roomNumber,proto3" json:"room_number,omitempty"`
+	SeatNumbers     []string               `protobuf:"bytes,8,rep,name=seat_numbers,json=seatNumbers,proto3" json:"seat_numbers,omitempty"`
+	DurationSeconds int64                  `protobuf:"varint,9,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ShowtimeData) Reset() {
@@ -327,6 +328,13 @@ func (x *ShowtimeData) GetSeatNumbers() []string {
 		return x.SeatNumbers
 	}
 	return nil
+}
+
+func (x *ShowtimeData) GetDurationSeconds() int64 {
+	if x != nil {
+		return x.DurationSeconds
+	}
+	return 0
 }
 
 type GetSeatsWithPriceRequest struct {
@@ -456,6 +464,7 @@ type SeatPriceData struct {
 	SeatType      string                 `protobuf:"bytes,3,opt,name=seat_type,json=seatType,proto3" json:"seat_type,omitempty"`
 	Price         float64                `protobuf:"fixed64,4,opt,name=price,proto3" json:"price,omitempty"`
 	Available     bool                   `protobuf:"varint,5,opt,name=available,proto3" json:"available,omitempty"`
+	SeatRow       string                 `protobuf:"bytes,6,opt,name=seat_row,json=seatRow,proto3" json:"seat_row,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -525,6 +534,185 @@ func (x *SeatPriceData) GetAvailable() bool {
 	return false
 }
 
+func (x *SeatPriceData) GetSeatRow() string {
+	if x != nil {
+		return x.SeatRow
+	}
+	return ""
+}
+
+type GetSeatDetailsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SeatIds       []string               `protobuf:"bytes,1,rep,name=seat_ids,json=seatIds,proto3" json:"seat_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSeatDetailsRequest) Reset() {
+	*x = GetSeatDetailsRequest{}
+	mi := &file_movie_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSeatDetailsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSeatDetailsRequest) ProtoMessage() {}
+
+func (x *GetSeatDetailsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_movie_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSeatDetailsRequest.ProtoReflect.Descriptor instead.
+func (*GetSeatDetailsRequest) Descriptor() ([]byte, []int) {
+	return file_movie_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *GetSeatDetailsRequest) GetSeatIds() []string {
+	if x != nil {
+		return x.SeatIds
+	}
+	return nil
+}
+
+type GetSeatDetailsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Data          []*SeatDetailData      `protobuf:"bytes,3,rep,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSeatDetailsResponse) Reset() {
+	*x = GetSeatDetailsResponse{}
+	mi := &file_movie_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSeatDetailsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSeatDetailsResponse) ProtoMessage() {}
+
+func (x *GetSeatDetailsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_movie_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSeatDetailsResponse.ProtoReflect.Descriptor instead.
+func (*GetSeatDetailsResponse) Descriptor() ([]byte, []int) {
+	return file_movie_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *GetSeatDetailsResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *GetSeatDetailsResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *GetSeatDetailsResponse) GetData() []*SeatDetailData {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type SeatDetailData struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SeatId        string                 `protobuf:"bytes,1,opt,name=seat_id,json=seatId,proto3" json:"seat_id,omitempty"`
+	SeatRow       string                 `protobuf:"bytes,2,opt,name=seat_row,json=seatRow,proto3" json:"seat_row,omitempty"`
+	SeatNumber    int32                  `protobuf:"varint,3,opt,name=seat_number,json=seatNumber,proto3" json:"seat_number,omitempty"`
+	SeatType      string                 `protobuf:"bytes,4,opt,name=seat_type,json=seatType,proto3" json:"seat_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SeatDetailData) Reset() {
+	*x = SeatDetailData{}
+	mi := &file_movie_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SeatDetailData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SeatDetailData) ProtoMessage() {}
+
+func (x *SeatDetailData) ProtoReflect() protoreflect.Message {
+	mi := &file_movie_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SeatDetailData.ProtoReflect.Descriptor instead.
+func (*SeatDetailData) Descriptor() ([]byte, []int) {
+	return file_movie_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *SeatDetailData) GetSeatId() string {
+	if x != nil {
+		return x.SeatId
+	}
+	return ""
+}
+
+func (x *SeatDetailData) GetSeatRow() string {
+	if x != nil {
+		return x.SeatRow
+	}
+	return ""
+}
+
+func (x *SeatDetailData) GetSeatNumber() int32 {
+	if x != nil {
+		return x.SeatNumber
+	}
+	return 0
+}
+
+func (x *SeatDetailData) GetSeatType() string {
+	if x != nil {
+		return x.SeatType
+	}
+	return ""
+}
+
 var File_movie_proto protoreflect.FileDescriptor
 
 const file_movie_proto_rawDesc = "" +
@@ -541,7 +729,7 @@ const file_movie_proto_rawDesc = "" +
 	"\x14GetShowtimesResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12$\n" +
-	"\x04data\x18\x03 \x03(\v2\x10.pb.ShowtimeDataR\x04data\"\x81\x02\n" +
+	"\x04data\x18\x03 \x03(\v2\x10.pb.ShowtimeDataR\x04data\"\xac\x02\n" +
 	"\fShowtimeData\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bmovie_id\x18\x02 \x01(\tR\amovieId\x12\x17\n" +
@@ -552,7 +740,8 @@ const file_movie_proto_rawDesc = "" +
 	"movieTitle\x12\x1f\n" +
 	"\vroom_number\x18\a \x01(\tR\n" +
 	"roomNumber\x12!\n" +
-	"\fseat_numbers\x18\b \x03(\tR\vseatNumbers\"V\n" +
+	"\fseat_numbers\x18\b \x03(\tR\vseatNumbers\x12)\n" +
+	"\x10duration_seconds\x18\t \x01(\x03R\x0fdurationSeconds\"V\n" +
 	"\x18GetSeatsWithPriceRequest\x12\x1f\n" +
 	"\vshowtime_id\x18\x01 \x01(\tR\n" +
 	"showtimeId\x12\x19\n" +
@@ -561,18 +750,32 @@ const file_movie_proto_rawDesc = "" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12%\n" +
 	"\x04data\x18\x03 \x03(\v2\x11.pb.SeatPriceDataR\x04data\x12!\n" +
-	"\ftotal_amount\x18\x04 \x01(\x01R\vtotalAmount\"\x9a\x01\n" +
+	"\ftotal_amount\x18\x04 \x01(\x01R\vtotalAmount\"\xb5\x01\n" +
 	"\rSeatPriceData\x12\x17\n" +
 	"\aseat_id\x18\x01 \x01(\tR\x06seatId\x12\x1f\n" +
 	"\vseat_number\x18\x02 \x01(\tR\n" +
 	"seatNumber\x12\x1b\n" +
 	"\tseat_type\x18\x03 \x01(\tR\bseatType\x12\x14\n" +
 	"\x05price\x18\x04 \x01(\x01R\x05price\x12\x1c\n" +
-	"\tavailable\x18\x05 \x01(\bR\tavailable2\xe3\x01\n" +
+	"\tavailable\x18\x05 \x01(\bR\tavailable\x12\x19\n" +
+	"\bseat_row\x18\x06 \x01(\tR\aseatRow\"2\n" +
+	"\x15GetSeatDetailsRequest\x12\x19\n" +
+	"\bseat_ids\x18\x01 \x03(\tR\aseatIds\"t\n" +
+	"\x16GetSeatDetailsResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12&\n" +
+	"\x04data\x18\x03 \x03(\v2\x12.pb.SeatDetailDataR\x04data\"\x82\x01\n" +
+	"\x0eSeatDetailData\x12\x17\n" +
+	"\aseat_id\x18\x01 \x01(\tR\x06seatId\x12\x19\n" +
+	"\bseat_row\x18\x02 \x01(\tR\aseatRow\x12\x1f\n" +
+	"\vseat_number\x18\x03 \x01(\x05R\n" +
+	"seatNumber\x12\x1b\n" +
+	"\tseat_type\x18\x04 \x01(\tR\bseatType2\xac\x02\n" +
 	"\fMovieService\x12>\n" +
 	"\vGetShowtime\x12\x16.pb.GetShowtimeRequest\x1a\x17.pb.GetShowtimeResponse\x12A\n" +
 	"\fGetShowtimes\x12\x17.pb.GetShowtimesRequest\x1a\x18.pb.GetShowtimesResponse\x12P\n" +
-	"\x11GetSeatsWithPrice\x12\x1c.pb.GetSeatsWithPriceRequest\x1a\x1d.pb.GetSeatsWithPriceResponseB\x18Z\x16movie-service/proto/pbb\x06proto3"
+	"\x11GetSeatsWithPrice\x12\x1c.pb.GetSeatsWithPriceRequest\x1a\x1d.pb.GetSeatsWithPriceResponse\x12G\n" +
+	"\x0eGetSeatDetails\x12\x19.pb.GetSeatDetailsRequest\x1a\x1a.pb.GetSeatDetailsResponseB\x18Z\x16movie-service/proto/pbb\x06proto3"
 
 var (
 	file_movie_proto_rawDescOnce sync.Once
@@ -586,7 +789,7 @@ func file_movie_proto_rawDescGZIP() []byte {
 	return file_movie_proto_rawDescData
 }
 
-var file_movie_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_movie_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_movie_proto_goTypes = []any{
 	(*GetShowtimeRequest)(nil),        // 0: pb.GetShowtimeRequest
 	(*GetShowtimeResponse)(nil),       // 1: pb.GetShowtimeResponse
@@ -596,22 +799,28 @@ var file_movie_proto_goTypes = []any{
 	(*GetSeatsWithPriceRequest)(nil),  // 5: pb.GetSeatsWithPriceRequest
 	(*GetSeatsWithPriceResponse)(nil), // 6: pb.GetSeatsWithPriceResponse
 	(*SeatPriceData)(nil),             // 7: pb.SeatPriceData
+	(*GetSeatDetailsRequest)(nil),     // 8: pb.GetSeatDetailsRequest
+	(*GetSeatDetailsResponse)(nil),    // 9: pb.GetSeatDetailsResponse
+	(*SeatDetailData)(nil),            // 10: pb.SeatDetailData
 }
 var file_movie_proto_depIdxs = []int32{
-	4, // 0: pb.GetShowtimeResponse.data:type_name -> pb.ShowtimeData
-	4, // 1: pb.GetShowtimesResponse.data:type_name -> pb.ShowtimeData
-	7, // 2: pb.GetSeatsWithPriceResponse.data:type_name -> pb.SeatPriceData
-	0, // 3: pb.MovieService.GetShowtime:input_type -> pb.GetShowtimeRequest
-	2, // 4: pb.MovieService.GetShowtimes:input_type -> pb.GetShowtimesRequest
-	5, // 5: pb.MovieService.GetSeatsWithPrice:input_type -> pb.GetSeatsWithPriceRequest
-	1, // 6: pb.MovieService.GetShowtime:output_type -> pb.GetShowtimeResponse
-	3, // 7: pb.MovieService.GetShowtimes:output_type -> pb.GetShowtimesResponse
-	6, // 8: pb.MovieService.GetSeatsWithPrice:output_type -> pb.GetSeatsWithPriceResponse
-	6, // [6:9] is the sub-list for method output_type
-	3, // [3:6] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	4,  // 0: pb.GetShowtimeResponse.data:type_name -> pb.ShowtimeData
+	4,  // 1: pb.GetShowtimesResponse.data:type_name -> pb.ShowtimeData
+	7,  // 2: pb.GetSeatsWithPriceResponse.data:type_name -> pb.SeatPriceData
+	10, // 3: pb.GetSeatDetailsResponse.data:type_name -> pb.SeatDetailData
+	0,  // 4: pb.MovieService.GetShowtime:input_type -> pb.GetShowtimeRequest
+	2,  // 5: pb.MovieService.GetShowtimes:input_type -> pb.GetShowtimesRequest
+	5,  // 6: pb.MovieService.GetSeatsWithPrice:input_type -> pb.GetSeatsWithPriceRequest
+	8,  // 7: pb.MovieService.GetSeatDetails:input_type -> pb.GetSeatDetailsRequest
+	1,  // 8: pb.MovieService.GetShowtime:output_type -> pb.GetShowtimeResponse
+	3,  // 9: pb.MovieService.GetShowtimes:output_type -> pb.GetShowtimesResponse
+	6,  // 10: pb.MovieService.GetSeatsWithPrice:output_type -> pb.GetSeatsWithPriceResponse
+	9,  // 11: pb.MovieService.GetSeatDetails:output_type -> pb.GetSeatDetailsResponse
+	8,  // [8:12] is the sub-list for method output_type
+	4,  // [4:8] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_movie_proto_init() }
@@ -625,7 +834,7 @@ func file_movie_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_movie_proto_rawDesc), len(file_movie_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

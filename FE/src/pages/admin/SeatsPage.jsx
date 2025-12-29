@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
-import { FaCouch, FaEdit, FaEye, FaList, FaPlus, FaSearch, FaTh, FaTrash } from 'react-icons/fa'
+import { FaEdit, FaEye, FaList, FaPlus, FaSearch, FaTh, FaTrash } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { roomService } from '../../services/roomApi'
+import SeatGrid from '../../components/SeatGrid'
 import { seatService } from '../../services/seatApi'
+import { roomService } from '../../services/roomApi'
 
 const SeatsPage = () => {
   const [seats, setSeats] = useState([])
-  const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -19,6 +19,7 @@ const SeatsPage = () => {
   const [selectedRow, setSelectedRow] = useState('')
   const [viewMode, setViewMode] = useState('grid')
   const [roomSeats, setRoomSeats] = useState([])
+  const [rooms, setRooms] = useState([])
 
   const seatTypes = seatService.getSeatTypes()
   const seatStatuses = seatService.getSeatStatuses()
@@ -54,11 +55,11 @@ const SeatsPage = () => {
   const fetchRooms = async () => {
     try {
       const response = await roomService.getRooms(1, 100)
-      if (response.success) {
-        const roomsData = response.data.data || []
-        setRooms(roomsData)
-        if (roomsData.length > 0 && !selectedRoom) {
-          setSelectedRoom(roomsData[0].id)
+      if (response.success && response.data?.data) {
+        setRooms(response.data.data)
+        // Auto-select first room if none selected and in grid mode
+        if (!selectedRoom && response.data.data.length > 0 && viewMode === 'grid') {
+          setSelectedRoom(response.data.data[0].id)
         }
       }
     } catch (err) {
@@ -75,13 +76,11 @@ const SeatsPage = () => {
 
       let seats = []
       if (response.success && response.data) {
-        if (response.data.seats) {
-          seats = response.data.seats
+        if (response.data.data && Array.isArray(response.data.data)) {
+          seats = response.data.data
         } else if (Array.isArray(response.data)) {
           seats = response.data
         }
-      } else if (response.seats) {
-        seats = response.seats
       } else if (Array.isArray(response)) {
         seats = response
       }
@@ -100,6 +99,7 @@ const SeatsPage = () => {
     }
   }
 
+  // Fetch rooms on mount
   useEffect(() => {
     fetchRooms()
   }, [])
@@ -110,11 +110,13 @@ const SeatsPage = () => {
     } else if (viewMode === 'grid') {
       if (selectedRoom) {
         fetchRoomSeats(selectedRoom)
-      } else if (rooms.length > 0) {
-        setSelectedRoom(rooms[0].id)
+      } else {
+        // No room selected in grid mode, stop loading
+        setLoading(false)
+        setRoomSeats([])
       }
     }
-  }, [currentPage, search, selectedRoom, selectedSeatType, selectedStatus, selectedRow, viewMode, rooms])
+  }, [currentPage, search, selectedRoom, selectedSeatType, selectedStatus, selectedRow, viewMode])
 
   const handleSearch = (e) => {
     setSearch(e.target.value)
@@ -147,13 +149,13 @@ const SeatsPage = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'available':
+      case 'AVAILABLE':
         return 'bg-green-100 text-green-800'
-      case 'occupied':
+      case 'OCCUPIED':
         return 'bg-red-100 text-red-800'
-      case 'maintenance':
+      case 'MAINTENANCE':
         return 'bg-yellow-100 text-yellow-800'
-      case 'blocked':
+      case 'BLOCKED':
         return 'bg-gray-100 text-gray-800'
       default:
         return 'bg-gray-100 text-gray-800'
@@ -170,68 +172,7 @@ const SeatsPage = () => {
     return statusObj ? statusObj.label : status
   }
 
-  const getRoomName = (roomId) => {
-    const room = rooms.find((r) => r.id === roomId)
-    return room ? `Phòng ${room.room_number}` : roomId
-  }
 
-  const createSeatGrid = () => {
-    const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O']
-    const grid = {}
-
-    rows.forEach((row) => {
-      grid[row] = {}
-      const seatsPerRow = coupleRows.includes(row) ? 5 : 16
-      for (let i = 1; i <= seatsPerRow; i++) {
-        grid[row][i] = null
-      }
-    })
-
-    if (Array.isArray(roomSeats)) {
-      roomSeats.forEach((seat) => {
-        if (
-          grid[seat.row_number] &&
-          grid[seat.row_number][parseInt(seat.seat_number)] !== undefined
-        ) {
-          grid[seat.row_number][parseInt(seat.seat_number)] = seat
-        } else if (grid[seat.row_number]) {
-          grid[seat.row_number][parseInt(seat.seat_number)] = seat
-        }
-      })
-    } else {
-      console.log('roomSeats is not an array:', roomSeats)
-    }
-
-    return grid
-  }
-
-  const getSeatColor = (seat) => {
-    if (!seat) {
-      return 'bg-gray-100 border-gray-300 hover:bg-gray-200 cursor-pointer'
-    }
-
-    switch (seat.status) {
-      case 'available':
-        switch (seat.seat_type) {
-          case 'regular':
-            return 'bg-green-200 border-green-400 text-green-800 hover:bg-green-300'
-          case 'vip':
-            return 'bg-yellow-200 border-yellow-400 text-yellow-800 hover:bg-yellow-300'
-          case 'couple':
-            return 'bg-pink-200 border-pink-400 text-pink-800 hover:bg-pink-300'
-          default:
-            return 'bg-green-200 border-green-400 text-green-800 hover:bg-green-300'
-        }
-      case 'occupied':
-        return 'bg-red-200 border-red-400 text-red-800 cursor-not-allowed'
-      case 'maintenance':
-        return 'bg-orange-200 border-orange-400 text-orange-800 cursor-not-allowed'
-      case 'blocked':
-        return 'bg-gray-300 border-gray-500 text-gray-700 cursor-not-allowed'
-      default:
-        return 'bg-gray-200 border-gray-400 text-gray-700'
-    }
-  }
 
   return (
     <AdminLayout>
@@ -287,15 +228,15 @@ const SeatsPage = () => {
             // Grid view filters
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">Phòng chiếu:</label>
+                <label className="text-sm font-medium text-gray-700">Chọn phòng chiếu:</label>
                 <select
                   value={selectedRoom || ''}
                   onChange={(e) => {
                     setSelectedRoom(e.target.value)
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[200px]"
                 >
-                  <option value="">Chọn phòng chiếu</option>
+                  <option value="">-- Chọn phòng --</option>
                   {rooms.map((room) => (
                     <option key={room.id} value={room.id}>
                       Phòng {room.room_number} ({room.room_type})
@@ -326,21 +267,16 @@ const SeatsPage = () => {
                 />
               </div>
 
-              <select
+              <input
+                type="text"
+                placeholder="Room ID"
                 value={selectedRoom || ''}
                 onChange={(e) => {
                   setSelectedRoom(e.target.value || '')
                   setCurrentPage(1)
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Tất cả phòng</option>
-                {rooms.map((room) => (
-                  <option key={room.id} value={room.id}>
-                    Phòng {room.room_number}
-                  </option>
-                ))}
-              </select>
+              />
 
               <input
                 type="text"
@@ -399,139 +335,63 @@ const SeatsPage = () => {
           </div>
         ) : viewMode === 'grid' ? (
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {selectedRoom && getRoomName(selectedRoom)}
-              </h3>
-              <p className="text-sm text-gray-600 mb-6">
-                Click vào ô trống để thêm ghế, click vào ghế để xóa. Màu sắc biểu thị loại ghế.
-              </p>
-            </div>
-
-            {/* Cinema Layout Container */}
-            <div className="flex flex-col items-center">
-              {/* Screen */}
-              <div className="mb-8">
-                <div className="bg-gray-800 text-white py-3 px-16 rounded-lg text-sm font-medium shadow-lg">
-                  MÀN HÌNH
+            {selectedRoom ? (
+              <>
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {rooms.find((r) => r.id === selectedRoom)?.room_number
+                      ? `Phòng ${rooms.find((r) => r.id === selectedRoom)?.room_number}`
+                      : 'Sơ đồ ghế ngồi'}
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-6">
+                    Xem sơ đồ ghế ngồi theo phòng chiếu. Màu sắc biểu thị loại ghế.
+                  </p>
                 </div>
-                <div className="text-center text-xs text-gray-500 mt-1">SCREEN</div>
+
+                <SeatGrid
+                  seats={roomSeats}
+                  selectedSeats={[]}
+                  lockedSeats={[]}
+                  bookedSeats={[]}
+                  onSeatClick={null}
+                  colorScheme="admin"
+                  interactive={false}
+                  showScreen={true}
+                  showEntrance={true}
+                  showLegend={true}
+                />
+
+                {/* Grid Stats */}
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Tổng số ghế: {Array.isArray(roomSeats) ? roomSeats.length : 0}</span>
+                    <span>
+                      Còn trống:{' '}
+                      {Array.isArray(roomSeats)
+                        ? roomSeats.filter((s) => s.status === 'AVAILABLE').length
+                        : 0}
+                    </span>
+                    <span>
+                      Đã đặt:{' '}
+                      {Array.isArray(roomSeats)
+                        ? roomSeats.filter((s) => s.status === 'OCCUPIED').length
+                        : 0}
+                    </span>
+                    <span>
+                      Bảo trì:{' '}
+                      {Array.isArray(roomSeats)
+                        ? roomSeats.filter((s) => s.status === 'MAINTENANCE').length
+                        : 0}
+                    </span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500 text-lg mb-2">Vui lòng chọn phòng chiếu</p>
+                <p className="text-gray-400 text-sm">Chọn phòng từ dropdown phía trên để xem sơ đồ ghế</p>
               </div>
-
-              {/* Seat Grid */}
-              <div className="overflow-x-auto">
-                <div className="inline-block">
-                  {Array.isArray(roomSeats) && roomSeats.length > 0 ? (
-                    Object.entries(createSeatGrid())
-                      .filter(([_, rowSeats]) => {
-                        return Object.values(rowSeats).some(seat => seat !== null)
-                      })
-                      .map(([row, rowSeats]) => (
-                        <div key={row} className="flex items-center justify-center mb-3">
-                          <div className="w-8 text-center text-sm font-bold text-gray-700 mr-4">
-                            {row}
-                          </div>
-
-                          {/* Seats */}
-                          <div className={`flex ${coupleRows.includes(row) ? 'gap-3' : 'gap-1'} justify-center`}>
-                            {Object.entries(rowSeats)
-                              .filter(([_, seat]) => seat !== null)
-                              .map(([seatNumber, seat]) => {
-                                const isCouple = seat.seat_type === 'couple'
-
-                                return (
-                                  <button
-                                    key={`${row}-${seatNumber}`}
-                                    className={`${isCouple ? 'w-12' : 'w-8'} h-8 border-2 rounded text-xs font-semibold transition-all hover:scale-110 ${getSeatColor(seat)}`}
-                                    title={`${row}${seatNumber.padStart(2, '0')} - ${getSeatTypeLabel(seat.seat_type)} - ${getStatusLabel(seat.status)}`}
-                                  >
-                                    {isCouple ? (
-                                      <div className="flex items-center justify-center">
-                                        <FaCouch className="w-3 h-3" />
-                                      </div>
-                                    ) : (
-                                      seatNumber.padStart(2, '0')
-                                    )}
-                                  </button>
-                                )
-                              })}
-                          </div>
-
-                          <div className="w-8 text-center text-sm font-bold text-gray-700 ml-4">
-                            {row}
-                          </div>
-                        </div>
-                      ))
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">Không có dữ liệu ghế</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Entrance */}
-              <div className="mt-8 text-center">
-                <div className="text-xs text-gray-500 mb-2">ENTRANCE</div>
-                <div className="w-24 h-1 bg-gray-300 rounded"></div>
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Chú thích:</h4>
-              <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="inline-block w-4 h-4 bg-green-200 border border-green-400 rounded"></span>
-                  Thường
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="inline-block w-4 h-4 bg-yellow-200 border border-yellow-400 rounded"></span>
-                  VIP
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="inline-block w-4 h-4 bg-pink-200 border border-pink-400 rounded"></span>
-                  Đôi
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="inline-block w-4 h-4 bg-red-200 border border-red-400 rounded"></span>
-                  Đã đặt
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="inline-block w-4 h-4 bg-orange-200 border border-orange-400 rounded"></span>
-                  Bảo trì
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="inline-block w-4 h-4 bg-gray-300 border border-gray-500 rounded"></span>
-                  Bị chặn
-                </div>
-              </div>
-            </div>
-
-            {/* Grid Stats */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>Tổng số ghế: {Array.isArray(roomSeats) ? roomSeats.length : 0}</span>
-                <span>
-                  Còn trống:{' '}
-                  {Array.isArray(roomSeats)
-                    ? roomSeats.filter((s) => s.status === 'available').length
-                    : 0}
-                </span>
-                <span>
-                  Đã đặt:{' '}
-                  {Array.isArray(roomSeats)
-                    ? roomSeats.filter((s) => s.status === 'occupied').length
-                    : 0}
-                </span>
-                <span>
-                  Bảo trì:{' '}
-                  {Array.isArray(roomSeats)
-                    ? roomSeats.filter((s) => s.status === 'maintenance').length
-                    : 0}
-                </span>
-              </div>
-            </div>
+            )}
           </div>
         ) : (
           <>
@@ -565,7 +425,7 @@ const SeatsPage = () => {
                     <tr key={seat.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {getRoomName(seat.room_id)}
+                          {seat.room_id}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

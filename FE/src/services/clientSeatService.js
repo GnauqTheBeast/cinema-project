@@ -11,9 +11,13 @@ const clientSeatApi = axios.create({
 
 clientSeatApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    const isAdminPage = window.location.pathname.startsWith('/admin')
+    const authToken = isAdminPage
+      ? localStorage.getItem('adminToken')
+      : localStorage.getItem('token')
+
+    if (authToken) {
+      config.headers.Authorization = `Bearer ${authToken}`
     }
     return config
   },
@@ -23,42 +27,28 @@ clientSeatApi.interceptors.request.use(
 export const clientSeatService = {
   getSeatsByRoom: async (roomId) => {
     try {
-      const response = await clientSeatApi.get(`/rooms/${roomId}/seats`)
+      const response = await clientSeatApi.get(`/seats?room_id=${roomId}&size=500`)
       return response.data
     } catch (error) {
-      console.error('Error fetching room seats:', error)
       throw error
     }
   },
 
-  getSeatsByShowtime: async (showtimeId) => {
+  getLockedSeats: async (showtimeId) => {
     try {
-      const response = await clientSeatApi.get(`/showtimes/${showtimeId}/seats`)
+      const response = await clientSeatApi.get(`/seats/locked?showtime_id=${showtimeId}`)
       return response.data
     } catch (error) {
-      console.error('Error fetching showtime seats:', error)
       throw error
     }
   },
 
-  getAvailableSeatsForShowtime: async (showtimeId) => {
-    try {
-      const response = await clientSeatApi.get(`/showtimes/${showtimeId}/seats`)
-      return response.data
-    } catch (error) {
-      console.error('Error fetching available seats:', error)
-      throw error
-    }
-  },
-
-  // Get seat type multipliers (matches backend pricing)
   getSeatTypeMultipliers: () => [
-    { value: 'regular', label: 'Thường', multiplier: 1.0 },
-    { value: 'vip', label: 'VIP', multiplier: 1.5 },
-    { value: 'couple', label: 'Đôi', multiplier: 2.5 },
+    { value: 'REGULAR', label: 'Thường', multiplier: 1.0 },
+    { value: 'VIP', label: 'VIP', multiplier: 1.5 },
+    { value: 'COUPLE', label: 'Đôi', multiplier: 2.5 },
   ],
 
-  // Calculate seat price based on base price and seat type
   calculateSeatPrice: (seatType, basePrice) => {
     const multipliers = clientSeatService.getSeatTypeMultipliers()
     const typeInfo = multipliers.find(t => t.value === seatType)
@@ -66,18 +56,17 @@ export const clientSeatService = {
     return Math.round(basePrice * multiplier)
   },
 
-  // Legacy function for backward compatibility (uses default base price)
   getSeatTypes: (basePrice = 50000) => [
-    { value: 'regular', label: 'Thường', price: Math.round(basePrice * 1.0) },
-    { value: 'vip', label: 'VIP', price: Math.round(basePrice * 1.5) },
-    { value: 'couple', label: 'Đôi', price: Math.round(basePrice * 2.5) },
+    { value: 'REGULAR', label: 'Thường', price: Math.round(basePrice) },
+    { value: 'VIP', label: 'VIP', price: Math.round(basePrice * 1.5) },
+    { value: 'COUPLE', label: 'Đôi', price: Math.round(basePrice * 2.5) },
   ],
 
   getSeatStatuses: () => [
-    { value: 'available', label: 'Có sẵn' },
-    { value: 'occupied', label: 'Đã đặt' },
-    { value: 'maintenance', label: 'Bảo trì' },
-    { value: 'blocked', label: 'Bị khóa' },
+    { value: 'AVAILABLE', label: 'Có sẵn' },
+    { value: 'OCCUPIED', label: 'Đã đặt' },
+    { value: 'MAINTENANCE', label: 'Bảo trì' },
+    { value: 'BLOCKED', label: 'Bị khóa' },
   ],
 }
 

@@ -18,7 +18,7 @@ type UpdateSeatRequest struct {
 
 type GetSeatsQuery struct {
 	Page      int        `form:"page,default=1" binding:"min=1"`
-	Size      int        `form:"size,default=10" binding:"min=1,max=100"`
+	Size      int        `form:"size,default=10" binding:"min=1,max=500"`
 	Search    string     `form:"search"`
 	RoomId    string     `form:"room_id"`
 	SeatType  SeatType   `form:"seat_type"`
@@ -75,6 +75,11 @@ func ToSeatsResponse(seats []*Seat, page, size, total int) *SeatsResponse {
 		Data:   data,
 		Paging: paging.NewPageInfo(page, size, total),
 	}
+}
+
+type LockedSeatsResponse struct {
+	LockedSeatIds []string `json:"locked_seat_ids"`
+	BookedSeatIds []string `json:"booked_seat_ids"`
 }
 
 func (req *CreateSeatRequest) ToSeat() *Seat {

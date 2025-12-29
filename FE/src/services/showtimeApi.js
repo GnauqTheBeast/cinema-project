@@ -11,9 +11,13 @@ const showtimeApi = axios.create({
 
 showtimeApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    const isAdminPage = window.location.pathname.startsWith('/admin')
+    const authToken = isAdminPage
+      ? localStorage.getItem('adminToken')
+      : localStorage.getItem('token')
+
+    if (authToken) {
+      config.headers.Authorization = `Bearer ${authToken}`
     }
     return config
   },
@@ -31,6 +35,7 @@ export const showtimeService = {
     status = '',
     dateFrom = '',
     dateTo = '',
+    excludeEnded = false,
   ) => {
     let url = `/showtimes?page=${page}&size=${size}`
     if (search) {
@@ -54,6 +59,9 @@ export const showtimeService = {
     if (dateTo) {
       url += `&date_to=${dateTo}`
     }
+    if (excludeEnded) {
+      url += `&exclude_ended=true`
+    }
     const response = await showtimeApi.get(url)
     return response.data
   },
@@ -63,8 +71,12 @@ export const showtimeService = {
     return response.data
   },
 
-  getShowtimesByMovie: async (movieId) => {
-    const response = await showtimeApi.get(`/movies/${movieId}/showtimes`)
+  getShowtimesByMovie: async (movieId, excludeEnded = false) => {
+    let url = `/showtimes?movie_id=${movieId}`
+    if (excludeEnded) {
+      url += `&exclude_ended=true`
+    }
+    const response = await showtimeApi.get(url)
     return response.data
   },
 
@@ -102,42 +114,18 @@ export const showtimeService = {
     return response.data
   },
 
-  checkTimeConflict: async (roomId, startTime, endTime, excludeId = '') => {
-    let url = `/showtimes/conflict-check?room_id=${roomId}&start_time=${startTime}&end_time=${endTime}`
-    if (excludeId) {
-      url += `&exclude_id=${excludeId}`
-    }
-    const response = await showtimeApi.get(url)
-    return response.data
-  },
-
-  truncateToHalfHour: (dateTime) => {
-    const date = new Date(dateTime)
-    const minutes = date.getMinutes()
-    if (minutes < 30) {
-      date.setMinutes(0, 0, 0)
-    } else {
-      date.setMinutes(30, 0, 0)
-    }
-    return date
-  },
-
-  formatDateTime: (dateTime) => {
-    return new Date(dateTime).toISOString()
-  },
-
   getShowtimeFormats: () => [
-    { value: '2d', label: '2D' },
-    { value: '3d', label: '3D' },
-    { value: 'imax', label: 'IMAX' },
-    { value: '4dx', label: '4DX' },
+    { value: '2D', label: '2D' },
+    { value: '3D', label: '3D' },
+    { value: 'IMAX', label: 'IMAX' },
+    { value: '4DX', label: '4DX' },
   ],
 
   getShowtimeStatuses: () => [
-    { value: 'scheduled', label: 'Đã lên lịch' },
-    { value: 'ongoing', label: 'Đang chiếu' },
-    { value: 'completed', label: 'Hoàn thành' },
-    { value: 'canceled', label: 'Đã hủy' },
+    { value: 'SCHEDULED', label: 'Đã lên lịch' },
+    { value: 'ONGOING', label: 'Đang chiếu' },
+    { value: 'COMPLETED', label: 'Hoàn thành' },
+    { value: 'CANCELED', label: 'Đã hủy' },
   ],
 }
 

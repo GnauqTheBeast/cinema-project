@@ -173,20 +173,6 @@ func (r *Repository) GetTotalCount(ctx context.Context, search, roomId, rowNumbe
 	return count, nil
 }
 
-func (r *Repository) GetByRoom(ctx context.Context, roomId string) ([]*entity.Seat, error) {
-	var seats []*entity.Seat
-	err := r.roDb.NewSelect().
-		Model(&seats).
-		Where("room_id = ?", roomId).
-		OrderExpr("row_number ASC, seat_number ASC").
-		Scan(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get seats by room: %w", err)
-	}
-
-	return seats, nil
-}
-
 func (r *Repository) Update(ctx context.Context, seat *entity.Seat) error {
 	now := time.Now()
 	seat.UpdatedAt = &now

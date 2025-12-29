@@ -9,7 +9,6 @@ export interface AuthenticatedRequest extends Request {
     id: string;
     email: string;
     role: string;
-    roleId: string;
     permissions: string[];
   };
 }
@@ -30,7 +29,7 @@ const getRedisClient = () => {
   return RedisManager.getInstance().getClient();
 };
 
-const getAuthGrpcAddress = () => process.env.AUTH_GRPC_ADDRESS || 'localhost:50052';
+const getAuthGrpcAddress = () => process.env.AUTH_GRPC_ADDRESS || 'auth-service:50052';
 
 let authClient: any = null;
 
@@ -38,7 +37,7 @@ const initAuthClient = () => {
   if (authClient) return authClient;
 
   try {
-    const PROTO_PATH = path.resolve(process.cwd(), '../auth-service/proto/auth.proto');
+    const PROTO_PATH = path.resolve(process.cwd(), 'proto/auth.proto');
     const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
       keepCase: true,
       longs: String,
@@ -48,7 +47,7 @@ const initAuthClient = () => {
     });
 
     const proto = grpc.loadPackageDefinition(packageDefinition) as any;
-    const authService = proto.auth;
+    const authService = proto.pb;
 
     authClient = new authService.AuthService(getAuthGrpcAddress(), grpc.credentials.createInsecure());
 
@@ -90,7 +89,6 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
             id: userInfo.id,
             email: userInfo.email,
             role: userInfo.role,
-            roleId: userInfo.roleId,
             permissions: userInfo.permissions
           };
 
@@ -159,12 +157,10 @@ const callAuthService = (token: string, req: AuthenticatedRequest, res: Response
       console.error('Failed to cache user info:', err);
     });
 
-    // Attach user info to request
     req.user = {
       id: userInfo.id,
       email: userInfo.email,
       role: userInfo.role,
-      roleId: userInfo.roleId,
       permissions: userInfo.permissions
     };
 
@@ -194,6 +190,8 @@ export const requireRole = (allowedRoles: string[]) => {
       });
       return;
     }
+
+    console.log('User:', authReq.user);
 
     if (!allowedRoles.includes(authReq.user.role)) {
       res.status(403).json({

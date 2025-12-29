@@ -1,9 +1,13 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AdminLoginPage from '../pages/admin/AdminLoginPage'
+import BoxOfficePage from '../pages/admin/BoxOfficePage'
+import ChatbotDocumentsPage from '../pages/admin/ChatbotDocumentsPage'
 import DashboardPage from '../pages/admin/DashboardPage'
 import MovieDetailPage from '../pages/admin/MovieDetailPage'
 import MovieFormPage from '../pages/admin/MovieFormPage'
-import MoviesPage from '../pages/admin/MoviesPage'
+import AdminMoviesPage from '../pages/admin/MoviesPage'
+import AdminNewsPage from '../pages/admin/NewsPage'
+import NewsFormPage from '../pages/admin/NewsFormPage'
 import RevenueStatsPage from '../pages/admin/RevenueStatsPage'
 import RoomFormPage from '../pages/admin/RoomFormPage'
 import RoomsPage from '../pages/admin/RoomsPage'
@@ -11,11 +15,15 @@ import SeatFormPage from '../pages/admin/SeatFormPage'
 import SeatsPage from '../pages/admin/SeatsPage'
 import ShowtimeFormPage from '../pages/admin/ShowtimeFormPage'
 import ShowtimesPage from '../pages/admin/ShowtimesPage'
-import StaffManagementPage from '../pages/admin/StaffManagementPage'
+import StaffPage from '../pages/admin/StaffPage'
+import StaffFormPage from '../pages/admin/StaffFormPage'
 import BookingPage from '../pages/client/BookingPage'
 import BookingHistoryPage from '../pages/client/BookingHistoryPage'
+import BookingSuccessPage from '../pages/client/BookingSuccessPage'
 import HomePage from '../pages/client/HomePage'
 import LoginPage from '../pages/client/LoginPage'
+import MoviesPage from '../pages/client/MoviesPage'
+import NewsPage from '../pages/client/NewsPage'
 import PaymentPage from '../pages/client/PaymentPage'
 import ProfilePage from '../pages/client/ProfilePage'
 import RegisterPage from '../pages/client/RegisterPage'
@@ -39,6 +47,19 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
       adminUser.role !== 'ticket_staff'
     ) {
       return <Navigate to="/admin/login" replace />
+    }
+
+    return children
+  }
+
+  const TicketStaffRoute = ({ children }) => {
+    if (!adminToken) {
+      return <Navigate to="/admin/login" replace />
+    }
+
+    const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}')
+    if (adminUser.role !== 'ticket_staff') {
+      return <Navigate to="/admin/dashboard" replace />
     }
 
     return children
@@ -68,7 +89,9 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
       />
 
       {/* User Routes */}
+      <Route path="/movies" element={<MoviesPage />} />
       <Route path="/showtimes" element={<ShowtimePage />} />
+      <Route path="/news" element={<NewsPage />} />
       <Route
         path="/profile"
         element={
@@ -93,6 +116,12 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
             <BookingHistoryPage />
         }
       />
+      <Route
+        path="/booking-success"
+        element={
+            <BookingSuccessPage />
+        }
+      />
 
       {/* Admin Routes */}
       <Route
@@ -109,7 +138,7 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
         path="/admin/movies"
         element={
           <AdminRoute>
-            <MoviesPage />
+            <AdminMoviesPage />
           </AdminRoute>
         }
       />
@@ -134,6 +163,24 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
         element={
           <AdminRoute>
             <MovieFormPage />
+          </AdminRoute>
+        }
+      />
+
+      {/* News Routes */}
+      <Route
+        path="/admin/news"
+        element={
+          <AdminRoute>
+            <AdminNewsPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/news/:id/edit"
+        element={
+          <AdminRoute>
+            <NewsFormPage />
           </AdminRoute>
         }
       />
@@ -231,7 +278,50 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
         path="/admin/staff"
         element={
           <AdminRoute>
-            <StaffManagementPage />
+            <StaffPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/staff/new"
+        element={
+          <AdminRoute>
+            <StaffFormPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/staff/:id"
+        element={
+          <AdminRoute>
+            <StaffPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/staff/:id/edit"
+        element={
+          <AdminRoute>
+            <StaffFormPage />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/admin/box-office"
+        element={
+          <TicketStaffRoute>
+            <BoxOfficePage />
+          </TicketStaffRoute>
+        }
+      />
+
+      {/* Chatbot Documents */}
+      <Route
+        path="/admin/chatbot-documents"
+        element={
+          <AdminRoute>
+            <ChatbotDocumentsPage />
           </AdminRoute>
         }
       />

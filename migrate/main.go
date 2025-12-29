@@ -61,6 +61,8 @@ func MigrateAll(ctx context.Context, db *bun.DB) error {
 		datastore.CreatePermissionTable,
 		datastore.CreateRolePermissionTable,
 		datastore.CreateMovieTable,
+		datastore.CreateGenreTable,
+		datastore.CreateMovieGenreTable,
 		datastore.CreateRoomTable,
 		datastore.CreateSeatTable,
 		datastore.CreateShowtimeTable,
@@ -71,6 +73,11 @@ func MigrateAll(ctx context.Context, db *bun.DB) error {
 		datastore.CreateStaffProfileTable,
 		datastore.CreateCustomerProfileTable,
 		datastore.CreateOutboxEventTable,
+		datastore.CreateNewsArticleTable,
+		datastore.CreateNewsSummaryTable,
+		datastore.CreateDocumentTable,
+		datastore.CreateDocumentChunkTable,
+		datastore.CreateChatTable,
 	}
 
 	for _, migrateFunc := range migrationFuncs {
@@ -85,6 +92,11 @@ func MigrateAll(ctx context.Context, db *bun.DB) error {
 
 func DropAllTables(ctx context.Context, db *bun.DB) error {
 	dropFuncs := []func(context.Context, *bun.DB) error{
+		datastore.DropChatTable,
+		datastore.DropDocumentChunkTable,
+		datastore.DropDocumentTable,
+		datastore.DropNewsSummaryTable,
+		datastore.DropNewsArticleTable,
 		datastore.DropCustomerProfileTable,
 		datastore.DropStaffProfileTable,
 		datastore.DropNotificationTable,
@@ -94,6 +106,8 @@ func DropAllTables(ctx context.Context, db *bun.DB) error {
 		datastore.DropShowtimeTable,
 		datastore.DropSeatTable,
 		datastore.DropRoomTable,
+		datastore.DropMovieGenreTable,
+		datastore.DropGenreTable,
 		datastore.DropMovieTable,
 		datastore.DropUserTable,
 		datastore.DropRolePermissionTable,
@@ -118,6 +132,8 @@ func SeedAll(ctx context.Context, db *bun.DB) error {
 		datastore.SeedPermissions,
 		datastore.SeedRolePermissions,
 		datastore.SeedMovies,
+		datastore.SeedGenres,
+		datastore.SeedMovieGenres,
 		datastore.SeedRooms,
 		datastore.SeedSeats,
 		datastore.SeedShowtimes,

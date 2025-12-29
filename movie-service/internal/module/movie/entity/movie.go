@@ -9,24 +9,24 @@ import (
 type MovieStatus string
 
 const (
-	MovieStatusUpcoming MovieStatus = "upcoming"
-	MovieStatusShowing  MovieStatus = "showing"
-	MovieStatusEnded    MovieStatus = "ended"
+	MovieStatusUpcoming MovieStatus = "UPCOMING"
+	MovieStatusShowing  MovieStatus = "SHOWING"
+	MovieStatusEnded    MovieStatus = "ENDED"
 )
 
 type Genre string
 
 const (
-	GenreAction    Genre = "action"
-	GenreComedy    Genre = "comedy"
-	GenreDrama     Genre = "drama"
-	GenreHorror    Genre = "horror"
-	GenreRomance   Genre = "romance"
-	GenreSciFi     Genre = "sci-fi"
-	GenreThriller  Genre = "thriller"
-	GenreWestern   Genre = "western"
-	GenreAnimation Genre = "animation"
-	GenreFamily    Genre = "family"
+	GenreAction    Genre = "ACTION"
+	GenreComedy    Genre = "COMEDY"
+	GenreDrama     Genre = "DRAMA"
+	GenreHorror    Genre = "HORROR"
+	GenreRomance   Genre = "ROMANCE"
+	GenreSciFi     Genre = "SCI-FI"
+	GenreThriller  Genre = "THRILLER"
+	GenreWestern   Genre = "WESTERN"
+	GenreAnimation Genre = "ANIMATION"
+	GenreFamily    Genre = "FAMILY"
 )
 
 type Movie struct {

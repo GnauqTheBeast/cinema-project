@@ -51,7 +51,6 @@ class AuthController {
     };
   }
 
-
   static async getRoleIdByName(roleName: string, cacheKey: string): Promise<string> {
     try {
       const cached = await redisClient.get(cacheKey);
@@ -73,10 +72,6 @@ class AuthController {
       console.error(`Error getting role ID for ${roleName}:`, error);
       throw error;
     }
-  }
-
-  static async getStaffRoleId(): Promise<string> {
-    return this.getRoleIdByName('staff', 'staff_role_id');
   }
 
   static async getManagerStaffRoleId(): Promise<string> {
@@ -290,7 +285,6 @@ class AuthController {
         (process.env.JWT_SECRET || 'your-secret-key') as string,
       );
 
-      // Cache token to Redis for faster subsequent requests
       const userInfo = {
         id: userResp.user.id,
         email: userResp.user.email,
@@ -393,7 +387,6 @@ class AuthController {
         (process.env.JWT_SECRET || 'your-secret-key') as string,
       );
 
-      // Cache token to Redis for faster subsequent requests
       const userInfo = {
         id: userResp.user.id,
         email: userResp.user.email,
@@ -496,11 +489,8 @@ class AuthController {
     }
   };
 
-
   static registerInternalUser: IController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      // User info is already available from authenticateToken and requireAdmin middleware
-
       const schema = Joi.object({
         email: Joi.string().email().required(),
         password: Joi.string().min(6).required(),
@@ -543,7 +533,7 @@ class AuthController {
           email, 
           name, 
           role: role, 
-          status: 'active' 
+          status: 'ACTIVE' 
         }
       });
     } catch (err) {

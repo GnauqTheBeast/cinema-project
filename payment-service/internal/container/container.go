@@ -4,7 +4,8 @@ import (
 	"os"
 
 	"payment-service/internal/module/payment/business"
-	"payment-service/internal/module/payment/repository/postgres"
+	grpcRepo "payment-service/internal/module/payment/repository/grpc"
+	repository "payment-service/internal/module/payment/repository/postgres"
 	"payment-service/internal/pkg/caching"
 	"payment-service/internal/pkg/db"
 	"payment-service/internal/pkg/pubsub"
@@ -47,6 +48,7 @@ func NewContainer() *do.Injector {
 	do.Provide(injector, provideRedisCache)
 	do.Provide(injector, provideReadisCacheReadOnly)
 	do.Provide(injector, provideRedisPubsub)
+	do.Provide(injector, provideOutboxClient)
 
 	// Payment module
 	do.Provide(injector, providePaymentRepository)
@@ -200,6 +202,10 @@ func providePaymentRepository(i *do.Injector) (repository.PaymentRepository, err
 		return nil, err
 	}
 	return repository.NewPaymentRepository(db), nil
+}
+
+func provideOutboxClient(_ *do.Injector) (*grpcRepo.OutboxClient, error) {
+	return grpcRepo.NewOutboxClient()
 }
 
 func providePaymentBusiness(i *do.Injector) (business.PaymentBiz, error) {

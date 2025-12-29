@@ -13,7 +13,7 @@ type Room struct {
 	RoomNumber int        `bun:"room_number,notnull,unique" json:"room_number"`
 	Capacity   int        `bun:"capacity,notnull" json:"capacity"`
 	RoomType   string     `bun:"room_type,notnull" json:"room_type"`
-	Status     string     `bun:"status,notnull,default:'active'" json:"status"`
+	Status     string     `bun:"status,notnull,default:'ACTIVE'" json:"status"`
 	CreatedAt  time.Time  `bun:"created_at,nullzero,default:current_timestamp" json:"created_at"`
 	UpdatedAt  *time.Time `bun:"updated_at" json:"updated_at,omitempty"`
 

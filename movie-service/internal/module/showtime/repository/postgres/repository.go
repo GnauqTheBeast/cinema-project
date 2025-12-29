@@ -76,6 +76,7 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 
 func (r *Repository) GetByID(ctx context.Context, id string) (*entity.Showtime, error) {
 	showtime := new(entity.Showtime)
+
 	err := r.roDb.NewSelect().
 		Model(showtime).
 		Relation("Movie").
@@ -86,44 +87,64 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*entity.Showtime, 
 		return nil, err
 	}
 
+	var seats []*entity.Seat
+	err = r.roDb.NewSelect().
+		Model(&seats).
+		Where("room_id = ? AND room_id IN (SELECT room_id FROM showtimes WHERE id = ?)", showtime.RoomId, id).
+		OrderExpr("row_number ASC, seat_number ASC").
+		Scan(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load seats: %w", err)
+	}
+
+	showtime.Seats = seats
+
 	return showtime, nil
 }
 
-func (r *Repository) GetMany(ctx context.Context, limit, offset int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) ([]*entity.Showtime, error) {
-	query := r.roDb.NewSelect().Model((*entity.Showtime)(nil))
+func (r *Repository) GetMany(ctx context.Context, limit, offset int, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time, excludeEnded bool) ([]*entity.Showtime, error) {
+	query := r.roDb.
+		NewSelect().
+		Model((*entity.Showtime)(nil)).
+		Relation("Movie").
+		Relation("Room")
+
+	if excludeEnded {
+		query = query.Where("st.end_time > ?", time.Now())
+	}
 
 	if search != "" {
 		searchPattern := "%" + strings.ToLower(search) + "%"
-		query = query.Where("LOWER(format) LIKE ? OR LOWER(status) LIKE ?", searchPattern, searchPattern)
+		query = query.Where("LOWER(st.format) LIKE ? OR LOWER(st.status) LIKE ?", searchPattern, searchPattern)
 	}
 
 	if movieId != "" {
-		query = query.Where("movie_id = ?", movieId)
+		query = query.Where("st.movie_id = ?", movieId)
 	}
 
 	if roomId != "" {
-		query = query.Where("room_id = ?", roomId)
+		query = query.Where("st.room_id = ?", roomId)
 	}
 
 	if format != "" {
-		query = query.Where("format = ?", format)
+		query = query.Where("st.format = ?", format)
 	}
 
 	if status != "" {
-		query = query.Where("status = ?", status)
+		query = query.Where("st.status = ?", status)
 	}
 
 	if dateFrom != nil {
-		query = query.Where("start_time >= ?", *dateFrom)
+		query = query.Where("st.start_time >= ?", *dateFrom)
 	}
 
 	if dateTo != nil {
-		query = query.Where("start_time <= ?", *dateTo)
+		query = query.Where("st.start_time <= ?", *dateTo)
 	}
 
 	var showtimes []*entity.Showtime
 	err := query.
-		Order("start_time ASC").
+		Order("st.start_time ASC").
 		Limit(limit).
 		Offset(offset).
 		Scan(ctx, &showtimes)
@@ -134,36 +155,42 @@ func (r *Repository) GetMany(ctx context.Context, limit, offset int, search, mov
 	return showtimes, nil
 }
 
-func (r *Repository) GetTotalCount(ctx context.Context, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time) (int, error) {
-	query := r.roDb.NewSelect().Model((*entity.Showtime)(nil))
+func (r *Repository) GetTotalCount(ctx context.Context, search, movieId, roomId string, format entity.ShowtimeFormat, status entity.ShowtimeStatus, dateFrom, dateTo *time.Time, excludeEnded bool) (int, error) {
+	query := r.roDb.
+		NewSelect().
+		Model((*entity.Showtime)(nil))
+
+	if excludeEnded {
+		query = query.Where("st.end_time > ?", time.Now())
+	}
 
 	if search != "" {
 		searchPattern := "%" + strings.ToLower(search) + "%"
-		query = query.Where("LOWER(format) LIKE ? OR LOWER(status) LIKE ?", searchPattern, searchPattern)
+		query = query.Where("LOWER(st.format) LIKE ? OR LOWER(st.status) LIKE ?", searchPattern, searchPattern)
 	}
 
 	if movieId != "" {
-		query = query.Where("movie_id = ?", movieId)
+		query = query.Where("st.movie_id = ?", movieId)
 	}
 
 	if roomId != "" {
-		query = query.Where("room_id = ?", roomId)
+		query = query.Where("st.room_id = ?", roomId)
 	}
 
 	if format != "" {
-		query = query.Where("format = ?", format)
+		query = query.Where("st.format = ?", format)
 	}
 
 	if status != "" {
-		query = query.Where("status = ?", status)
+		query = query.Where("st.status = ?", status)
 	}
 
 	if dateFrom != nil {
-		query = query.Where("start_time >= ?", *dateFrom)
+		query = query.Where("st.start_time >= ?", *dateFrom)
 	}
 
 	if dateTo != nil {
-		query = query.Where("start_time <= ?", *dateTo)
+		query = query.Where("st.start_time <= ?", *dateTo)
 	}
 
 	count, err := query.Count(ctx)
@@ -187,28 +214,6 @@ func (r *Repository) GetByMovie(ctx context.Context, movieId string) ([]*entity.
 		Scan(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get showtimes by movie: %w", err)
-	}
-
-	return showtimes, nil
-}
-
-func (r *Repository) GetByRoomAndDate(ctx context.Context, roomId string, date time.Time) ([]*entity.Showtime, error) {
-	startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
-	endOfDay := startOfDay.Add(24 * time.Hour)
-
-	var showtimes []*entity.Showtime
-	err := r.roDb.NewSelect().
-		Model(&showtimes).
-		Where("room_id = ?", roomId).
-		Where("start_time >= ? AND start_time < ?", startOfDay, endOfDay).
-		Where("status IN (?)", bun.In([]entity.ShowtimeStatus{
-			entity.ShowtimeStatusScheduled,
-			entity.ShowtimeStatusOngoing,
-		})).
-		Order("start_time ASC").
-		Scan(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get showtimes by room and date: %w", err)
 	}
 
 	return showtimes, nil

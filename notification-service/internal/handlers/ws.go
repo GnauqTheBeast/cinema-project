@@ -37,7 +37,6 @@ func (g *groupWebSocket) WebsocketHandleConnection(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to establish WebSocket connection")
 	}
 
-	// Create a new WSConnection instance
 	wsConn, err := ws.NewWebSocketConnection(r.Context(), g.container, conn)
 	if err != nil {
 		c.Logger().Errorf("Failed to create WebSocket connection: %v", err)

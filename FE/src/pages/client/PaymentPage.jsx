@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { FaArrowLeft, FaCopy, FaWallet, FaCheck } from 'react-icons/fa'
 import { ethers } from 'ethers'
 import Header from '../../components/Header'
+import Toast from '../../components/Toast'
 import { bookingService } from '../../services/bookingService'
 
 // Helper function to get booking code without hyphens (bank transfer compatible)
@@ -19,7 +20,6 @@ const PaymentPage = () => {
   const [error, setError] = useState('')
   const [qrCodeUrl, setQrCodeUrl] = useState('')
 
-  // Payment method state
   const [paymentMethod, setPaymentMethod] = useState('vnd') // 'vnd' or 'crypto'
 
   // Crypto state
@@ -32,8 +32,18 @@ const PaymentPage = () => {
   const [vndUsdRate, setVndUsdRate] = useState(0)
   const [loadingPrice, setLoadingPrice] = useState(true)
 
-  // Contract config (replace with your actual contract)
-  const PAYMENT_RECEIVER = '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb' // Your wallet address
+  const [toast, setToast] = useState(null)
+
+  const PAYMENT_RECEIVER = '0x6721aDe7bfB76c6cfD97635Dc177Cb797F434087'
+  const SEPOLIA_CHAIN_ID = '0xaa36a7' // 11155111 in decimal
+
+  const showToast = (message, type = 'info', txHash = null) => {
+    setToast({ message, type, txHash })
+  }
+
+  const closeToast = () => {
+    setToast(null)
+  }
 
   useEffect(() => {
     fetchBooking()
@@ -41,7 +51,6 @@ const PaymentPage = () => {
   }, [bookingId])
 
   useEffect(() => {
-    // Check if wallet is already connected
     checkWalletConnection()
   }, [])
 
@@ -59,11 +68,7 @@ const PaymentPage = () => {
     try {
       setLoading(true)
 
-      console.log('Fetching booking with ID:', bookingId)
-
       const bookingResponse = await bookingService.getBookingById(bookingId)
-
-      console.log('Booking response:', bookingResponse)
 
       // Backend returns {code, message, data}, not {success, data}
       if (!bookingResponse.data || bookingResponse.code !== 200) {
@@ -75,8 +80,6 @@ const PaymentPage = () => {
 
       setBooking(bookingResponse.data)
 
-      // IMPORTANT: Create payment record in database before showing QR code
-      // This ensures SePay webhook can find the payment when user completes transfer
       try {
         const paymentApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1'
         const token = localStorage.getItem('token')
@@ -101,8 +104,7 @@ const PaymentPage = () => {
         console.log('Payment record created:', paymentData)
       } catch (paymentErr) {
         console.error('Error creating payment:', paymentErr)
-        // Continue anyway - QR code will still work, but might need manual verification
-        alert('Cảnh báo: Không thể tạo payment record. Vui lòng liên hệ admin nếu thanh toán không được tự động xác nhận.')
+        showToast('Cảnh báo: Không thể tạo payment record. Vui lòng liên hệ admin nếu thanh toán không được tự động xác nhận.', 'warning')
       }
 
       // Generate QR code URL (client-side only, no API call needed)
@@ -178,7 +180,7 @@ const PaymentPage = () => {
 
   const connectWallet = async () => {
     if (typeof window.ethereum === 'undefined') {
-      alert('Please install MetaMask to use crypto payment!')
+      showToast('Please install MetaMask to use crypto payment!', 'warning')
       window.open('https://metamask.io/download/', '_blank')
       return
     }
@@ -186,14 +188,63 @@ const PaymentPage = () => {
     try {
       setIsConnecting(true)
       const provider = new ethers.BrowserProvider(window.ethereum)
+
+      // Request account access
       await provider.send('eth_requestAccounts', [])
+
+      // Check current network
+      const network = await provider.getNetwork()
+      const currentChainId = '0x' + network.chainId.toString(16)
+
+      // If not on Sepolia, switch to Sepolia
+      if (currentChainId !== SEPOLIA_CHAIN_ID) {
+        try {
+          // Try to switch to Sepolia network
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: SEPOLIA_CHAIN_ID }],
+          })
+        } catch (switchError) {
+          // This error code indicates that the chain has not been added to MetaMask
+          if (switchError.code === 4902) {
+            try {
+              // Add Sepolia network to MetaMask
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: SEPOLIA_CHAIN_ID,
+                  chainName: 'Sepolia Testnet',
+                  nativeCurrency: {
+                    name: 'SepoliaETH',
+                    symbol: 'ETH',
+                    decimals: 18
+                  },
+                  rpcUrls: ['https://rpc.sepolia.org'],
+                  blockExplorerUrls: ['https://sepolia.etherscan.io']
+                }],
+              })
+            } catch (addError) {
+              console.error('Error adding Sepolia network:', addError)
+              showToast('Failed to add Sepolia network to MetaMask', 'error')
+              setIsConnecting(false)
+              return
+            }
+          } else {
+            console.error('Error switching to Sepolia:', switchError)
+            showToast('Failed to switch to Sepolia network', 'error')
+            setIsConnecting(false)
+            return
+          }
+        }
+      }
+
       const signer = await provider.getSigner()
       const address = await signer.getAddress()
       setWalletAddress(address)
-      console.log('Wallet connected:', address)
+      console.log('Wallet connected to Sepolia:', address)
     } catch (err) {
       console.error('Error connecting wallet:', err)
-      alert('Failed to connect wallet: ' + err.message)
+      showToast('Failed to connect wallet: ' + err.message, 'error')
     } finally {
       setIsConnecting(false)
     }
@@ -205,7 +256,7 @@ const PaymentPage = () => {
 
   const handleCryptoPayment = async () => {
     if (!walletAddress) {
-      alert('Please connect your wallet first!')
+      showToast('Please connect your wallet first!', 'warning')
       return
     }
 
@@ -216,14 +267,13 @@ const PaymentPage = () => {
       const signer = await provider.getSigner()
 
       // Send transaction
+      // Booking ID will be tracked via backend verification
       const tx = await signer.sendTransaction({
         to: PAYMENT_RECEIVER,
         value: ethers.parseEther(cryptoAmount.toFixed(6)),
-        data: ethers.hexlify(ethers.toUtf8Bytes(`QH-${bookingId}`)),
       })
 
-      console.log('Transaction sent:', tx.hash)
-      alert(`Transaction sent! Hash: ${tx.hash}`)
+      showToast(`Transaction sent! Hash: ${tx.hash.substring(0, 10)}...`, 'success', tx.hash)
 
       // Wait for confirmation
       const receipt = await tx.wait()
@@ -255,20 +305,19 @@ const PaymentPage = () => {
         console.log('Backend verification successful')
       } catch (verifyErr) {
         console.error('Error verifying with backend:', verifyErr)
-        // Continue anyway - transaction was successful on chain
       }
 
       setPaymentSuccess(true)
-      alert('Payment successful! Transaction confirmed.')
+      showToast('Payment successful! Transaction confirmed.', 'success')
 
       // Redirect after 2 seconds
       setTimeout(() => {
-        navigate('/booking-success')
+        navigate(`/booking-success?bookingId=${bookingId}`)
       }, 2000)
 
     } catch (err) {
       console.error('Error sending payment:', err)
-      alert('Payment failed: ' + err.message)
+      showToast('Payment failed: ' + err.message, 'error')
     } finally {
       setIsPaying(false)
     }
@@ -283,7 +332,7 @@ const PaymentPage = () => {
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text)
-    alert('Đã sao chép!')
+    showToast('Đã sao chép!', 'success')
   }
 
   const shortenAddress = (address) => {
@@ -317,6 +366,15 @@ const PaymentPage = () => {
   return (
     <div className="min-h-screen bg-black">
       <Header />
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          txHash={toast.txHash}
+          onClose={closeToast}
+        />
+      )}
 
       <div className="bg-gray-900 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -499,7 +557,7 @@ const PaymentPage = () => {
                         </div>
                         <div>
                           <p className="text-white font-semibold">{shortenAddress(walletAddress)}</p>
-                          <p className="text-gray-400 text-xs">Ethereum Mainnet</p>
+                          <p className="text-gray-400 text-xs">Sepolia Testnet</p>
                         </div>
                       </div>
                     </div>
@@ -533,7 +591,7 @@ const PaymentPage = () => {
                       </div>
                       <div className="flex justify-between">
                         <p className="text-gray-400">Network</p>
-                        <p className="text-white">Ethereum Mainnet</p>
+                        <p className="text-white">Sepolia Testnet</p>
                       </div>
                       <div className="flex justify-between">
                         <p className="text-gray-400">Transaction Data</p>

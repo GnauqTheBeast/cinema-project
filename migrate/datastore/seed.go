@@ -134,6 +134,13 @@ func SeedPermissions(ctx context.Context, db *bun.DB) error {
 			Description: stringPtr("Manage staff accounts"),
 			CreatedAt:   time.Now(),
 		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "News Manage",
+			Code:        "news_manage",
+			Description: stringPtr("Manage news articles and summaries"),
+			CreatedAt:   time.Now(),
+		},
 	}
 
 	_, err := db.NewInsert().Model(&permissions).Exec(ctx)
@@ -146,13 +153,11 @@ func SeedPermissions(ctx context.Context, db *bun.DB) error {
 }
 
 func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
-	// Fetch roles
 	var roles []models.Role
 	if err := db.NewSelect().Model(&roles).Scan(ctx); err != nil {
 		return fmt.Errorf("failed to get roles: %w", err)
 	}
 
-	// Fetch permissions
 	var permissions []models.Permission
 	if err := db.NewSelect().Model(&permissions).Scan(ctx); err != nil {
 		return fmt.Errorf("failed to get permissions: %w", err)
@@ -162,7 +167,6 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 		return fmt.Errorf("roles or permissions missing; seed roles and permissions first")
 	}
 
-	// Build lookup maps
 	roleNameToId := map[string]string{}
 	for _, r := range roles {
 		roleNameToId[r.Name] = r.Id
@@ -173,7 +177,6 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 		permCodeToId[p.Code] = p.Id
 	}
 
-	// Group permissions per role per the specification
 	allCodes := []string{}
 	for code := range permCodeToId {
 		allCodes = append(allCodes, code)
@@ -183,6 +186,7 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 		"movie_manage",
 		"showtime_manage",
 		"seat_manage",
+		"news_manage",
 		"report_view",
 		"profile_view",
 		"profile_update",
@@ -261,6 +265,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 	releaseDate1 := time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC)
 	releaseDate2 := time.Date(2024, 4, 20, 0, 0, 0, 0, time.UTC)
 	releaseDate3 := time.Date(2024, 5, 10, 0, 0, 0, 0, time.UTC)
+	releaseDate4 := time.Date(2025, 6, 15, 0, 0, 0, 0, time.UTC)
 
 	movies := []*models.Movie{
 		{
@@ -275,7 +280,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Description: "After the devastating events of Avengers: Infinity War, the universe is in ruins due to the efforts of the Mad Titan, Thanos.",
 			TrailerURL:  "https://www.youtube.com/watch?v=TcMBFSGVi1c",
 			PosterURL:   "https://image.tmdb.org/t/p/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg",
-			Status:      "showing",
+			Status:      "SHOWING",
 			CreatedAt:   &now,
 		},
 		{
@@ -290,7 +295,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Description: "With Spider-Man's identity now revealed, Peter asks Doctor Strange for help. When a spell goes wrong, dangerous foes from other worlds start to appear.",
 			TrailerURL:  "https://www.youtube.com/watch?v=JfVOs4VSpmA",
 			PosterURL:   "https://image.tmdb.org/t/p/w500/1g0dhYtq4irTY1GPXvft6k4YLjm.jpg",
-			Status:      "showing",
+			Status:      "SHOWING",
 			CreatedAt:   &now,
 		},
 		{
@@ -305,7 +310,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Description: "After thirty years, Maverick is still pushing the envelope as a top naval aviator, but must confront ghosts of his past when he leads TOP GUN's elite graduates on a mission.",
 			TrailerURL:  "https://www.youtube.com/watch?v=g4U4BQW9OEk",
 			PosterURL:   "https://image.tmdb.org/t/p/w500/62HCnUTziyWcpDaBO2i1DX17ljH.jpg",
-			Status:      "upcoming",
+			Status:      "UPCOMING",
 			CreatedAt:   &now,
 		},
 		{
@@ -320,7 +325,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Description: "Paul Atreides, a brilliant and gifted young man born into a great destiny beyond his understanding, must travel to the most dangerous planet in the universe.",
 			TrailerURL:  "https://www.youtube.com/watch?v=8g18jFHCLXk",
 			PosterURL:   "https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg",
-			Status:      "showing",
+			Status:      "SHOWING",
 			CreatedAt:   &now,
 		},
 		{
@@ -335,7 +340,22 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Description: "When a sadistic serial killer begins murdering key political figures in Gotham, Batman is forced to investigate the city's hidden corruption and question his family's involvement.",
 			TrailerURL:  "https://www.youtube.com/watch?v=mqqft2x_Aa4",
 			PosterURL:   "https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg",
-			Status:      "showing",
+			Status:      "SHOWING",
+			CreatedAt:   &now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Title:       "Zootopia",
+			Slug:        "zootopia",
+			Director:    "Byron Howard, Rich Moore",
+			Cast:        "Ginnifer Goodwin, Jason Bateman, Idris Elba, Jenny Slate",
+			Genre:       "Animation, Comedy, Adventure, Family",
+			Duration:    108,
+			ReleaseDate: &releaseDate4,
+			Description: "In a city of anthropomorphic animals, a rookie bunny cop and a cynical con artist fox must work together to uncover a conspiracy.",
+			TrailerURL:  "https://www.youtube.com/watch?v=jWM0ct-OLsM",
+			PosterURL:   "https://artofthemovies.co.uk/cdn/shop/files/IMG_1521_1024x1024@2x.jpg?v=1762441851",
+			Status:      "UPCOMING",
 			CreatedAt:   &now,
 		},
 	}
@@ -356,40 +376,40 @@ func SeedRooms(ctx context.Context, db *bun.DB) error {
 			Id:         uuid.New().String(),
 			RoomNumber: 1,
 			Capacity:   120,
-			RoomType:   "standard",
-			Status:     "active",
+			RoomType:   "STANDARD",
+			Status:     "ACTIVE",
 			CreatedAt:  now,
 		},
 		{
 			Id:         uuid.New().String(),
 			RoomNumber: 2,
 			Capacity:   150,
-			RoomType:   "standard",
-			Status:     "active",
+			RoomType:   "STANDARD",
+			Status:     "ACTIVE",
 			CreatedAt:  now,
 		},
 		{
 			Id:         uuid.New().String(),
 			RoomNumber: 3,
 			Capacity:   200,
-			RoomType:   "imax",
-			Status:     "active",
+			RoomType:   "IMAX",
+			Status:     "ACTIVE",
 			CreatedAt:  now,
 		},
 		{
 			Id:         uuid.New().String(),
 			RoomNumber: 4,
 			Capacity:   80,
-			RoomType:   "vip",
-			Status:     "active",
+			RoomType:   "VIP",
+			Status:     "ACTIVE",
 			CreatedAt:  now,
 		},
 		{
 			Id:         uuid.New().String(),
 			RoomNumber: 5,
 			Capacity:   100,
-			RoomType:   "standard",
-			Status:     "active",
+			RoomType:   "STANDARD",
+			Status:     "ACTIVE",
 			CreatedAt:  now,
 		},
 	}
@@ -440,7 +460,7 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			RoleId:      &adminRoleId,
 			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
 			Gender:      "male",
-			Status:      "active",
+			Status:      "ACTIVE",
 			CreatedAt:   now,
 		},
 		{
@@ -453,7 +473,7 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			Address:     stringPtr("123 Manager Street"),
 			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
 			Gender:      "male",
-			Status:      "active",
+			Status:      "ACTIVE",
 			CreatedAt:   now,
 		},
 		{
@@ -466,7 +486,7 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			Address:     stringPtr("123 Ticket Street"),
 			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
 			Gender:      "male",
-			Status:      "active",
+			Status:      "ACTIVE",
 			CreatedAt:   now,
 		},
 		{
@@ -479,7 +499,7 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			RoleId:      &customerRoleId,
 			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
 			Gender:      "female",
-			Status:      "active",
+			Status:      "ACTIVE",
 			CreatedAt:   now,
 		},
 		{
@@ -492,7 +512,7 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			RoleId:      &customerRoleId,
 			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
 			Gender:      "male",
-			Status:      "active",
+			Status:      "ACTIVE",
 			CreatedAt:   now,
 		},
 		{
@@ -505,7 +525,7 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			Address:     stringPtr("123 Emma Street"),
 			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
 			Gender:      "female",
-			Status:      "active",
+			Status:      "ACTIVE",
 			CreatedAt:   now,
 		},
 	}
@@ -544,7 +564,7 @@ func SeedBookings(ctx context.Context, db *bun.DB) error {
 			UserId:      users[3].Id,
 			ShowtimeId:  showtimes[0].Id,
 			TotalAmount: 200000,
-			Status:      "confirmed",
+			Status:      "CONFIRMED",
 			CreatedAt:   time.Now().Add(-24 * time.Hour),
 		},
 		{
@@ -552,7 +572,7 @@ func SeedBookings(ctx context.Context, db *bun.DB) error {
 			UserId:      users[3].Id,
 			ShowtimeId:  showtimes[1].Id,
 			TotalAmount: 100000,
-			Status:      "confirmed",
+			Status:      "CONFIRMED",
 			CreatedAt:   time.Now().Add(-48 * time.Hour),
 		},
 		{
@@ -560,7 +580,7 @@ func SeedBookings(ctx context.Context, db *bun.DB) error {
 			UserId:      users[3].Id,
 			ShowtimeId:  showtimes[2].Id,
 			TotalAmount: 300000,
-			Status:      "pending",
+			Status:      "PENDING",
 			CreatedAt:   time.Now().Add(-72 * time.Hour),
 		},
 		{
@@ -568,7 +588,7 @@ func SeedBookings(ctx context.Context, db *bun.DB) error {
 			UserId:      users[1].Id,
 			ShowtimeId:  showtimes[0].Id,
 			TotalAmount: 150000,
-			Status:      "confirmed",
+			Status:      "CONFIRMED",
 			CreatedAt:   time.Now().Add(-96 * time.Hour),
 		},
 		{
@@ -576,7 +596,7 @@ func SeedBookings(ctx context.Context, db *bun.DB) error {
 			UserId:      users[2].Id,
 			ShowtimeId:  showtimes[1].Id,
 			TotalAmount: 450000,
-			Status:      "cancelled",
+			Status:      "CANCELLED",
 			CreatedAt:   time.Now().Add(-120 * time.Hour),
 		},
 	}
@@ -602,14 +622,21 @@ func SeedTickets(ctx context.Context, db *bun.DB) error {
 		return fmt.Errorf("failed to get seats: %w", err)
 	}
 
+	var showtimes []models.Showtime
+	err = db.NewSelect().Model(&showtimes).Scan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get seats: %w", err)
+	}
+
 	tickets := make([]models.Ticket, 0)
 	for i := 0; i < len(bookings); i++ {
 		tickets = append(tickets, models.Ticket{
-			Id:        uuid.New().String(),
-			BookingId: bookings[i].Id,
-			Status:    models.TicketStatusUsed,
-			SeatId:    seats[i%len(seats)].Id,
-			CreatedAt: time.Now(),
+			Id:         uuid.New().String(),
+			BookingId:  bookings[i].Id,
+			ShowtimeId: showtimes[i].Id,
+			Status:     models.TicketStatusUsed,
+			SeatId:     seats[i%len(seats)].Id,
+			CreatedAt:  time.Now(),
 		})
 	}
 
@@ -726,21 +753,21 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 		vipRows     []string
 		coupleRows  []string
 	}{
-		"standard": {
+		"STANDARD": {
 			rows:        []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"},
 			seatsPerRow: 8,
 			regularRows: []string{"A", "B", "C", "D", "E"},
 			vipRows:     []string{"F", "G", "H", "I", "J", "K", "L"},
 			coupleRows:  []string{},
 		},
-		"imax": {
+		"IMAX": {
 			rows:        []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"},
 			seatsPerRow: 14,
 			regularRows: []string{"A", "B", "C", "D", "E"},
 			vipRows:     []string{"F", "G", "H", "I", "J", "K", "L"},
 			coupleRows:  []string{"M", "N", "O"},
 		},
-		"vip": {
+		"VIP": {
 			rows:        []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"},
 			seatsPerRow: 8,
 			regularRows: []string{"A", "B", "C"},
@@ -756,32 +783,31 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 		}
 
 		for _, row := range config.rows {
-			// Special handling for couple rows - only 7 seats per row
 			seatsPerRow := config.seatsPerRow
 			if contains(config.coupleRows, row) {
 				seatsPerRow = 7
 			}
 
 			for seatNum := 1; seatNum <= seatsPerRow; seatNum++ {
-				seatType := "regular"
+				seatType := "REGULAR"
 
 				for _, regularRow := range config.regularRows {
 					if row == regularRow {
-						seatType = "regular"
+						seatType = "REGULAR"
 						break
 					}
 				}
 
 				for _, vipRow := range config.vipRows {
 					if row == vipRow {
-						seatType = "vip"
+						seatType = "VIP"
 						break
 					}
 				}
 
 				for _, coupleRow := range config.coupleRows {
 					if row == coupleRow {
-						seatType = "couple"
+						seatType = "COUPLE"
 						break
 					}
 				}
@@ -792,12 +818,12 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 					SeatNumber: fmt.Sprintf("%02d", seatNum),
 					RowNumber:  row,
 					SeatType:   seatType,
-					Status:     "available",
+					Status:     "AVAILABLE",
 					CreatedAt:  now,
 				}
 				seats = append(seats, seat)
 
-				if seatType == "couple" {
+				if seatType == "COUPLE" {
 					seatNum++
 					if seatNum <= seatsPerRow {
 						coupleSeat := &models.Seat{
@@ -806,7 +832,7 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 							SeatNumber: fmt.Sprintf("%02d", seatNum),
 							RowNumber:  row,
 							SeatType:   seatType,
-							Status:     "available",
+							Status:     "AVAILABLE",
 							CreatedAt:  now,
 						}
 						seats = append(seats, coupleSeat)
@@ -835,16 +861,15 @@ func SeedSeats(ctx context.Context, db *bun.DB) error {
 }
 
 func SeedShowtimes(ctx context.Context, db *bun.DB) error {
-	// Get all movies and rooms first
 	var movies []models.Movie
 	var rooms []models.Room
 
-	err := db.NewSelect().Model(&movies).Where("status IN (?)", bun.In([]string{"showing", "upcoming"})).Scan(ctx)
+	err := db.NewSelect().Model(&movies).Where("status IN (?)", bun.In([]string{"SHOWING"})).Scan(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get movies: %w", err)
 	}
 
-	err = db.NewSelect().Model(&rooms).Where("status = ?", "active").Scan(ctx)
+	err = db.NewSelect().Model(&rooms).Where("status = ?", "ACTIVE").Scan(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get rooms: %w", err)
 	}
@@ -860,26 +885,24 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 	now := time.Now()
 	var showtimes []*models.Showtime
 
-	// Price configuration based on room type and time
 	priceConfig := map[string]map[string]float64{
-		"standard": {
-			"morning":   80000,
-			"afternoon": 100000,
-			"evening":   120000,
+		"STANDARD": {
+			"morning":   8000,
+			"afternoon": 10000,
+			"evening":   12000,
 		},
-		"vip": {
-			"morning":   150000,
-			"afternoon": 180000,
-			"evening":   220000,
+		"VIP": {
+			"morning":   15000,
+			"afternoon": 18000,
+			"evening":   22000,
 		},
-		"imax": {
-			"morning":   120000,
-			"afternoon": 150000,
-			"evening":   180000,
+		"IMAX": {
+			"morning":   12000,
+			"afternoon": 15000,
+			"evening":   18000,
 		},
 	}
 
-	// Time slots for different periods
 	timeSlots := map[string][]string{
 		"morning":   {"09:00", "11:30"},
 		"afternoon": {"14:00", "16:30"},
@@ -889,69 +912,68 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 	for day := 0; day < 2; day++ {
 		currentDate := now.AddDate(0, 0, day)
 
-		for _, movie := range movies {
-			for _, room := range rooms {
+		for movieIdx, movie := range movies {
+			if movie.ReleaseDate != nil && movie.ReleaseDate.After(now) {
+				continue
+			}
+
+			for roomIdx, room := range rooms {
+				// Determine which format to use for this movie+room combination
+				// Ensure each time slot has only ONE format per movie per room per day
 				formats := make([]string, 0)
 				switch room.RoomType {
-				case "imax":
-					formats = []string{"2d", "3d", "imax"}
-				case "standard", "vip":
-					formats = []string{"2d", "3d"}
+				case "IMAX":
+					formats = []string{"2D", "3D", "IMAX"}
+				case "STANDARD", "VIP":
+					formats = []string{"2D", "3D"}
 				}
 
-				for _, format := range formats {
-					if day%2 == 0 && format == "3d" {
-						continue
-					}
-					if day%3 == 0 && format == "imax" {
-						continue
-					}
+				selectedFormat := formats[(movieIdx+roomIdx+day)%len(formats)]
 
-					for period, times := range timeSlots {
-						for _, timeStr := range times {
-							startTime, err := time.Parse("15:04", timeStr)
-							if err != nil {
-								continue
-							}
-
-							showtimeStart := time.Date(
-								currentDate.Year(), currentDate.Month(), currentDate.Day(),
-								startTime.Hour(), startTime.Minute(), 0, 0, currentDate.Location(),
-							)
-
-							showtimeEnd := showtimeStart.Add(time.Duration(movie.Duration+30) * time.Minute)
-
-							basePrice := priceConfig[room.RoomType][period]
-
-							switch format {
-							case "3d":
-								basePrice += 20000
-							case "imax":
-								basePrice += 50000
-							}
-
-							status := "scheduled"
-							if showtimeStart.Before(now) {
-								if showtimeEnd.Before(now) {
-									status = "completed"
-								} else {
-									status = "ongoing"
-								}
-							}
-
-							showtime := &models.Showtime{
-								Id:        uuid.New().String(),
-								MovieId:   movie.Id,
-								RoomId:    room.Id,
-								StartTime: showtimeStart,
-								EndTime:   showtimeEnd,
-								Format:    format,
-								BasePrice: basePrice,
-								Status:    status,
-								CreatedAt: now,
-							}
-							showtimes = append(showtimes, showtime)
+				for period, times := range timeSlots {
+					for _, timeStr := range times {
+						startTime, err := time.Parse("15:04", timeStr)
+						if err != nil {
+							continue
 						}
+
+						showtimeStart := time.Date(
+							currentDate.Year(), currentDate.Month(), currentDate.Day(),
+							startTime.Hour(), startTime.Minute(), 0, 0, currentDate.Location(),
+						)
+
+						showtimeEnd := showtimeStart.Add(time.Duration(movie.Duration+30) * time.Minute)
+
+						basePrice := priceConfig[room.RoomType][period]
+
+						switch selectedFormat {
+						case "3D":
+							basePrice += 2000
+						case "IMAX":
+							basePrice += 5000
+						}
+
+						status := "SCHEDULED"
+						if showtimeStart.Before(now) {
+							if showtimeEnd.Before(now) {
+								status = "COMPLETED"
+							} else {
+								status = "ONGOING"
+							}
+						}
+
+						showtime := &models.Showtime{
+							Id:        uuid.New().String(),
+							MovieId:   movie.Id,
+							RoomId:    room.Id,
+							StartTime: showtimeStart,
+							EndTime:   showtimeEnd,
+							Format:    selectedFormat,
+							BasePrice: basePrice,
+							Status:    status,
+							CreatedAt: now,
+						}
+						showtimes = append(showtimes, showtime)
 					}
 				}
 			}
@@ -973,5 +995,194 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 	}
 
 	fmt.Printf("Showtimes seeded successfully! Total: %d showtimes\n", len(showtimes))
+	return nil
+}
+
+func SeedGenres(ctx context.Context, db *bun.DB) error {
+	now := time.Now()
+	genres := []*models.Genre{
+		{
+			Id:          uuid.New().String(),
+			Name:        "Action",
+			Slug:        "action",
+			Description: stringPtr("Action-packed movies with intense sequences"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Adventure",
+			Slug:        "adventure",
+			Description: stringPtr("Exciting journeys and quests"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Comedy",
+			Slug:        "comedy",
+			Description: stringPtr("Light-hearted movies designed to make you laugh"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Drama",
+			Slug:        "drama",
+			Description: stringPtr("Serious, plot-driven movies"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Horror",
+			Slug:        "horror",
+			Description: stringPtr("Scary movies designed to frighten and thrill"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Romance",
+			Slug:        "romance",
+			Description: stringPtr("Love stories and romantic relationships"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Sci-Fi",
+			Slug:        "sci-fi",
+			Description: stringPtr("Science fiction and futuristic themes"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Thriller",
+			Slug:        "thriller",
+			Description: stringPtr("Suspenseful and intense storylines"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Fantasy",
+			Slug:        "fantasy",
+			Description: stringPtr("Magical and mythical worlds"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Animation",
+			Slug:        "animation",
+			Description: stringPtr("Animated movies for all ages"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Crime",
+			Slug:        "crime",
+			Description: stringPtr("Criminal activities and investigations"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Documentary",
+			Slug:        "documentary",
+			Description: stringPtr("Non-fiction films about real events"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Mystery",
+			Slug:        "mystery",
+			Description: stringPtr("Puzzling plots and detective stories"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "War",
+			Slug:        "war",
+			Description: stringPtr("Military conflicts and wartime stories"),
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Family",
+			Slug:        "family",
+			Description: stringPtr("Movies suitable for the whole family"),
+			CreatedAt:   now,
+		},
+	}
+
+	_, err := db.NewInsert().Model(&genres).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to seed genres: %w", err)
+	}
+
+	fmt.Println("Genres seeded successfully!")
+	return nil
+}
+
+func SeedMovieGenres(ctx context.Context, db *bun.DB) error {
+	// Get all movies and genres
+	var movies []models.Movie
+	err := db.NewSelect().Model(&movies).Scan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get movies: %w", err)
+	}
+
+	var genres []models.Genre
+	err = db.NewSelect().Model(&genres).Scan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get genres: %w", err)
+	}
+
+	if len(movies) == 0 || len(genres) == 0 {
+		return fmt.Errorf("movies or genres missing; seed movies and genres first")
+	}
+
+	genreNameToId := map[string]string{}
+	for _, g := range genres {
+		genreNameToId[g.Name] = g.Id
+	}
+
+	var movieGenres []*models.MovieGenre
+	for _, movie := range movies {
+		if movie.Genre == "" {
+			continue
+		}
+
+		var genreNames []string
+		switch movie.Genre {
+		case "Action, Adventure, Drama":
+			genreNames = []string{"Action", "Adventure", "Drama"}
+		case "Action, Adventure, Sci-Fi":
+			genreNames = []string{"Action", "Adventure", "Sci-Fi"}
+		case "Action, Drama":
+			genreNames = []string{"Action", "Drama"}
+		case "Action, Adventure, Drama, Sci-Fi":
+			genreNames = []string{"Action", "Adventure", "Drama", "Sci-Fi"}
+		case "Action, Crime, Drama":
+			genreNames = []string{"Action", "Crime", "Drama"}
+		case "Animation, Comedy, Adventure, Family":
+			genreNames = []string{"Animation", "Comedy", "Adventure", "Family"}
+		default:
+			genreNames = []string{"Drama"}
+		}
+
+		for _, genreName := range genreNames {
+			if genreId, ok := genreNameToId[genreName]; ok {
+				movieGenres = append(movieGenres, &models.MovieGenre{
+					Id:        uuid.New().String(),
+					MovieId:   movie.Id,
+					GenreId:   genreId,
+					CreatedAt: time.Now(),
+				})
+			}
+		}
+	}
+
+	if len(movieGenres) > 0 {
+		_, err = db.NewInsert().Model(&movieGenres).Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to seed movie_genres: %w", err)
+		}
+	}
+
+	fmt.Printf("Movie-Genre relationships seeded successfully! Total: %d relationships\n", len(movieGenres))
 	return nil
 }

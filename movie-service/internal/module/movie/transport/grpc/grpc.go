@@ -43,15 +43,18 @@ func (s *MovieServiceServer) GetShowtime(ctx context.Context, req *pb.GetShowtim
 		}, nil
 	}
 
+	duration := int64(showtime.EndTime.Sub(showtime.StartTime).Seconds())
+
 	showtimeData := &pb.ShowtimeData{
-		Id:           showtime.Id,
-		MovieId:      showtime.MovieId,
-		RoomId:       showtime.RoomId,
-		ShowtimeDate: showtime.StartTime.Format("2006-01-02"),
-		ShowtimeTime: showtime.StartTime.Format("15:04:05"),
-		MovieTitle:   showtime.Movie.Title,
-		RoomNumber:   fmt.Sprintf("%d", showtime.Room.RoomNumber),
-		SeatNumbers:  []string{}, // Empty for now
+		Id:              showtime.Id,
+		MovieId:         showtime.MovieId,
+		RoomId:          showtime.RoomId,
+		ShowtimeDate:    showtime.StartTime.Format("2006-01-02"),
+		ShowtimeTime:    showtime.StartTime.Format("15:04:05"),
+		MovieTitle:      showtime.Movie.Title,
+		RoomNumber:      fmt.Sprintf("%d", showtime.Room.RoomNumber),
+		SeatNumbers:     []string{},
+		DurationSeconds: duration,
 	}
 
 	return &pb.GetShowtimeResponse{
@@ -72,15 +75,18 @@ func (s *MovieServiceServer) GetShowtimes(ctx context.Context, req *pb.GetShowti
 
 	var showtimeData []*pb.ShowtimeData
 	for _, showtime := range showtimes {
+		duration := int64(showtime.EndTime.Sub(showtime.StartTime).Seconds())
+
 		data := &pb.ShowtimeData{
-			Id:           showtime.Id,
-			MovieId:      showtime.MovieId,
-			RoomId:       showtime.RoomId,
-			ShowtimeDate: showtime.StartTime.Format("2006-01-02"),
-			ShowtimeTime: showtime.StartTime.Format("15:04:05"),
-			MovieTitle:   showtime.Movie.Title,
-			RoomNumber:   fmt.Sprintf("%d", showtime.Room.RoomNumber),
-			SeatNumbers:  []string{}, // Empty for now
+			Id:              showtime.Id,
+			MovieId:         showtime.MovieId,
+			RoomId:          showtime.RoomId,
+			ShowtimeDate:    showtime.StartTime.Format("2006-01-02"),
+			ShowtimeTime:    showtime.StartTime.Format("15:04:05"),
+			MovieTitle:      showtime.Movie.Title,
+			RoomNumber:      fmt.Sprintf("%d", showtime.Room.RoomNumber),
+			SeatNumbers:     []string{},
+			DurationSeconds: duration,
 		}
 		showtimeData = append(showtimeData, data)
 	}
@@ -93,7 +99,6 @@ func (s *MovieServiceServer) GetShowtimes(ctx context.Context, req *pb.GetShowti
 }
 
 func (s *MovieServiceServer) GetSeatsWithPrice(ctx context.Context, req *pb.GetSeatsWithPriceRequest) (*pb.GetSeatsWithPriceResponse, error) {
-	// Validate input
 	if req.ShowtimeId == "" || len(req.SeatIds) == 0 {
 		return &pb.GetSeatsWithPriceResponse{
 			Success: false,
@@ -101,7 +106,6 @@ func (s *MovieServiceServer) GetSeatsWithPrice(ctx context.Context, req *pb.GetS
 		}, nil
 	}
 
-	// Get showtime to retrieve base price
 	showtime, err := s.showtimeBiz.GetShowtimeById(ctx, req.ShowtimeId)
 	if err != nil {
 		return &pb.GetSeatsWithPriceResponse{
@@ -110,7 +114,6 @@ func (s *MovieServiceServer) GetSeatsWithPrice(ctx context.Context, req *pb.GetS
 		}, nil
 	}
 
-	// Get seats by IDs
 	seats, err := s.seatBiz.GetSeatsByIds(ctx, req.SeatIds)
 	if err != nil {
 		return &pb.GetSeatsWithPriceResponse{
@@ -119,7 +122,6 @@ func (s *MovieServiceServer) GetSeatsWithPrice(ctx context.Context, req *pb.GetS
 		}, nil
 	}
 
-	// Check if all seats were found
 	if len(seats) != len(req.SeatIds) {
 		return &pb.GetSeatsWithPriceResponse{
 			Success: false,
@@ -127,7 +129,6 @@ func (s *MovieServiceServer) GetSeatsWithPrice(ctx context.Context, req *pb.GetS
 		}, nil
 	}
 
-	// Calculate prices and build response
 	var seatPriceData []*pb.SeatPriceData
 	var totalAmount float64
 
@@ -149,6 +150,49 @@ func (s *MovieServiceServer) GetSeatsWithPrice(ctx context.Context, req *pb.GetS
 		Message:     "Seats with prices retrieved successfully",
 		Data:        seatPriceData,
 		TotalAmount: totalAmount,
+	}, nil
+}
+
+func (s *MovieServiceServer) GetSeatDetails(ctx context.Context, req *pb.GetSeatDetailsRequest) (*pb.GetSeatDetailsResponse, error) {
+	if len(req.SeatIds) == 0 {
+		return &pb.GetSeatDetailsResponse{
+			Success: false,
+			Message: "seat_ids are required",
+		}, nil
+	}
+
+	seats, err := s.seatBiz.GetSeatsByIds(ctx, req.SeatIds)
+	if err != nil {
+		return &pb.GetSeatDetailsResponse{
+			Success: false,
+			Message: fmt.Sprintf("Failed to get seats: %v", err),
+		}, nil
+	}
+
+	if len(seats) != len(req.SeatIds) {
+		return &pb.GetSeatDetailsResponse{
+			Success: false,
+			Message: "One or more seats not found",
+		}, nil
+	}
+
+	var seatDetails []*pb.SeatDetailData
+	for _, seat := range seats {
+		seatNumber := int32(0)
+		fmt.Sscanf(seat.SeatNumber, "%d", &seatNumber)
+
+		seatDetails = append(seatDetails, &pb.SeatDetailData{
+			SeatId:     seat.Id,
+			SeatRow:    seat.RowNumber,
+			SeatNumber: seatNumber,
+			SeatType:   string(seat.SeatType),
+		})
+	}
+
+	return &pb.GetSeatDetailsResponse{
+		Success: true,
+		Message: "Seat details retrieved successfully",
+		Data:    seatDetails,
 	}, nil
 }
 

@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -23,29 +25,24 @@ type blockchainService struct {
 	rpcURL    string
 }
 
-func NewBlockchainService() BlockchainService {
-	// Get RPC URL from environment, default to public Ethereum mainnet RPC
+func NewBlockchainService() (BlockchainService, error) {
 	rpcURL := os.Getenv("ETH_RPC_URL")
 	if rpcURL == "" {
-		// Default to Cloudflare public RPC (free, no API key needed)
-		rpcURL = "https://cloudflare-eth.com"
+		rpcURL = "https://ethereum-sepolia-rpc.publicnode.com"
 	}
 
 	client, err := ethclient.Dial(rpcURL)
 	if err != nil {
-		// If RPC connection fails, return service without client
-		// It will fall back to basic validation only
-		fmt.Printf("Warning: Failed to connect to Ethereum RPC at %s: %v\n", rpcURL, err)
-		return &blockchainService{
-			rpcClient: nil,
-			rpcURL:    rpcURL,
-		}
+		logrus.Warn("Not connected to blockchain")
+		return nil, err
 	}
+
+	fmt.Println("client connected to blockchain:", client)
 
 	return &blockchainService{
 		rpcClient: client,
 		rpcURL:    rpcURL,
-	}
+	}, nil
 }
 
 // VerifyTransaction validates the transaction details
@@ -56,33 +53,20 @@ func NewBlockchainService() BlockchainService {
 // - Data field contains the booking reference
 // - Transaction has sufficient confirmations (e.g., 12 blocks)
 func (s *blockchainService) VerifyTransaction(ctx context.Context, txHash string, expectedFrom string, expectedTo string, expectedAmount string) error {
-	// Validate transaction hash format (0x + 64 hex characters)
 	if !isValidTxHash(txHash) {
 		return fmt.Errorf("invalid transaction hash format: %s", txHash)
 	}
 
-	// Validate Ethereum addresses
-	if !isValidEthAddress(expectedFrom) {
-		return fmt.Errorf("invalid from address: %s", expectedFrom)
+	if !isValidEthAddress(expectedFrom) || !isValidEthAddress(expectedTo) {
+		return fmt.Errorf("invalid from or to address: from: %s to: %s", expectedFrom, expectedTo)
 	}
 
-	if !isValidEthAddress(expectedTo) {
-		return fmt.Errorf("invalid to address: %s", expectedTo)
-	}
-
-	// Validate amount is positive
 	expectedAmountFloat, err := strconv.ParseFloat(expectedAmount, 64)
 	if err != nil {
 		return fmt.Errorf("invalid amount format: %s", expectedAmount)
 	}
 	if expectedAmountFloat <= 0 {
 		return fmt.Errorf("amount must be positive: %f", expectedAmountFloat)
-	}
-
-	// If RPC client is not available, only do basic validation
-	if s.rpcClient == nil {
-		fmt.Println("Warning: RPC client not available, skipping on-chain verification")
-		return nil
 	}
 
 	// Convert expectedAmount (ETH) to Wei for comparison
@@ -115,7 +99,6 @@ func (s *blockchainService) VerifyTransaction(ctx context.Context, txHash string
 		return fmt.Errorf("sender address mismatch: expected %s, got %s", expectedFrom, actualFrom)
 	}
 
-	// Verify receiver address
 	if tx.To() == nil {
 		return fmt.Errorf("transaction is a contract creation, not a transfer")
 	}
@@ -146,27 +129,24 @@ func (s *blockchainService) VerifyTransaction(ctx context.Context, txHash string
 	}
 
 	// Check confirmations (optional, but recommended)
-	currentBlock, err := s.rpcClient.BlockNumber(ctx)
-	if err == nil {
-		confirmations := currentBlock - receipt.BlockNumber.Uint64()
-		if confirmations < 1 {
-			return fmt.Errorf("transaction needs at least 1 confirmation, has %d", confirmations)
-		}
-		fmt.Printf("Transaction verified with %d confirmations\n", confirmations)
-	}
+	//currentBlock, err := s.rpcClient.BlockNumber(ctx)
+	//if err == nil {
+	//	confirmations := currentBlock - receipt.BlockNumber.Uint64()
+	//	if confirmations < 1 {
+	//		return fmt.Errorf("transaction needs at least 1 confirmation, has %d", confirmations)
+	//	}
+	//	fmt.Printf("Transaction verified with %d confirmations\n", confirmations)
+	//}
 
 	return nil
 }
 
-// isValidTxHash checks if the string is a valid Ethereum transaction hash
 func isValidTxHash(txHash string) bool {
 	matched, _ := regexp.MatchString("^0x[0-9a-fA-F]{64}$", txHash)
 	return matched
 }
 
-// isValidEthAddress checks if the string is a valid Ethereum address
 func isValidEthAddress(address string) bool {
-	// Basic format check: 0x + 40 hex characters
 	if !strings.HasPrefix(address, "0x") || len(address) != 42 {
 		return false
 	}

@@ -3,6 +3,8 @@ package container
 import (
 	"os"
 
+	"worker-service/internal/datastore"
+
 	"worker-service/internal/pkg/db"
 	"worker-service/internal/pkg/logger"
 	"worker-service/internal/pkg/pubsub"
@@ -42,6 +44,8 @@ func New() *do.Injector {
 	do.ProvideNamed(injector, "redis-pubsub-readonly-db", provideRedisPubsubReadonlyDb)
 
 	do.Provide(injector, provideRedisPubsub)
+	do.Provide(injector, provideOutboxRepository)
+	do.Provide(injector, provideNewsArticleRepository)
 
 	return injector
 }
@@ -134,4 +138,12 @@ func provideRedisPubsub(i *do.Injector) (pubsub.PubSub, error) {
 	}
 
 	return redisPubsub.NewRedisPubsub(pubsubReadonly, pubsub), nil
+}
+
+func provideOutboxRepository(i *do.Injector) (datastore.OutboxRepository, error) {
+	return datastore.NewOutboxRepository(i)
+}
+
+func provideNewsArticleRepository(i *do.Injector) (datastore.NewsArticleRepository, error) {
+	return datastore.NewNewsArticleRepository(i)
 }

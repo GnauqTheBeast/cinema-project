@@ -3,6 +3,7 @@ package rest
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"movie-service/internal/module/movie/business"
 	"movie-service/internal/module/movie/entity"
@@ -41,7 +42,9 @@ func (h *handler) GetMovies(c *gin.Context) {
 		query.Size = 10
 	}
 
-	movies, total, err := h.biz.GetMovies(c.Request.Context(), query.Page, query.Size, query.Search)
+	query.Status = strings.ToUpper(query.Status)
+
+	movies, total, err := h.biz.GetMovies(c.Request.Context(), query.Page, query.Size, query.Search, query.Status)
 	if err != nil {
 		response.ErrorWithMessage(c, err.Error())
 		return
@@ -198,11 +201,4 @@ func (h *handler) GetMovieStats(c *gin.Context) {
 	}
 
 	response.Success(c, stats)
-}
-
-func (h *handler) HelloWorld(c *gin.Context) {
-	response.Success(c, gin.H{
-		"message": "Hello from Movie Service API!",
-		"status":  "healthy",
-	})
 }

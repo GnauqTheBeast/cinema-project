@@ -170,9 +170,6 @@ func (b *business) UpdateRoom(ctx context.Context, id string, updates *entity.Up
 	}
 
 	if updates.Status != nil {
-		if !room.CanChangeStatus(*updates.Status) {
-			return ErrInvalidStatusTransition
-		}
 		room.Status = *updates.Status
 	}
 
@@ -216,10 +213,6 @@ func (b *business) UpdateRoomStatus(ctx context.Context, id string, status entit
 			return ErrRoomNotFound
 		}
 		return fmt.Errorf("failed to get room: %w", err)
-	}
-
-	if !room.CanChangeStatus(status) {
-		return ErrInvalidStatusTransition
 	}
 
 	room.Status = status

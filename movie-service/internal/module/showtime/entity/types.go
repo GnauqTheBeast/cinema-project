@@ -26,15 +26,16 @@ type UpdateShowtimeRequest struct {
 }
 
 type GetShowtimesQuery struct {
-	Page     int            `form:"page,default=1" binding:"min=1"`
-	Size     int            `form:"size,default=10" binding:"min=1,max=100"`
-	Search   string         `form:"search"`
-	MovieId  string         `form:"movie_id"`
-	RoomId   string         `form:"room_id"`
-	Format   ShowtimeFormat `form:"format"`
-	Status   ShowtimeStatus `form:"status"`
-	DateFrom string         `form:"date_from"`
-	DateTo   string         `form:"date_to"`
+	Page         int            `form:"page,default=1" binding:"min=1"`
+	Size         int            `form:"size,default=10" binding:"min=1,max=100"`
+	Search       string         `form:"search"`
+	MovieId      string         `form:"movie_id"`
+	RoomId       string         `form:"room_id"`
+	Format       ShowtimeFormat `form:"format"`
+	Status       ShowtimeStatus `form:"status"`
+	DateFrom     string         `form:"date_from"`
+	DateTo       string         `form:"date_to"`
+	ExcludeEnded bool           `form:"exclude_ended"`
 }
 
 type ShowtimeResponse struct {
@@ -49,6 +50,8 @@ type ShowtimeResponse struct {
 	Duration  string         `json:"duration"`
 	CreatedAt string         `json:"created_at"`
 	UpdatedAt *string        `json:"updated_at,omitempty"`
+	Movie     *Movie         `json:"movie,omitempty"`
+	Room      *Room          `json:"room,omitempty"`
 }
 
 type ShowtimesResponse struct {
@@ -72,6 +75,40 @@ type ShowtimeWithDetailsResponse struct {
 	UpdatedAt  *string        `json:"updated_at,omitempty"`
 }
 
+type ShowtimeBookingResponse struct {
+	Id        string         `json:"id"`
+	StartTime string         `json:"start_time"`
+	EndTime   string         `json:"end_time"`
+	Format    ShowtimeFormat `json:"format"`
+	BasePrice float64        `json:"base_price"`
+	Status    ShowtimeStatus `json:"status"`
+	Duration  string         `json:"duration"`
+	CreatedAt string         `json:"created_at"`
+	Movie     *Movie         `json:"movie"`
+	Room      *Room          `json:"room"`
+	Seats     []*Seat        `json:"seats"`
+}
+
+func ToShowtimeBookingResponse(showtime *Showtime) *ShowtimeBookingResponse {
+	if showtime == nil {
+		return nil
+	}
+
+	return &ShowtimeBookingResponse{
+		Id:        showtime.Id,
+		StartTime: showtime.StartTime.Format("2006-01-02T15:04:05Z07:00"),
+		EndTime:   showtime.EndTime.Format("2006-01-02T15:04:05Z07:00"),
+		Format:    showtime.Format,
+		BasePrice: showtime.BasePrice,
+		Status:    showtime.Status,
+		Duration:  showtime.CalculateDuration().String(),
+		CreatedAt: showtime.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		Movie:     showtime.Movie,
+		Room:      showtime.Room,
+		Seats:     showtime.Seats,
+	}
+}
+
 func ToShowtimeResponse(showtime *Showtime) *ShowtimeResponse {
 	if showtime == nil {
 		return nil
@@ -88,6 +125,8 @@ func ToShowtimeResponse(showtime *Showtime) *ShowtimeResponse {
 		Status:    showtime.Status,
 		Duration:  showtime.CalculateDuration().String(),
 		CreatedAt: showtime.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		Movie:     showtime.Movie,
+		Room:      showtime.Room,
 	}
 
 	if showtime.UpdatedAt != nil {

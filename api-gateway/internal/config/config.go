@@ -32,6 +32,8 @@ type ServicesConfig struct {
 	UserService         ServiceEndpoint `mapstructure:"user_service"`
 	BookingService      ServiceEndpoint `mapstructure:"booking_service"`
 	PaymentService      ServiceEndpoint `mapstructure:"payment_service"`
+	AnalyticsService    ServiceEndpoint `mapstructure:"analytics_service"`
+	Chatbot             ServiceEndpoint `mapstructure:"chatbot"`
 }
 
 type ServiceEndpoint struct {
@@ -147,6 +149,11 @@ func setDefaults() {
 	viper.SetDefault("services.payment_service.health_check_path", "/api/v1/health")
 	viper.SetDefault("services.payment_service.timeout", 30)
 	viper.SetDefault("services.payment_service.retries", 3)
+
+	viper.SetDefault("services.analytics_service.url", "http://localhost:8087")
+	viper.SetDefault("services.analytics_service.health_check_path", "/health")
+	viper.SetDefault("services.analytics_service.timeout", 30)
+	viper.SetDefault("services.analytics_service.retries", 3)
 
 	// C defaults
 	viper.SetDefault("redis.address", "localhost:6379")

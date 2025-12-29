@@ -48,6 +48,20 @@ services:
     retries: 3
     load_balancer: []
 
+  analytics_service:
+    url: "http://localhost:8087"
+    health_check_path: "/health"
+    timeout: 30
+    retries: 3
+    load_balancer: []
+
+  chatbot:
+    url: "http://localhost:8089"
+    health_check_path: "/health"
+    timeout: 30
+    retries: 3
+    load_balancer: []
+
 redis:
   address: "localhost:6379"
   password: ""
@@ -71,6 +85,8 @@ auth:
     - "/api/v1/rooms"
     - "/api/v1/rooms/*/seats"
     - "/api/v1/rooms/*/showtimes"
+    - "/api/v1/news"
+    - "/api/v1/news/*"
     
     # User service - public endpoints
     - "/api/v1/users/*"
@@ -82,10 +98,13 @@ auth:
     - "/api/v1/payments"
     - "/api/v1/payments/*"
 
-    # Notification service - public endpoints  
+    # Notification service - public endpoints
     - "/api/v1/notifications/*/unread-count"
     - "/api/v1/notifications/ws"
-    
+
+    # Chatbot service - public endpoints
+    - "/api/v1/chatbot/*"
+
     # Gateway endpoints
     - "/health"
     - "/metrics"
@@ -106,10 +125,13 @@ auth:
     - "/api/v1/showtimes/*/update"
     - "/api/v1/showtimes/*/delete"
     - "/api/v1/admin/*"
-    
+
     # Notification service - admin endpoints
     - "/api/v1/notifications"
     - "/api/v1/notifications/*/delete"
+
+    # Analytics service - admin only endpoints
+    - "/api/v1/analytics/*"
 
 rate_limit:
   requests_per_second: 100

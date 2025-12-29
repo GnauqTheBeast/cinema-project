@@ -49,6 +49,7 @@ func NewContainer() *do.Injector {
 	do.Provide(injector, provideRedisCache)
 	do.Provide(injector, provideRedisCacheReadOnly)
 	do.Provide(injector, provideRedisPubsub)
+	do.Provide(injector, provideOutboxClient)
 	do.Provide(injector, provideBookingService)
 	do.Provide(injector, provideMovieClient)
 	do.Provide(injector, provideAuthClient)
@@ -192,7 +193,7 @@ func provideRedisCacheReadOnly(i *do.Injector) (caching.ReadOnlyCache, error) {
 	if err != nil {
 		return nil, err
 	}
-	return caching.NewRedisClient(redisCacheReadOnly, true)
+	return caching.NewRedisClient(redisCacheReadOnly, false)
 }
 
 func provideBookingService(i *do.Injector) (*services.BookingService, error) {
@@ -205,6 +206,10 @@ func provideMovieClient(_ *do.Injector) (*grpc.MovieClient, error) {
 
 func provideAuthClient(_ *do.Injector) (*grpc.AuthClient, error) {
 	return grpc.NewAuthClient()
+}
+
+func provideOutboxClient(_ *do.Injector) (*grpc.OutboxClient, error) {
+	return grpc.NewOutboxClient()
 }
 
 func provideBookingServer(i *do.Injector) (*grpc_server.BookingServer, error) {

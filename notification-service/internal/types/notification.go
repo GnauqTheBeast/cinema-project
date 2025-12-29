@@ -150,3 +150,11 @@ func UnmarshalNotificationMessage(data []byte) (interface{}, error) {
 	}
 	return msg, nil
 }
+
+func UnmarshalGenericMessage(data []byte) (interface{}, error) {
+	var msg map[string]interface{}
+	if err := json.Unmarshal(data, &msg); err != nil {
+		return nil, err
+	}
+	return msg, nil
+}
