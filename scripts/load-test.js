@@ -46,8 +46,8 @@ const BASE_URL = __ENV.BASE_URL || 'http://localhost:80';
 
 // Test data
 const testUsers = [
-  { email: 'customer1@example.com', password: 'password123' },
-  { email: 'customer2@example.com', password: 'password123' },
+  { email: 'alice@email.com', password: 'password' },
+  { email: 'bob@email.com', password: 'password' },
 ];
 
 let authToken = null;
