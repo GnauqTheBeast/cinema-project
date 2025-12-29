@@ -1,0 +1,202 @@
+================================================================================
+                    CINEMA SYSTEM BENCHMARK COMMANDS
+================================================================================
+
+Date: 2025-12-30
+Location: benchmark-results/
+
+
+================================================================================
+1. QUICK PERFORMANCE CHECK (Fast - ~10 seconds)
+================================================================================
+
+./scripts/quick-performance-check.sh
+
+Description: Fast health check for APIs, database, Redis, and containers
+
+
+================================================================================
+2. COMPREHENSIVE BENCHMARK - QUICK MODE (~1 minute)
+================================================================================
+
+./scripts/benchmark.sh quick
+
+Description: Apache Bench test on Movies API with database/Redis stats
+
+
+================================================================================
+3. COMPREHENSIVE BENCHMARK - FULL MODE (~10-15 minutes)
+================================================================================
+
+./scripts/benchmark.sh full
+
+Description: Full test suite including Movies, Showtimes, News APIs + k6 tests
+
+
+================================================================================
+4. COMPREHENSIVE BENCHMARK - STRESS MODE (~15-30 minutes)
+================================================================================
+
+./scripts/benchmark.sh stress
+
+Description: Heavy load testing with high concurrency
+
+
+================================================================================
+5. K6 LOAD TEST - QUICK (1 minute)
+================================================================================
+
+k6 run --vus 20 --duration 1m scripts/load-test.js
+
+Description: Quick k6 test with 20 virtual users for 1 minute
+
+
+================================================================================
+6. K6 LOAD TEST - FULL (13 minutes with ramping)
+================================================================================
+
+k6 run scripts/load-test.js
+
+Description: Full k6 test with user ramping (20→50→100 users)
+
+
+================================================================================
+7. K6 STRESS TEST - CONCURRENT BOOKINGS (2 minutes)
+================================================================================
+
+k6 run scripts/stress-test-concurrent-bookings.js
+
+Description: Test race conditions and seat locking mechanism
+
+
+================================================================================
+8. BOOKING BENCHMARK (Requires parameters)
+================================================================================
+
+./scripts/booking-benchmark.sh -s <showtime_id> -e <seat_id1>,<seat_id2> -n 10
+
+Parameters:
+  -s, --showtime  : Showtime ID
+  -e, --seats     : Comma-separated seat IDs
+  -n, --users     : Number of concurrent users
+
+Example:
+./scripts/booking-benchmark.sh -s "abc123" -e "seat1,seat2" -n 10
+
+
+================================================================================
+SAVE OUTPUT TO FILES
+================================================================================
+
+# Quick check
+./scripts/quick-performance-check.sh | tee benchmark-results/quick-check.txt
+
+# Full benchmark
+./scripts/benchmark.sh full | tee benchmark-results/full-benchmark.txt
+
+# k6 load test
+k6 run scripts/load-test.js | tee benchmark-results/k6-load-test.txt
+
+# k6 stress test
+k6 run scripts/stress-test-concurrent-bookings.js | tee benchmark-results/k6-stress-test.txt
+
+
+================================================================================
+RUN ALL BENCHMARKS AT ONCE
+================================================================================
+
+# Quick suite (recommended for regular testing)
+./scripts/quick-performance-check.sh && \
+./scripts/benchmark.sh quick && \
+k6 run --vus 20 --duration 1m scripts/load-test.js
+
+# Full suite (for comprehensive testing)
+./scripts/benchmark.sh full && \
+k6 run scripts/load-test.js && \
+k6 run scripts/stress-test-concurrent-bookings.js
+
+
+================================================================================
+PREREQUISITES
+================================================================================
+
+# Make scripts executable
+chmod +x scripts/*.sh
+
+# Check if tools are available
+which ab    # Apache Bench
+which k6    # k6 load testing tool
+
+# Install tools if missing:
+# Ubuntu/Debian:
+sudo apt-get install apache2-utils  # for ab
+# See BENCHMARK_README.md for k6 installation
+
+
+================================================================================
+ENVIRONMENT VARIABLES
+================================================================================
+
+# Change base URL (default: http://localhost:80)
+BASE_URL=http://production-url.com k6 run scripts/load-test.js
+
+# Use custom test users
+TEST_TOKEN_1=<token> k6 run scripts/stress-test-concurrent-bookings.js
+
+
+================================================================================
+MONITORING DURING TESTS
+================================================================================
+
+# Terminal 1: Run benchmark
+./scripts/benchmark.sh full
+
+# Terminal 2: Monitor containers
+watch -n 1 'docker stats --no-stream'
+
+# Terminal 3: Monitor database
+docker exec postgres psql -U postgres -d cinema_app -c \
+  "SELECT count(*) FROM pg_stat_activity WHERE datname = 'cinema_app';"
+
+# Terminal 4: Monitor Redis
+docker exec redis redis-cli MONITOR
+
+
+================================================================================
+INTERPRETING RESULTS
+================================================================================
+
+Good Performance Targets:
+- Requests per second: > 100 req/s
+- p95 response time: < 500ms
+- p99 response time: < 1000ms
+- Error rate: < 1%
+- CPU usage: < 70%
+- Memory: Stable, no leaks
+
+Check the SUMMARY.md file for detailed analysis of results.
+
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+Connection refused:
+  docker ps  # Check if services are running
+  docker compose restart
+
+Too many open files:
+  ulimit -n 65536
+
+k6: command not found:
+  # See BENCHMARK_README.md for installation instructions
+
+High error rates in k6 tests:
+  # Create test users: alice@email.com and bob@email.com with password 'password'
+  # Or update scripts/load-test.js and scripts/stress-test-concurrent-bookings.js
+  # with existing user credentials
+
+
+================================================================================
+END OF COMMANDS
+================================================================================
