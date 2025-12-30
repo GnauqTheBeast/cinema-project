@@ -65,11 +65,10 @@ const BASE_URL = __ENV.BASE_URL || 'http://localhost:80';
 const TEST_USERS = [
   { email: 'alice@email.com', password: 'password' },
   { email: 'bob@email.com', password: 'password' },
-  // { email: 'customer1@example.com', password: 'password123' },
+  { email: 'emma@email.com', password: 'password' },
   // { email: 'customer2@example.com', password: 'password123' },
 ];
 
-// Shared state for tracking bookings
 let bookedSeats = new Set();
 
 export function setup() {
@@ -77,7 +76,6 @@ export function setup() {
   console.log('This will test race conditions and seat locking mechanisms');
   console.log('');
 
-  // Login all test users and collect their tokens
   console.log(`Logging in ${TEST_USERS.length} test users...`);
   const userTokens = [];
 
@@ -134,7 +132,6 @@ export function setup() {
 }
 
 export function attemptBooking(data) {
-  // Pick a random user token from the logged-in users
   if (!data.userTokens || data.userTokens.length === 0) {
     console.log('No user tokens available');
     return;
@@ -151,81 +148,113 @@ export function attemptBooking(data) {
   };
 
   group('Concurrent Booking Attempt', function() {
-    // 1. Get showtimes
-    let res = http.get(`${BASE_URL}/api/v1/showtimes?page=1&size=5`, params);
+    let showtimeId = data.targetShowtimeId;
+    let seats = [];
+    let basePrice = 0;
 
+    if (!showtimeId) {
+      let res = http.get(`${BASE_URL}/api/v1/showtimes?page=1&size=5&status=SCHEDULED&exclude_ended=true`, params);
+      if (res.status !== 200) {
+        errorRate.add(1);
+        failedBookings.add(1);
+        return;
+      }
+
+      try {
+        const body = res.json();
+        const showtimes = body.data?.data || body.data;
+        if (!showtimes || showtimes.length === 0) {
+          errorRate.add(1);
+          failedBookings.add(1);
+          return;
+        }
+        showtimeId = showtimes[0].id;
+      } catch (e) {
+        errorRate.add(1);
+        failedBookings.add(1);
+        return;
+      }
+    }
+
+    let res = http.get(`${BASE_URL}/api/v1/showtimes/${showtimeId}`, params);
     if (res.status !== 200) {
       errorRate.add(1);
       failedBookings.add(1);
       return;
     }
 
-    // Pick showtime
-    let showtimeId = data.targetShowtimeId;
-    if (!showtimeId) {
-      try {
-        const body = res.json();
-        const showtimes = body.data?.data || body.data;
-        if (showtimes && showtimes.length > 0) {
-          showtimeId = showtimes[0].id;
-        }
-      } catch (e) {
+    try {
+      const body = res.json();
+      const showtime = body.data;
+      if (!showtime) {
         errorRate.add(1);
+        failedBookings.add(1);
         return;
       }
-    }
 
-    if (!showtimeId) {
+      seats = showtime.seats || [];
+      basePrice = showtime.base_price || 0;
+    } catch (e) {
       errorRate.add(1);
+      failedBookings.add(1);
       return;
     }
 
-    // 2. Get available seats
-    res = http.get(`${BASE_URL}/api/v1/seats/showtime/${showtimeId}`, params);
-
-    if (res.status !== 200) {
+    if (!basePrice || seats.length === 0) {
       errorRate.add(1);
       failedBookings.add(1);
       return;
     }
 
     let seatIds = [];
-    try {
-      const body = res.json();
-      const seats = body.data?.seats || body.data;
+    let selectedSeats = [];
+    const availableSeats = seats.filter(s =>
+      s.status === 'AVAILABLE' || s.status === 'available' || !s.is_booked
+    );
 
-      if (seats && seats.length > 0) {
-        // Pick first 2 available seats (intentionally creating contention)
-        const availableSeats = seats.filter(s =>
-          s.status === 'AVAILABLE' || !s.is_booked
-        );
-
-        if (availableSeats.length >= 2) {
-          // All users try to book the SAME seats to test race condition
-          seatIds = [
-            availableSeats[0].id,
-            availableSeats[1].id,
-          ];
-        }
-      }
-    } catch (e) {
-      console.log('Error parsing seats:', e);
-      errorRate.add(1);
-      return;
+    if (availableSeats.length >= 2) {
+      const randomStart = Math.floor(Math.random() * (availableSeats.length - 1));
+      selectedSeats = [
+        availableSeats[randomStart],
+        availableSeats[randomStart + 1],
+      ];
+      seatIds = [
+        availableSeats[randomStart].id,
+        availableSeats[randomStart + 1].id,
+      ];
     }
 
     if (seatIds.length === 0) {
-      // No seats available - not an error
       return;
     }
 
-    // Small random delay to create more contention
+    const getSeatPriceMultiplier = (seatType) => {
+      switch (seatType) {
+        case 'REGULAR': return 1.0;
+        case 'VIP': return 1.5;
+        case 'COUPLE': return 2.5;
+        default: return 1.0;
+      }
+    };
+
+    let totalAmount = 0;
+    for (let seat of selectedSeats) {
+      const multiplier = getSeatPriceMultiplier(seat.seat_type);
+      totalAmount += Math.round(basePrice * multiplier);
+    }
+
+    if (totalAmount === 0) {
+      errorRate.add(1);
+      failedBookings.add(1);
+      return;
+    }
+
     sleep(Math.random() * 0.1);
 
-    // 3. Attempt booking
     const booking = {
       showtime_id: showtimeId,
       seat_ids: seatIds,
+      total_amount: totalAmount,
       booking_type: 'ONLINE',
     };
 
@@ -257,7 +286,6 @@ export function attemptBooking(data) {
         'response time acceptable': (r) => (endTime - startTime) < 2000,
       });
     } else if (res.status === 400 || res.status === 409) {
-      // Booking conflict - expected when seats are taken
       bookingConflicts.add(1);
 
       check(res, {

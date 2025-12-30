@@ -75,7 +75,6 @@ func (rl *RateLimiter) Limit() gin.HandlerFunc {
 	}
 }
 
-// getClientID determines the client ID based on user ID or IP address.
 func (rl *RateLimiter) getClientID(c *gin.Context) string {
 	if userID, exists := c.Get("user_id"); exists {
 		return fmt.Sprintf("user:%s", userID)
