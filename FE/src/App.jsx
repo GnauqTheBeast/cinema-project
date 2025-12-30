@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import ChatBot from './components/ChatBot'
 import NotificationComponent from './components/NotificationComponent'
 import AppRouter from './routes/AppRouter'
 import websocketService from './services/websocketService'
 
 function App() {
+  const location = useLocation()
   const [token, setToken] = useState(() => localStorage.getItem('token'))
   const [adminToken, setAdminToken] = useState(() => localStorage.getItem('adminToken'))
 
@@ -46,6 +48,10 @@ function App() {
     }
   }, [token])
 
+  const shouldShowChatbot = !['/login', '/register', '/admin/login', '/verify'].includes(
+    location.pathname
+  )
+
   return (
     <>
       <AppRouter
@@ -54,7 +60,7 @@ function App() {
         adminToken={adminToken}
         setAdminToken={setAdminToken}
       />
-      <ChatBot />
+      {shouldShowChatbot && <ChatBot />}
       {token && <NotificationComponent />}
     </>
   )

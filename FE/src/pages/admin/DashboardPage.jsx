@@ -142,27 +142,29 @@ export default function DashboardPage() {
   return (
     <AdminLayout>
       <div className="max-w-[1400px] mx-auto">
-        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8 shadow-sm flex justify-between items-center flex-wrap gap-4">
-          <div>
-            <h1 className="m-0 mb-2 text-3xl font-bold text-gray-900 tracking-tight">
-              Welcome back, {user.fullName?.firstName || user.email}!
-            </h1>
-            <p className="m-0 text-gray-500 text-sm">
-              {weekRange.startDate
-                ? getWeekDisplayString(weekRange.startDate, weekRange.endDate)
-                : 'Loading...'}
-            </p>
-          </div>
-          {!loading && (
-            <div className="text-right text-gray-500 text-sm">
-              <div className="font-medium text-gray-900">{user.email}</div>
-              {user.fullName && (
-                <div className="mt-1">
-                  {user.fullName.firstName} {user.fullName.lastName}
-                </div>
-              )}
+        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 mb-8 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div>
+              <h1 className="m-0 mb-2 text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+                Chào mừng trở lại, {user.fullName?.firstName || user.email}!
+              </h1>
+              <p className="m-0 text-gray-500 text-sm">
+                {weekRange.startDate
+                  ? getWeekDisplayString(weekRange.startDate, weekRange.endDate)
+                  : 'Loading...'}
+              </p>
             </div>
-          )}
+            {!loading && (
+              <div className="text-left sm:text-right text-gray-500 text-sm">
+                <div className="font-medium text-gray-900">{user.email}</div>
+                {user.fullName && (
+                  <div className="mt-1">
+                    {user.fullName.firstName} {user.fullName.lastName}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -176,28 +178,28 @@ export default function DashboardPage() {
           ) : (
             <>
               <MetricCard
-                title="Total Revenue"
+                title="Tổng doanh thu"
                 value={metrics.revenue}
                 change={metrics.revenueChange}
                 icon="💰"
                 formatValue={formatCurrency}
               />
               <MetricCard
-                title="Tickets Sold"
+                title="Vé đã bán"
                 value={metrics.tickets}
                 change={metrics.ticketsChange}
                 icon="🎫"
                 formatValue={(v) => v.toLocaleString()}
               />
               <MetricCard
-                title="Total Bookings"
+                title="Tổng số đặt vé"
                 value={metrics.bookings}
                 change={metrics.bookingsChange}
                 icon="📊"
                 formatValue={(v) => v.toLocaleString()}
               />
               <MetricCard
-                title="Avg Ticket Price"
+                title="Giá vé trung bình"
                 value={metrics.avgPrice}
                 change={metrics.avgPriceChange}
                 icon="📈"

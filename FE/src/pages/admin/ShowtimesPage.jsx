@@ -320,7 +320,8 @@ const ShowtimesPage = () => {
         ) : (
           <>
             <Card padding="none">
-              <table className="min-w-full divide-y divide-gray-200">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -436,12 +437,13 @@ const ShowtimesPage = () => {
                   <p className="text-gray-500">Hãy thêm lịch chiếu đầu tiên vào hệ thống</p>
                 </div>
               )}
+              </div>
             </Card>
 
             {totalPages > 1 && (
               <Card>
-                <div className="flex justify-center">
-                  <nav className="flex space-x-2">
+                <div className="flex justify-center overflow-x-auto">
+                  <nav className="flex space-x-2 px-2">
                     <button
                       onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                       disabled={currentPage === 1}

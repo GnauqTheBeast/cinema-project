@@ -397,7 +397,8 @@ const SeatsPage = () => {
           <>
             {/* Seats Table */}
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -421,11 +422,15 @@ const SeatsPage = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {seats.map((seat) => (
+                  {seats.map((seat) => {
+                    const room = rooms.find((r) => r.id === seat.room_id)
+                    const roomName = room ? `Phòng ${room.room_number}` : seat.room_id
+
+                    return (
                     <tr key={seat.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {seat.room_id}
+                          {roomName}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -481,7 +486,8 @@ const SeatsPage = () => {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
 
@@ -490,12 +496,13 @@ const SeatsPage = () => {
                   <p className="text-gray-500">Không có ghế nào</p>
                 </div>
               )}
+              </div>
             </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center">
-                <nav className="flex space-x-2">
+              <div className="flex justify-center overflow-x-auto">
+                <nav className="flex space-x-2 px-2">
                   <button
                     onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}

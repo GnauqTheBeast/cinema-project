@@ -246,8 +246,8 @@ const RoomsPage = () => {
 
             {totalPages > 1 && (
               <Card>
-                <div className="flex justify-center">
-                  <nav className="flex space-x-2">
+                <div className="flex justify-center overflow-x-auto">
+                  <nav className="flex space-x-2 px-2">
                     <button
                       onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                       disabled={currentPage === 1}

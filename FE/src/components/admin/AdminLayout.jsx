@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   FaBars,
   FaChartBar,
@@ -21,10 +21,26 @@ import { useLocation, useNavigate } from 'react-router-dom'
 export default function AdminLayout({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}')
   const role = adminUser?.role || ''
+
+  // Auto-open/close sidebar based on screen size
+  useEffect(() => {
+    const handleResize = () => {
+      // lg breakpoint is 1024px in Tailwind
+      setIsSidebarOpen(window.innerWidth >= 1024)
+    }
+
+    // Set initial state
+    handleResize()
+
+    // Listen for resize events
+    window.addEventListener('resize', handleResize)
+
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const visiblePathsByRole = {
     admin: 'all',

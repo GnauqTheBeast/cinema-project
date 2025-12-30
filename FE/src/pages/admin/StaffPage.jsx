@@ -188,7 +188,8 @@ const StaffPage = () => {
         ) : (
           <>
             <Card padding="none">
-              <table className="min-w-full divide-y divide-gray-200">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -284,11 +285,12 @@ const StaffPage = () => {
                   <p className="text-gray-500">Hãy thêm nhân viên đầu tiên vào hệ thống</p>
                 </div>
               )}
+              </div>
             </Card>
 
             <Card>
-              <div className="flex justify-center">
-                <nav className="flex space-x-2">
+              <div className="flex justify-center overflow-x-auto">
+                <nav className="flex space-x-2 px-2">
                   <button
                     onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
@@ -361,7 +363,7 @@ const StaffPage = () => {
             </Card>
 
             <Card>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-slate-900 mb-2">{staffs.length}</div>
                   <div className="text-sm text-gray-600 uppercase tracking-wide font-medium">

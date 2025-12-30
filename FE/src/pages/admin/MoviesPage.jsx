@@ -36,12 +36,12 @@ export default function MoviesPage() {
   }, [])
 
   useEffect(() => {
-    fetchMovies()
+    fetchMovies().then()
   }, [fetchMovies])
 
   const handleSearch = (e) => {
     e.preventDefault()
-    fetchMovies(1, 12, searchQuery)
+    fetchMovies(1, 12, searchQuery).then()
   }
 
   const handleSearchChange = (e) => {
@@ -49,18 +49,18 @@ export default function MoviesPage() {
     setSearchQuery(value)
 
     if (value === '') {
-      fetchMovies(1, 12, '')
+      fetchMovies(1, 12, '').then()
     }
   }
 
   const handlePageChange = (newPage) => {
-    fetchMovies(newPage, meta.size, searchQuery)
+    fetchMovies(newPage, meta.size, searchQuery).then()
     window.scrollTo(0, 0)
   }
 
   const clearSearch = () => {
     setSearchQuery('')
-    fetchMovies(1, 12, '')
+    fetchMovies(1, 12, '').then()
   }
 
   if (loading && !searching) {
