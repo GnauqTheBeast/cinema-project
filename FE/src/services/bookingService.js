@@ -67,12 +67,12 @@ export const bookingService = {
     }
   },
 
-  searchTickets: async (ticketId = '', showtimeId = '') => {
+  searchTickets: async (bookingId = '', showtimeId = '') => {
     try {
       const params = new URLSearchParams()
 
-      if (ticketId) {
-        params.append('ticket_id', ticketId)
+      if (bookingId) {
+        params.append('booking_id', bookingId)
       }
       if (showtimeId) {
         params.append('showtime_id', showtimeId)

@@ -33,4 +33,6 @@ type Booking struct {
 	BookingType BookingType   `bun:"booking_type,notnull" json:"booking_type"`
 	CreatedAt   time.Time     `bun:"created_at,nullzero,default:current_timestamp" json:"created_at"`
 	UpdatedAt   *time.Time    `bun:"updated_at" json:"updated_at,omitempty"`
+
+	Ticket []*Ticket `bun:"rel:has-many,join:id=booking_id" json:"ticket,omitempty"`
 }

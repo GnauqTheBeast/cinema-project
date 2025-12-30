@@ -124,7 +124,7 @@ export default function AdminLayout({ children }) {
     },
     {
       path: '/admin/ticket-search',
-      label: 'Tìm kiếm vé',
+      label: 'Xuất vé',
       icon: FaSearch,
       permission: 'ticket_sell',
     },

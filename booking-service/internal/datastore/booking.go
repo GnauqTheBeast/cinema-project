@@ -84,6 +84,21 @@ func GetBookingById(ctx context.Context, db *bun.DB, id string) (*models.Booking
 	return booking, nil
 }
 
+func GetBookingByIdWithTickets(ctx context.Context, db bun.IDB, id string) (*models.Booking, error) {
+	booking := new(models.Booking)
+
+	err := db.NewSelect().
+		Model(booking).
+		Relation("Ticket").
+		Where("id = ?", id).
+		Scan(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get booking with tickets: %w", err)
+	}
+
+	return booking, nil
+}
+
 func GetBookingsByIds(ctx context.Context, db bun.IDB, ids []string) ([]*models.Booking, error) {
 	if len(ids) == 0 {
 		return []*models.Booking{}, nil

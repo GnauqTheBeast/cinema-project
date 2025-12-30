@@ -34,7 +34,7 @@ func (h *BookingHandler) GetBookings(c echo.Context) error {
 		Size   int    `query:"size"`
 		Status string `query:"status"`
 	}
-	if err := c.Bind(&query); err != nil {
+	if err = c.Bind(&query); err != nil {
 		return response.BadRequest(c, fmt.Sprintf("Invalid query parameters: %s", err.Error()))
 	}
 
@@ -153,16 +153,17 @@ func (h *BookingHandler) SearchTickets(c echo.Context) error {
 	}
 
 	var query struct {
-		TicketId   string `query:"ticket_id"`
+		BookingId  string `query:"booking_id"`
 		ShowtimeId string `query:"showtime_id"`
 	}
 	if err := c.Bind(&query); err != nil {
 		return response.BadRequest(c, fmt.Sprintf("Invalid query parameters: %s", err.Error()))
 	}
 
-	tickets, err := bookingService.SearchTickets(c.Request().Context(), query.TicketId, query.ShowtimeId)
+	tickets, err := bookingService.SearchTickets(c.Request().Context(), query.BookingId, query.ShowtimeId)
 	if err != nil {
-		return response.ErrorWithMessage(c, "Failed to search tickets")
+		fmt.Printf("ERROR SearchTickets: %v\n", err)
+		return response.ErrorWithMessage(c, fmt.Sprintf("Failed to search tickets: %s", err.Error()))
 	}
 
 	return response.SuccessWithMessage(c, "Tickets fetched successfully", map[string]interface{}{

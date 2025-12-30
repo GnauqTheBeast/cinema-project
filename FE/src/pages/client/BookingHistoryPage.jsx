@@ -15,7 +15,7 @@ export default function BookingHistoryPage() {
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
-    fetchBookings()
+    fetchBookings().then()
   }, [currentPage, statusFilter])
 
   const fetchBookings = async () => {
@@ -55,11 +55,11 @@ export default function BookingHistoryPage() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'confirmed':
+      case 'CONFIRMED':
         return 'bg-green-600/20 text-green-400 border-green-600/30'
-      case 'pending':
+      case 'PENDING':
         return 'bg-yellow-600/20 text-yellow-400 border-yellow-600/30'
-      case 'cancelled':
+      case 'CANCELED':
         return 'bg-red-600/20 text-red-400 border-red-600/30'
       default:
         return 'bg-gray-600/20 text-gray-400 border-gray-600/30'

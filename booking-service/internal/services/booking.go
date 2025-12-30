@@ -129,10 +129,6 @@ func (s *BookingService) GetUserBookings(ctx context.Context, userId string, pag
 }
 
 func (s *BookingService) enrichBookingsWithShowtimeData(ctx context.Context, bookings []*models.Booking) ([]*types.BookingHistory, error) {
-	if len(bookings) == 0 {
-		return []*types.BookingHistory{}, nil
-	}
-
 	showtimeIds := make([]string, 0, len(bookings))
 	for _, booking := range bookings {
 		showtimeIds = append(showtimeIds, booking.ShowtimeId)
@@ -429,48 +425,56 @@ func (s *BookingService) CreateTicketsWithDetails(ctx context.Context, bookingId
 	return result, ticketsCreated, nil
 }
 
-func (s *BookingService) SearchTickets(ctx context.Context, ticketId, showtimeId string) ([]*types.TicketWithBookingInfo, error) {
+func (s *BookingService) SearchTickets(ctx context.Context, bookingId, showtimeId string) ([]*types.TicketWithBookingInfo, error) {
 	var tickets []*models.Ticket
-	var err error
+	var booking *models.Booking
 
-	if ticketId != "" {
-		ticket, err := datastore.GetTicketById(ctx, s.roDb, ticketId)
+	if bookingId != "" {
+		var err error
+		booking, err = datastore.GetBookingByIdWithTickets(ctx, s.roDb, bookingId)
 		if err != nil {
 			return nil, err
 		}
-		if ticket == nil {
-			return []*types.TicketWithBookingInfo{}, nil
-		}
-		tickets = []*models.Ticket{ticket}
-	} else {
+		tickets = booking.Ticket
+	} else if showtimeId != "" {
+		var err error
 		tickets, err = datastore.GetTicketsByShowtimeId(ctx, s.roDb, showtimeId)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return s.enrichTicketsWithBookingData(ctx, tickets)
+	return s.enrichTicketsWithBookingData(ctx, tickets, booking)
 }
 
-func (s *BookingService) enrichTicketsWithBookingData(ctx context.Context, tickets []*models.Ticket) ([]*types.TicketWithBookingInfo, error) {
-	bookingIds := make([]string, 0, len(tickets))
+func (s *BookingService) enrichTicketsWithBookingData(ctx context.Context, tickets []*models.Ticket, booking *models.Booking) ([]*types.TicketWithBookingInfo, error) {
 	showtimeIds := make([]string, 0, len(tickets))
 	seatIds := make([]string, 0, len(tickets))
 
 	for _, ticket := range tickets {
-		bookingIds = append(bookingIds, ticket.BookingId)
 		showtimeIds = append(showtimeIds, ticket.ShowtimeId)
 		seatIds = append(seatIds, ticket.SeatId)
 	}
 
-	bookings, err := datastore.GetBookingsByIds(ctx, s.roDb, bookingIds)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get bookings: %w", err)
-	}
+	var bookingMap map[string]*models.Booking
 
-	bookingMap := make(map[string]*models.Booking)
-	for _, booking := range bookings {
-		bookingMap[booking.Id] = booking
+	if booking != nil {
+		bookingMap = map[string]*models.Booking{booking.Id: booking}
+	} else {
+		bookingIds := make([]string, 0, len(tickets))
+		for _, ticket := range tickets {
+			bookingIds = append(bookingIds, ticket.BookingId)
+		}
+
+		bookings, err := datastore.GetBookingsByIds(ctx, s.roDb, bookingIds)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get bookings: %w", err)
+		}
+
+		bookingMap = make(map[string]*models.Booking)
+		for _, b := range bookings {
+			bookingMap[b.Id] = b
+		}
 	}
 
 	showtimes, err := s.movieClient.GetShowtimes(ctx, showtimeIds)

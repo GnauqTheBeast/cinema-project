@@ -6,7 +6,7 @@ import { showtimeService } from '../../services/showtimeApi'
 import { formatCurrency, formatDateTime } from '../../utils/formatters'
 
 const TicketSearchPage = () => {
-  const [searchType, setSearchType] = useState('ticket_id')
+  const [searchType, setSearchType] = useState('booking_id')
   const [searchValue, setSearchValue] = useState('')
   const [showtimes, setShowtimes] = useState([])
   const [tickets, setTickets] = useState([])
@@ -15,7 +15,7 @@ const TicketSearchPage = () => {
   const [success, setSuccess] = useState('')
 
   useEffect(() => {
-    fetchScheduledShowtimes()
+    fetchScheduledShowtimes().then()
   }, [])
 
   const fetchScheduledShowtimes = async () => {
@@ -44,7 +44,7 @@ const TicketSearchPage = () => {
     try {
       setLoading(true)
       const response = await bookingService.searchTickets(
-        searchType === 'ticket_id' ? searchValue : '',
+        searchType === 'booking_id' ? searchValue : '',
         searchType === 'showtime_id' ? searchValue : ''
       )
 
@@ -103,7 +103,7 @@ const TicketSearchPage = () => {
               <FaTicketAlt className="text-2xl text-blue-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Tìm kiếm vé</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Xuất Vé</h1>
               <p className="text-sm text-gray-600 mt-1">Tìm kiếm và xuất vé cho khách hàng</p>
             </div>
           </div>
@@ -139,21 +139,21 @@ const TicketSearchPage = () => {
                   }}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 >
-                  <option value="ticket_id">Mã vé</option>
+                  <option value="booking_id">Mã đặt vé</option>
                   <option value="showtime_id">Suất chiếu</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {searchType === 'ticket_id' ? 'Mã vé' : 'Suất chiếu'}
+                  {searchType === 'booking_id' ? 'Mã đặt vé' : 'Suất chiếu'}
                 </label>
-                {searchType === 'ticket_id' ? (
+                {searchType === 'booking_id' ? (
                   <input
                     type="text"
                     value={searchValue}
                     onChange={(e) => setSearchValue(e.target.value)}
-                    placeholder="Nhập mã vé"
+                    placeholder="Nhập mã đặt vé"
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   />
                 ) : (
