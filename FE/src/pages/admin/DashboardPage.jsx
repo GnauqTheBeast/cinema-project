@@ -9,7 +9,6 @@ import MetricCardSkeleton from '../../components/admin/dashboard/MetricCardSkele
 import RevenueTrendChart from '../../components/admin/dashboard/RevenueTrendChart'
 import TopMoviesList from '../../components/admin/dashboard/TopMoviesList'
 import MovieStatsGrid from '../../components/admin/dashboard/MovieStatsGrid'
-import QuickActionsSection from '../../components/admin/dashboard/QuickActionsSection'
 
 export default function DashboardPage() {
   const user = JSON.parse(localStorage.getItem('adminUser'))
@@ -133,7 +132,32 @@ export default function DashboardPage() {
     }
 
     if (movieStatsData.data) {
-      setMovieStats(movieStatsData.data)
+      // Transform array response to expected format
+      const statsArray = movieStatsData.data
+      const transformed = {
+        total: 0,
+        by_status: {
+          showing: 0,
+          upcoming: 0,
+          ended: 0,
+        },
+      }
+
+      statsArray.forEach((stat) => {
+        const status = (stat.Status || stat.status || '').toLowerCase()
+        const count = stat.Count || stat.count || 0
+        transformed.total += count
+
+        if (status === 'showing') {
+          transformed.by_status.showing = count
+        } else if (status === 'upcoming') {
+          transformed.by_status.upcoming = count
+        } else if (status === 'ended') {
+          transformed.by_status.ended = count
+        }
+      })
+
+      setMovieStats(transformed)
     }
   }
 
@@ -215,8 +239,6 @@ export default function DashboardPage() {
           <TopMoviesList movies={topMovies} loading={loading} />
           <MovieStatsGrid stats={movieStats} loading={loading} />
         </div>
-
-        <QuickActionsSection />
       </div>
     </AdminLayout>
   )
