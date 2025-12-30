@@ -61,11 +61,12 @@ export const options = {
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:80';
 
-// Test users with tokens (you need to provide valid tokens)
-const testUsers = [
-  { token: __ENV.TEST_TOKEN_1 || null },
-  { token: __ENV.TEST_TOKEN_2 || null },
-  { token: __ENV.TEST_TOKEN_3 || null },
+// Test users credentials
+const TEST_USERS = [
+  { email: 'alice@email.com', password: 'password' },
+  { email: 'bob@email.com', password: 'password' },
+  // { email: 'customer1@example.com', password: 'password123' },
+  // { email: 'customer2@example.com', password: 'password123' },
 ];
 
 // Shared state for tracking bookings
@@ -74,34 +75,73 @@ let bookedSeats = new Set();
 export function setup() {
   console.log('Starting concurrent booking stress test...');
   console.log('This will test race conditions and seat locking mechanisms');
+  console.log('');
 
-  // Get a test user token
-  const loginRes = http.post(`${BASE_URL}/api/v1/auth/login`, JSON.stringify({
-    email: 'alice@email.com',
-    password: 'password',
-  }), {
-    headers: { 'Content-Type': 'application/json' },
-  });
+  // Login all test users and collect their tokens
+  console.log(`Logging in ${TEST_USERS.length} test users...`);
+  const userTokens = [];
 
-  let token = null;
-  if (loginRes.status === 200) {
-    const body = loginRes.json();
-    token = body.data?.token || body.token;
+  for (let i = 0; i < TEST_USERS.length; i++) {
+    const user = TEST_USERS[i];
+
+    const loginRes = http.post(`${BASE_URL}/api/v1/auth/login`, JSON.stringify({
+      email: user.email,
+      password: user.password,
+    }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (loginRes.status === 200) {
+      try {
+        const body = loginRes.json();
+        const token = body.data?.token || body.token;
+
+        if (token) {
+          userTokens.push({
+            email: user.email,
+            token: token,
+          });
+          console.log(`✓ Logged in: ${user.email}`);
+        } else {
+          console.log(`✗ Login failed (no token): ${user.email}`);
+        }
+      } catch (e) {
+        console.log(`✗ Login failed (parse error): ${user.email}`);
+      }
+    } else {
+      console.log(`✗ Login failed (HTTP ${loginRes.status}): ${user.email}`);
+    }
   }
 
+  if (userTokens.length === 0) {
+    console.log('ERROR: No users logged in successfully!');
+    console.log('Make sure test users exist in the database.');
+    return {
+      userTokens: [],
+      targetShowtimeId: __ENV.TARGET_SHOWTIME_ID || null,
+    };
+  }
+
+  console.log('');
+  console.log(`Successfully logged in ${userTokens.length}/${TEST_USERS.length} users`);
+  console.log('Starting stress test...');
+  console.log('');
+
   return {
-    token: token,
+    userTokens: userTokens,
     targetShowtimeId: __ENV.TARGET_SHOWTIME_ID || null,
   };
 }
 
 export function attemptBooking(data) {
-  const token = data.token || testUsers[Math.floor(Math.random() * testUsers.length)].token;
-
-  if (!token) {
-    console.log('No auth token available');
+  // Pick a random user token from the logged-in users
+  if (!data.userTokens || data.userTokens.length === 0) {
+    console.log('No user tokens available');
     return;
   }
+
+  const randomUser = data.userTokens[Math.floor(Math.random() * data.userTokens.length)];
+  const token = randomUser.token;
 
   const params = {
     headers: {
