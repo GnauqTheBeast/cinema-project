@@ -56,9 +56,10 @@ func (c *BookingClient) UpdateBookingStatusWithResponse(ctx context.Context, boo
 	return resp, nil
 }
 
-func (c *BookingClient) CreateTicketsWithDetails(ctx context.Context, bookingId string) (*pb.CreateTicketsResponse, error) {
+func (c *BookingClient) CreateTicketsWithDetails(ctx context.Context, bookingId string, seatIds []string) (*pb.CreateTicketsResponse, error) {
 	req := &pb.CreateTicketsRequest{
 		BookingId: bookingId,
+		SeatIds:   seatIds,
 	}
 
 	resp, err := c.client.CreateTickets(ctx, req)

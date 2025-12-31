@@ -12,7 +12,6 @@ const StaffFormPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: '',
     phone_number: '',
     address: '',
     role: 'ticket_staff',
@@ -51,7 +50,6 @@ const StaffFormPage = () => {
         setFormData({
           name: user.name || '',
           email: user.email || '',
-          password: '', // Don't populate password for security
           phone_number: user.phone_number || '',
           address: user.address || '',
           role: user.role || 'ticket_staff',
@@ -72,14 +70,8 @@ const StaffFormPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Validation
     if (!formData.name || !formData.email) {
       setError('Vui lòng điền đầy đủ thông tin bắt buộc')
-      return
-    }
-
-    if (!isEditing && !formData.password) {
-      setError('Vui lòng nhập mật khẩu')
       return
     }
 
@@ -104,11 +96,9 @@ const StaffFormPage = () => {
 
         await userService.updateUser(id, updateData)
       } else {
-        // Create new staff
         const createData = {
           name: formData.name,
           email: formData.email,
-          password: formData.password,
           role: formData.role,
           address: formData.address,
         }
@@ -218,28 +208,6 @@ const StaffFormPage = () => {
                   placeholder="email@example.com"
                 />
               </div>
-
-              {/* Password (only for create) */}
-              {!isEditing && (
-                <div>
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Mật khẩu <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Nhập mật khẩu"
-                  />
-                </div>
-              )}
 
               {/* Role (only for create) */}
               {!isEditing && (

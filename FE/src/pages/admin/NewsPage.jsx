@@ -157,9 +157,7 @@ export default function NewsPage() {
                         {item.title}
                       </h3>
 
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.summary}</p>
-
-                      <div className="text-xs text-gray-500 mb-4">{item.source_count} nguồn tin</div>
+                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">{item.summary}</p>
 
                       <div className="flex gap-2">
                         <Button

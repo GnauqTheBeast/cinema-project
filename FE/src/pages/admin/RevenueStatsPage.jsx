@@ -163,21 +163,10 @@ export default function RevenueStatsPage() {
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            padding: '12px',
-            border: '1px solid #E5E7EB',
-            borderRadius: '8px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.08)',
-            fontFamily: "'Open Sans', sans-serif",
-          }}
-        >
-          <p style={{ margin: '0 0 8px 0', fontWeight: 600, color: '#111827', fontSize: '13px' }}>
-            {label}
-          </p>
+        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-md">
+          <p className="mb-2 font-semibold text-gray-900 text-sm">{label}</p>
           {payload.map((entry, index) => (
-            <p key={index} style={{ margin: '0', color: entry.color, fontSize: '13px' }}>
+            <p key={index} className="m-0 text-sm" style={{ color: entry.color }}>
               {entry.name}: {formatCurrency(entry.value)}
             </p>
           ))}
@@ -197,27 +186,9 @@ export default function RevenueStatsPage() {
   if (loading) {
     return (
       <AdminLayout>
-        <div style={{ textAlign: 'center', padding: '64px 24px' }}>
-          <div
-            style={{
-              border: '3px solid #F3F4F6',
-              borderTop: '3px solid #10B981',
-              borderRadius: '50%',
-              width: '40px',
-              height: '40px',
-              animation: 'spin 800ms linear infinite',
-              margin: '0 auto',
-            }}
-          ></div>
-          <p
-            style={{
-              marginTop: '16px',
-              color: '#6B7280',
-              fontFamily: "'Open Sans', sans-serif",
-            }}
-          >
-            Loading revenue statistics...
-          </p>
+        <div className="text-center py-16 px-6">
+          <div className="w-10 h-10 border-3 border-gray-100 border-t-emerald-500 rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-gray-500">Loading revenue statistics...</p>
         </div>
       </AdminLayout>
     )
@@ -226,72 +197,21 @@ export default function RevenueStatsPage() {
   return (
     <AdminLayout>
       <div>
-        <div style={{ marginBottom: '32px' }}>
-          <h2
-            style={{
-              margin: '0 0 8px 0',
-              fontSize: '32px',
-              fontWeight: 700,
-              letterSpacing: '-0.025em',
-              color: '#111827',
-              fontFamily: "'Poppins', sans-serif",
-            }}
-          >
-            Revenue Statistics
-          </h2>
-          <p
-            style={{
-              margin: 0,
-              color: '#6B7280',
-              fontSize: '14px',
-              fontFamily: "'Open Sans', sans-serif",
-            }}
-          >
-            Comprehensive revenue analysis and insights
-          </p>
+        <div className="mb-8">
+          <h2 className="m-0 mb-2 text-3xl font-bold tracking-tight text-gray-900">Doanh Thu</h2>
+          <p className="m-0 text-gray-500 text-sm">Thống kê doanh thu một cách toàn diện</p>
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            gap: '8px',
-            marginBottom: '24px',
-            backgroundColor: '#FFFFFF',
-            padding: '8px',
-            borderRadius: '12px',
-            border: '1px solid #E5E7EB',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.08)',
-          }}
-        >
+        <div className="flex gap-2 mb-6 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              style={{
-                flex: 1,
-                padding: '12px 24px',
-                border: 'none',
-                background: activeTab === tab.id ? 'linear-gradient(135deg, #10B981 0%, #DC2626 100%)' : 'transparent',
-                color: activeTab === tab.id ? '#FFFFFF' : '#6B7280',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: activeTab === tab.id ? 600 : 500,
-                transition: 'all 150ms ease-in-out',
-                fontFamily: "'Open Sans', sans-serif",
-              }}
-              onMouseEnter={(e) => {
-                if (activeTab !== tab.id) {
-                  e.currentTarget.style.backgroundColor = '#F9FAFB'
-                  e.currentTarget.style.color = '#111827'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (activeTab !== tab.id) {
-                  e.currentTarget.style.backgroundColor = 'transparent'
-                  e.currentTarget.style.color = '#6B7280'
-                }
-              }}
+              className={`flex-1 px-6 py-3 rounded-lg text-sm font-medium transition-all ${
+                activeTab === tab.id
+                  ? 'bg-gradient-to-br from-emerald-500 to-red-600 text-white font-semibold'
+                  : 'bg-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+              }`}
             >
               {tab.label}
             </button>
@@ -300,176 +220,47 @@ export default function RevenueStatsPage() {
 
         {activeTab === 'overview' && (
           <div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: '16px',
-                marginBottom: '32px',
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  padding: '24px',
-                  borderRadius: '12px',
-                  border: '1px solid #E5E7EB',
-                  boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
-                }}
-              >
-                <h3
-                  style={{
-                    margin: '0 0 8px 0',
-                    color: '#6B7280',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    letterSpacing: '0.025em',
-                    textTransform: 'uppercase',
-                    fontFamily: "'Open Sans', sans-serif",
-                  }}
-                >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <h3 className="m-0 mb-2 text-gray-500 text-xs font-semibold uppercase tracking-wider">
                   Total Revenue
                 </h3>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: '28px',
-                    fontWeight: 700,
-                    color: '#10B981',
-                    fontFamily: "'Poppins', sans-serif",
-                  }}
-                >
+                <p className="m-0 text-3xl font-bold text-emerald-500">
                   {overallStats.totalRevenueFormatted}
                 </p>
               </div>
 
-              <div
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  padding: '24px',
-                  borderRadius: '12px',
-                  border: '1px solid #E5E7EB',
-                  boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
-                }}
-              >
-                <h3
-                  style={{
-                    margin: '0 0 8px 0',
-                    color: '#6B7280',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    letterSpacing: '0.025em',
-                    textTransform: 'uppercase',
-                    fontFamily: "'Open Sans', sans-serif",
-                  }}
-                >
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <h3 className="m-0 mb-2 text-gray-500 text-xs font-semibold uppercase tracking-wider">
                   Total Tickets
                 </h3>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: '28px',
-                    fontWeight: 700,
-                    color: '#111827',
-                    fontFamily: "'Poppins', sans-serif",
-                  }}
-                >
+                <p className="m-0 text-3xl font-bold text-gray-900">
                   {overallStats.totalTickets?.toLocaleString()}
                 </p>
               </div>
 
-              <div
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  padding: '24px',
-                  borderRadius: '12px',
-                  border: '1px solid #E5E7EB',
-                  boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
-                }}
-              >
-                <h3
-                  style={{
-                    margin: '0 0 8px 0',
-                    color: '#6B7280',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    letterSpacing: '0.025em',
-                    textTransform: 'uppercase',
-                    fontFamily: "'Open Sans', sans-serif",
-                  }}
-                >
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <h3 className="m-0 mb-2 text-gray-500 text-xs font-semibold uppercase tracking-wider">
                   Avg Ticket Price
                 </h3>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: '28px',
-                    fontWeight: 700,
-                    color: '#111827',
-                    fontFamily: "'Poppins', sans-serif",
-                  }}
-                >
+                <p className="m-0 text-3xl font-bold text-gray-900">
                   {overallStats.averageTicketPriceFormatted}
                 </p>
               </div>
 
-              <div
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  padding: '24px',
-                  borderRadius: '12px',
-                  border: '1px solid #E5E7EB',
-                  boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
-                }}
-              >
-                <h3
-                  style={{
-                    margin: '0 0 8px 0',
-                    color: '#6B7280',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    letterSpacing: '0.025em',
-                    textTransform: 'uppercase',
-                    fontFamily: "'Open Sans', sans-serif",
-                  }}
-                >
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <h3 className="m-0 mb-2 text-gray-500 text-xs font-semibold uppercase tracking-wider">
                   Total Bookings
                 </h3>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: '28px',
-                    fontWeight: 700,
-                    color: '#111827',
-                    fontFamily: "'Poppins', sans-serif",
-                  }}
-                >
+                <p className="m-0 text-3xl font-bold text-gray-900">
                   {overallStats.totalBookings?.toLocaleString()}
                 </p>
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  padding: '24px',
-                  borderRadius: '12px',
-                  border: '1px solid #E5E7EB',
-                  boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
-                }}
-              >
-                <h3
-                  style={{
-                    margin: '0 0 16px 0',
-                    fontSize: '18px',
-                    fontWeight: 600,
-                    color: '#111827',
-                    fontFamily: "'Poppins', sans-serif",
-                  }}
-                >
-                  Revenue by Genre
-                </h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Revenue by Genre</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -491,39 +282,13 @@ export default function RevenueStatsPage() {
                 </ResponsiveContainer>
               </div>
 
-              <div
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  padding: '24px',
-                  borderRadius: '12px',
-                  border: '1px solid #E5E7EB',
-                  boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
-                }}
-              >
-                <h3
-                  style={{
-                    margin: '0 0 16px 0',
-                    fontSize: '18px',
-                    fontWeight: 600,
-                    color: '#111827',
-                    fontFamily: "'Poppins', sans-serif",
-                  }}
-                >
-                  Monthly Trend
-                </h3>
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Monthly Trend</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={monthlyData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                    <XAxis
-                      dataKey="monthName"
-                      tick={{ fontFamily: "'Open Sans', sans-serif", fontSize: 12, fill: '#6B7280' }}
-                      stroke="#E5E7EB"
-                    />
-                    <YAxis
-                      tickFormatter={formatCurrency}
-                      tick={{ fontFamily: "'Open Sans', sans-serif", fontSize: 12, fill: '#6B7280' }}
-                      stroke="#E5E7EB"
-                    />
+                    <XAxis dataKey="monthName" tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
+                    <YAxis tickFormatter={formatCurrency} tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
                     <Tooltip content={<CustomTooltip />} />
                     <Line
                       type="monotone"
@@ -541,41 +306,17 @@ export default function RevenueStatsPage() {
         )}
 
         {activeTab === 'monthly' && (
-          <div
-            style={{
-              backgroundColor: '#FFFFFF',
-              padding: '24px',
-              borderRadius: '12px',
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
-            }}
-          >
-            <h3
-              style={{
-                margin: '0 0 16px 0',
-                fontSize: '18px',
-                fontWeight: 600,
-                color: '#111827',
-                fontFamily: "'Poppins', sans-serif",
-              }}
-            >
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">
               Monthly Revenue Breakdown
             </h3>
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                <XAxis
-                  dataKey="monthName"
-                  tick={{ fontFamily: "'Open Sans', sans-serif", fontSize: 12, fill: '#6B7280' }}
-                  stroke="#E5E7EB"
-                />
-                <YAxis
-                  tickFormatter={formatCurrency}
-                  tick={{ fontFamily: "'Open Sans', sans-serif", fontSize: 12, fill: '#6B7280' }}
-                  stroke="#E5E7EB"
-                />
+                <XAxis dataKey="monthName" tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
+                <YAxis tickFormatter={formatCurrency} tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend wrapperStyle={{ fontFamily: "'Open Sans', sans-serif", fontSize: 14 }} />
+                <Legend wrapperStyle={{ fontSize: 14 }} />
                 <Bar dataKey="revenue" fill="#10B981" name="Revenue" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -583,24 +324,8 @@ export default function RevenueStatsPage() {
         )}
 
         {activeTab === 'movies' && (
-          <div
-            style={{
-              backgroundColor: '#FFFFFF',
-              padding: '24px',
-              borderRadius: '12px',
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
-            }}
-          >
-            <h3
-              style={{
-                margin: '0 0 16px 0',
-                fontSize: '18px',
-                fontWeight: 600,
-                color: '#111827',
-                fontFamily: "'Poppins', sans-serif",
-              }}
-            >
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">
               Top 10 Movies by Revenue
             </h3>
             <ResponsiveContainer width="100%" height={500}>
@@ -609,113 +334,43 @@ export default function RevenueStatsPage() {
                 <XAxis
                   type="number"
                   tickFormatter={formatCurrency}
-                  tick={{ fontFamily: "'Open Sans', sans-serif", fontSize: 12, fill: '#6B7280' }}
+                  tick={{ fontSize: 12, fill: '#6B7280' }}
                   stroke="#E5E7EB"
                 />
                 <YAxis
                   dataKey="title"
                   type="category"
                   width={150}
-                  tick={{ fontFamily: "'Open Sans', sans-serif", fontSize: 12, fill: '#6B7280' }}
+                  tick={{ fontSize: 12, fill: '#6B7280' }}
                   stroke="#E5E7EB"
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend wrapperStyle={{ fontFamily: "'Open Sans', sans-serif", fontSize: 14 }} />
+                <Legend wrapperStyle={{ fontSize: 14 }} />
                 <Bar dataKey="revenue" fill="#10B981" name="Revenue" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
 
-            <div style={{ marginTop: '32px' }}>
-              <h4
-                style={{
-                  margin: '0 0 4px 0',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  color: '#111827',
-                  fontFamily: "'Poppins', sans-serif",
-                }}
-              >
+            <div className="mt-8">
+              <h4 className="m-0 mb-1 text-base font-semibold text-gray-900">
                 Detailed Movie Statistics
               </h4>
-              <p
-                style={{
-                  fontSize: '14px',
-                  color: '#6B7280',
-                  margin: '0 0 16px 0',
-                  fontFamily: "'Open Sans', sans-serif",
-                }}
-              >
+              <p className="text-sm text-gray-500 m-0 mb-4">
                 Click on any movie to view showtime-level details
               </p>
-              <div
-                style={{
-                  overflowX: 'auto',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                }}
-              >
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div className="overflow-x-auto border border-gray-200 rounded-lg overflow-hidden">
+                <table className="w-full border-collapse">
                   <thead>
-                    <tr style={{ backgroundColor: '#F9FAFB' }}>
-                      <th
-                        style={{
-                          padding: '16px',
-                          textAlign: 'left',
-                          borderBottom: '1px solid #E5E7EB',
-                          fontFamily: "'Open Sans', sans-serif",
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          color: '#6B7280',
-                          letterSpacing: '0.05em',
-                          textTransform: 'uppercase',
-                        }}
-                      >
+                    <tr className="bg-gray-50">
+                      <th className="px-4 py-4 text-left border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Movie
                       </th>
-                      <th
-                        style={{
-                          padding: '16px',
-                          textAlign: 'left',
-                          borderBottom: '1px solid #E5E7EB',
-                          fontFamily: "'Open Sans', sans-serif",
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          color: '#6B7280',
-                          letterSpacing: '0.05em',
-                          textTransform: 'uppercase',
-                        }}
-                      >
+                      <th className="px-4 py-4 text-left border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Genre
                       </th>
-                      <th
-                        style={{
-                          padding: '16px',
-                          textAlign: 'right',
-                          borderBottom: '1px solid #E5E7EB',
-                          fontFamily: "'Open Sans', sans-serif",
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          color: '#6B7280',
-                          letterSpacing: '0.05em',
-                          textTransform: 'uppercase',
-                        }}
-                      >
+                      <th className="px-4 py-4 text-right border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Revenue
                       </th>
-                      <th
-                        style={{
-                          padding: '16px',
-                          textAlign: 'right',
-                          borderBottom: '1px solid #E5E7EB',
-                          fontFamily: "'Open Sans', sans-serif",
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          color: '#6B7280',
-                          letterSpacing: '0.05em',
-                          textTransform: 'uppercase',
-                        }}
-                      >
+                      <th className="px-4 py-4 text-right border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Tickets Sold
                       </th>
                     </tr>
@@ -725,55 +380,14 @@ export default function RevenueStatsPage() {
                       <tr
                         key={index}
                         onClick={() => handleMovieClick(movie)}
-                        style={{
-                          cursor: 'pointer',
-                          transition: 'background-color 150ms ease-in-out',
-                          borderBottom: '1px solid #F3F4F6',
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F9FAFB')}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        className="cursor-pointer transition-colors border-b border-gray-100 hover:bg-gray-50"
                       >
-                        <td
-                          style={{
-                            padding: '16px',
-                            fontFamily: "'Open Sans', sans-serif",
-                            fontSize: '14px',
-                            color: '#111827',
-                          }}
-                        >
-                          {movie.title}
-                        </td>
-                        <td
-                          style={{
-                            padding: '16px',
-                            fontFamily: "'Open Sans', sans-serif",
-                            fontSize: '14px',
-                            color: '#6B7280',
-                          }}
-                        >
-                          {movie.genre}
-                        </td>
-                        <td
-                          style={{
-                            padding: '16px',
-                            textAlign: 'right',
-                            fontFamily: "'Open Sans', sans-serif",
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            color: '#111827',
-                          }}
-                        >
+                        <td className="px-4 py-4 text-sm text-gray-900">{movie.title}</td>
+                        <td className="px-4 py-4 text-sm text-gray-500">{movie.genre}</td>
+                        <td className="px-4 py-4 text-right text-sm font-semibold text-gray-900">
                           {movie.revenueFormatted}
                         </td>
-                        <td
-                          style={{
-                            padding: '16px',
-                            textAlign: 'right',
-                            fontFamily: "'Open Sans', sans-serif",
-                            fontSize: '14px',
-                            color: '#111827',
-                          }}
-                        >
+                        <td className="px-4 py-4 text-right text-sm text-gray-900">
                           {movie.ticketsSold.toLocaleString()}
                         </td>
                       </tr>
@@ -786,27 +400,9 @@ export default function RevenueStatsPage() {
         )}
 
         {activeTab === 'genres' && (
-          <div
-            style={{
-              backgroundColor: '#FFFFFF',
-              padding: '24px',
-              borderRadius: '12px',
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px 0 rgba(0,0,0,0.08)',
-            }}
-          >
-            <h3
-              style={{
-                margin: '0 0 16px 0',
-                fontSize: '18px',
-                fontWeight: 600,
-                color: '#111827',
-                fontFamily: "'Poppins', sans-serif",
-              }}
-            >
-              Revenue by Genre
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Revenue by Genre</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <ResponsiveContainer width="100%" height={400}>
                 <PieChart>
                   <Pie
@@ -826,74 +422,29 @@ export default function RevenueStatsPage() {
                     ))}
                   </Pie>
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontFamily: "'Open Sans', sans-serif", fontSize: 14 }} />
+                  <Legend wrapperStyle={{ fontSize: 14 }} />
                 </PieChart>
               </ResponsiveContainer>
 
               <div>
-                <h4
-                  style={{
-                    margin: '0 0 16px 0',
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    color: '#111827',
-                    fontFamily: "'Poppins', sans-serif",
-                  }}
-                >
-                  Genre Breakdown
-                </h4>
+                <h4 className="m-0 mb-4 text-base font-semibold text-gray-900">Genre Breakdown</h4>
                 {genreData.map((genre, index) => (
                   <div
                     key={index}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '12px 16px',
-                      marginBottom: '8px',
-                      backgroundColor: '#F9FAFB',
-                      borderRadius: '8px',
-                      border: '1px solid #E5E7EB',
-                    }}
+                    className="flex justify-between items-center px-4 py-3 mb-2 bg-gray-50 rounded-lg border border-gray-200"
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div className="flex items-center gap-3">
                       <div
-                        style={{
-                          width: '16px',
-                          height: '16px',
-                          backgroundColor: COLORS[index % COLORS.length],
-                          borderRadius: '4px',
-                        }}
+                        className="w-4 h-4 rounded"
+                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
                       ></div>
-                      <span
-                        style={{
-                          fontWeight: 600,
-                          color: '#111827',
-                          fontFamily: "'Open Sans', sans-serif",
-                          fontSize: '14px',
-                        }}
-                      >
-                        {genre.genre}
-                      </span>
+                      <span className="font-semibold text-gray-900 text-sm">{genre.genre}</span>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div
-                        style={{
-                          fontWeight: 700,
-                          color: '#111827',
-                          fontFamily: "'Poppins', sans-serif",
-                          fontSize: '16px',
-                        }}
-                      >
+                    <div className="text-right">
+                      <div className="font-bold text-gray-900 text-base">
                         {genre.revenueFormatted}
                       </div>
-                      <div
-                        style={{
-                          fontSize: '12px',
-                          color: '#6B7280',
-                          fontFamily: "'Open Sans', sans-serif",
-                        }}
-                      >
+                      <div className="text-xs text-gray-500">
                         {((genre.revenue / overallStats.totalRevenue) * 100).toFixed(1)}%
                       </div>
                     </div>

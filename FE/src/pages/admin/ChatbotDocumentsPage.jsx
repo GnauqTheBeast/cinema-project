@@ -41,7 +41,7 @@ export default function ChatbotDocumentsPage() {
   }, [])
 
   useEffect(() => {
-    fetchDocuments()
+    fetchDocuments().then()
   }, [fetchDocuments])
 
   const handleDrag = (e) => {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   FaBars,
   FaChartBar,
@@ -10,6 +10,7 @@ import {
   FaMoneyBillWave,
   FaNewspaper,
   FaRobot,
+  FaSearch,
   FaShoppingCart,
   FaSignOutAlt,
   FaTimes,
@@ -20,10 +21,26 @@ import { useLocation, useNavigate } from 'react-router-dom'
 export default function AdminLayout({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}')
   const role = adminUser?.role || ''
+
+  // Auto-open/close sidebar based on screen size
+  useEffect(() => {
+    const handleResize = () => {
+      // lg breakpoint is 1024px in Tailwind
+      setIsSidebarOpen(window.innerWidth >= 1024)
+    }
+
+    // Set initial state
+    handleResize()
+
+    // Listen for resize events
+    window.addEventListener('resize', handleResize)
+
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const visiblePathsByRole = {
     admin: 'all',
@@ -40,6 +57,7 @@ export default function AdminLayout({ children }) {
       '/admin/dashboard',
       '/admin/showtimes',
       '/admin/box-office',
+      '/admin/ticket-search',
     ]),
   }
 
@@ -102,6 +120,12 @@ export default function AdminLayout({ children }) {
       path: '/admin/box-office',
       label: 'Bán vé tại quầy',
       icon: FaShoppingCart,
+      permission: 'ticket_sell',
+    },
+    {
+      path: '/admin/ticket-search',
+      label: 'Xuất vé',
+      icon: FaSearch,
       permission: 'ticket_sell',
     },
     {
@@ -206,6 +230,7 @@ export default function AdminLayout({ children }) {
                   if (!isItemVisibleForRole(item.path)) return null
 
                   if (item.path === '/admin/box-office' && role !== 'ticket_staff') return null
+                  if (item.path === '/admin/ticket-search' && role !== 'ticket_staff') return null
 
                   return (
                     <button

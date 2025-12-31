@@ -27,16 +27,10 @@ func NewWorker(ctn *do.Injector, geminiAPIKeys []string) (*Worker, error) {
 		return nil, err
 	}
 
-	if len(geminiAPIKeys) == 0 {
-		return nil, fmt.Errorf("at least one Gemini API key is required")
-	}
-
-	logrus.Infof("Initializing summarization worker with %d Gemini API key(s)", len(geminiAPIKeys))
-
 	return &Worker{
 		db:            db,
 		geminiClient:  gemini.NewClient(geminiAPIKeys),
-		batchSize:     10, // Process 10 articles at a time (reduced to save Gemini quota)
+		batchSize:     10,
 		checkInterval: 30 * time.Minute,
 	}, nil
 }
@@ -54,7 +48,6 @@ func (w *Worker) Start(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			logrus.Info("Summarization worker stopped")
 			return ctx.Err()
 		case <-ticker.C:
 			if err := w.processPendingArticles(ctx); err != nil {
@@ -67,7 +60,6 @@ func (w *Worker) Start(ctx context.Context) error {
 func (w *Worker) processPendingArticles(ctx context.Context) error {
 	logrus.Info("Processing pending articles...")
 
-	// Fetch pending articles
 	articles, err := w.fetchPendingArticles(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to fetch pending articles: %w", err)
@@ -78,63 +70,54 @@ func (w *Worker) processPendingArticles(ctx context.Context) error {
 		return nil
 	}
 
-	logrus.Infof("Found %d pending articles", len(articles))
-
-	// Group similar articles
-	groups := GroupArticles(articles)
-
-	// Log grouping statistics
-	singleCount := 0
-	multiCount := 0
-	maxGroupSize := 0
-	for _, group := range groups {
-		if len(group.Articles) == 1 {
-			singleCount++
-			continue
-		}
-		multiCount++
-		if len(group.Articles) > maxGroupSize {
-			maxGroupSize = len(group.Articles)
+	domesticCount := 0
+	internationalCount := 0
+	for _, article := range articles {
+		if article.Category == "domestic" {
+			domesticCount++
+		} else {
+			internationalCount++
 		}
 	}
 
-	logrus.Infof("Grouped into %d groups: %d single articles, %d multi-article groups (largest: %d articles)",
-		len(groups), singleCount, multiCount, maxGroupSize)
+	logrus.Infof("Found %d pending articles to summarize (%d domestic, %d international)",
+		len(articles), domesticCount, internationalCount)
 
-	// Process each group
+	groups := GroupArticles(articles)
+
 	summariesCreated := 0
-	articlesProcessed := 0
 
 	for _, group := range groups {
-		// Generate summary for all groups (including single articles)
+		article := group.Articles[0]
+
 		summary, err := w.createSummaryForGroup(ctx, group)
 		if err != nil {
-			logrus.Errorf("Failed to create summary for group (category: %s, language: %s, articles: %d): %v",
-				group.Category, group.Language, len(group.Articles), err)
+			logrus.Errorf("Failed to create summary for article (ID: %s, category: %s, language: %s): %v",
+				article.Id, group.Category, group.Language, err)
 			_ = w.markArticlesProcessed(ctx, group.Articles, "")
 			continue
 		}
 
-		// Update articles status
 		if err = w.markArticlesProcessed(ctx, group.Articles, summary.Id); err != nil {
-			logrus.Errorf("Failed to mark articles as processed: %v", err)
+			logrus.Errorf("Failed to mark article as processed: %v", err)
 			continue
 		}
 
 		summariesCreated++
-		articlesProcessed += len(group.Articles)
 	}
 
-	logrus.Infof("Processing completed - Summaries created: %d, Articles processed: %d", summariesCreated, articlesProcessed)
+	logrus.Infof("Processing completed - Summaries created: %d/%d", summariesCreated, len(articles))
 	return nil
 }
 
 func (w *Worker) fetchPendingArticles(ctx context.Context) ([]*models.NewsArticle, error) {
-	var articles []*models.NewsArticle
+	var domesticArticles []*models.NewsArticle
+	var internationalArticles []*models.NewsArticle
 
 	err := w.db.NewSelect().
-		Model(&articles).
+		Model(&domesticArticles).
 		Where("status = ?", "PENDING").
+		Where("category = ?", "domestic").
 		Order("published_at DESC").
 		Limit(w.batchSize).
 		Scan(ctx)
@@ -142,73 +125,55 @@ func (w *Worker) fetchPendingArticles(ctx context.Context) ([]*models.NewsArticl
 		return nil, err
 	}
 
+	err = w.db.NewSelect().
+		Model(&internationalArticles).
+		Where("status = ?", "PENDING").
+		Where("category = ?", "international").
+		Order("published_at DESC").
+		Limit(w.batchSize).
+		Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	articles := append(domesticArticles, internationalArticles...)
 	return articles, nil
 }
 
 func (w *Worker) createSummaryForGroup(ctx context.Context, group *ArticleGroup) (*models.NewsSummary, error) {
-	// Extract titles from articles
-	titles := make([]string, len(group.Articles))
-	articleIds := make([]string, len(group.Articles))
-	var imageURL string
+	article := group.Articles[0]
+	imageURL := article.ImageURL
 
-	for i, article := range group.Articles {
-		titles[i] = article.Title
-		articleIds[i] = article.Id
-		if imageURL == "" && article.ImageURL != "" {
-			imageURL = article.ImageURL
-		}
-	}
+	logrus.Infof("Generating summary for article: '%s' (%s)", article.Title, group.Language)
 
-	articleType := "single article"
-	if len(titles) > 1 {
-		articleType = fmt.Sprintf("%d related articles", len(titles))
-	}
-	logrus.Infof("Generating summary for %s in %s", articleType, group.Language)
-
-	// Generate topic title
-	topicTitle, err := w.geminiClient.GenerateTopicTitle(ctx, titles, group.Language)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate topic title: %w", err)
-	}
-
-	// Generate summary
-	summaryText, err := w.geminiClient.SummarizeArticles(ctx, titles, group.Language)
+	summaryText, err := w.geminiClient.SummarizeArticles(ctx, article.Title, group.Language)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate summary: %w", err)
 	}
 
-	// Collect all tags
-	tagsMap := make(map[string]bool)
-	for _, article := range group.Articles {
-		for _, tag := range article.Tags {
-			tagsMap[tag] = true
-		}
-	}
-
-	tags := make([]string, 0, len(tagsMap))
-	for tag := range tagsMap {
-		tags = append(tags, tag)
+	tags := article.Tags
+	if tags == nil {
+		tags = make([]string, 0)
 	}
 
 	now := time.Now()
 	isActive := true
 	summary := &models.NewsSummary{
 		Id:          uuid.New().String(),
-		Title:       topicTitle,
+		Title:       article.Title,
 		Summary:     summaryText,
-		ArticleIds:  articleIds,
-		SourceCount: len(group.Articles),
+		ArticleIds:  []string{article.Id},
+		SourceCount: 1,
 		Category:    group.Category,
 		Language:    group.Language,
 		Tags:        tags,
 		ImageURL:    imageURL,
-		Status:      "published",
+		Status:      "PUBLISHED",
 		IsActive:    &isActive,
 		CreatedAt:   &now,
 		UpdatedAt:   &now,
 	}
 
-	// Save to database
 	_, err = w.db.NewInsert().
 		Model(summary).
 		Exec(ctx)
@@ -216,7 +181,6 @@ func (w *Worker) createSummaryForGroup(ctx context.Context, group *ArticleGroup)
 		return nil, fmt.Errorf("failed to insert summary: %w", err)
 	}
 
-	logrus.Infof("Created summary: %s (%d sources)", topicTitle, len(group.Articles))
 	return summary, nil
 }
 
@@ -229,8 +193,8 @@ func (w *Worker) markArticlesProcessed(ctx context.Context, articles []*models.N
 	now := time.Now()
 	_, err := w.db.NewUpdate().
 		Model((*models.NewsArticle)(nil)).
-		Set("status = ?", "summarized").
-		Set("summary = ?", summaryId). // Store reference to summary
+		Set("status = ?", "SUMMARIZED").
+		Set("summary = ?", summaryId).
 		Set("updated_at = ?", &now).
 		Where("id IN (?)", bun.In(articleIds)).
 		Exec(ctx)

@@ -56,11 +56,8 @@ func (s *BookingServer) UpdateBookingStatus(ctx context.Context, req *pb.UpdateB
 }
 
 func (s *BookingServer) CreateTickets(ctx context.Context, req *pb.CreateTicketsRequest) (*pb.CreateTicketsResponse, error) {
-	logrus.Infof("[gRPC] CreateTickets called for booking %s", req.BookingId)
-
-	bookingDetails, ticketsCreated, err := s.bookingService.CreateTicketsWithDetails(ctx, req.BookingId)
+	bookingDetails, ticketsCreated, err := s.bookingService.CreateTicketsWithDetails(ctx, req.BookingId, req.SeatIds)
 	if err != nil {
-		logrus.Errorf("[gRPC] Failed to create tickets: %v", err)
 		return &pb.CreateTicketsResponse{
 			Success:        false,
 			Message:        fmt.Sprintf("failed to create tickets: %v", err),

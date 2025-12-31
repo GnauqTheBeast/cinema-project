@@ -3,28 +3,28 @@ import LoadingSpinner from '../../common/LoadingSpinner'
 export default function MovieStatsGrid({ stats, loading }) {
   const statsData = [
     {
-      label: 'Total Movies',
+      label: 'Tổng số phim',
       value: stats.total,
       colorClass: 'text-red-600',
       bgClass: 'bg-red-50',
       borderClass: 'border-red-200',
     },
     {
-      label: 'Now Showing',
+      label: 'Đang chiếu',
       value: stats.by_status?.showing || 0,
       colorClass: 'text-green-600',
       bgClass: 'bg-green-50',
       borderClass: 'border-green-200',
     },
     {
-      label: 'Upcoming',
+      label: 'Sắp chiếu',
       value: stats.by_status?.upcoming || 0,
       colorClass: 'text-amber-600',
       bgClass: 'bg-amber-50',
       borderClass: 'border-amber-200',
     },
     {
-      label: 'Ended',
+      label: 'Đã kết thúc',
       value: stats.by_status?.ended || 0,
       colorClass: 'text-gray-600',
       bgClass: 'bg-gray-100',
@@ -35,7 +35,7 @@ export default function MovieStatsGrid({ stats, loading }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
       <h3 className="mb-6 text-lg font-semibold text-gray-900">
-        Movie Statistics
+        Thống kê phim
       </h3>
 
       {loading ? (

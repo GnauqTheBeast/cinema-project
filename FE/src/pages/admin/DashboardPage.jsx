@@ -9,7 +9,6 @@ import MetricCardSkeleton from '../../components/admin/dashboard/MetricCardSkele
 import RevenueTrendChart from '../../components/admin/dashboard/RevenueTrendChart'
 import TopMoviesList from '../../components/admin/dashboard/TopMoviesList'
 import MovieStatsGrid from '../../components/admin/dashboard/MovieStatsGrid'
-import QuickActionsSection from '../../components/admin/dashboard/QuickActionsSection'
 
 export default function DashboardPage() {
   const user = JSON.parse(localStorage.getItem('adminUser'))
@@ -133,7 +132,32 @@ export default function DashboardPage() {
     }
 
     if (movieStatsData.data) {
-      setMovieStats(movieStatsData.data)
+      // Transform array response to expected format
+      const statsArray = movieStatsData.data
+      const transformed = {
+        total: 0,
+        by_status: {
+          showing: 0,
+          upcoming: 0,
+          ended: 0,
+        },
+      }
+
+      statsArray.forEach((stat) => {
+        const status = (stat.Status || stat.status || '').toLowerCase()
+        const count = stat.Count || stat.count || 0
+        transformed.total += count
+
+        if (status === 'showing') {
+          transformed.by_status.showing = count
+        } else if (status === 'upcoming') {
+          transformed.by_status.upcoming = count
+        } else if (status === 'ended') {
+          transformed.by_status.ended = count
+        }
+      })
+
+      setMovieStats(transformed)
     }
   }
 
@@ -141,75 +165,33 @@ export default function DashboardPage() {
 
   return (
     <AdminLayout>
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #E5E7EB',
-            borderRadius: '12px',
-            padding: '24px',
-            marginBottom: '32px',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.08)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '16px',
-          }}
-        >
-          <div>
-            <h1
-              style={{
-                margin: '0 0 8px 0',
-                fontSize: '32px',
-                fontWeight: 700,
-                color: '#111827',
-                fontFamily: "'Open Sans', sans-serif",
-                letterSpacing: '-0.025em',
-              }}
-            >
-              Welcome back, {user.fullName?.firstName || user.email}!
-            </h1>
-            <p
-              style={{
-                margin: 0,
-                color: '#6B7280',
-                fontSize: '14px',
-                fontFamily: "'Open Sans', sans-serif",
-              }}
-            >
-              {weekRange.startDate
-                ? getWeekDisplayString(weekRange.startDate, weekRange.endDate)
-                : 'Loading...'}
-            </p>
-          </div>
-          {!loading && (
-            <div
-              style={{
-                textAlign: 'right',
-                color: '#6B7280',
-                fontSize: '14px',
-                fontFamily: "'Open Sans', sans-serif",
-              }}
-            >
-              <div style={{ fontWeight: 500, color: '#111827' }}>{user.email}</div>
-              {user.fullName && (
-                <div style={{ marginTop: '4px' }}>
-                  {user.fullName.firstName} {user.fullName.lastName}
-                </div>
-              )}
+      <div className="max-w-[1400px] mx-auto">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 mb-8 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div>
+              <h1 className="m-0 mb-2 text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+                Chào mừng trở lại, {user.fullName?.firstName || user.email}!
+              </h1>
+              <p className="m-0 text-gray-500 text-sm">
+                {weekRange.startDate
+                  ? getWeekDisplayString(weekRange.startDate, weekRange.endDate)
+                  : 'Loading...'}
+              </p>
             </div>
-          )}
+            {!loading && (
+              <div className="text-left sm:text-right text-gray-500 text-sm">
+                <div className="font-medium text-gray-900">{user.email}</div>
+                {user.fullName && (
+                  <div className="mt-1">
+                    {user.fullName.firstName} {user.fullName.lastName}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '24px',
-            marginBottom: '32px',
-          }}
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {loading ? (
             <>
               <MetricCardSkeleton />
@@ -220,28 +202,28 @@ export default function DashboardPage() {
           ) : (
             <>
               <MetricCard
-                title="Total Revenue"
+                title="Tổng doanh thu"
                 value={metrics.revenue}
                 change={metrics.revenueChange}
                 icon="💰"
                 formatValue={formatCurrency}
               />
               <MetricCard
-                title="Tickets Sold"
+                title="Vé đã bán"
                 value={metrics.tickets}
                 change={metrics.ticketsChange}
                 icon="🎫"
                 formatValue={(v) => v.toLocaleString()}
               />
               <MetricCard
-                title="Total Bookings"
+                title="Tổng số đặt vé"
                 value={metrics.bookings}
                 change={metrics.bookingsChange}
                 icon="📊"
                 formatValue={(v) => v.toLocaleString()}
               />
               <MetricCard
-                title="Avg Ticket Price"
+                title="Giá vé trung bình"
                 value={metrics.avgPrice}
                 change={metrics.avgPriceChange}
                 icon="📈"
@@ -253,19 +235,10 @@ export default function DashboardPage() {
 
         <RevenueTrendChart data={dailyData} loading={loading} />
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1.5fr 1fr',
-            gap: '24px',
-            marginBottom: '32px',
-          }}
-        >
+        <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-6 mb-8">
           <TopMoviesList movies={topMovies} loading={loading} />
           <MovieStatsGrid stats={movieStats} loading={loading} />
         </div>
-
-        <QuickActionsSection />
       </div>
     </AdminLayout>
   )

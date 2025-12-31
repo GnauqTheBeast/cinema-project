@@ -57,7 +57,7 @@ export default function MovieFormPage() {
       })
       setError('')
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load movie')
+      setError(err.response?.data?.message || 'Không thể tải thông tin phim')
       console.error('Error fetching movie:', err)
     } finally {
       setLoading(false)
@@ -77,7 +77,7 @@ export default function MovieFormPage() {
     setError('')
 
     if (!formData.title?.trim() || !formData.duration) {
-      setError('Title and duration are required')
+      setError('Tên phim và thời lượng là bắt buộc')
       return
     }
 
@@ -103,7 +103,7 @@ export default function MovieFormPage() {
 
       navigate('/admin/movies')
     } catch (err) {
-      setError(err.response?.data?.message || `Failed to ${isEditing ? 'update' : 'create'} movie`)
+      setError(err.response?.data?.message || `Không thể ${isEditing ? 'cập nhật' : 'tạo'} phim`)
       console.error(`Error ${isEditing ? 'updating' : 'creating'} movie:`, err)
     } finally {
       setSaving(false)
@@ -113,7 +113,7 @@ export default function MovieFormPage() {
   if (loading) {
     return (
       <AdminLayout>
-        <LoadingSpinner size="lg" text="Loading movie..." />
+        <LoadingSpinner size="lg" text="Đang tải phim..." />
       </AdminLayout>
     )
   }
@@ -123,10 +123,10 @@ export default function MovieFormPage() {
       <div className="space-y-6">
         <div>
           <Button variant="ghost" size="sm" onClick={() => navigate('/admin/movies')} className="mb-4">
-            ← Back to Movies
+            ← Quay lại danh sách phim
           </Button>
           <h1 className="text-3xl font-bold text-gray-900">
-            {isEditing ? 'Edit Movie' : 'Add New Movie'}
+            {isEditing ? 'Chỉnh sửa phim' : 'Thêm phim mới'}
           </h1>
         </div>
 
@@ -142,41 +142,41 @@ export default function MovieFormPage() {
         <Card>
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input
-              label="Title"
+              label="Tên phim"
               name="title"
               value={formData.title}
               onChange={handleChange}
               required
-              placeholder="Enter movie title"
+              placeholder="Nhập tên phim"
             />
 
             <Input
-              label="Director"
+              label="Đạo diễn"
               name="director"
               value={formData.director}
               onChange={handleChange}
-              placeholder="Enter director name"
+              placeholder="Nhập tên đạo diễn"
             />
 
             <Input
-              label="Cast"
+              label="Diễn viên"
               name="cast"
               value={formData.cast}
               onChange={handleChange}
-              placeholder="Enter main cast (comma separated)"
+              placeholder="Nhập tên diễn viên chính (cách nhau bởi dấu phẩy)"
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
-                label="Genre"
+                label="Thể loại"
                 name="genre"
                 value={formData.genre}
                 onChange={handleChange}
-                placeholder="e.g., Action, Drama, Comedy"
+                placeholder="VD: Hành động, Tâm lý, Hài"
               />
 
               <Input
-                label="Duration (minutes)"
+                label="Thời lượng (phút)"
                 name="duration"
                 type="number"
                 value={formData.duration}
@@ -189,7 +189,7 @@ export default function MovieFormPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
-                label="Release Date"
+                label="Ngày phát hành"
                 name="release_date"
                 type="date"
                 value={formData.release_date}
@@ -197,19 +197,19 @@ export default function MovieFormPage() {
               />
 
               <Select
-                label="Status"
+                label="Trạng thái"
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
               >
-                <option value="UPCOMING">Upcoming</option>
-                <option value="SHOWING">Now Showing</option>
-                <option value="ENDED">Ended</option>
+                <option value="UPCOMING">Sắp chiếu</option>
+                <option value="SHOWING">Đang chiếu</option>
+                <option value="ENDED">Đã kết thúc</option>
               </Select>
             </div>
 
             <Input
-              label="Poster URL"
+              label="URL Poster"
               name="poster_url"
               type="url"
               value={formData.poster_url}
@@ -218,7 +218,7 @@ export default function MovieFormPage() {
             />
 
             <Input
-              label="Trailer URL"
+              label="URL Trailer"
               name="trailer_url"
               type="url"
               value={formData.trailer_url}
@@ -227,20 +227,20 @@ export default function MovieFormPage() {
             />
 
             <Textarea
-              label="Description"
+              label="Mô tả"
               name="description"
               value={formData.description}
               onChange={handleChange}
               rows={5}
-              placeholder="Enter movie description..."
+              placeholder="Nhập mô tả phim..."
             />
 
             <div className="flex gap-3 justify-end pt-4">
               <Button variant="secondary" onClick={() => navigate('/admin/movies')}>
-                Cancel
+                Hủy
               </Button>
               <Button type="submit" disabled={saving}>
-                {saving ? 'Saving...' : isEditing ? 'Update Movie' : 'Create Movie'}
+                {saving ? 'Đang lưu...' : isEditing ? 'Cập nhật phim' : 'Tạo phim mới'}
               </Button>
             </div>
           </form>

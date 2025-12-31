@@ -493,13 +493,12 @@ class AuthController {
     try {
       const schema = Joi.object({
         email: Joi.string().email().required(),
-        password: Joi.string().min(6).required(),
         name: Joi.string().required(),
         address: Joi.string().allow('', null),
         role: Joi.string().valid('manager_staff', 'ticket_staff').required()
       });
 
-      const { email, password, name, address, role } = await schema.validateAsync(req.body);
+      const { email, name, address, role } = await schema.validateAsync(req.body);
 
       let roleId: string;
       if (role === 'manager_staff') {
@@ -511,29 +510,41 @@ class AuthController {
         return;
       }
 
-      const hashed = await bcrypt.hash(password, AuthController.BCRYPT_SALT_ROUNDS);
+      const generatedPassword = AuthController.generateRandomPassword();
+      const hashed = await bcrypt.hash(generatedPassword, AuthController.BCRYPT_SALT_ROUNDS);
 
       const result: any = await new Promise((resolve, reject) => {
-        userClient.CreateStaff({ 
-          email, 
-          name, 
-          password: hashed, 
-          role_id: roleId, 
-          address 
+        userClient.CreateStaff({
+          email,
+          name,
+          password: hashed,
+          role_id: roleId,
+          address
         }, (err: any, resp: any) => {
           if (err) return reject(err);
           resolve(resp);
         });
       });
 
+      const staffWelcomeMessage = {
+        user_id: result.id,
+        to: email,
+        name: name,
+        email: email,
+        password: generatedPassword,
+        role: role === 'manager_staff' ? 'Quản lý rạp' : 'Nhân viên bán vé'
+      };
+
+      await redisPubSubClient.publish('staff_welcome', JSON.stringify(staffWelcomeMessage));
+
       res.status(HttpStatus.CREATED).json({
-        message: result.message,
-        user: { 
-          id: result.id, 
-          email, 
-          name, 
-          role: role, 
-          status: 'ACTIVE' 
+        message: 'Tạo tài khoản thành công. Email đăng nhập đã được gửi đến ' + email,
+        user: {
+          id: result.id,
+          email,
+          name,
+          role: role,
+          status: 'ACTIVE'
         }
       });
     } catch (err) {
@@ -545,6 +556,16 @@ class AuthController {
       next(err);
     }
   };
+
+  static generateRandomPassword(): string {
+    const length = 12;
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
+  }
 }
 
 export const register = AuthController.register.bind(AuthController);

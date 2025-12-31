@@ -44,7 +44,7 @@ export default function NewsDetailModal({ news, onClose, formatDate }) {
           {/* Sources */}
           {news.sources && news.sources.length > 0 && (
             <div>
-              <h3 className="text-xl font-bold text-white mb-4">Nguồn tin ({news.source_count})</h3>
+              <h3 className="text-xl font-bold text-white mb-4">Nguồn tin</h3>
               <div className="space-y-3">
                 {news.sources.map((source) => (
                   <a

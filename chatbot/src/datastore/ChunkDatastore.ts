@@ -117,4 +117,54 @@ export class ChunkDatastore {
             )
         }
     }
+
+    async findSimilarChunks(
+        questionEmbedding: number[],
+        threshold: number,
+        limit: number,
+    ): Promise<Array<{ content: string; similarity: number }>> {
+        const embeddingJson = JSON.stringify(questionEmbedding)
+
+        const query = `
+      WITH
+      query_embedding AS (
+        SELECT $1::jsonb AS embedding
+      ),
+      chunk_similarities AS (
+        SELECT
+          c.content,
+          (
+            SELECT
+              SUM((qe.value::float) * (ce.value::float)) /
+              (
+                SQRT(SUM((qe.value::float) * (qe.value::float))) *
+                SQRT(SUM((ce.value::float) * (ce.value::float)))
+              )
+            FROM jsonb_array_elements_text(q.embedding) WITH ORDINALITY AS qe(value, idx)
+            CROSS JOIN jsonb_array_elements_text(c.embedding::jsonb) WITH ORDINALITY AS ce(value, idx)
+            WHERE qe.idx = ce.idx
+          ) AS similarity
+        FROM ${DOCUMENT_CHUNK_TABLE} c
+        CROSS JOIN query_embedding q
+        WHERE c.embedding IS NOT NULL AND c.embedding != ''
+      )
+      SELECT content, similarity
+      FROM chunk_similarities
+      WHERE similarity > $2
+      ORDER BY similarity DESC
+      LIMIT $3
+    `
+
+        try {
+            const result = await this.pool.query(query, [embeddingJson, threshold, limit])
+            return result.rows.map((row) => ({
+                content: row.content,
+                similarity: parseFloat(row.similarity) || 0,
+            }))
+        } catch (error) {
+            throw new Error(
+                `Failed to find similar chunks: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            )
+        }
+    }
 }

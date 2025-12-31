@@ -130,7 +130,7 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 		"payment_id":     payment.Id,
 		"booking_id":     payment.BookingId,
 		"amount":         payment.Amount,
-		"status":         entity.PaymentStatusPending,
+		"status":         entity.PaymentStatusCompleted,
 		"payment_method": entity.PaymentMethodBankTransfer,
 		"transaction_id": transactionId,
 		"timestamp":      time.Now().Unix(),
@@ -139,7 +139,7 @@ func (b *paymentBiz) ProcessSePayWebhook(ctx context.Context, webhook *entity.Se
 	fields := map[string]interface{}{
 		"transaction_id": transactionId,
 		"payload":        payload,
-		"status":         entity.PaymentStatusPending,
+		"status":         entity.PaymentStatusCompleted,
 		"payment_method": entity.PaymentMethodBankTransfer,
 		"updated_at":     time.Now(),
 	}

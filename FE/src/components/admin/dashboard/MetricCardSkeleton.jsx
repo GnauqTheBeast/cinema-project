@@ -1,41 +1,9 @@
 export default function MetricCardSkeleton() {
   return (
-    <div
-      style={{
-        background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
-        backgroundSize: '200% 100%',
-        animation: 'shimmer 1.5s infinite',
-        borderRadius: '12px',
-        padding: '24px',
-        height: '140px',
-      }}
-    >
-      <div
-        style={{
-          height: '20px',
-          width: '60%',
-          background: '#e0e0e0',
-          borderRadius: '4px',
-          marginBottom: '12px',
-        }}
-      />
-      <div
-        style={{
-          height: '40px',
-          width: '80%',
-          background: '#e0e0e0',
-          borderRadius: '4px',
-          marginBottom: '8px',
-        }}
-      />
-      <div
-        style={{
-          height: '24px',
-          width: '50%',
-          background: '#e0e0e0',
-          borderRadius: '4px',
-        }}
-      />
+    <div className="rounded-xl p-6 h-[140px] bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse">
+      <div className="h-5 w-3/5 bg-gray-300 rounded mb-3" />
+      <div className="h-10 w-4/5 bg-gray-300 rounded mb-2" />
+      <div className="h-6 w-1/2 bg-gray-300 rounded" />
     </div>
   )
 }
