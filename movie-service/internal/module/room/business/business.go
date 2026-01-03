@@ -18,6 +18,7 @@ var (
 	ErrInvalidStatusTransition = fmt.Errorf("invalid status transition")
 	ErrRoomNotFound            = fmt.Errorf("room not found")
 	ErrRoomNumberExists        = fmt.Errorf("room number already exists")
+	ErrRoomNotActive           = fmt.Errorf("room is not in ACTIVE status")
 )
 
 type RoomBiz interface {
@@ -27,6 +28,7 @@ type RoomBiz interface {
 	UpdateRoom(ctx context.Context, id string, updates *entity.UpdateRoomRequest) error
 	DeleteRoom(ctx context.Context, id string) error
 	UpdateRoomStatus(ctx context.Context, id string, status entity.RoomStatus) error
+	ValidateRoomForShowtime(ctx context.Context, roomId string) error
 }
 
 type RoomRepository interface {
@@ -223,6 +225,23 @@ func (b *business) UpdateRoomStatus(ctx context.Context, id string, status entit
 
 	_ = b.cache.Delete(ctx, redisRoomDetail(id))
 	_ = b.cache.Delete(ctx, redisRoomsList())
+
+	return nil
+}
+
+func (b *business) ValidateRoomForShowtime(ctx context.Context, roomId string) error {
+	if roomId == "" {
+		return ErrInvalidRoomData
+	}
+
+	room, err := b.GetRoomById(ctx, roomId)
+	if err != nil {
+		return err
+	}
+
+	if room.Status != entity.RoomStatusActive {
+		return ErrRoomNotActive
+	}
 
 	return nil
 }

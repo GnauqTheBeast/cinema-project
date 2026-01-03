@@ -18,6 +18,7 @@ var (
 	ErrInvalidMovieData        = fmt.Errorf("invalid movie data")
 	ErrInvalidStatusTransition = fmt.Errorf("invalid status transition")
 	ErrMovieNotFound           = fmt.Errorf("movie not found")
+	ErrMovieNotShowing         = fmt.Errorf("movie is not in SHOWING status")
 )
 
 type MovieBiz interface {
@@ -28,6 +29,7 @@ type MovieBiz interface {
 	UpdateMovie(ctx context.Context, movie *entity.Movie) error
 	DeleteMovie(ctx context.Context, id string) error
 	UpdateMovieStatus(ctx context.Context, id string, status entity.MovieStatus) error
+	ValidateMovieForShowtime(ctx context.Context, movieId string) error
 }
 
 type MovieRepository interface {
@@ -249,6 +251,23 @@ func (b *business) GetMovieStats(ctx context.Context) ([]*entity.MovieStat, erro
 	}
 
 	return stats, nil
+}
+
+func (b *business) ValidateMovieForShowtime(ctx context.Context, movieId string) error {
+	if movieId == "" {
+		return ErrInvalidMovieData
+	}
+
+	movie, err := b.GetMovieById(ctx, movieId)
+	if err != nil {
+		return err
+	}
+
+	if movie.Status != entity.MovieStatusShowing {
+		return ErrMovieNotShowing
+	}
+
+	return nil
 }
 
 func (b *business) invalidateMovieCache(ctx context.Context, movieId string) {

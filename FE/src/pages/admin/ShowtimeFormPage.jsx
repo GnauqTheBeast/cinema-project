@@ -64,7 +64,7 @@ const ShowtimeFormPage = () => {
 
   const fetchRooms = async () => {
     try {
-      const response = await roomService.getRooms(1, 100)
+      const response = await roomService.getRooms(1, 100, '', '', 'ACTIVE')
       if (response.success) {
         setRooms(response.data.data || [])
       }
@@ -75,7 +75,7 @@ const ShowtimeFormPage = () => {
 
   const fetchMovies = async () => {
     try {
-      const response = await movieService.getMovies(1, 100)
+      const response = await movieService.getMovies(1, 100, '', 'SHOWING')
       if (response.success) {
         setMovies(response.data.movies || [])
       }

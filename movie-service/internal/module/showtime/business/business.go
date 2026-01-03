@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"time"
 
+	movieBusiness "movie-service/internal/module/movie/business"
+	movieEntity "movie-service/internal/module/movie/entity"
+	roomBusiness "movie-service/internal/module/room/business"
 	"movie-service/internal/module/showtime/entity"
 	"movie-service/internal/pkg/caching"
 
@@ -20,6 +23,8 @@ var (
 	ErrShowtimeNotFound        = fmt.Errorf("showtime not found")
 	ErrTimeConflict            = fmt.Errorf("showtime conflicts with existing schedule")
 	ErrShowtimeInPast          = fmt.Errorf("cannot schedule showtime in the past")
+	ErrMovieNotShowing         = fmt.Errorf("showtimes can only be created for movies with SHOWING status")
+	ErrRoomNotActive           = fmt.Errorf("showtimes can only be created for rooms with ACTIVE status")
 )
 
 type ShowtimeBiz interface {
@@ -49,6 +54,8 @@ type ShowtimeRepository interface {
 
 type business struct {
 	repository  ShowtimeRepository
+	movieBiz    movieBusiness.MovieBiz
+	roomBiz     roomBusiness.RoomBiz
 	cache       caching.Cache
 	roCache     caching.ReadOnlyCache
 	redisClient redis.UniversalClient
@@ -70,6 +77,16 @@ func NewBusiness(i *do.Injector) (ShowtimeBiz, error) {
 		return nil, err
 	}
 
+	movieBiz, err := do.Invoke[movieBusiness.MovieBiz](i)
+	if err != nil {
+		return nil, err
+	}
+
+	roomBiz, err := do.Invoke[roomBusiness.RoomBiz](i)
+	if err != nil {
+		return nil, err
+	}
+
 	redisClient, err := do.InvokeNamed[redis.UniversalClient](i, "redis-cache-db")
 	if err != nil {
 		return nil, err
@@ -77,6 +94,8 @@ func NewBusiness(i *do.Injector) (ShowtimeBiz, error) {
 
 	return &business{
 		repository:  repository,
+		movieBiz:    movieBiz,
+		roomBiz:     roomBiz,
 		cache:       cache,
 		roCache:     roCache,
 		redisClient: redisClient,
@@ -160,6 +179,22 @@ func (b *business) CreateShowtime(ctx context.Context, showtime *entity.Showtime
 		return ErrShowtimeInPast
 	}
 
+	// Validate that the movie has SHOWING status
+	if err := b.movieBiz.ValidateMovieForShowtime(ctx, showtime.MovieId); err != nil {
+		if errors.Is(err, movieBusiness.ErrMovieNotShowing) {
+			return ErrMovieNotShowing
+		}
+		return err
+	}
+
+	// Validate that the room has ACTIVE status
+	if err := b.roomBiz.ValidateRoomForShowtime(ctx, showtime.RoomId); err != nil {
+		if errors.Is(err, roomBusiness.ErrRoomNotActive) {
+			return ErrRoomNotActive
+		}
+		return err
+	}
+
 	hasConflict, err := b.repository.CheckConflict(ctx, showtime.RoomId, showtime.StartTime, showtime.EndTime, "")
 	if err != nil {
 		return fmt.Errorf("failed to check time conflict: %w", err)
@@ -196,10 +231,24 @@ func (b *business) UpdateShowtime(ctx context.Context, id string, updates *entit
 
 	if updates.MovieId != nil {
 		showtime.MovieId = *updates.MovieId
+		// Validate that the new movie has SHOWING status
+		if err := b.movieBiz.ValidateMovieForShowtime(ctx, showtime.MovieId); err != nil {
+			if errors.Is(err, movieBusiness.ErrMovieNotShowing) {
+				return ErrMovieNotShowing
+			}
+			return err
+		}
 	}
 
 	if updates.RoomId != nil {
 		showtime.RoomId = *updates.RoomId
+		// Validate that the new room has ACTIVE status
+		if err := b.roomBiz.ValidateRoomForShowtime(ctx, showtime.RoomId); err != nil {
+			if errors.Is(err, roomBusiness.ErrRoomNotActive) {
+				return ErrRoomNotActive
+			}
+			return err
+		}
 	}
 
 	if updates.StartTime != nil {
