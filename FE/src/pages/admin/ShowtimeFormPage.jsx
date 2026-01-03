@@ -62,6 +62,22 @@ const ShowtimeFormPage = () => {
     }
   }, [formData.movie_id, movies])
 
+  useEffect(() => {
+    if (formData.start_time && selectedMovie?.duration) {
+      const duration = selectedMovie.duration
+      const [datePart, timePart] = formData.start_time.split('T')
+      const [hours, minutes] = timePart.split(':').map(Number)
+
+      const totalMinutes = hours * 60 + minutes + duration
+      const endHours = Math.floor(totalMinutes / 60) % 24
+      const endMinutes = totalMinutes % 60
+
+      const endTime = `${datePart}T${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`
+
+      setFormData((prev) => ({ ...prev, end_time: endTime }))
+    }
+  }, [formData.start_time, selectedMovie?.duration])
+
   const fetchRooms = async () => {
     try {
       const response = await roomService.getRooms(1, 100, '', '', 'ACTIVE')
@@ -123,7 +139,6 @@ const ShowtimeFormPage = () => {
 
       info += `Thời lượng lịch chiếu: ${Math.floor(scheduledDuration / 60)}h ${scheduledDuration % 60}m`
 
-      // Add movie duration validation
       if (selectedMovie && selectedMovie.duration) {
         const movieDuration = selectedMovie.duration
         info += '\n'
@@ -232,62 +247,9 @@ const ShowtimeFormPage = () => {
     }))
   }
 
-  const calculateEndTime = (startTime, movieDuration) => {
-    if (!startTime) return ''
-
-    const durationMinutes = movieDuration || 120 // default 2 hours if no movie duration
-
-    // Create date object from datetime-local input format
-    const startDate = new Date(startTime)
-
-    // Add movie duration in minutes
-    const endDate = new Date(startDate.getTime() + durationMinutes * 60 * 1000)
-
-    console.log('calculateEndTime debug:', {
-      startTime,
-      durationMinutes,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      result: endDate.toISOString().slice(0, 16),
-    })
-
-    // Return in datetime-local format (YYYY-MM-DDTHH:mm)
-    return endDate.toISOString().slice(0, 16)
-  }
-
-  const handleStartTimeChange = (e) => {
-    const startTime = e.target.value
-    let endTime = formData.end_time
-
-    if (startTime) {
-      const movieDuration = selectedMovie?.duration
-      endTime = calculateEndTime(startTime, movieDuration)
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      start_time: startTime,
-      end_time: endTime,
-    }))
-  }
-
   const handleMovieChange = (e) => {
     const movieId = e.target.value
-    const movie = movies.find((m) => m.id === movieId)
-
-    setFormData((prev) => {
-      let newEndTime = prev.end_time
-
-      if (prev.start_time && movie?.duration) {
-        newEndTime = calculateEndTime(prev.start_time, movie.duration)
-      }
-
-      return {
-        ...prev,
-        movie_id: movieId,
-        end_time: newEndTime,
-      }
-    })
+    setFormData((prev) => ({ ...prev, movie_id: movieId }))
   }
 
   if (loading && isEditing) {
@@ -454,7 +416,7 @@ const ShowtimeFormPage = () => {
                     id="start_time"
                     name="start_time"
                     value={formData.start_time}
-                    onChange={handleStartTimeChange}
+                    onChange={handleChange}
                     required
                     min={new Date().toISOString().slice(0, 16)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
