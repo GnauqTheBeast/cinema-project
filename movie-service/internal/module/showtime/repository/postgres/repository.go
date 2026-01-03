@@ -269,10 +269,7 @@ func (r *Repository) CheckConflict(ctx context.Context, roomId string, startTime
 			entity.ShowtimeStatusScheduled,
 			entity.ShowtimeStatusOngoing,
 		})).
-		Where("(start_time < ? AND end_time > ?) OR (start_time < ? AND end_time > ?) OR (start_time >= ? AND end_time <= ?)",
-			endTime, startTime,
-			startTime, startTime,
-			startTime, endTime)
+		Where("start_time <= ? AND end_time > ?", endTime, startTime)
 
 	if excludeId != "" {
 		query = query.Where("id != ?", excludeId)

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	movieBusiness "movie-service/internal/module/movie/business"
-	movieEntity "movie-service/internal/module/movie/entity"
 	roomBusiness "movie-service/internal/module/room/business"
 	"movie-service/internal/module/showtime/entity"
 	"movie-service/internal/pkg/caching"
@@ -179,7 +178,6 @@ func (b *business) CreateShowtime(ctx context.Context, showtime *entity.Showtime
 		return ErrShowtimeInPast
 	}
 
-	// Validate that the movie has SHOWING status
 	if err := b.movieBiz.ValidateMovieForShowtime(ctx, showtime.MovieId); err != nil {
 		if errors.Is(err, movieBusiness.ErrMovieNotShowing) {
 			return ErrMovieNotShowing
@@ -187,7 +185,6 @@ func (b *business) CreateShowtime(ctx context.Context, showtime *entity.Showtime
 		return err
 	}
 
-	// Validate that the room has ACTIVE status
 	if err := b.roomBiz.ValidateRoomForShowtime(ctx, showtime.RoomId); err != nil {
 		if errors.Is(err, roomBusiness.ErrRoomNotActive) {
 			return ErrRoomNotActive
@@ -195,9 +192,9 @@ func (b *business) CreateShowtime(ctx context.Context, showtime *entity.Showtime
 		return err
 	}
 
-	hasConflict, err := b.repository.CheckConflict(ctx, showtime.RoomId, showtime.StartTime, showtime.EndTime, "")
+	hasConflict, err := b.CheckTimeConflict(ctx, showtime.RoomId, showtime.StartTime, showtime.EndTime, "")
 	if err != nil {
-		return fmt.Errorf("failed to check time conflict: %w", err)
+		return err
 	}
 	if hasConflict {
 		return ErrTimeConflict
@@ -231,8 +228,7 @@ func (b *business) UpdateShowtime(ctx context.Context, id string, updates *entit
 
 	if updates.MovieId != nil {
 		showtime.MovieId = *updates.MovieId
-		// Validate that the new movie has SHOWING status
-		if err := b.movieBiz.ValidateMovieForShowtime(ctx, showtime.MovieId); err != nil {
+		if err = b.movieBiz.ValidateMovieForShowtime(ctx, showtime.MovieId); err != nil {
 			if errors.Is(err, movieBusiness.ErrMovieNotShowing) {
 				return ErrMovieNotShowing
 			}
@@ -242,8 +238,7 @@ func (b *business) UpdateShowtime(ctx context.Context, id string, updates *entit
 
 	if updates.RoomId != nil {
 		showtime.RoomId = *updates.RoomId
-		// Validate that the new room has ACTIVE status
-		if err := b.roomBiz.ValidateRoomForShowtime(ctx, showtime.RoomId); err != nil {
+		if err = b.roomBiz.ValidateRoomForShowtime(ctx, showtime.RoomId); err != nil {
 			if errors.Is(err, roomBusiness.ErrRoomNotActive) {
 				return ErrRoomNotActive
 			}
@@ -280,7 +275,7 @@ func (b *business) UpdateShowtime(ctx context.Context, id string, updates *entit
 			return ErrShowtimeInPast
 		}
 
-		hasConflict, err := b.repository.CheckConflict(ctx, showtime.RoomId, showtime.StartTime, showtime.EndTime, id)
+		hasConflict, err := b.CheckTimeConflict(ctx, showtime.RoomId, showtime.StartTime, showtime.EndTime, id)
 		if err != nil {
 			return fmt.Errorf("failed to check time conflict: %w", err)
 		}
