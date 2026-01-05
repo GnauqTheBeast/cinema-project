@@ -284,10 +284,6 @@ func (r *Repository) CheckConflict(ctx context.Context, roomId string, startTime
 }
 
 func (r *Repository) GetByIds(ctx context.Context, ids []string) ([]*entity.Showtime, error) {
-	if len(ids) == 0 {
-		return []*entity.Showtime{}, nil
-	}
-
 	showtimes := make([]*entity.Showtime, 0)
 
 	query := r.roDb.NewSelect().

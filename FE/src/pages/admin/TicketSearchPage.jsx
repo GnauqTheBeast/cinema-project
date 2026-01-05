@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { FaSearch, FaTicketAlt, FaFilm, FaClock, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { bookingService } from '../../services/bookingService'
@@ -6,6 +7,7 @@ import { showtimeService } from '../../services/showtimeApi'
 import { formatCurrency, formatDateTime } from '../../utils/formatters'
 
 const TicketSearchPage = () => {
+  const [searchParams] = useSearchParams()
   const [searchType, setSearchType] = useState('booking_id')
   const [searchValue, setSearchValue] = useState('')
   const [showtimes, setShowtimes] = useState([])
@@ -16,6 +18,13 @@ const TicketSearchPage = () => {
 
   useEffect(() => {
     fetchScheduledShowtimes().then()
+
+    const bookingIdFromUrl = searchParams.get('bookingId')
+    if (bookingIdFromUrl) {
+      setSearchType('booking_id')
+      setSearchValue(bookingIdFromUrl)
+      searchByBookingId(bookingIdFromUrl).then()
+    }
   }, [])
 
   const fetchScheduledShowtimes = async () => {
@@ -28,6 +37,33 @@ const TicketSearchPage = () => {
       }
     } catch (err) {
       console.error('Error fetching showtimes:', err)
+    }
+  }
+
+  const searchByBookingId = async (bookingId) => {
+    try {
+      setLoading(true)
+      setError('')
+      setSuccess('')
+
+      const response = await bookingService.searchTickets(bookingId, '')
+
+      if (response.code !== 200 || !response.data) {
+        setError('Không thể tìm kiếm vé')
+        return
+      }
+
+      const ticketsData = response.data.tickets || []
+      setTickets(ticketsData)
+
+      if (ticketsData.length === 0) {
+        setError('Không tìm thấy vé')
+      }
+    } catch (err) {
+      setError('Có lỗi xảy ra khi tìm kiếm vé')
+      console.error('Error searching tickets:', err)
+    } finally {
+      setLoading(false)
     }
   }
 

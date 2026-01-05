@@ -49,5 +49,6 @@ func startRouteV1(group *gin.RouterGroup) {
 		payments.GET("/booking/:bookingId", paymentApi.GetPaymentByBookingId)
 		payments.POST("/crypto/verify", paymentApi.VerifyCryptoPayment)
 		payments.POST("/webhooks/sepay", paymentApi.SePayWebhook)
+		payments.PATCH("/:paymentId/confirm", paymentApi.ConfirmPayment)
 	}
 }

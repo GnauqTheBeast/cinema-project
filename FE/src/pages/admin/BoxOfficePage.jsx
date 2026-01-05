@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { FaArrowLeft, FaArrowRight, FaCheck, FaFilm, FaCouch, FaCheckCircle } from 'react-icons/fa'
 import AdminLayout from '../../components/admin/AdminLayout'
 import SeatGrid from '../../components/SeatGrid'
@@ -10,6 +11,7 @@ import { getSeatPrice, calculateBookingTotal, getSeatTypeLabel } from '../../con
 import { formatCurrency, formatDateTime } from '../../utils/formatters'
 
 const BoxOfficePage = () => {
+  const navigate = useNavigate()
   const [step, setStep] = useState(1)
   const [movies, setMovies] = useState([])
   const [showtimes, setShowtimes] = useState([])
@@ -26,8 +28,8 @@ const BoxOfficePage = () => {
 
   useEffect(() => {
     if (step === 1) {
-      fetchMovies()
-      fetchScheduledShowtimes()
+      fetchMovies().then()
+      fetchScheduledShowtimes().then()
     }
   }, [step])
 
@@ -84,7 +86,25 @@ const BoxOfficePage = () => {
       setLoading(true)
       setError('')
 
-      const response = await showtimeService.getShowtimes(1, 100, '', '', '', '', 'scheduled', '', '')
+      const today = new Date()
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+
+      const dateFrom = today.toISOString().split('T')[0]
+      const dateTo = tomorrow.toISOString().split('T')[0]
+
+      const response = await showtimeService.getShowtimes(
+        1,
+        12,
+        '',
+        '',
+        '',
+        '',
+        'SCHEDULED',
+        dateFrom,
+        dateTo,
+        true
+      )
 
       if (!response.success) {
         setError('Không thể hiển thị danh sách suất chiếu.')
@@ -100,13 +120,7 @@ const BoxOfficePage = () => {
       const showtimesData = Array.isArray(response.data) ? response.data :
                            Array.isArray(response.data.data) ? response.data.data : []
 
-      const now = new Date()
-      const upcomingShowtimes = showtimesData.filter(st => {
-        const showtimeEnd = new Date(st.end_time)
-        return showtimeEnd > now
-      })
-
-      setShowtimes(upcomingShowtimes)
+      setShowtimes(showtimesData)
     } catch (err) {
       setError('Không thể hiển thị danh sách suất chiếu.')
       setShowtimes([])
@@ -194,11 +208,9 @@ const BoxOfficePage = () => {
       }
 
       const response = await boxOfficeService.createBoxOfficeBooking(bookingData)
-      
+
       if (response.code === 200) {
-        setBookingResult(response.data)
-        setSuccess(true)
-        setStep(3)
+        navigate(`/admin/box-office/payment/${response.data.id}`)
       } else {
         setError('Bán vé không thành công.')
       }

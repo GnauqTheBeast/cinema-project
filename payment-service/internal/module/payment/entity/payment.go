@@ -19,6 +19,7 @@ type PaymentMethod string
 const (
 	PaymentMethodBankTransfer   PaymentMethod = "BANK_TRANSFER"
 	PaymentMethodCryptoCurrency PaymentMethod = "CRYPTOCURRENCY"
+	PaymentMethodCash           PaymentMethod = "CASH"
 )
 
 type Payment struct {

@@ -21,6 +21,7 @@ type PaymentBiz interface {
 	GetPaymentByBookingId(ctx context.Context, bookingId string) (*entity.Payment, error)
 	ProcessSePayWebhook(ctx context.Context, webhook *entity.SePayWebhook) error
 	VerifyCryptoPayment(ctx context.Context, req *entity.CryptoVerificationRequest) error
+	ConfirmPayment(ctx context.Context, paymentId string, paymentMethod entity.PaymentMethod) error
 }
 
 type paymentBiz struct {
@@ -176,6 +177,42 @@ func (b *paymentBiz) VerifyCryptoPayment(ctx context.Context, req *entity.Crypto
 		"tx_hash":        req.TxHash,
 		"status":         entity.PaymentStatusCompleted,
 	})
+}
+
+func (b *paymentBiz) ConfirmPayment(ctx context.Context, paymentId string, paymentMethod entity.PaymentMethod) error {
+	payment, err := b.repo.GetById(ctx, paymentId)
+	if err != nil {
+		return fmt.Errorf("payment not found: %w", err)
+	}
+
+	if payment.Status == entity.PaymentStatusCompleted {
+		return nil
+	}
+
+	if payment.Status != entity.PaymentStatusPending {
+		return fmt.Errorf("cannot confirm payment with status %s", payment.Status)
+	}
+
+	fields := map[string]interface{}{
+		"status":         entity.PaymentStatusCompleted,
+		"payment_method": paymentMethod,
+		"updated_at":     time.Now(),
+	}
+
+	if err = b.repo.UpdatePaymentFields(ctx, b.db, payment.Id, fields); err != nil {
+		return fmt.Errorf("failed to update payment: %w", err)
+	}
+
+	eventData := map[string]interface{}{
+		"payment_id":     payment.Id,
+		"booking_id":     payment.BookingId,
+		"amount":         payment.Amount,
+		"status":         entity.PaymentStatusCompleted,
+		"payment_method": paymentMethod,
+		"timestamp":      time.Now().Unix(),
+	}
+
+	return b.outboxClient.CreateOutboxEvent(ctx, string(entity.EventTypePaymentCompleted), eventData)
 }
 
 // extractUUIDNoHyphens extracts 32-character UUID without hyphens from content or description

@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AdminLoginPage from '../pages/admin/AdminLoginPage'
 import BoxOfficePage from '../pages/admin/BoxOfficePage'
+import BoxOfficePaymentPage from '../pages/admin/BoxOfficePaymentPage'
 import TicketSearchPage from '../pages/admin/TicketSearchPage'
 import ChatbotDocumentsPage from '../pages/admin/ChatbotDocumentsPage'
 import DashboardPage from '../pages/admin/DashboardPage'
@@ -313,6 +314,15 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
         element={
           <TicketStaffRoute>
             <BoxOfficePage />
+          </TicketStaffRoute>
+        }
+      />
+
+      <Route
+        path="/admin/box-office/payment/:bookingId"
+        element={
+          <TicketStaffRoute>
+            <BoxOfficePaymentPage />
           </TicketStaffRoute>
         }
       />

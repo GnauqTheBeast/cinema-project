@@ -137,3 +137,52 @@ func (h *handler) VerifyCryptoPayment(c *gin.Context) {
 		"message": "Crypto payment verified successfully",
 	})
 }
+
+func (h *handler) ConfirmPayment(c *gin.Context) {
+	paymentId := c.Param("paymentId")
+	if paymentId == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Payment ID is required",
+		})
+		return
+	}
+
+	var req struct {
+		PaymentMethod string `json:"payment_method" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid request payload",
+		})
+		return
+	}
+
+	paymentMethod := entity.PaymentMethod(req.PaymentMethod)
+	if paymentMethod != entity.PaymentMethodCash &&
+	   paymentMethod != entity.PaymentMethodBankTransfer &&
+	   paymentMethod != entity.PaymentMethodCryptoCurrency {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid payment method",
+		})
+		return
+	}
+
+	err := h.paymentBiz.ConfirmPayment(c.Request.Context(), paymentId, paymentMethod)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Failed to confirm payment",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Payment confirmed successfully",
+	})
+}
