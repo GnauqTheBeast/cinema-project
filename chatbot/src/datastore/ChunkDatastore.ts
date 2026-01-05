@@ -8,15 +8,16 @@ export class ChunkDatastore {
         const query = `
       INSERT INTO ${DOCUMENT_CHUNK_TABLE}
       (id, document_id, chunk_index, content, embedding, start_pos, end_pos, token_count, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      VALUES ($1, $2, $3, $4, $5::vector, $6, $7, $8, $9)
     `
 
+        const embeddingVector = `[${chunk.embedding.join(',')}]`
         const values = [
             chunk.id,
             chunk.document_id,
             chunk.chunk_index,
             chunk.content,
-            chunk.embedding,
+            embeddingVector,
             chunk.start_pos,
             chunk.end_pos,
             chunk.token_count,
@@ -44,16 +45,17 @@ export class ChunkDatastore {
             const query = `
         INSERT INTO ${DOCUMENT_CHUNK_TABLE}
         (id, document_id, chunk_index, content, embedding, start_pos, end_pos, token_count, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1, $2, $3, $4, $5::vector, $6, $7, $8, $9)
       `
 
             for (const chunk of chunks) {
+                const embeddingVector = `[${chunk.embedding.join(',')}]`
                 const values = [
                     chunk.id,
                     chunk.document_id,
                     chunk.chunk_index,
                     chunk.content,
-                    chunk.embedding,
+                    embeddingVector,
                     chunk.start_pos,
                     chunk.end_pos,
                     chunk.token_count,
@@ -76,7 +78,7 @@ export class ChunkDatastore {
     async getAllChunks(): Promise<DocumentChunk[]> {
         const query = `
       SELECT * FROM ${DOCUMENT_CHUNK_TABLE}
-      WHERE embedding IS NOT NULL AND embedding != ''
+      WHERE embedding IS NOT NULL
     `
 
         try {
@@ -123,44 +125,31 @@ export class ChunkDatastore {
         threshold: number,
         limit: number,
     ): Promise<Array<{ content: string; similarity: number }>> {
-        const embeddingJson = JSON.stringify(questionEmbedding)
+        // Convert embedding array to PostgreSQL vector format
+        const embeddingVector = `[${questionEmbedding.join(',')}]`
 
         const query = `
-      WITH
-      query_embedding AS (
-        SELECT $1::jsonb AS embedding
-      ),
-      chunk_similarities AS (
-        SELECT
-          c.content,
-          (
-            SELECT
-              SUM((qe.value::float) * (ce.value::float)) /
-              (
-                SQRT(SUM((qe.value::float) * (qe.value::float))) *
-                SQRT(SUM((ce.value::float) * (ce.value::float)))
-              )
-            FROM jsonb_array_elements_text(q.embedding) WITH ORDINALITY AS qe(value, idx)
-            CROSS JOIN jsonb_array_elements_text(c.embedding::jsonb) WITH ORDINALITY AS ce(value, idx)
-            WHERE qe.idx = ce.idx
-          ) AS similarity
-        FROM ${DOCUMENT_CHUNK_TABLE} c
-        CROSS JOIN query_embedding q
-        WHERE c.embedding IS NOT NULL AND c.embedding != ''
-      )
-      SELECT content, similarity
-      FROM chunk_similarities
-      WHERE similarity > $2
-      ORDER BY similarity DESC
-      LIMIT $3
+      SELECT
+        content,
+        1 - (embedding <=> $1::vector) AS similarity
+      FROM ${DOCUMENT_CHUNK_TABLE}
+      WHERE embedding IS NOT NULL
+      ORDER BY embedding <=> $1::vector ASC
+      LIMIT $2
     `
 
         try {
-            const result = await this.pool.query(query, [embeddingJson, threshold, limit])
-            return result.rows.map((row) => ({
-                content: row.content,
-                similarity: parseFloat(row.similarity) || 0,
-            }))
+            const result = await this.pool.query(query, [embeddingVector, limit])
+            const filtered = result.rows
+                .map((row) => ({
+                    content: row.content,
+                    similarity: parseFloat(row.similarity) || 0,
+                }))
+                .filter((item) => item.similarity > threshold)
+                .sort((a, b) => b.similarity - a.similarity)
+                .slice(0, limit)
+
+            return filtered
         } catch (error) {
             throw new Error(
                 `Failed to find similar chunks: ${error instanceof Error ? error.message : 'Unknown error'}`,

@@ -6,7 +6,6 @@ import { DocumentDatastore, ChunkDatastore } from '../datastore/index.js'
 import { CacheManager } from '../pkg/caching/index.js'
 import { TextExtractor, splitIntoChunks, ChunkConfig } from '../utils/index.js'
 import { EmbeddingService } from './EmbeddingService.js'
-import { logger } from '../utils/index.js'
 
 export class DocumentService {
     private cacheManager: CacheManager
@@ -41,7 +40,7 @@ export class DocumentService {
             const fileInfo = await this.extractor.getFileInfo(filePath)
             size = fileInfo.size as number
         } catch (error) {
-            logger.warn('Could not get file info', { error })
+            // Ignore file info errors
         }
 
         const doc: Document = {
@@ -59,11 +58,8 @@ export class DocumentService {
         this.processChunks(doc, content).catch(() => {
             this.documentDatastore
                 .updateDocumentStatus(doc.id, DocumentStatus.FAILED)
-                .catch((err) => {
-                    logger.error('Failed to update document status to failed', {
-                        docId: doc.id,
-                        error: err,
-                    })
+                .catch(() => {
+                    // Ignore status update errors
                 })
         })
 
@@ -80,6 +76,7 @@ export class DocumentService {
         }
 
         const chunks = splitIntoChunks(content, config)
+
         const docChunks: DocumentChunk[] = []
 
         for (let i = 0; i < chunks.length; i++) {
@@ -87,25 +84,19 @@ export class DocumentService {
 
             try {
                 const embedding = await this.embeddingService.embeddingText(chunk.content)
-                const embeddingJSON = JSON.stringify(embedding)
 
                 docChunks.push({
                     id: uuidv4(),
                     document_id: doc.id,
                     chunk_index: i,
                     content: chunk.content,
-                    embedding: embeddingJSON,
+                    embedding: embedding,
                     start_pos: chunk.startPos,
                     end_pos: chunk.endPos,
                     token_count: chunk.tokenCount,
                     created_at: new Date(),
                 })
             } catch (error) {
-                logger.error('Failed to generate embedding for chunk', {
-                    docId: doc.id,
-                    chunkIndex: i,
-                    error,
-                })
                 throw error
             }
         }
@@ -114,17 +105,12 @@ export class DocumentService {
         await this.chunkDatastore.batchCreateChunks(docChunks)
 
         // Invalidate chunks cache
-        await this.cacheManager.invalidatePattern('document_chunks').catch((err) => {
-            logger.error('Failed to invalidate cache', { error: err })
+        await this.cacheManager.invalidatePattern('document_chunks').catch(() => {
+            // Ignore cache invalidation errors
         })
 
         // Update document status to completed
         await this.documentDatastore.updateDocumentStatus(doc.id, DocumentStatus.COMPLETED)
-
-        logger.info('Document processing completed', {
-            docId: doc.id,
-            chunksCount: docChunks.length,
-        })
     }
 
     async getDocument(docID: string): Promise<Document | null> {
@@ -143,8 +129,8 @@ export class DocumentService {
         await this.documentDatastore.deleteDocument(docID)
 
         // Invalidate cache
-        await this.cacheManager.invalidatePattern('document_chunks').catch((err) => {
-            logger.error('Failed to invalidate cache after delete', { error: err })
+        await this.cacheManager.invalidatePattern('document_chunks').catch(() => {
+            // Ignore cache invalidation errors
         })
     }
 
