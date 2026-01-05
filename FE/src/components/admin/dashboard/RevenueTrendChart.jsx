@@ -30,7 +30,7 @@ export default function RevenueTrendChart({ data, loading }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm mb-8">
       <h3 className="mb-6 text-lg font-semibold text-gray-900">
-        Revenue Trend - Last 7 Days
+        Doanh Thu 7 Ngày Gần Nhất
       </h3>
 
       {data.length === 0 ? (

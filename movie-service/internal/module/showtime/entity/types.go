@@ -27,7 +27,7 @@ type UpdateShowtimeRequest struct {
 
 type GetShowtimesQuery struct {
 	Page         int            `form:"page,default=1" binding:"min=1"`
-	Size         int            `form:"size,default=10" binding:"min=1,max=100"`
+	Size         int            `form:"size,default=10" binding:"min=1,max=1000"`
 	Search       string         `form:"search"`
 	MovieId      string         `form:"movie_id"`
 	RoomId       string         `form:"room_id"`

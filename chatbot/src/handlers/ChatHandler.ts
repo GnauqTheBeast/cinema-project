@@ -1,6 +1,5 @@
 import { Request, Response } from 'express'
 import { ChatService } from '../services/index.js'
-import { QuestionRequest } from '../types/index.js'
 import { logger } from '../utils/index.js'
 import crypto from 'crypto'
 
@@ -14,28 +13,6 @@ export class ChatHandler {
 
     constructor({ chatService }: { chatService: ChatService }) {
         this.chatService = chatService
-    }
-
-    askQuestion = async (req: Request, res: Response): Promise<void> => {
-        try {
-            const { question } = req.body as QuestionRequest
-
-            if (!question) {
-                res.status(400).json({
-                    error: 'Câu hỏi không được để trống',
-                })
-                return
-            }
-
-            const response = await this.chatService.processQuestion(question)
-
-            res.status(200).json(response)
-        } catch (error) {
-            logger.error('Error processing question', { error })
-            res.status(500).json({
-                error: `Có lỗi xảy ra khi xử lý câu hỏi: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            })
-        }
     }
 
     sendMessage = async (req: Request, res: Response): Promise<void> => {

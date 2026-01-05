@@ -41,7 +41,7 @@ export default function DashboardPage() {
   const [weekRange, setWeekRange] = useState({ startDate: '', endDate: '' })
 
   useEffect(() => {
-    fetchDashboardData()
+    fetchDashboardData().then()
   }, [])
 
   const calculateChange = (current, previous) => {

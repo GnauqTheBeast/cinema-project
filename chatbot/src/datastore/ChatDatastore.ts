@@ -29,20 +29,6 @@ export class ChatDatastore {
         }
     }
 
-    async getChatByHash(questionHash: string): Promise<Chat | null> {
-        const query = `SELECT * FROM ${CHAT_TABLE} WHERE id = $1`
-
-        try {
-            const result = await this.pool.query(query, [questionHash])
-            if (result.rows.length === 0) {
-                return null
-            }
-            return result.rows[0] as Chat
-        } catch (error) {
-            throw wrapDatabaseError('Failed to get chat', error)
-        }
-    }
-
     async getRecentChatRecordsWithEmbedding(limit: number): Promise<Chat[]> {
         const query = `
       SELECT * FROM ${CHAT_TABLE}

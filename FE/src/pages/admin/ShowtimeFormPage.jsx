@@ -10,7 +10,7 @@ import {
   FaSave,
   FaTags,
 } from 'react-icons/fa'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { movieService } from '../../services/movieApi'
 import { roomService } from '../../services/roomApi'
@@ -19,6 +19,7 @@ import { showtimeService } from '../../services/showtimeApi'
 const ShowtimeFormPage = () => {
   const navigate = useNavigate()
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
   const isEditing = Boolean(id)
 
   const [formData, setFormData] = useState({
@@ -46,6 +47,17 @@ const ShowtimeFormPage = () => {
     fetchMovies().then()
     if (isEditing) {
       fetchShowtime().then()
+    } else {
+      const roomId = searchParams.get('roomId')
+      const startTime = searchParams.get('startTime')
+
+      if (roomId || startTime) {
+        setFormData(prev => ({
+          ...prev,
+          ...(roomId && { room_id: roomId }),
+          ...(startTime && { start_time: startTime })
+        }))
+      }
     }
   }, [id, isEditing])
 
@@ -222,7 +234,13 @@ const ShowtimeFormPage = () => {
         await showtimeService.createShowtime(requestData)
       }
 
-      navigate('/admin/showtimes')
+      const fromTimeline = searchParams.get('roomId') && searchParams.get('startTime')
+      if (fromTimeline) {
+        const createdDate = new Date(formData.start_time).toISOString().split('T')[0]
+        navigate(`/admin/showtimes?view=timeline&date=${createdDate}`)
+      } else {
+        navigate('/admin/showtimes')
+      }
     } catch (err) {
       if (err.response?.data?.message?.includes('conflicts')) {
         setError('Lịch chiếu bị trùng với lịch chiếu khác trong phòng')

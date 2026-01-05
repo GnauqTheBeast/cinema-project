@@ -12,7 +12,7 @@ export default function TopMoviesList({ movies, loading }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
       <h3 className="mb-6 text-lg font-semibold text-gray-900">
-        Top 5 Movies (This Week)
+        Top 5 Phim (Trong Tuần)
       </h3>
 
       {loading ? (
