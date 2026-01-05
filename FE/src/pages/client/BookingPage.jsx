@@ -28,39 +28,45 @@ const BookingPage = () => {
     fetchBookingData()
   }, [showtimeId])
 
-  useEffect(() => {
-    if (!showtimeId || step !== 1) {
+  const fetchLockedSeats = async () => {
+    if (!showtimeId || seats.length === 0) {
       return
     }
 
-    const pollLockedSeats = async () => {
-      try {
-        const response = await clientSeatService.getLockedSeats(showtimeId)
-        const lockedSeatIds = response.data?.locked_seat_ids || []
-        const bookedSeatIds = response.data?.booked_seat_ids || []
+    try {
+      const response = await clientSeatService.getLockedSeats(showtimeId)
+      const lockedSeatIds = response.data?.locked_seat_ids || []
+      const bookedSeatIds = response.data?.booked_seat_ids || []
 
-        const newLockedSeats = seats.filter(seat => lockedSeatIds.includes(seat.id))
-        const newBookedSeats = seats.filter(seat => bookedSeatIds.includes(seat.id))
-        
-        setLockedSeats(newLockedSeats)
-        setBookedSeats(newBookedSeats)
+      const newLockedSeats = seats.filter(seat => lockedSeatIds.includes(seat.id))
+      const newBookedSeats = seats.filter(seat => bookedSeatIds.includes(seat.id))
 
-        if (selectedSeats.length > 0) {
-          const unavailableSeatIds = [...lockedSeatIds, ...bookedSeatIds]
-          const updatedSelectedSeats = selectedSeats.filter(seat => !unavailableSeatIds.includes(seat.id))
-          if (updatedSelectedSeats.length !== selectedSeats.length) {
-            setSelectedSeats(updatedSelectedSeats)
-          }
+      setLockedSeats(newLockedSeats)
+      setBookedSeats(newBookedSeats)
+
+      if (selectedSeats.length > 0) {
+        const unavailableSeatIds = [...lockedSeatIds, ...bookedSeatIds]
+        const updatedSelectedSeats = selectedSeats.filter(seat => !unavailableSeatIds.includes(seat.id))
+        if (updatedSelectedSeats.length !== selectedSeats.length) {
+          setSelectedSeats(updatedSelectedSeats)
         }
-      } catch (err) {
-        console.error('Error polling locked seats:', err)
       }
+    } catch (err) {
+      console.error('Error fetching locked seats:', err)
+    }
+  }
+
+  useEffect(() => {
+    if (!showtimeId || step !== 1 || seats.length === 0) {
+      return
     }
 
-    const intervalId = setInterval(pollLockedSeats, 5000)
+    fetchLockedSeats().then()
+
+    const intervalId = setInterval(fetchLockedSeats, 5000)
 
     return () => clearInterval(intervalId)
-  }, [showtimeId, step, selectedSeats, seats])
+  }, [showtimeId, step, seats])
 
   const fetchBookingData = async () => {
     try {
