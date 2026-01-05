@@ -23,12 +23,12 @@ export class EmbeddingService {
             })
 
             if (!response.embeddings || response.embeddings.length === 0) {
-                throw new Error('No embedding returned')
+                return []
             }
 
             const values = response.embeddings[0].values
             if (!values || values.length === 0) {
-                throw new Error('No embedding values returned')
+                return []
             }
 
             return values

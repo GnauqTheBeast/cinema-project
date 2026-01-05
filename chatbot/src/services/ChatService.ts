@@ -197,7 +197,6 @@ Hãy trả lời câu hỏi của khách hàng dựa trên thông tin tham khả
         try {
             return await this.chunkDatastore.findSimilarChunks(questionEmbedding, threshold, limit)
         } catch (error) {
-            logger.error('Failed to find similar chunks', { error })
             return []
         }
     }
