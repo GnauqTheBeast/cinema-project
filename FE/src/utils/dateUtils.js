@@ -137,3 +137,15 @@ export const formatDateTime = (dateTimeStr) => {
     minute: '2-digit',
   })
 }
+
+/**
+ * Calculate duration in minutes between two datetime strings
+ * @param {string} startTimeStr - ISO datetime string for start time
+ * @param {string} endTimeStr - ISO datetime string for end time
+ * @returns {number} Duration in minutes
+ */
+export const getDurationInMinutes = (startTimeStr, endTimeStr) => {
+  const startTime = new Date(startTimeStr)
+  const endTime = new Date(endTimeStr)
+  return (endTime - startTime) / (1000 * 60)
+}

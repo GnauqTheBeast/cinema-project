@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai'
 import { KeyManager } from '../pkg/keyManager/index.js'
+import { retryWithApiKey } from '../utils/index.js'
 
 export class EmbeddingService {
     private keyManager: KeyManager
@@ -9,12 +10,7 @@ export class EmbeddingService {
     }
 
     async embeddingText(text: string): Promise<number[]> {
-        const apiKey = this.keyManager.getNextKey()
-        if (!apiKey) {
-            throw new Error('No Gemini API key available')
-        }
-
-        try {
+        return retryWithApiKey(this.keyManager, async (apiKey) => {
             const ai = new GoogleGenAI({ apiKey })
 
             const response = await ai.models.embedContent({
@@ -32,8 +28,6 @@ export class EmbeddingService {
             }
 
             return values
-        } catch (error) {
-            throw new Error(`Embedding API error: ${error}`)
-        }
+        })
     }
 }

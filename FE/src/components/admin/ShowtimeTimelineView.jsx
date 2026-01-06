@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { FaPlus, FaEdit, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
-import { formatTime, formatShowtimeTime } from '../../utils/dateUtils'
+import { formatTime, formatShowtimeTime, getDurationInMinutes } from '../../utils/dateUtils'
 
 const COLORS = [
   { bg: 'bg-blue-500', border: 'border-blue-600', text: 'text-white' },
@@ -239,7 +239,8 @@ const ShowtimeTimelineView = ({ showtimes, rooms, selectedDate, onCreateShowtime
 
                       {roomShowtimes.map(showtime => {
                         const leftPos = timeToPosition(showtime.start_time)
-                        const width = durationToWidth(showtime.duration)
+                        const actualDuration = getDurationInMinutes(showtime.start_time, showtime.end_time)
+                        const width = durationToWidth(actualDuration)
                         const color = getMovieColor(showtime.movie?.id || showtime.movie_id)
                         const hasConflict = checkConflict(room.id, showtime.start_time, showtime.end_time, showtime.id)
 

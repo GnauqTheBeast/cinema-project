@@ -38,9 +38,8 @@ type DocumentChunk struct {
 type Chat struct {
 	bun.BaseModel `bun:"table:chats,alias:c"`
 
-	ID                string    `bun:"id,pk,type:uuid,default:gen_random_uuid()"`
-	Question          string    `bun:"question,notnull,type:text"`
-	Answer            string    `bun:"answer,notnull,type:text"`
-	EmbeddingQuestion string    `bun:"embedding_question,notnull,type:text"`
-	CreatedAt         time.Time `bun:"created_at,nullzero,notnull,default:current_timestamp"`
+	ID        string    `bun:"id,pk,type:uuid,default:gen_random_uuid()"`
+	Question  string    `bun:"question,notnull,type:text"`
+	Answer    string    `bun:"answer,notnull,type:text"`
+	CreatedAt time.Time `bun:"created_at,nullzero,notnull,default:current_timestamp"`
 }
