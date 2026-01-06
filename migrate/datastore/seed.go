@@ -863,8 +863,8 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 	}
 
 	timeSlots := map[string][]string{
-		"morning":   {"09:00"},
-		"afternoon": {"14:00"},
+		"morning":   {"07:00"},
+		"afternoon": {"13:00"},
 		"evening":   {"19:00"},
 	}
 

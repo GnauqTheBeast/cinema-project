@@ -78,10 +78,6 @@ func NewBusiness(i *do.Injector) (RoomBiz, error) {
 }
 
 func (b *business) GetRoomById(ctx context.Context, id string) (*entity.Room, error) {
-	if id == "" {
-		return nil, ErrInvalidRoomData
-	}
-
 	callback := func() (*entity.Room, error) {
 		return b.repository.GetByID(ctx, id)
 	}
@@ -130,11 +126,11 @@ func (b *business) CreateRoom(ctx context.Context, room *entity.Room) error {
 		return ErrRoomNumberExists
 	}
 
-	if err := b.repository.Create(ctx, room); err != nil {
+	if err = b.repository.Create(ctx, room); err != nil {
 		return fmt.Errorf("failed to create room: %w", err)
 	}
 
-	_ = b.cache.Delete(ctx, redisRoomsList())
+	b.clearCacheForRoom(ctx, room.Id)
 
 	return nil
 }
@@ -179,12 +175,11 @@ func (b *business) UpdateRoom(ctx context.Context, id string, updates *entity.Up
 		return ErrInvalidRoomData
 	}
 
-	if err := b.repository.Update(ctx, room); err != nil {
+	if err = b.repository.Update(ctx, room); err != nil {
 		return fmt.Errorf("failed to update room: %w", err)
 	}
 
-	_ = b.cache.Delete(ctx, redisRoomDetail(id))
-	_ = b.cache.Delete(ctx, redisRoomsList())
+	b.clearCacheForRoom(ctx, id)
 
 	return nil
 }
@@ -198,8 +193,7 @@ func (b *business) DeleteRoom(ctx context.Context, id string) error {
 		return fmt.Errorf("failed to delete room: %w", err)
 	}
 
-	_ = b.cache.Delete(ctx, redisRoomDetail(id))
-	_ = b.cache.Delete(ctx, redisRoomsList())
+	b.clearCacheForRoom(ctx, id)
 
 	return nil
 }
@@ -219,12 +213,11 @@ func (b *business) UpdateRoomStatus(ctx context.Context, id string, status entit
 
 	room.Status = status
 
-	if err := b.repository.Update(ctx, room); err != nil {
+	if err = b.repository.Update(ctx, room); err != nil {
 		return fmt.Errorf("failed to update room status: %w", err)
 	}
 
-	_ = b.cache.Delete(ctx, redisRoomDetail(id))
-	_ = b.cache.Delete(ctx, redisRoomsList())
+	b.clearCacheForRoom(ctx, id)
 
 	return nil
 }
@@ -244,4 +237,9 @@ func (b *business) ValidateRoomForShowtime(ctx context.Context, roomId string) e
 	}
 
 	return nil
+}
+
+func (b *business) clearCacheForRoom(ctx context.Context, roomId string) {
+	_ = b.cache.Delete(ctx, redisRoomDetail(roomId))
+	_ = b.cache.Delete(ctx, redisRoomsList())
 }

@@ -5,10 +5,10 @@ import AdminLayout from '../../components/admin/AdminLayout'
 import SeatGrid from '../../components/SeatGrid'
 import { movieService } from '../../services/movieService'
 import { showtimeService } from '../../services/showtimeApi'
-import { clientSeatService } from '../../services/clientSeatService'
 import boxOfficeService from '../../services/boxOfficeService'
 import { getSeatPrice, calculateBookingTotal, getSeatTypeLabel } from '../../constants/seatConstants'
 import { formatCurrency, formatDateTime } from '../../utils/formatters'
+import { useLockedSeats } from '../../hooks/useLockedSeats'
 
 const BoxOfficePage = () => {
   const navigate = useNavigate()
@@ -18,13 +18,19 @@ const BoxOfficePage = () => {
   const [selectedShowtime, setSelectedShowtime] = useState(null)
   const [room, setRoom] = useState(null)
   const [seats, setSeats] = useState([])
-  const [lockedSeats, setLockedSeats] = useState([])
-  const [bookedSeats, setBookedSeats] = useState([])
   const [selectedSeats, setSelectedSeats] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [bookingResult, setBookingResult] = useState(null)
+
+  const { lockedSeats, bookedSeats } = useLockedSeats(
+    selectedShowtime?.id,
+    seats,
+    selectedSeats,
+    setSelectedSeats,
+    step === 2
+  )
 
   useEffect(() => {
     if (step === 1) {
@@ -32,40 +38,6 @@ const BoxOfficePage = () => {
       fetchScheduledShowtimes().then()
     }
   }, [step])
-
-  useEffect(() => {
-    if (!selectedShowtime?.id || step !== 2) {
-      return
-    }
-
-    const pollLockedSeats = async () => {
-      try {
-        const response = await clientSeatService.getLockedSeats(selectedShowtime.id)
-        const lockedSeatIds = response.data?.locked_seat_ids || []
-        const bookedSeatIds = response.data?.booked_seat_ids || []
-
-        const newLockedSeats = seats.filter(seat => lockedSeatIds.includes(seat.id))
-        const newBookedSeats = seats.filter(seat => bookedSeatIds.includes(seat.id))
-        
-        setLockedSeats(newLockedSeats)
-        setBookedSeats(newBookedSeats)
-
-        if (selectedSeats.length > 0) {
-          const unavailableSeatIds = [...lockedSeatIds, ...bookedSeatIds]
-          const updatedSelectedSeats = selectedSeats.filter(seat => !unavailableSeatIds.includes(seat.id))
-          if (updatedSelectedSeats.length !== selectedSeats.length) {
-            setSelectedSeats(updatedSelectedSeats)
-          }
-        }
-      } catch (err) {
-        console.error('Error polling locked seats:', err)
-      }
-    }
-
-    const intervalId = setInterval(pollLockedSeats, 5000)
-
-    return () => clearInterval(intervalId)
-  }, [selectedShowtime?.id, step, selectedSeats, seats])
 
   const fetchMovies = async () => {
     try {
@@ -144,9 +116,9 @@ const BoxOfficePage = () => {
     try {
       setLoading(true)
       setError('')
-      
+
       const response = await showtimeService.getShowtimeById(showtime.id)
-      
+
       if (!response.success || !response.data) {
         setError('Không thể tải thông tin suất chiếu.')
         setLoading(false)
@@ -157,8 +129,6 @@ const BoxOfficePage = () => {
       setSelectedShowtime(showtimeData)
       setRoom(showtimeData.room)
       setSeats(showtimeData.seats || [])
-      setLockedSeats([])
-      setBookedSeats([])
       setSelectedSeats([])
       setStep(2)
     } catch (err) {
@@ -221,8 +191,6 @@ const BoxOfficePage = () => {
         const response = await showtimeService.getShowtimeById(selectedShowtime.id)
         if (response.success && response.data) {
           setSeats(response.data.seats || [])
-          setLockedSeats([])
-          setBookedSeats([])
         }
       } else if (err.response?.data?.error) {
         setError(err.response.data.error)
@@ -240,8 +208,6 @@ const BoxOfficePage = () => {
     setSelectedShowtime(null)
     setRoom(null)
     setSeats([])
-    setLockedSeats([])
-    setBookedSeats([])
     setSelectedSeats([])
     setError('')
     setSuccess(false)
@@ -456,8 +422,6 @@ const BoxOfficePage = () => {
                 setStep(1)
                 setSelectedSeats([])
                 setSeats([])
-                setLockedSeats([])
-                setBookedSeats([])
               }}
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium"
             >

@@ -194,11 +194,11 @@ export default function ProfilePage() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'confirmed':
+      case 'CONFIRMED':
         return 'bg-green-600/20 text-green-400'
-      case 'pending':
+      case 'PENDING':
         return 'bg-yellow-600/20 text-yellow-400'
-      case 'cancelled':
+      case 'CANCELLED':
         return 'bg-red-600/20 text-red-400'
       default:
         return 'bg-gray-600/20 text-gray-400'

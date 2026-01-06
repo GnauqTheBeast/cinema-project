@@ -17,22 +17,15 @@ import {
 import AdminLayout from '../../components/admin/AdminLayout'
 import ShowtimeRevenueModal from '../../components/admin/ShowtimeRevenueModal'
 import analyticsService from '../../services/analyticsService'
-
-const COLORS = ['#10B981', '#22C55E', '#34D399', '#6EE7B7', '#A7F3D0', '#D1FAE5']
+import { getLastDaysRange, getLastMonthsRange, getLastYearsRange, getDurationInDays } from '../../utils/dateUtils'
 
 export default function RevenueStatsPage() {
-  const [monthlyData, setMonthlyData] = useState([])
+  const [timeSeriesData, setTimeSeriesData] = useState([])
   const [movieData, setMovieData] = useState([])
-  const [genreData, setGenreData] = useState([])
   const [overallStats, setOverallStats] = useState({})
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
-  const [dateRange, setDateRange] = useState({
-    startDate: new Date(new Date().setMonth(new Date().getMonth() - 6))
-      .toISOString()
-      .split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
-  })
+  const [dateRange, setDateRange] = useState(getLastMonthsRange(6))
   const [selectedMovie, setSelectedMovie] = useState(null)
   const [showtimeData, setShowtimeData] = useState([])
   const [showtimeLoading, setShowtimeLoading] = useState(false)
@@ -42,37 +35,48 @@ export default function RevenueStatsPage() {
       try {
         setLoading(true)
 
-        const [timeData, movieRevenueData, genreRevenueData, totalRevenueData] =
+        const [timeData, movieRevenueData, totalRevenueData] =
           await Promise.all([
             analyticsService.getRevenueByTime(dateRange.startDate, dateRange.endDate, 180),
             analyticsService.getRevenueByMovie(dateRange.startDate, dateRange.endDate, 10),
-            analyticsService.getRevenueByGenre(dateRange.startDate, dateRange.endDate),
             analyticsService.getTotalRevenue(dateRange.startDate, dateRange.endDate),
           ])
 
-        const monthlyGrouped = {}
+        const daysDiff = getDurationInDays(dateRange.startDate, dateRange.endDate)
+
+        const timeGrouped = {}
         if (timeData.success && timeData.data) {
           timeData.data.forEach((item) => {
             const date = new Date(item.time_period)
-            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-            const monthName = date.toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' })
+            let key, displayName
 
-            if (!monthlyGrouped[monthKey]) {
-              monthlyGrouped[monthKey] = {
-                monthName,
+            if (daysDiff <= 30) {
+              key = date.toISOString().split('T')[0]
+              displayName = date.toLocaleDateString('vi-VN', {
+                day: 'numeric',
+                month: 'short'
+              })
+            } else {
+              key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+              displayName = date.toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' })
+            }
+
+            if (!timeGrouped[key]) {
+              timeGrouped[key] = {
+                displayName,
                 revenue: 0,
                 bookings: 0,
               }
             }
 
-            monthlyGrouped[monthKey].revenue += item.total_revenue
-            monthlyGrouped[monthKey].bookings += item.total_bookings
+            timeGrouped[key].revenue += item.total_revenue
+            timeGrouped[key].bookings += item.total_bookings
           })
         }
 
-        const monthly = Object.keys(monthlyGrouped)
+        const timeSeriesData = Object.keys(timeGrouped)
           .sort((a, b) => a.localeCompare(b))
-          .map(key => monthlyGrouped[key])
+          .map(key => timeGrouped[key])
 
         const movies =
           movieRevenueData.success && movieRevenueData.data
@@ -86,14 +90,6 @@ export default function RevenueStatsPage() {
             }))
             : []
 
-        const genres =
-          genreRevenueData.success && genreRevenueData.data
-            ? genreRevenueData.data.map((genre) => ({
-              genre: genre.genre,
-              revenue: genre.total_revenue,
-              revenueFormatted: formatCurrency(genre.total_revenue),
-            }))
-            : []
 
         const totalRevenue = totalRevenueData.success ? totalRevenueData.data.total_revenue : 0
         const totalTickets =
@@ -105,9 +101,8 @@ export default function RevenueStatsPage() {
             ? movieRevenueData.data.reduce((sum, movie) => sum + movie.total_bookings, 0)
             : 0
 
-        setMonthlyData(monthly)
+        setTimeSeriesData(timeSeriesData)
         setMovieData(movies)
-        setGenreData(genres)
         setOverallStats({
           totalRevenue,
           totalRevenueFormatted: formatCurrency(totalRevenue),
@@ -204,6 +199,67 @@ export default function RevenueStatsPage() {
           <p className="m-0 text-gray-500 text-sm">Thống kê doanh thu một cách toàn diện</p>
         </div>
 
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-6">
+          <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Chọn khoảng thời gian</h3>
+          <div className="flex flex-col sm:flex-row gap-4 items-end">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ngày bắt đầu
+              </label>
+              <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ngày kết thúc
+              </label>
+              <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2 opacity-0">
+                Preset
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setDateRange(getLastDaysRange(7))}
+                  className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  7 ngày
+                </button>
+                <button
+                  onClick={() => setDateRange(getLastDaysRange(30))}
+                  className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  30 ngày
+                </button>
+                <button
+                  onClick={() => setDateRange(getLastMonthsRange(6))}
+                  className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  6 tháng
+                </button>
+                <button
+                  onClick={() => setDateRange(getLastYearsRange(1))}
+                  className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  1 năm
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="flex gap-2 mb-6 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
           {tabs.map((tab) => (
             <button
@@ -259,36 +315,13 @@ export default function RevenueStatsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Doanh thu theo thể loại</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={genreData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ genre }) => genre}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="revenue"
-                    >
-                      {genreData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-
+            <div className="grid grid-cols-1 gap-4">
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                 <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Xu hướng theo tháng</h3>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={monthlyData}>
+                  <LineChart data={timeSeriesData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                    <XAxis dataKey="monthName" tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
+                    <XAxis dataKey="displayName" tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
                     <YAxis tickFormatter={formatCurrency} tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
                     <Tooltip content={<CustomTooltip />} />
                     <Line
@@ -312,9 +345,9 @@ export default function RevenueStatsPage() {
               Doanh Thu Hàng Tháng
             </h3>
             <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={monthlyData}>
+              <BarChart data={timeSeriesData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                <XAxis dataKey="monthName" tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
+                <XAxis dataKey="displayName" tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
                 <YAxis tickFormatter={formatCurrency} tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 14 }} />
@@ -400,61 +433,6 @@ export default function RevenueStatsPage() {
           </div>
         )}
 
-        {activeTab === 'genres' && (
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Doanh thu theo thể loại</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ResponsiveContainer width="100%" height={400}>
-                <PieChart>
-                  <Pie
-                    data={genreData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ genre, revenue }) =>
-                      `${genre}: ${((revenue / overallStats.totalRevenue) * 100).toFixed(1)}%`
-                    }
-                    outerRadius={120}
-                    fill="#8884d8"
-                    dataKey="revenue"
-                  >
-                    {genreData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: 14 }} />
-                </PieChart>
-              </ResponsiveContainer>
-
-              <div>
-                <h4 className="m-0 mb-4 text-base font-semibold text-gray-900">Phân tích theo thể loại</h4>
-                {genreData.map((genre, index) => (
-                  <div
-                    key={index}
-                    className="flex justify-between items-center px-4 py-3 mb-2 bg-gray-50 rounded-lg border border-gray-200"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-4 h-4 rounded"
-                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                      ></div>
-                      <span className="font-semibold text-gray-900 text-sm">{genre.genre}</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-gray-900 text-base">
-                        {genre.revenueFormatted}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {((genre.revenue / overallStats.totalRevenue) * 100).toFixed(1)}%
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {selectedMovie && (

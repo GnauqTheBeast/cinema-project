@@ -149,3 +149,66 @@ export const getDurationInMinutes = (startTimeStr, endTimeStr) => {
   const endTime = new Date(endTimeStr)
   return (endTime - startTime) / (1000 * 60)
 }
+
+/**
+ * Calculate duration in days between two date strings
+ * @param {string|Date} startDate - Start date
+ * @param {string|Date} endDate - End date
+ * @returns {number} Duration in days (rounded up)
+ */
+export const getDurationInDays = (startDate, endDate) => {
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  return Math.ceil((end - start) / (1000 * 60 * 60 * 24))
+}
+
+/**
+ * Get date range for last N days
+ * @param {number} days - Number of days to go back
+ * @param {Date} referenceDate - Reference date (defaults to today)
+ * @returns {Object} { startDate: 'YYYY-MM-DD', endDate: 'YYYY-MM-DD' }
+ */
+export const getLastDaysRange = (days, referenceDate = new Date()) => {
+  const endDate = new Date(referenceDate)
+  const startDate = new Date(referenceDate)
+  startDate.setDate(endDate.getDate() - days)
+
+  return {
+    startDate: formatDateForAPI(startDate),
+    endDate: formatDateForAPI(endDate),
+  }
+}
+
+/**
+ * Get date range for last N months
+ * @param {number} months - Number of months to go back
+ * @param {Date} referenceDate - Reference date (defaults to today)
+ * @returns {Object} { startDate: 'YYYY-MM-DD', endDate: 'YYYY-MM-DD' }
+ */
+export const getLastMonthsRange = (months, referenceDate = new Date()) => {
+  const endDate = new Date(referenceDate)
+  const startDate = new Date(referenceDate)
+  startDate.setMonth(endDate.getMonth() - months)
+
+  return {
+    startDate: formatDateForAPI(startDate),
+    endDate: formatDateForAPI(endDate),
+  }
+}
+
+/**
+ * Get date range for last N years
+ * @param {number} years - Number of years to go back
+ * @param {Date} referenceDate - Reference date (defaults to today)
+ * @returns {Object} { startDate: 'YYYY-MM-DD', endDate: 'YYYY-MM-DD' }
+ */
+export const getLastYearsRange = (years, referenceDate = new Date()) => {
+  const endDate = new Date(referenceDate)
+  const startDate = new Date(referenceDate)
+  startDate.setFullYear(endDate.getFullYear() - years)
+
+  return {
+    startDate: formatDateForAPI(startDate),
+    endDate: formatDateForAPI(endDate),
+  }
+}
