@@ -17,7 +17,7 @@ class AuthRoutes {
     this.router.post('/admin/login', this.handleAsync(AuthController.loginAdmin));
     this.router.post('/verify-otp', this.handleAsync(AuthController.verifyOtp));
     this.router.post('/resend-otp', this.handleAsync(AuthController.resendOtp));
-    this.router.post('/staff', authenticateToken, requireAdmin, this.handleAsync(AuthController.registerInternalUser));  
+    this.router.post('/staff', authenticateToken, requireAdmin, this.handleAsync(AuthController.registerInternalUser));
   }
 
   private handleAsync(fn: IController) {

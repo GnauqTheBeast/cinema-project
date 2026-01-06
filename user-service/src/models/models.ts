@@ -8,6 +8,22 @@ export interface RoleAttributes {
   updated_at?: Date;
 }
 
+export interface PermissionAttributes {
+  id: string;
+  name: string;
+  code: string;
+  description?: string | null;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+export interface RolePermissionAttributes {
+  id: string;
+  role_id: string;
+  permission_id: string;
+  created_at?: Date;
+}
+
 export interface UserAttributes {
   id: string;
   name: string;
@@ -42,6 +58,8 @@ export interface StaffProfileAttributes {
 }
 
 export type RoleModel = ModelDefined<RoleAttributes, Partial<RoleAttributes>>;
+export type PermissionModel = ModelDefined<PermissionAttributes, Partial<PermissionAttributes>>;
+export type RolePermissionModel = ModelDefined<RolePermissionAttributes, Partial<RolePermissionAttributes>>;
 export type UserModel = ModelDefined<UserAttributes, Partial<UserAttributes>>;
 export type CustomerProfileModel = ModelDefined<
   CustomerProfileAttributes,
@@ -55,6 +73,8 @@ export type StaffProfileModel = ModelDefined<
 export interface Models {
   sequelize: Sequelize;
   Role: RoleModel;
+  Permission: PermissionModel;
+  RolePermission: RolePermissionModel;
   User: UserModel;
   CustomerProfile: CustomerProfileModel;
   StaffProfile: StaffProfileModel;
@@ -72,6 +92,30 @@ export function initModels(sequelize: Sequelize): Models {
     },
     { tableName: 'roles', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' }
   ) as RoleModel;
+
+  const Permission = sequelize.define<Model<PermissionAttributes, Partial<PermissionAttributes>>>(
+    'Permission',
+    {
+      id: { type: DataTypes.STRING, primaryKey: true },
+      name: { type: DataTypes.STRING, allowNull: false },
+      code: { type: DataTypes.STRING, allowNull: false, unique: true },
+      description: { type: DataTypes.STRING },
+      created_at: { type: DataTypes.DATE },
+      updated_at: { type: DataTypes.DATE }
+    },
+    { tableName: 'permissions', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' }
+  ) as PermissionModel;
+
+  const RolePermission = sequelize.define<Model<RolePermissionAttributes, Partial<RolePermissionAttributes>>>(
+    'RolePermission',
+    {
+      id: { type: DataTypes.STRING, primaryKey: true },
+      role_id: { type: DataTypes.STRING, allowNull: false },
+      permission_id: { type: DataTypes.STRING, allowNull: false },
+      created_at: { type: DataTypes.DATE }
+    },
+    { tableName: 'role_permissions', timestamps: false }
+  ) as RolePermissionModel;
 
   const User = sequelize.define<Model<UserAttributes, Partial<UserAttributes>>>(
     'User',
@@ -125,7 +169,13 @@ export function initModels(sequelize: Sequelize): Models {
   User.belongsTo(Role, { foreignKey: 'role_id', as: 'role' });
   Role.hasMany(User, { foreignKey: 'role_id', as: 'users' });
 
-  return { sequelize, Role, User, CustomerProfile, StaffProfile };
+  // Permission associations
+  RolePermission.belongsTo(Role, { foreignKey: 'role_id', as: 'role' });
+  RolePermission.belongsTo(Permission, { foreignKey: 'permission_id', as: 'permission' });
+  Role.hasMany(RolePermission, { foreignKey: 'role_id', as: 'rolePermissions' });
+  Permission.hasMany(RolePermission, { foreignKey: 'permission_id', as: 'rolePermissions' });
+
+  return { sequelize, Role, Permission, RolePermission, User, CustomerProfile, StaffProfile };
 }
 
 

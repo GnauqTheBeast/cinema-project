@@ -15,6 +15,7 @@ import {
   FaSignOutAlt,
   FaTimes,
   FaUser,
+  FaUserShield,
 } from 'react-icons/fa'
 import { useLocation, useNavigate } from 'react-router-dom'
 
@@ -22,10 +23,12 @@ export default function AdminLayout({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [adminUser, setAdminUser] = useState(() => 
+    JSON.parse(localStorage.getItem('adminUser') || '{}')
+  )
+  const userPermissions = adminUser?.permissions || []
 
-  const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}')
-  const role = adminUser?.role || ''
-
+  // Auto-open/close sidebar based on screen size
   useEffect(() => {
     const handleResize = () => {
       setIsSidebarOpen(window.innerWidth >= 1024)
@@ -38,28 +41,26 @@ export default function AdminLayout({ children }) {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const visiblePathsByRole = {
-    admin: 'all',
-    manager_staff: new Set([
-      '/admin/dashboard',
-      '/admin/movies',
-      '/admin/news',
-      '/admin/rooms',
-      '/admin/seats',
-      '/admin/showtimes',
-      '/admin/chatbot-documents',
-    ]),
-    ticket_staff: new Set([
-      '/admin/box-office',
-      '/admin/ticket-search',
-    ]),
+  useEffect(() => {
+    const handleAdminUserUpdate = () => {
+      const updatedAdminUser = JSON.parse(localStorage.getItem('adminUser') || '{}')
+      setAdminUser(updatedAdminUser)
+    }
+
+    window.addEventListener('adminUserUpdated', handleAdminUserUpdate)
+
+    return () => window.removeEventListener('adminUserUpdated', handleAdminUserUpdate)
+  }, [])
+
+  const hasPermission = (permissionCode) => {
+    if (!permissionCode) return true
+    return userPermissions.includes(permissionCode)
   }
 
-  const isItemVisibleForRole = (path) => {
-    if (!role) return false
-    if (visiblePathsByRole[role] === 'all') return true
-    const allowed = visiblePathsByRole[role]
-    return allowed ? allowed.has(path) : false
+  const isItemVisible = (item) => {
+    if (!item.permission) return true
+
+    return hasPermission(item.permission)
   }
 
   const handleLogout = () => {
@@ -114,13 +115,13 @@ export default function AdminLayout({ children }) {
       path: '/admin/box-office',
       label: 'Bán vé tại quầy',
       icon: FaShoppingCart,
-      permission: 'ticket_sell',
+      permission: 'ticket_issue',
     },
     {
       path: '/admin/ticket-search',
       label: 'Xuất vé',
       icon: FaSearch,
-      permission: 'ticket_sell',
+      permission: 'ticket_view',
     },
     {
       path: '/admin/revenue',
@@ -135,10 +136,16 @@ export default function AdminLayout({ children }) {
       permission: 'staff_manage',
     },
     {
+      path: '/admin/permissions',
+      label: 'Phân quyền',
+      icon: FaUserShield,
+      permission: 'permission_manage',
+    },
+    {
       path: '/admin/chatbot-documents',
       label: 'Chatbot Documents',
       icon: FaRobot,
-      permission: 'chatbot_manage',
+      permission: 'news_manage',
     },
   ]
 
@@ -221,10 +228,8 @@ export default function AdminLayout({ children }) {
                   const IconComponent = item.icon
                   const isActive = isActiveRoute(item.path)
 
-                  if (!isItemVisibleForRole(item.path)) return null
-
-                  if (item.path === '/admin/box-office' && role !== 'ticket_staff') return null
-                  if (item.path === '/admin/ticket-search' && role !== 'ticket_staff') return null
+                  // Check if menu item should be visible based on permissions
+                  if (!isItemVisible(item)) return null
 
                   return (
                     <button

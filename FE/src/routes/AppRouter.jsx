@@ -19,6 +19,7 @@ import ShowtimeFormPage from '../pages/admin/ShowtimeFormPage'
 import ShowtimesPage from '../pages/admin/ShowtimesPage'
 import StaffPage from '../pages/admin/StaffPage'
 import StaffFormPage from '../pages/admin/StaffFormPage'
+import PermissionManagementPage from '../pages/admin/PermissionManagementPage'
 import BookingPage from '../pages/client/BookingPage'
 import BookingHistoryPage from '../pages/client/BookingHistoryPage'
 import BookingSuccessPage from '../pages/client/BookingSuccessPage'
@@ -322,6 +323,16 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
           <ManagerRoute>
             <StaffFormPage />
           </ManagerRoute>
+        }
+      />
+
+      {/* Permission Management */}
+      <Route
+        path="/admin/permissions"
+        element={
+          <AdminRoute>
+            <PermissionManagementPage />
+          </AdminRoute>
         }
       />
 

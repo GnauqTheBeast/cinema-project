@@ -49,106 +49,64 @@ func SeedRoles(ctx context.Context, db *bun.DB) error {
 }
 
 func SeedPermissions(ctx context.Context, db *bun.DB) error {
-	permissions := []*models.Permission{
-		{
-			Id:          uuid.New().String(),
-			Name:        "Movie Manage",
-			Code:        "movie_manage",
-			Description: stringPtr("Manage movies (create, update, delete)"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Showtime Manage",
-			Code:        "showtime_manage",
-			Description: stringPtr("Manage movie showtimes"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Seat Manage",
-			Code:        "seat_manage",
-			Description: stringPtr("Manage cinema seats"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Report View",
-			Code:        "report_view",
-			Description: stringPtr("View analytics and operational reports"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Profile View",
-			Code:        "profile_view",
-			Description: stringPtr("View profile details"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Profile Update",
-			Code:        "profile_update",
-			Description: stringPtr("Update profile details"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Booking Create",
-			Code:        "booking_create",
-			Description: stringPtr("Create bookings"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Booking Manage",
-			Code:        "booking_manage",
-			Description: stringPtr("Manage bookings"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Ticket Issue",
-			Code:        "ticket_issue",
-			Description: stringPtr("Issue or print tickets"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Payment Process",
-			Code:        "payment_process",
-			Description: stringPtr("Handle payments for bookings"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Ticket View",
-			Code:        "ticket_view",
-			Description: stringPtr("View tickets"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Staff Manage",
-			Code:        "staff_manage",
-			Description: stringPtr("Manage staff accounts"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "News Manage",
-			Code:        "news_manage",
-			Description: stringPtr("Manage news articles and summaries"),
-			CreatedAt:   time.Now(),
-		},
+	permissionsData := []struct {
+		Name        string
+		Code        string
+		Description *string
+	}{
+		{"Movie Manage", "movie_manage", stringPtr("Manage movies (create, update, delete)")},
+		{"Showtime Manage", "showtime_manage", stringPtr("Manage movie showtimes")},
+		{"Seat Manage", "seat_manage", stringPtr("Manage cinema seats")},
+		{"Report View", "report_view", stringPtr("View analytics and operational reports")},
+		{"Profile View", "profile_view", stringPtr("View profile details")},
+		{"Profile Update", "profile_update", stringPtr("Update profile details")},
+		{"Booking Create", "booking_create", stringPtr("Create bookings")},
+		{"Booking Manage", "booking_manage", stringPtr("Manage bookings")},
+		{"Ticket Issue", "ticket_issue", stringPtr("Issue or print tickets")},
+		{"Payment Process", "payment_process", stringPtr("Handle payments for bookings")},
+		{"Ticket View", "ticket_view", stringPtr("View tickets")},
+		{"Staff Manage", "staff_manage", stringPtr("Manage staff accounts")},
+		{"News Manage", "news_manage", stringPtr("Manage news articles and summaries")},
+		{"Permission Manage", "permission_manage", stringPtr("Manage role permissions (assign/unassign)")},
 	}
 
-	_, err := db.NewInsert().Model(&permissions).Exec(ctx)
+	// Get existing permissions
+	var existingPerms []models.Permission
+	err := db.NewSelect().Model(&existingPerms).Scan(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to seed permissions: %w", err)
+		return fmt.Errorf("failed to check existing permissions: %w", err)
 	}
 
-	fmt.Println("Permissions seeded successfully!")
+	// Create map of existing permission codes
+	existingCodes := make(map[string]bool)
+	for _, p := range existingPerms {
+		existingCodes[p.Code] = true
+	}
+
+	// Only insert new permissions
+	var newPermissions []*models.Permission
+	for _, permData := range permissionsData {
+		if !existingCodes[permData.Code] {
+			newPermissions = append(newPermissions, &models.Permission{
+				Id:          uuid.New().String(),
+				Name:        permData.Name,
+				Code:        permData.Code,
+				Description: permData.Description,
+				CreatedAt:   time.Now(),
+			})
+		}
+	}
+
+	if len(newPermissions) > 0 {
+		_, err = db.NewInsert().Model(&newPermissions).Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to seed permissions: %w", err)
+		}
+		fmt.Printf("Permissions seeded successfully! Added %d new permissions\n", len(newPermissions))
+	} else {
+		fmt.Println("All permissions already exist, skipping...")
+	}
+
 	return nil
 }
 
@@ -165,6 +123,19 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 
 	if len(roles) == 0 || len(permissions) == 0 {
 		return fmt.Errorf("roles or permissions missing; seed roles and permissions first")
+	}
+
+	// Get existing role_permissions
+	var existingRolePerms []models.RolePermission
+	if err := db.NewSelect().Model(&existingRolePerms).Scan(ctx); err != nil {
+		return fmt.Errorf("failed to get existing role_permissions: %w", err)
+	}
+
+	// Create map of existing role_permission pairs
+	existingPairs := make(map[string]bool)
+	for _, rp := range existingRolePerms {
+		key := rp.RoleId + ":" + rp.PermissionId
+		existingPairs[key] = true
 	}
 
 	roleNameToId := map[string]string{}
@@ -216,7 +187,10 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 	if adminId, ok := roleNameToId["admin"]; ok {
 		for _, code := range allCodes {
 			if pid, ok := permCodeToId[code]; ok {
-				rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: adminId, PermissionId: pid, CreatedAt: time.Now()})
+				key := adminId + ":" + pid
+				if !existingPairs[key] {
+					rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: adminId, PermissionId: pid, CreatedAt: time.Now()})
+				}
 			}
 		}
 	}
@@ -225,7 +199,10 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 	if rid, ok := roleNameToId["manager_staff"]; ok {
 		for _, code := range managerStaffCodes {
 			if pid, ok := permCodeToId[code]; ok {
-				rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: rid, PermissionId: pid, CreatedAt: time.Now()})
+				key := rid + ":" + pid
+				if !existingPairs[key] {
+					rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: rid, PermissionId: pid, CreatedAt: time.Now()})
+				}
 			}
 		}
 	}
@@ -234,7 +211,10 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 	if rid, ok := roleNameToId["ticket_staff"]; ok {
 		for _, code := range ticketStaffCodes {
 			if pid, ok := permCodeToId[code]; ok {
-				rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: rid, PermissionId: pid, CreatedAt: time.Now()})
+				key := rid + ":" + pid
+				if !existingPairs[key] {
+					rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: rid, PermissionId: pid, CreatedAt: time.Now()})
+				}
 			}
 		}
 	}
@@ -243,20 +223,23 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 	if rid, ok := roleNameToId["customer"]; ok {
 		for _, code := range customerCodes {
 			if pid, ok := permCodeToId[code]; ok {
-				rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: rid, PermissionId: pid, CreatedAt: time.Now()})
+				key := rid + ":" + pid
+				if !existingPairs[key] {
+					rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: rid, PermissionId: pid, CreatedAt: time.Now()})
+				}
 			}
 		}
 	}
 
-	if len(rolePerms) == 0 {
-		return fmt.Errorf("no role-permission mappings to insert; check roles/permissions")
+	if len(rolePerms) > 0 {
+		if _, err := db.NewInsert().Model(&rolePerms).Exec(ctx); err != nil {
+			return fmt.Errorf("failed to seed role_permissions: %w", err)
+		}
+		fmt.Printf("Role permissions seeded successfully! Added %d new role-permission mappings\n", len(rolePerms))
+	} else {
+		fmt.Println("All role-permission mappings already exist, skipping...")
 	}
 
-	if _, err := db.NewInsert().Model(&rolePerms).Exec(ctx); err != nil {
-		return fmt.Errorf("failed to seed role_permissions: %w", err)
-	}
-
-	fmt.Println("Role permissions seeded successfully!")
 	return nil
 }
 

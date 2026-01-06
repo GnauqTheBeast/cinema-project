@@ -369,6 +369,8 @@ class AuthController {
       let permissions: string[] = [];
       if (userRoleId) {
         try {
+          // Clear cache before fetching to ensure we get the latest permissions on login
+          await PermissionService.clearPermissionsCache(userRoleId);
           const userPermissions = await PermissionService.getPermissionsByRoleId(userRoleId);
           permissions = userPermissions.map(p => p.code);
         } catch (error) {
@@ -566,6 +568,7 @@ class AuthController {
     }
     return password;
   }
+
 }
 
 export const register = AuthController.register.bind(AuthController);

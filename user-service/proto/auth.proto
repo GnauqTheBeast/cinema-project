@@ -5,6 +5,7 @@ package pb;
 service AuthService {
   rpc VerifyOtpAndActivate(VerifyOtpRequest) returns (VerifyOtpResponse);
   rpc Validate (ValidateRequest) returns (ValidateResponse);
+  rpc ClearPermissionsCache(ClearPermissionsCacheRequest) returns (ClearPermissionsCacheResponse);
 }
 
 message VerifyOtpRequest {
@@ -27,4 +28,13 @@ message ValidateResponse {
     string id = 3;
     string role = 4;
     repeated string permissions = 5;
+}
+
+message ClearPermissionsCacheRequest {
+    string role_id = 1;
+}
+
+message ClearPermissionsCacheResponse {
+    bool success = 1;
+    string message = 2;
 }
