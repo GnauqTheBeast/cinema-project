@@ -8,6 +8,7 @@ import Card from '../../components/common/Card'
 import Button from '../../components/common/Button'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import ShowtimeTimelineView from '../../components/admin/ShowtimeTimelineView'
+import { formatDateTime, toLocalDatetimeString } from '../../utils/dateUtils'
 
 const ShowtimesPage = () => {
   const navigate = useNavigate()
@@ -145,7 +146,7 @@ const ShowtimesPage = () => {
 
     try {
       await showtimeService.deleteShowtime(id)
-      fetchShowtimes()
+      fetchShowtimes().then()
     } catch (err) {
       alert('Có lỗi xảy ra khi xóa lịch chiếu')
       console.error('Error deleting showtime:', err)
@@ -155,7 +156,7 @@ const ShowtimesPage = () => {
   const handleStatusChange = async (id, newStatus) => {
     try {
       await showtimeService.updateShowtimeStatus(id, newStatus)
-      fetchShowtimes()
+      fetchShowtimes().then()
     } catch (err) {
       alert('Có lỗi xảy ra khi cập nhật trạng thái')
       console.error('Error updating status:', err)
@@ -190,17 +191,6 @@ const ShowtimesPage = () => {
     return showtime.movie ? showtime.movie.title : showtime.movie_id
   }
 
-  const formatDateTime = (dateTimeStr) => {
-    const date = new Date(dateTimeStr)
-    return date.toLocaleString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
-
   const isUpcoming = (showtime) => {
     const now = new Date()
     const startTime = new Date(showtime.start_time)
@@ -208,12 +198,7 @@ const ShowtimesPage = () => {
   }
 
   const handleCreateFromTimeline = (roomId, startTime) => {
-    const year = startTime.getFullYear()
-    const month = String(startTime.getMonth() + 1).padStart(2, '0')
-    const day = String(startTime.getDate()).padStart(2, '0')
-    const hours = String(startTime.getHours()).padStart(2, '0')
-    const minutes = String(startTime.getMinutes()).padStart(2, '0')
-    const dateTimeStr = `${year}-${month}-${day}T${hours}:${minutes}`
+    const dateTimeStr = toLocalDatetimeString(startTime)
     navigate(`/admin/showtimes/new?roomId=${roomId}&startTime=${encodeURIComponent(dateTimeStr)}`)
   }
 
@@ -224,7 +209,7 @@ const ShowtimesPage = () => {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Quản lý Lịch chiếu</h1>
-              <p className="text-gray-600">Quản lý lịch chiếu phim với tính năng làm tròn 30 phút</p>
+              <p className="text-gray-600">Quản lý lịch chiếu phim</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex bg-gray-100 rounded-lg p-1">

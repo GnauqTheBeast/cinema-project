@@ -15,6 +15,7 @@ import AdminLayout from '../../components/admin/AdminLayout'
 import { movieService } from '../../services/movieApi'
 import { roomService } from '../../services/roomApi'
 import { showtimeService } from '../../services/showtimeApi'
+import { toLocalDatetimeString } from '../../utils/dateUtils'
 
 const ShowtimeFormPage = () => {
   const navigate = useNavigate()
@@ -122,8 +123,8 @@ const ShowtimeFormPage = () => {
         setFormData({
           movie_id: showtime.movie_id,
           room_id: showtime.room_id,
-          start_time: new Date(showtime.start_time).toISOString().slice(0, 16),
-          end_time: new Date(showtime.end_time).toISOString().slice(0, 16),
+          start_time: toLocalDatetimeString(showtime.start_time),
+          end_time: toLocalDatetimeString(showtime.end_time),
           format: showtime.format,
           base_price: showtime.base_price.toString(),
           status: showtime.status,
@@ -412,7 +413,7 @@ const ShowtimeFormPage = () => {
                     <option value="">-- Chọn phòng chiếu --</option>
                     {rooms.map((room) => (
                       <option key={room.id} value={room.id}>
-                        Phòng {room.room_number} ({room.room_type.toUpperCase()})
+                        Phòng {room.room_number}
                       </option>
                     ))}
                   </select>

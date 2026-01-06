@@ -70,27 +70,29 @@ export default function RevenueStatsPage() {
           })
         }
 
-        const monthly = Object.values(monthlyGrouped)
+        const monthly = Object.keys(monthlyGrouped)
+          .sort((a, b) => a.localeCompare(b))
+          .map(key => monthlyGrouped[key])
 
         const movies =
           movieRevenueData.success && movieRevenueData.data
             ? movieRevenueData.data.map((movie) => ({
-                movie_id: movie.movie_id,
-                title: movie.movie_title,
-                revenue: movie.total_revenue,
-                revenueFormatted: formatCurrency(movie.total_revenue),
-                ticketsSold: movie.total_tickets,
-                genre: 'N/A',
-              }))
+              movie_id: movie.movie_id,
+              title: movie.movie_title,
+              revenue: movie.total_revenue,
+              revenueFormatted: formatCurrency(movie.total_revenue),
+              ticketsSold: movie.total_tickets,
+              genre: 'N/A',
+            }))
             : []
 
         const genres =
           genreRevenueData.success && genreRevenueData.data
             ? genreRevenueData.data.map((genre) => ({
-                genre: genre.genre,
-                revenue: genre.total_revenue,
-                revenueFormatted: formatCurrency(genre.total_revenue),
-              }))
+              genre: genre.genre,
+              revenue: genre.total_revenue,
+              revenueFormatted: formatCurrency(genre.total_revenue),
+            }))
             : []
 
         const totalRevenue = totalRevenueData.success ? totalRevenueData.data.total_revenue : 0
@@ -177,10 +179,10 @@ export default function RevenueStatsPage() {
   }
 
   const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'monthly', label: 'Monthly' },
-    { id: 'movies', label: 'By Movies' },
-    { id: 'genres', label: 'By Genres' },
+    { id: 'overview', label: 'Tổng quan' },
+    { id: 'monthly', label: 'Theo tháng' },
+    { id: 'movies', label: 'Theo phim' },
+    // { id: 'genres', label: 'Theo thể loại' },
   ]
 
   if (loading) {
@@ -188,7 +190,7 @@ export default function RevenueStatsPage() {
       <AdminLayout>
         <div className="text-center py-16 px-6">
           <div className="w-10 h-10 border-3 border-gray-100 border-t-emerald-500 rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-500">Loading revenue statistics...</p>
+          <p className="mt-4 text-gray-500">Đang tải thống kê doanh thu...</p>
         </div>
       </AdminLayout>
     )
@@ -207,11 +209,10 @@ export default function RevenueStatsPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 px-6 py-3 rounded-lg text-sm font-medium transition-all ${
-                activeTab === tab.id
-                  ? 'bg-gradient-to-br from-emerald-500 to-red-600 text-white font-semibold'
-                  : 'bg-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-              }`}
+              className={`flex-1 px-6 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
+                ? 'bg-gradient-to-br from-emerald-500 to-red-600 text-white font-semibold'
+                : 'bg-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                }`}
             >
               {tab.label}
             </button>
@@ -223,7 +224,7 @@ export default function RevenueStatsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                 <h3 className="m-0 mb-2 text-gray-500 text-xs font-semibold uppercase tracking-wider">
-                  Total Revenue
+                  Tổng doanh thu
                 </h3>
                 <p className="m-0 text-3xl font-bold text-emerald-500">
                   {overallStats.totalRevenueFormatted}
@@ -232,7 +233,7 @@ export default function RevenueStatsPage() {
 
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                 <h3 className="m-0 mb-2 text-gray-500 text-xs font-semibold uppercase tracking-wider">
-                  Total Tickets
+                  Tổng vé bán
                 </h3>
                 <p className="m-0 text-3xl font-bold text-gray-900">
                   {overallStats.totalTickets?.toLocaleString()}
@@ -241,7 +242,7 @@ export default function RevenueStatsPage() {
 
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                 <h3 className="m-0 mb-2 text-gray-500 text-xs font-semibold uppercase tracking-wider">
-                  Avg Ticket Price
+                  Giá vé trung bình
                 </h3>
                 <p className="m-0 text-3xl font-bold text-gray-900">
                   {overallStats.averageTicketPriceFormatted}
@@ -250,7 +251,7 @@ export default function RevenueStatsPage() {
 
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                 <h3 className="m-0 mb-2 text-gray-500 text-xs font-semibold uppercase tracking-wider">
-                  Total Bookings
+                  Tổng đơn đặt
                 </h3>
                 <p className="m-0 text-3xl font-bold text-gray-900">
                   {overallStats.totalBookings?.toLocaleString()}
@@ -260,7 +261,7 @@ export default function RevenueStatsPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Revenue by Genre</h3>
+                <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Doanh thu theo thể loại</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -283,7 +284,7 @@ export default function RevenueStatsPage() {
               </div>
 
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Monthly Trend</h3>
+                <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Xu hướng theo tháng</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={monthlyData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
@@ -296,7 +297,7 @@ export default function RevenueStatsPage() {
                       stroke="#10B981"
                       strokeWidth={3}
                       dot={{ fill: '#FFFFFF', stroke: '#10B981', strokeWidth: 2, r: 5 }}
-                      name="Revenue"
+                      name="Doanh thu"
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -308,7 +309,7 @@ export default function RevenueStatsPage() {
         {activeTab === 'monthly' && (
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">
-              Monthly Revenue Breakdown
+              Doanh Thu Hàng Tháng
             </h3>
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={monthlyData}>
@@ -317,7 +318,7 @@ export default function RevenueStatsPage() {
                 <YAxis tickFormatter={formatCurrency} tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 14 }} />
-                <Bar dataKey="revenue" fill="#10B981" name="Revenue" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="revenue" fill="#10B981" name="Doanh thu" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -326,52 +327,53 @@ export default function RevenueStatsPage() {
         {activeTab === 'movies' && (
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">
-              Top 10 Movies by Revenue
+              Doanh Thu Theo Phim
             </h3>
-            <ResponsiveContainer width="100%" height={500}>
-              <BarChart data={movieData} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                <XAxis
-                  type="number"
-                  tickFormatter={formatCurrency}
-                  tick={{ fontSize: 12, fill: '#6B7280' }}
-                  stroke="#E5E7EB"
-                />
-                <YAxis
-                  dataKey="title"
-                  type="category"
-                  width={150}
-                  tick={{ fontSize: 12, fill: '#6B7280' }}
-                  stroke="#E5E7EB"
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 14 }} />
-                <Bar dataKey="revenue" fill="#10B981" name="Revenue" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {movieData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={500}>
+                <BarChart data={movieData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                  <XAxis
+                    dataKey="title"
+                    tick={{ fontSize: 12, fill: '#6B7280' }}
+                    height={100}
+                    stroke="#E5E7EB"
+                  />
+                  <YAxis
+                    tickFormatter={formatCurrency}
+                    tick={{ fontSize: 12, fill: '#6B7280' }}
+                    stroke="#E5E7EB"
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 14 }} />
+                  <Bar dataKey="revenue" fill="#10B981" name="Doanh thu" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-16">
+                <p className="text-gray-500">Không có dữ liệu doanh thu theo phim</p>
+              </div>
+            )}
 
             <div className="mt-8">
               <h4 className="m-0 mb-1 text-base font-semibold text-gray-900">
-                Detailed Movie Statistics
+                Chi Tiết Doanh Thu Theo Phim
               </h4>
               <p className="text-sm text-gray-500 m-0 mb-4">
-                Click on any movie to view showtime-level details
+                Click để xem chi tiết
               </p>
               <div className="overflow-x-auto border border-gray-200 rounded-lg overflow-hidden">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-gray-50">
                       <th className="px-4 py-4 text-left border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Movie
-                      </th>
-                      <th className="px-4 py-4 text-left border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Genre
+                        Phim
                       </th>
                       <th className="px-4 py-4 text-right border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Revenue
+                        Doanh thu
                       </th>
                       <th className="px-4 py-4 text-right border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Tickets Sold
+                        Vé bán
                       </th>
                     </tr>
                   </thead>
@@ -383,7 +385,6 @@ export default function RevenueStatsPage() {
                         className="cursor-pointer transition-colors border-b border-gray-100 hover:bg-gray-50"
                       >
                         <td className="px-4 py-4 text-sm text-gray-900">{movie.title}</td>
-                        <td className="px-4 py-4 text-sm text-gray-500">{movie.genre}</td>
                         <td className="px-4 py-4 text-right text-sm font-semibold text-gray-900">
                           {movie.revenueFormatted}
                         </td>
@@ -401,7 +402,7 @@ export default function RevenueStatsPage() {
 
         {activeTab === 'genres' && (
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Revenue by Genre</h3>
+            <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Doanh thu theo thể loại</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <ResponsiveContainer width="100%" height={400}>
                 <PieChart>
@@ -427,7 +428,7 @@ export default function RevenueStatsPage() {
               </ResponsiveContainer>
 
               <div>
-                <h4 className="m-0 mb-4 text-base font-semibold text-gray-900">Genre Breakdown</h4>
+                <h4 className="m-0 mb-4 text-base font-semibold text-gray-900">Phân tích theo thể loại</h4>
                 {genreData.map((genre, index) => (
                   <div
                     key={index}

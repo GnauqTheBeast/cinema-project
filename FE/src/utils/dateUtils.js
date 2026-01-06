@@ -86,3 +86,54 @@ export const isToday = (dateStr) => {
   const today = new Date()
   return date.toDateString() === today.toDateString()
 }
+
+/**
+ * Convert date to datetime-local input format (YYYY-MM-DDTHH:mm)
+ * Preserves local timezone instead of converting to UTC
+ * @param {string|Date} dateString - Date string or Date object
+ * @returns {string} YYYY-MM-DDTHH:mm
+ */
+export const toLocalDatetimeString = (dateString) => {
+  const date = new Date(dateString)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+/**
+ * Format hour number to time string (HH:00)
+ * @param {number} hour - Hour number (0-23)
+ * @returns {string} HH:00
+ */
+export const formatTime = (hour) => {
+  return `${hour.toString().padStart(2, '0')}:00`
+}
+
+/**
+ * Format datetime string to time only (HH:mm)
+ * @param {string} dateTimeStr - ISO datetime string
+ * @returns {string} HH:mm in Vietnamese locale
+ */
+export const formatShowtimeTime = (dateTimeStr) => {
+  const date = new Date(dateTimeStr)
+  return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+}
+
+/**
+ * Format datetime string to full date and time (DD/MM/YYYY, HH:mm)
+ * @param {string} dateTimeStr - ISO datetime string
+ * @returns {string} DD/MM/YYYY, HH:mm in Vietnamese locale
+ */
+export const formatDateTime = (dateTimeStr) => {
+  const date = new Date(dateTimeStr)
+  return date.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}

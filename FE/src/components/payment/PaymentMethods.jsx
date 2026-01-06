@@ -445,16 +445,16 @@ const PaymentMethods = ({ booking, onPaymentSuccess, isBoxOffice = false, onManu
 
                   <div className={`${bgSecondary} p-4 rounded-lg border-2 border-yellow-600`}>
                     <p className={`text-sm ${textSecondary} mb-1`}>Nội dung chuyển khoản</p>
-                    <div className="flex justify-between items-center">
-                      <p className="text-yellow-400 font-bold">QH{getBankTransferCode(booking?.id)}</p>
+                    <div className="flex justify-between items-center gap-3">
+                      <p className="text-yellow-400 font-bold break-all pr-2">QH{getBankTransferCode(booking?.id)}</p>
                       <button
                         onClick={() => copyToClipboard(`QH${getBankTransferCode(booking?.id)}`)}
-                        className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                        className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 flex-shrink-0"
                       >
                         <FaCopy /> Sao chép
                       </button>
                     </div>
-                    <p className="text-xs text-yellow-500 mt-2">
+                    <p className="text-xs text-yellow-500 mt-2 break-words">
                       ⚠️ Vui lòng nhập chính xác nội dung để hệ thống tự động xác nhận thanh toán
                     </p>
                   </div>

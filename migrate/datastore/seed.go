@@ -424,7 +424,6 @@ func SeedRooms(ctx context.Context, db *bun.DB) error {
 }
 
 func SeedUsers(ctx context.Context, db *bun.DB) error {
-	// Get role IDs first
 	var roles []models.Role
 	err := db.NewSelect().Model(&roles).Scan(ctx)
 	if err != nil {
@@ -491,6 +490,19 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 		},
 		{
 			Id:          uuid.New().String(),
+			Name:        "Ticket Staff 2",
+			Email:       "ticket2@cinema.com",
+			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+			PhoneNumber: stringPtr("+1234567892"),
+			RoleId:      &ticketStaffRoleId,
+			Address:     stringPtr("123 Ticket Street"),
+			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
+			Gender:      "female",
+			Status:      "ACTIVE",
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
 			Name:        "Alice",
 			Email:       "alice@email.com",
 			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
@@ -525,6 +537,19 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			Address:     stringPtr("123 Emma Street"),
 			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
 			Gender:      "female",
+			Status:      "ACTIVE",
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Quang Nguyen",
+			Email:       "quangnguyenngoc314@gmail.com",
+			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+			PhoneNumber: stringPtr("+1234567894"),
+			RoleId:      &customerRoleId,
+			Address:     stringPtr("123 Emma Street"),
+			Dob:         time.Date(2003, 10, 5, 0, 0, 0, 0, time.UTC),
+			Gender:      "male",
 			Status:      "ACTIVE",
 			CreatedAt:   now,
 		},
@@ -904,8 +929,8 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 	}
 
 	timeSlots := map[string][]string{
-		"morning":   {"09:00", "11:30"},
-		"afternoon": {"14:00", "16:30"},
+		"morning":   {"09:00"},
+		"afternoon": {"14:00"},
 		"evening":   {"19:00"},
 	}
 
@@ -917,18 +942,16 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 				continue
 			}
 
-			for roomIdx, room := range rooms {
-				// Determine which format to use for this movie+room combination
-				// Ensure each time slot has only ONE format per movie per room per day
-				formats := make([]string, 0)
-				switch room.RoomType {
-				case "IMAX":
-					formats = []string{"2D", "3D", "IMAX"}
-				case "STANDARD", "VIP":
-					formats = []string{"2D", "3D"}
-				}
+			selectedRooms := make([]models.Room, 0)
+			selectedRooms = append(selectedRooms, rooms[movieIdx%len(rooms)])
 
-				selectedFormat := formats[(movieIdx+roomIdx+day)%len(formats)]
+			for _, room := range selectedRooms {
+				selectedFormat := "2D"
+				if room.RoomType == "IMAX" {
+					selectedFormat = "IMAX"
+				} else if (movieIdx+day)%3 == 0 {
+					selectedFormat = "3D"
+				}
 
 				for period, times := range timeSlots {
 					for _, timeStr := range times {

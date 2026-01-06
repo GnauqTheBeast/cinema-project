@@ -75,7 +75,6 @@ export default function ShowtimePage() {
       '2D': '2D',
       '3D': '3D',
       'IMAX': 'IMAX',
-      '4DX': '4DX',
     }
     return formatMap[format] || format
   }
@@ -279,7 +278,6 @@ export default function ShowtimePage() {
                 <option value="2D">2D</option>
                 <option value="3D">3D</option>
                 <option value="IMAX">IMAX</option>
-                <option value="4DX">4DX</option>
               </select>
             </div>
 

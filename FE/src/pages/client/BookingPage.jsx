@@ -8,6 +8,7 @@ import { clientSeatService } from '../../services/clientSeatService'
 import { bookingService } from '../../services/bookingService'
 import { getSeatTypeLabel, getSeatPrice, calculateBookingTotal } from '../../constants/seatConstants'
 import { formatPrice } from '../../utils/formatters'
+import { isSeatClickable } from '../../utils/seatUtils'
 
 const BookingPage = () => {
   const { showtimeId } = useParams()
@@ -25,7 +26,7 @@ const BookingPage = () => {
   const [step, setStep] = useState(1)
 
   useEffect(() => {
-    fetchBookingData()
+    fetchBookingData().then()
   }, [showtimeId])
 
   const fetchLockedSeats = async () => {
@@ -91,22 +92,12 @@ const BookingPage = () => {
   }
 
   const handleSeatClick = (seat) => {
-    if (!seat || seat.status === 'OCCUPIED' || seat.status === 'MAINTENANCE' || seat.status === 'BLOCKED') {
-      return
-    }
-
-    const isLocked = lockedSeats && lockedSeats.some(lockedSeat => lockedSeat.id === seat.id)
-    if (isLocked) {
-      return
-    }
-
-    const isBooked = bookedSeats && bookedSeats.some(bookedSeat => bookedSeat.id === seat.id)
-    if (isBooked) {
+    if (!isSeatClickable(seat, lockedSeats, bookedSeats)) {
       return
     }
 
     const isSelected = selectedSeats.some(s => s.id === seat.id)
-    
+
     if (isSelected) {
       setSelectedSeats(selectedSeats.filter(s => s.id !== seat.id))
     } else {

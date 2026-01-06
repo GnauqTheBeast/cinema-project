@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { FaPlus, FaEdit, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
+import { formatTime, formatShowtimeTime } from '../../utils/dateUtils'
 
 const COLORS = [
   { bg: 'bg-blue-500', border: 'border-blue-600', text: 'text-white' },
@@ -45,14 +46,14 @@ const ShowtimeTimelineView = ({ showtimes, rooms, selectedDate, onCreateShowtime
       const showtimeDate = new Date(showtime.start_time).toISOString().split('T')[0]
       if (showtimeDate !== targetDateStr) return
 
-      const roomId = showtime.room?.id || showtime.room_id
+      const roomId = showtime.room_id || showtime.room?.id
       if (!data[roomId]) {
         data[roomId] = []
       }
       data[roomId].push(showtime)
       count++
 
-      const movieId = showtime.movie?.id || showtime.movie_id
+      const movieId = showtime.movie_id || showtime.movie?.id
       if (movieId) {
         uniqueMovies.add(movieId)
       }
@@ -84,15 +85,6 @@ const ShowtimeTimelineView = ({ showtimes, rooms, selectedDate, onCreateShowtime
   const durationToWidth = (duration) => {
     const totalTimelineMinutes = TOTAL_HOURS * 60
     return (duration / totalTimelineMinutes) * 100
-  }
-
-  const formatTime = (hour) => {
-    return `${hour.toString().padStart(2, '0')}:00`
-  }
-
-  const formatShowtimeTime = (dateTimeStr) => {
-    const date = new Date(dateTimeStr)
-    return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
   }
 
   const checkConflict = (roomId, startTime, endTime, excludeId = null) => {

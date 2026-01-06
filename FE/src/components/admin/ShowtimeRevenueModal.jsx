@@ -84,7 +84,7 @@ export default function ShowtimeRevenueModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                   <h3 className="mb-2 text-gray-500 text-xs font-semibold tracking-wider uppercase">
-                    Total Revenue
+                    Tổng doanh thu
                   </h3>
                   <p className="text-3xl font-bold text-gray-900">
                     {formatCurrency(summaryStats.totalRevenue)}
@@ -93,7 +93,7 @@ export default function ShowtimeRevenueModal({
 
                 <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                   <h3 className="mb-2 text-gray-500 text-xs font-semibold tracking-wider uppercase">
-                    Total Tickets
+                    Tổng vé
                   </h3>
                   <p className="text-3xl font-bold text-gray-900">
                     {summaryStats.totalTickets.toLocaleString()}
@@ -102,48 +102,36 @@ export default function ShowtimeRevenueModal({
 
                 <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                   <h3 className="mb-2 text-gray-500 text-xs font-semibold tracking-wider uppercase">
-                    Total Showtimes
+                    Tổng suất chiếu
                   </h3>
                   <p className="text-3xl font-bold text-gray-900">
                     {summaryStats.totalShowtimes}
-                  </p>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                  <h3 className="mb-2 text-gray-500 text-xs font-semibold tracking-wider uppercase">
-                    Avg Occupancy
-                  </h3>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {summaryStats.avgOccupancy.toFixed(1)}%
                   </p>
                 </div>
               </div>
 
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <h3 className="m-0 px-6 py-5 border-b border-gray-200 text-lg font-semibold text-gray-900">
-                  Showtime Details
+                  Chi tiết suất chiếu
                 </h3>
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse">
                     <thead>
                       <tr className="bg-gray-50">
                         <th className="px-4 py-4 text-left border-b border-gray-200 text-xs font-semibold text-gray-500 tracking-wider uppercase">
-                          Date
+                          Ngày
                         </th>
                         <th className="px-4 py-4 text-left border-b border-gray-200 text-xs font-semibold text-gray-500 tracking-wider uppercase">
-                          Time
+                          Giờ
                         </th>
                         <th className="px-4 py-4 text-left border-b border-gray-200 text-xs font-semibold text-gray-500 tracking-wider uppercase">
-                          Room
+                          Phòng
                         </th>
                         <th className="px-4 py-4 text-right border-b border-gray-200 text-xs font-semibold text-gray-500 tracking-wider uppercase">
-                          Revenue
+                          Doanh thu
                         </th>
                         <th className="px-4 py-4 text-right border-b border-gray-200 text-xs font-semibold text-gray-500 tracking-wider uppercase">
-                          Tickets
-                        </th>
-                        <th className="px-4 py-4 text-right border-b border-gray-200 text-xs font-semibold text-gray-500 tracking-wider uppercase">
-                          Occupancy
+                          Vé
                         </th>
                       </tr>
                     </thead>
@@ -167,13 +155,6 @@ export default function ShowtimeRevenueModal({
                           </td>
                           <td className="px-4 py-4 text-right text-sm text-gray-900">
                             {showtime.total_tickets.toLocaleString()}
-                          </td>
-                          <td className="px-4 py-4 text-right">
-                            <span
-                              className={`px-3 py-1 rounded-full font-semibold text-xs border ${getOccupancyBadgeClass(showtime.occupancy_rate)}`}
-                            >
-                              {showtime.occupancy_rate.toFixed(1)}%
-                            </span>
                           </td>
                         </tr>
                       ))}

@@ -26,17 +26,13 @@ export default function AdminLayout({ children }) {
   const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}')
   const role = adminUser?.role || ''
 
-  // Auto-open/close sidebar based on screen size
   useEffect(() => {
     const handleResize = () => {
-      // lg breakpoint is 1024px in Tailwind
       setIsSidebarOpen(window.innerWidth >= 1024)
     }
 
-    // Set initial state
     handleResize()
 
-    // Listen for resize events
     window.addEventListener('resize', handleResize)
 
     return () => window.removeEventListener('resize', handleResize)
@@ -54,8 +50,6 @@ export default function AdminLayout({ children }) {
       '/admin/chatbot-documents',
     ]),
     ticket_staff: new Set([
-      '/admin/dashboard',
-      '/admin/showtimes',
       '/admin/box-office',
       '/admin/ticket-search',
     ]),

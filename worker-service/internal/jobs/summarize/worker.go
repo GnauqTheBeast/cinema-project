@@ -31,7 +31,7 @@ func NewWorker(ctn *do.Injector, geminiAPIKeys []string) (*Worker, error) {
 		db:            db,
 		geminiClient:  gemini.NewClient(geminiAPIKeys),
 		batchSize:     10,
-		checkInterval: 30 * time.Minute,
+		checkInterval: time.Hour,
 	}, nil
 }
 
@@ -40,10 +40,6 @@ func (w *Worker) Start(ctx context.Context) error {
 
 	ticker := time.NewTicker(w.checkInterval)
 	defer ticker.Stop()
-
-	if err := w.processPendingArticles(ctx); err != nil {
-		logrus.Errorf("Initial processing failed: %v", err)
-	}
 
 	for {
 		select {

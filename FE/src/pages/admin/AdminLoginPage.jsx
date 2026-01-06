@@ -38,7 +38,12 @@ export default function AdminLoginPage() {
       localStorage.setItem('adminUser', JSON.stringify(response.data.user))
       window.dispatchEvent(new Event('tokenChange'))
 
-      navigate('/admin/dashboard')
+      const userRole = response.data.user?.role
+      if (userRole === 'ticket_staff') {
+        navigate('/admin/box-office')
+      } else {
+        navigate('/admin/dashboard')
+      }
     } catch (err) {
       if (err.response?.data?.message) {
         setError(err.response.data.message)
