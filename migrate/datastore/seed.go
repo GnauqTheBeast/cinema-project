@@ -200,6 +200,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 	releaseDate2 := time.Date(2024, 4, 20, 0, 0, 0, 0, time.UTC)
 	releaseDate3 := time.Date(2024, 5, 10, 0, 0, 0, 0, time.UTC)
 	releaseDate4 := time.Date(2025, 6, 15, 0, 0, 0, 0, time.UTC)
+	releaseDate5 := time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC)
 
 	movies := []*models.Movie{
 		{
@@ -284,6 +285,20 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			TrailerURL:  "https://www.youtube.com/watch?v=jWM0ct-OLsM",
 			PosterURL:   "https://artofthemovies.co.uk/cdn/shop/files/IMG_1521_1024x1024@2x.jpg?v=1762441851",
 			Status:      "UPCOMING",
+			CreatedAt:   &now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Title:       "Inception",
+			Slug:        "inception",
+			Director:    "Christopher Nolan",
+			Cast:        "Leonardo DiCaprio, Joseph Gordon-Levitt, Elliot Page, Tom Hardy",
+			Duration:    148,
+			ReleaseDate: &releaseDate5,
+			Description: "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
+			TrailerURL:  "https://www.youtube.com/watch?v=YoHD9XEInc0",
+			PosterURL:   "https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",
+			Status:      "SHOWING",
 			CreatedAt:   &now,
 		},
 	}
@@ -494,77 +509,77 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 
 func SeedBookings(ctx context.Context, db *bun.DB) error {
 	var users []models.User
-	err := db.NewSelect().Model(&users).Limit(5).Scan(ctx)
+	err := db.NewSelect().Model(&users).Where("role_id IN (SELECT id FROM roles WHERE name = 'customer')").Scan(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get users: %w", err)
 	}
 
 	var showtimes []models.Showtime
-	err = db.NewSelect().Model(&showtimes).Limit(5).Scan(ctx)
+	err = db.NewSelect().Model(&showtimes).Scan(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get showtimes: %w", err)
 	}
 
-	var seats []models.Seat
-	err = db.NewSelect().Model(&seats).Limit(10).Scan(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get seats: %w", err)
+	if len(users) == 0 || len(showtimes) == 0 {
+		return fmt.Errorf("no users or showtimes found")
 	}
 
-	bookings := []models.Booking{
-		{
-			Id:          uuid.New().String(),
-			UserId:      users[3].Id,
-			ShowtimeId:  showtimes[0].Id,
-			TotalAmount: 200000,
-			Status:      "CONFIRMED",
-			CreatedAt:   time.Now().Add(-24 * time.Hour),
-		},
-		{
-			Id:          uuid.New().String(),
-			UserId:      users[3].Id,
-			ShowtimeId:  showtimes[1].Id,
-			TotalAmount: 100000,
-			Status:      "CONFIRMED",
-			CreatedAt:   time.Now().Add(-48 * time.Hour),
-		},
-		{
-			Id:          uuid.New().String(),
-			UserId:      users[3].Id,
-			ShowtimeId:  showtimes[2].Id,
-			TotalAmount: 300000,
-			Status:      "PENDING",
-			CreatedAt:   time.Now().Add(-72 * time.Hour),
-		},
-		{
-			Id:          uuid.New().String(),
-			UserId:      users[1].Id,
-			ShowtimeId:  showtimes[0].Id,
-			TotalAmount: 150000,
-			Status:      "CONFIRMED",
-			CreatedAt:   time.Now().Add(-96 * time.Hour),
-		},
-		{
-			Id:          uuid.New().String(),
-			UserId:      users[2].Id,
-			ShowtimeId:  showtimes[1].Id,
-			TotalAmount: 450000,
-			Status:      "CANCELLED",
-			CreatedAt:   time.Now().Add(-120 * time.Hour),
-		},
+	now := time.Now()
+	var bookings []models.Booking
+
+	// Generate bookings for the past 6 months
+	// Create bookings with varied dates and amounts
+	bookingAmounts := []float64{100000, 150000, 200000, 250000, 300000, 350000, 400000, 450000, 500000}
+	statuses := []string{"CONFIRMED", "CONFIRMED", "CONFIRMED", "CONFIRMED", "CONFIRMED", "PENDING", "CANCELLED"}
+
+	// Generate 10-20 bookings per month for the past 6 months
+	for monthsAgo := 0; monthsAgo < 6; monthsAgo++ {
+		bookingsInMonth := 10 + (monthsAgo % 11) // Vary between 10-20 bookings per month
+
+		for i := 0; i < bookingsInMonth; i++ {
+			// Random day in the month
+			daysAgo := (monthsAgo * 30) + (i % 28) // Distribute throughout the month
+			createdAt := now.AddDate(0, 0, -daysAgo)
+
+			userIdx := (monthsAgo*bookingsInMonth + i) % len(users)
+			showtimeIdx := (monthsAgo*bookingsInMonth + i) % len(showtimes)
+			amountIdx := (monthsAgo + i) % len(bookingAmounts)
+			statusIdx := i % len(statuses)
+
+			booking := models.Booking{
+				Id:          uuid.New().String(),
+				UserId:      users[userIdx].Id,
+				ShowtimeId:  showtimes[showtimeIdx].Id,
+				TotalAmount: bookingAmounts[amountIdx],
+				Status:      statuses[statusIdx],
+				CreatedAt:   createdAt,
+			}
+			bookings = append(bookings, booking)
+		}
 	}
 
-	_, err = db.NewInsert().Model(&bookings).Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to insert bookings: %w", err)
+	// Batch insert bookings
+	batchSize := 100
+	for i := 0; i < len(bookings); i += batchSize {
+		end := i + batchSize
+		if end > len(bookings) {
+			end = len(bookings)
+		}
+
+		batch := bookings[i:end]
+		_, err = db.NewInsert().Model(&batch).Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to insert bookings batch %d-%d: %w", i, end, err)
+		}
 	}
 
+	fmt.Printf("Bookings seeded successfully! Total: %d bookings\n", len(bookings))
 	return nil
 }
 
 func SeedTickets(ctx context.Context, db *bun.DB) error {
 	var bookings []models.Booking
-	err := db.NewSelect().Model(&bookings).Scan(ctx)
+	err := db.NewSelect().Model(&bookings).Where("status = ?", "CONFIRMED").Scan(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get bookings: %w", err)
 	}
@@ -575,29 +590,47 @@ func SeedTickets(ctx context.Context, db *bun.DB) error {
 		return fmt.Errorf("failed to get seats: %w", err)
 	}
 
-	var showtimes []models.Showtime
-	err = db.NewSelect().Model(&showtimes).Scan(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get seats: %w", err)
+	if len(bookings) == 0 || len(seats) == 0 {
+		return fmt.Errorf("no confirmed bookings or seats found")
 	}
 
-	tickets := make([]models.Ticket, 0)
-	for i := 0; i < len(bookings); i++ {
-		tickets = append(tickets, models.Ticket{
-			Id:         uuid.New().String(),
-			BookingId:  bookings[i].Id,
-			ShowtimeId: showtimes[i].Id,
-			Status:     models.TicketStatusUsed,
-			SeatId:     seats[i%len(seats)].Id,
-			CreatedAt:  time.Now(),
-		})
+	var tickets []models.Ticket
+	ticketsPerBooking := []int{1, 2, 2, 3, 4} // Vary number of tickets per booking
+
+	for i, booking := range bookings {
+		numTickets := ticketsPerBooking[i%len(ticketsPerBooking)]
+
+		for j := 0; j < numTickets; j++ {
+			seatIdx := (i*10 + j) % len(seats)
+
+			ticket := models.Ticket{
+				Id:         uuid.New().String(),
+				BookingId:  booking.Id,
+				ShowtimeId: booking.ShowtimeId,
+				Status:     models.TicketStatusUsed,
+				SeatId:     seats[seatIdx].Id,
+				CreatedAt:  booking.CreatedAt,
+			}
+			tickets = append(tickets, ticket)
+		}
 	}
 
-	_, err = db.NewInsert().Model(&tickets).Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to insert tickets: %w", err)
+	// Batch insert tickets
+	batchSize := 500
+	for i := 0; i < len(tickets); i += batchSize {
+		end := i + batchSize
+		if end > len(tickets) {
+			end = len(tickets)
+		}
+
+		batch := tickets[i:end]
+		_, err = db.NewInsert().Model(&batch).Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to insert tickets batch %d-%d: %w", i, end, err)
+		}
 	}
 
+	fmt.Printf("Tickets seeded successfully! Total: %d tickets\n", len(tickets))
 	return nil
 }
 
@@ -1097,6 +1130,7 @@ func SeedMovieGenres(ctx context.Context, db *bun.DB) error {
 		"Dune":                    {"Action", "Adventure", "Drama", "Sci-Fi"},
 		"The Batman":              {"Action", "Crime", "Drama"},
 		"Zootopia":                {"Animation", "Comedy", "Adventure", "Family"},
+		"Inception":               {"Action", "Sci-Fi", "Thriller"},
 	}
 
 	var movieGenres []*models.MovieGenre

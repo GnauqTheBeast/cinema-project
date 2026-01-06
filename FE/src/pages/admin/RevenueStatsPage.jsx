@@ -35,48 +35,44 @@ export default function RevenueStatsPage() {
       try {
         setLoading(true)
 
+        const daysDiff = getDurationInDays(dateRange.startDate, dateRange.endDate)
+
+        // Determine group_by based on date range
+        let groupBy = 'day'
+        if (daysDiff > 90) {
+          groupBy = 'month'
+        } else if (daysDiff > 30) {
+          groupBy = 'week'
+        }
+
         const [timeData, movieRevenueData, totalRevenueData] =
           await Promise.all([
-            analyticsService.getRevenueByTime(dateRange.startDate, dateRange.endDate, 180),
+            analyticsService.getRevenueByTime(dateRange.startDate, dateRange.endDate, 180, groupBy),
             analyticsService.getRevenueByMovie(dateRange.startDate, dateRange.endDate, 10),
             analyticsService.getTotalRevenue(dateRange.startDate, dateRange.endDate),
           ])
 
-        const daysDiff = getDurationInDays(dateRange.startDate, dateRange.endDate)
+        // Format the data returned from API
+        const timeSeriesData = timeData.success && timeData.data
+          ? timeData.data.map((item) => {
+              const date = new Date(item.time_period)
+              let displayName
 
-        const timeGrouped = {}
-        if (timeData.success && timeData.data) {
-          timeData.data.forEach((item) => {
-            const date = new Date(item.time_period)
-            let key, displayName
-
-            if (daysDiff <= 30) {
-              key = date.toISOString().split('T')[0]
-              displayName = date.toLocaleDateString('vi-VN', {
-                day: 'numeric',
-                month: 'short'
-              })
-            } else {
-              key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-              displayName = date.toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' })
-            }
-
-            if (!timeGrouped[key]) {
-              timeGrouped[key] = {
-                displayName,
-                revenue: 0,
-                bookings: 0,
+              if (groupBy === 'month') {
+                displayName = date.toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' })
+              } else if (groupBy === 'week') {
+                displayName = date.toLocaleDateString('vi-VN', { day: 'numeric', month: 'short' })
+              } else {
+                displayName = date.toLocaleDateString('vi-VN', { day: 'numeric', month: 'short' })
               }
-            }
 
-            timeGrouped[key].revenue += item.total_revenue
-            timeGrouped[key].bookings += item.total_bookings
-          })
-        }
-
-        const timeSeriesData = Object.keys(timeGrouped)
-          .sort((a, b) => a.localeCompare(b))
-          .map(key => timeGrouped[key])
+              return {
+                displayName,
+                revenue: item.total_revenue,
+                bookings: item.total_bookings,
+              }
+            }).reverse()
+          : []
 
         const movies =
           movieRevenueData.success && movieRevenueData.data

@@ -62,4 +62,5 @@ export interface AnalyticsFilters {
     booking_type?: string
     limit?: number
     offset?: number
+    group_by?: string
 }

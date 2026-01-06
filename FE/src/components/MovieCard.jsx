@@ -59,7 +59,7 @@ export default function MovieCard({ movie }) {
         <h3 className="text-xl font-semibold text-white mb-2 line-clamp-2">
           {movie.title}
         </h3>
-        <p className="text-gray-400 text-sm mb-4">{movie.genres.join(', ') || 'Phim'}</p>
+        <p className="text-gray-400 text-sm mb-4">{movie.genres?.join(', ') || 'Phim'}</p>
         <div className="space-y-2">
           <p className="text-gray-300 text-sm font-medium">
             Thời lượng: {movie.duration ? `${movie.duration} phút` : 'N/A'}
