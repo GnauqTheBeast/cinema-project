@@ -15,7 +15,6 @@ export class RoleService {
     this.models = models;
   }
 
-  // Initialize auth gRPC client (lazy initialization)
   private getAuthGrpcClient(): any {
     if (this.authGrpcClient) return this.authGrpcClient;
 
@@ -42,7 +41,6 @@ export class RoleService {
     }
   }
 
-  // Get all roles (excluding customer role)
   public async getAllRoles(): Promise<IRole[]> {
     const roles = await this.models.Role.findAll({
       where: {
@@ -55,7 +53,6 @@ export class RoleService {
     return roles.map(r => r.toJSON());
   }
 
-  // Get all permissions
   public async getAllPermissions(): Promise<IPermission[]> {
     const permissions = await this.models.Permission.findAll({
       order: [['name', 'ASC']]
@@ -63,7 +60,6 @@ export class RoleService {
     return permissions.map(p => p.toJSON());
   }
 
-  // Get role with its permissions
   public async getRoleWithPermissions(roleId: string): Promise<IRoleWithPermissions> {
     if (!roleId) {
       throw new Error(ErrorMessages.INVALID_REQUEST);
@@ -77,7 +73,6 @@ export class RoleService {
       throw new Error('Role not found');
     }
 
-    // Get permissions for this role
     const rolePermissions = await this.models.RolePermission.findAll({
       where: { role_id: roleId },
       include: [{
@@ -94,7 +89,6 @@ export class RoleService {
     };
   }
 
-  // Update role permissions (bulk)
   public async updateRolePermissions(roleId: string, permissionIds: string[]): Promise<void> {
     if (!roleId) {
       throw new Error(ErrorMessages.INVALID_REQUEST);
@@ -105,17 +99,14 @@ export class RoleService {
       throw new Error('Role not found');
     }
 
-    // Start transaction
     const transaction = await this.models.sequelize.transaction();
 
     try {
-      // Delete all existing permissions for this role
       await this.models.RolePermission.destroy({
         where: { role_id: roleId },
         transaction
       });
 
-      // Insert new permissions
       if (permissionIds.length > 0) {
         const rolePermissions = permissionIds.map(permissionId => ({
           id: uuidv4(),
@@ -128,10 +119,8 @@ export class RoleService {
 
       await transaction.commit();
 
-      // Clear permissions cache in auth-service after updating permissions
       await this.clearAuthServicePermissionsCache(roleId).catch(err => {
         console.error('Failed to clear auth-service permissions cache:', err);
-        // Don't throw error, just log it - cache will expire naturally
       });
     } catch (error) {
       await transaction.rollback();
@@ -139,7 +128,6 @@ export class RoleService {
     }
   }
 
-  // Helper method to clear permissions cache in auth-service via gRPC
   private async clearAuthServicePermissionsCache(roleId: string): Promise<void> {
     return new Promise<void>((resolve) => {
       const client = this.getAuthGrpcClient();
@@ -166,13 +154,11 @@ export class RoleService {
     });
   }
 
-  // Assign single permission to role
   public async assignPermission(roleId: string, permissionId: string): Promise<void> {
     if (!roleId || !permissionId) {
       throw new Error(ErrorMessages.INVALID_REQUEST);
     }
 
-    // Check if already assigned
     const existing = await this.models.RolePermission.findOne({
       where: { role_id: roleId, permission_id: permissionId }
     });
@@ -187,14 +173,11 @@ export class RoleService {
       permission_id: permissionId
     });
 
-    // Clear permissions cache in auth-service after assigning permission
     await this.clearAuthServicePermissionsCache(roleId).catch(err => {
       console.error('Failed to clear auth-service permissions cache:', err);
-      // Don't throw error, just log it - cache will expire naturally
     });
   }
 
-  // Unassign permission from role
   public async unassignPermission(roleId: string, permissionId: string): Promise<void> {
     if (!roleId || !permissionId) {
       throw new Error(ErrorMessages.INVALID_REQUEST);

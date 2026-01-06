@@ -2,14 +2,13 @@ import winston from 'winston'
 
 const { combine, timestamp, printf, colorize, errors } = winston.format
 
-// Helper to serialize errors properly
 const serializeError = (error: any): any => {
     if (error instanceof Error) {
         return {
             message: error.message,
             stack: error.stack,
             name: error.name,
-            ...(error as any), // Include any custom properties
+            ...(error as any),
         }
     }
     return error
@@ -18,7 +17,6 @@ const serializeError = (error: any): any => {
 const logFormat = printf(({ level, message, timestamp, stack, ...metadata }) => {
     let msg = `${timestamp} [${level}]: ${message}`
 
-    // Serialize any error objects in metadata
     const serializedMetadata: any = {}
     for (const [key, value] of Object.entries(metadata)) {
         serializedMetadata[key] = serializeError(value)

@@ -1,4 +1,3 @@
-// Cache TTL constants (in milliseconds)
 export const CACHE_TTL_5_SEC = 5 * 1000
 export const CACHE_TTL_15_SEC = 15 * 1000
 export const CACHE_TTL_1_MIN = 60 * 1000

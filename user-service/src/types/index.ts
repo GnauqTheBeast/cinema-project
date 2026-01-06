@@ -108,7 +108,6 @@ export enum ErrorMessages {
   INTERNAL_ERROR = 'Internal server error'
 }
 
-// Permission & Role Management Types
 export interface IPermission {
   id: string;
   name: string;

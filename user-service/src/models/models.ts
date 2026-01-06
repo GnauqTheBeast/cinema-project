@@ -169,7 +169,6 @@ export function initModels(sequelize: Sequelize): Models {
   User.belongsTo(Role, { foreignKey: 'role_id', as: 'role' });
   Role.hasMany(User, { foreignKey: 'role_id', as: 'users' });
 
-  // Permission associations
   RolePermission.belongsTo(Role, { foreignKey: 'role_id', as: 'role' });
   RolePermission.belongsTo(Permission, { foreignKey: 'permission_id', as: 'permission' });
   Role.hasMany(RolePermission, { foreignKey: 'role_id', as: 'rolePermissions' });

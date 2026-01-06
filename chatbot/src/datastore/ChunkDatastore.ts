@@ -125,7 +125,6 @@ export class ChunkDatastore {
         threshold: number,
         limit: number,
     ): Promise<Array<{ content: string; similarity: number }>> {
-        // Convert embedding array to PostgreSQL vector format
         const embeddingVector = `[${questionEmbedding.join(',')}]`
 
         const query = `

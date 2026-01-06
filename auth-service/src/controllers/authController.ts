@@ -353,7 +353,6 @@ class AuthController {
         return;
       }
 
-      // If staff account is PENDING (first login), activate it
       let isFirstLogin = false;
       if (userResp.user.status === UserStatus.PENDING) {
         await new Promise<void>((resolve, reject) => {
@@ -395,7 +394,6 @@ class AuthController {
       let permissions: string[] = [];
       if (userRoleId) {
         try {
-          // Clear cache before fetching to ensure we get the latest permissions on login
           await PermissionService.clearPermissionsCache(userRoleId);
           const userPermissions = await PermissionService.getPermissionsByRoleId(userRoleId);
           permissions = userPermissions.map(p => p.code);
@@ -609,7 +607,6 @@ class AuthController {
           email,
           name,
           role: role,
-          // Staff account is created with PENDING status and will be activated on first login
           status: 'PENDING'
         }
       });

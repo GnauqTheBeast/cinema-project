@@ -11,7 +11,6 @@ export class ValidationError extends Error {
     }
 }
 
-// Suspicious patterns that might indicate injection attempts
 const suspiciousPatterns = [
     /<script[^>]*>.*?<\/script>/gi,
     /javascript:/gi,
@@ -30,7 +29,6 @@ const suspiciousPatterns = [
     /window\./gi,
 ]
 
-// SQL injection patterns
 const sqlInjectionPatterns = [
     /(union\s+select|select\s+.*\s+from|insert\s+into|delete\s+from|update\s+.*\s+set)/gi,
     /(drop\s+table|drop\s+database|truncate\s+table)/gi,
@@ -38,7 +36,6 @@ const sqlInjectionPatterns = [
     /(;|\s+or\s+1\s*=\s*1|'\s*or\s*'1'\s*=\s*'1)/gi,
 ]
 
-// Command injection patterns
 const commandInjectionPatterns = [
     /(&&|\|\||;|\||`)/gi,
     /(rm\s+-rf|del\s+\/|format\s+c:)/gi,
@@ -46,7 +43,6 @@ const commandInjectionPatterns = [
     /(\$\(|\$\{|`.*`)/gi,
 ]
 
-// Prompt injection patterns
 const promptInjectionPatterns = [
     /(bỏ\s+qua|ignore).*?(hướng\s+dẫn|instructions?|previous|above)/gi,
     /(disregard|forget).*?(instructions?|above|previous|system)/gi,
@@ -77,14 +73,12 @@ export function validateQuestion(question: string): string {
         throw new ValidationError('Input is empty')
     }
 
-    // Trim whitespace
     question = question.trim()
 
     if (question.length === 0) {
         throw new ValidationError('Input is empty')
     }
 
-    // Check length constraints
     if (question.length < MinQuestionLength) {
         throw new ValidationError('Input is too short')
     }
@@ -93,10 +87,8 @@ export function validateQuestion(question: string): string {
         throw new ValidationError('Input exceeds maximum length')
     }
 
-    // Check for suspicious content
     checkSuspiciousContent(question)
 
-    // Sanitize the input
     const sanitized = sanitizeInput(question)
 
     return sanitized
@@ -117,38 +109,32 @@ export function validateTitle(title: string): string {
         throw new ValidationError('Input exceeds maximum length')
     }
 
-    // Check for suspicious content (less strict for titles)
     checkBasicSuspiciousContent(title)
 
-    // Sanitize the title
     const sanitized = sanitizeInput(title)
 
     return sanitized
 }
 
 function checkSuspiciousContent(input: string): void {
-    // Check for XSS patterns
     for (const pattern of suspiciousPatterns) {
         if (pattern.test(input)) {
             throw new ValidationError('Input contains suspicious content')
         }
     }
 
-    // Check for SQL injection patterns
     for (const pattern of sqlInjectionPatterns) {
         if (pattern.test(input)) {
             throw new ValidationError('Input contains suspicious content')
         }
     }
 
-    // Check for command injection patterns
     for (const pattern of commandInjectionPatterns) {
         if (pattern.test(input)) {
             throw new ValidationError('Input contains suspicious content')
         }
     }
 
-    // Check for prompt injection patterns
     for (const pattern of promptInjectionPatterns) {
         if (pattern.test(input)) {
             throw new ValidationError('Input contains suspicious content')
@@ -157,7 +143,6 @@ function checkSuspiciousContent(input: string): void {
 }
 
 function checkBasicSuspiciousContent(input: string): void {
-    // Only check for most obvious XSS patterns for titles
     const basicPatterns = [
         /<script[^>]*>.*?<\/script>/gi,
         /javascript:/gi,
@@ -173,13 +158,10 @@ function checkBasicSuspiciousContent(input: string): void {
 }
 
 function sanitizeInput(input: string): string {
-    // HTML escape to prevent XSS
     let sanitized = he.encode(input)
 
-    // Remove control characters except for common whitespace
     sanitized = removeControlCharacters(sanitized)
 
-    // Normalize whitespace
     sanitized = normalizeWhitespace(sanitized)
 
     return sanitized
@@ -190,10 +172,8 @@ function removeControlCharacters(input: string): string {
 }
 
 function normalizeWhitespace(input: string): string {
-    // Replace multiple spaces with single space
     const normalized = input.replace(/\s+/g, ' ')
 
-    // Trim leading and trailing whitespace
     return normalized.trim()
 }
 
@@ -202,7 +182,6 @@ export function validateAndSanitizeContext(context: string): string {
         throw new ValidationError('Input exceeds maximum length')
     }
 
-    // Light sanitization for context (less strict than user input)
     let sanitized = he.encode(context)
     sanitized = removeControlCharacters(sanitized)
 
@@ -231,7 +210,6 @@ export function isValidFileExtension(filename: string, allowedExtensions: string
 }
 
 export function sanitizeFilename(filename: string): string {
-    // Remove path separators and other dangerous characters
     const dangerous = ['/', '\\', '..', ':', '*', '?', '"', '<', '>', '|', '\x00']
 
     let sanitized = filename
@@ -242,16 +220,13 @@ export function sanitizeFilename(filename: string): string {
         )
     }
 
-    // Limit filename length
     if (sanitized.length > 255) {
         sanitized = sanitized.substring(0, 255)
     }
 
-    // Ensure filename doesn't start with dot or dash
     sanitized = sanitized.replace(/^\./, '')
     sanitized = sanitized.replace(/^-/, '')
 
-    // If empty after sanitization, provide default
     if (!sanitized) {
         sanitized = 'unnamed_file'
     }

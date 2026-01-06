@@ -22,8 +22,7 @@ export interface CachedUserInfo {
 export class TokenService {
   private static readonly JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
   private static readonly REDIS_TOKEN_PREFIX = 'auth:token:';
-  private static readonly TOKEN_CACHE_TTL = 3600; // 1 hour
-
+  private static readonly TOKEN_CACHE_TTL = 3600;
 
   public static async cacheUserInfo(token: string, userInfo: CachedUserInfo): Promise<void> {
     try {
@@ -32,7 +31,6 @@ export class TokenService {
       console.log(`Cached user info for token: ${token.substring(0, 10)}...`);
     } catch (error) {
       console.error('Error caching user info:', error);
-  
     }
   }
 
@@ -91,7 +89,6 @@ export class TokenService {
 
       const { userId, email, role, roleId, permissions } = decoded;
 
-      // Use permissions from token if available
       let userPermissions: string[] = permissions || [];
       if (!userPermissions.length && roleId) {
         try {
@@ -99,7 +96,6 @@ export class TokenService {
           userPermissions = dbPermissions.map(p => p.code);
         } catch (error) {
           console.error('Error fetching permissions:', error);
-          // Continue without permissions rather than failing
         }
       }
 
@@ -112,7 +108,6 @@ export class TokenService {
         cachedAt: new Date().toISOString()
       };
 
-      // Cache the user info asynchronously (don't wait for it)
       this.cacheUserInfo(token, userInfo).catch(error => {
         console.error('Failed to cache user info:', error);
       });
@@ -150,7 +145,6 @@ export class TokenService {
         };
       }
 
-      // Try to get cached user info first
       const cachedUserInfo = await this.getCachedUserInfo(token);
       
       if (cachedUserInfo) {
@@ -164,7 +158,6 @@ export class TokenService {
         };
       }
 
-      // If not in cache, fall back to JWT verification
       console.log(`Token not in cache, verifying JWT: ${token.substring(0, 10)}...`);
       return await this.verifyToken(token);
 

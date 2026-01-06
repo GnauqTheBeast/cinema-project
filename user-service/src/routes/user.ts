@@ -19,13 +19,10 @@ const handleAsyncAuth = (fn: (req: AuthenticatedRequest, res: Response, next: Ne
   };
 };
 
-// Public routes (no auth required)
 router.get('/:userId', handleAsync(userController.getUserById));
 
-// Protected routes (require authentication)
 router.put('/:userId', authenticateToken, handleAsyncAuth(userController.updateUser));
 
-// Admin only routes
 router.get('/admin/users', authenticateToken, requireRole(['admin', 'manager_staff']), handleAsyncAuth(userController.getAllUsers));
 router.get('/admin/staffs', authenticateToken, requireRole(['admin', 'manager_staff']), handleAsyncAuth(userController.getAllStaffs));
 router.delete('/:userId', authenticateToken, requireRole(['admin']), handleAsyncAuth(userController.deleteUser));

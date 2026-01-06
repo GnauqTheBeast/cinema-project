@@ -158,7 +158,6 @@ export async function startGrpcServer(): Promise<void> {
           return callback({ code: grpc.status.INVALID_ARGUMENT, message: 'role_id is required' } as any);
         }
 
-        // Query permissions for the role using raw SQL
         const permissions = await models.sequelize.query<
           { id: string; name: string; code: string; description: string }
         >(
