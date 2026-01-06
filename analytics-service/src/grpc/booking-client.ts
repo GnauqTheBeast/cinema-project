@@ -113,7 +113,6 @@ class BookingGrpcClient {
                 { start_date: startDate, end_date: endDate, limit, group_by: groupBy },
                 (error, response) => {
                     if (error) {
-                        console.error('gRPC GetRevenueByTime error:', error)
                         reject(error)
                         return
                     }
@@ -142,7 +141,6 @@ class BookingGrpcClient {
                 { start_date: startDate, end_date: endDate, showtime_id: showtimeId, limit },
                 (error, response) => {
                     if (error) {
-                        console.error('gRPC GetRevenueByShowtime error:', error)
                         reject(error)
                         return
                     }
@@ -169,7 +167,6 @@ class BookingGrpcClient {
                 { start_date: startDate, end_date: endDate },
                 (error, response) => {
                     if (error) {
-                        console.error('gRPC GetRevenueByBookingType error:', error)
                         reject(error)
                         return
                     }
@@ -193,7 +190,6 @@ class BookingGrpcClient {
                 { start_date: startDate, end_date: endDate },
                 (error, response) => {
                     if (error) {
-                        console.error('gRPC GetTotalRevenue error:', error)
                         reject(error)
                         return
                     }

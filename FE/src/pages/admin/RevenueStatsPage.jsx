@@ -313,7 +313,7 @@ export default function RevenueStatsPage() {
 
             <div className="grid grid-cols-1 gap-4">
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Xu hướng theo tháng</h3>
+                <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Xu hướng doanh thu</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={timeSeriesData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
