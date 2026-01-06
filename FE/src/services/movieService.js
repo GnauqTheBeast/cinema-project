@@ -148,6 +148,36 @@ export const movieService = {
       throw error
     }
   },
+
+  getGenres: async () => {
+    try {
+      const response = await movieApi.get('/movies/genres')
+      return response.data
+    } catch (error) {
+      console.error('Error fetching genres:', error)
+      throw error
+    }
+  },
+
+  createMovie: async (movieData) => {
+    try {
+      const response = await movieApi.post('/movies', movieData)
+      return response.data
+    } catch (error) {
+      console.error('Error creating movie:', error)
+      throw error
+    }
+  },
+
+  updateMovie: async (id, movieData) => {
+    try {
+      const response = await movieApi.put(`/movies/${id}`, movieData)
+      return response.data
+    } catch (error) {
+      console.error('Error updating movie:', error)
+      throw error
+    }
+  },
 }
 
 export const {
@@ -162,6 +192,9 @@ export const {
   getRoomShowtimes,
   searchMovies,
   getMoviesByGenre,
+  getGenres,
+  createMovie,
+  updateMovie,
 } = movieService
 
 export default movieService

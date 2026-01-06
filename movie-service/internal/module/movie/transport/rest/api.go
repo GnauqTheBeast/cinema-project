@@ -84,7 +84,7 @@ func (h *handler) CreateMovie(c *gin.Context) {
 	}
 
 	movie := req.ToEntity()
-	if err := h.biz.CreateMovie(c.Request.Context(), movie); err != nil {
+	if err := h.biz.CreateMovie(c.Request.Context(), movie, req.Genres); err != nil {
 		if errors.Is(err, business.ErrInvalidMovieData) {
 			response.BadRequest(c, "Invalid movie data")
 			return
@@ -112,7 +112,7 @@ func (h *handler) UpdateMovie(c *gin.Context) {
 	}
 
 	movie := req.ToEntity(id)
-	if err := h.biz.UpdateMovie(c.Request.Context(), movie); err != nil {
+	if err := h.biz.UpdateMovie(c.Request.Context(), movie, req.Genres); err != nil {
 		if errors.Is(err, business.ErrMovieNotFound) {
 			response.NotFound(c, fmt.Errorf("movie not found"))
 			return
@@ -201,4 +201,22 @@ func (h *handler) GetMovieStats(c *gin.Context) {
 	}
 
 	response.Success(c, stats)
+}
+
+func (h *handler) GetGenres(c *gin.Context) {
+	genres, err := h.biz.GetGenres(c.Request.Context())
+	if err != nil {
+		response.ErrorWithMessage(c, err.Error())
+		return
+	}
+
+	genreResponses := make([]map[string]interface{}, len(genres))
+	for i, genre := range genres {
+		genreResponses[i] = map[string]interface{}{
+			"id":   genre.Id,
+			"name": genre.Name,
+		}
+	}
+
+	response.Success(c, genreResponses)
 }

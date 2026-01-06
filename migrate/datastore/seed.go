@@ -208,7 +208,6 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Slug:        "avengers-endgame",
 			Director:    "Anthony Russo, Joe Russo",
 			Cast:        "Robert Downey Jr., Chris Evans, Mark Ruffalo, Chris Hemsworth",
-			Genre:       "Action, Adventure, Drama",
 			Duration:    181,
 			ReleaseDate: &releaseDate1,
 			Description: "After the devastating events of Avengers: Infinity War, the universe is in ruins due to the efforts of the Mad Titan, Thanos.",
@@ -223,7 +222,6 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Slug:        "spider-man-no-way-home",
 			Director:    "Jon Watts",
 			Cast:        "Tom Holland, Zendaya, Benedict Cumberbatch, Jacob Batalon",
-			Genre:       "Action, Adventure, Sci-Fi",
 			Duration:    148,
 			ReleaseDate: &releaseDate2,
 			Description: "With Spider-Man's identity now revealed, Peter asks Doctor Strange for help. When a spell goes wrong, dangerous foes from other worlds start to appear.",
@@ -238,7 +236,6 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Slug:        "top-gun-maverick",
 			Director:    "Joseph Kosinski",
 			Cast:        "Tom Cruise, Miles Teller, Jennifer Connelly, Jon Hamm",
-			Genre:       "Action, Drama",
 			Duration:    130,
 			ReleaseDate: &releaseDate3,
 			Description: "After thirty years, Maverick is still pushing the envelope as a top naval aviator, but must confront ghosts of his past when he leads TOP GUN's elite graduates on a mission.",
@@ -253,7 +250,6 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Slug:        "dune",
 			Director:    "Denis Villeneuve",
 			Cast:        "Timothée Chalamet, Rebecca Ferguson, Oscar Isaac, Josh Brolin",
-			Genre:       "Action, Adventure, Drama, Sci-Fi",
 			Duration:    155,
 			ReleaseDate: &releaseDate1,
 			Description: "Paul Atreides, a brilliant and gifted young man born into a great destiny beyond his understanding, must travel to the most dangerous planet in the universe.",
@@ -268,7 +264,6 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Slug:        "the-batman",
 			Director:    "Matt Reeves",
 			Cast:        "Robert Pattinson, Zoë Kravitz, Paul Dano, Jeffrey Wright",
-			Genre:       "Action, Crime, Drama",
 			Duration:    176,
 			ReleaseDate: &releaseDate2,
 			Description: "When a sadistic serial killer begins murdering key political figures in Gotham, Batman is forced to investigate the city's hidden corruption and question his family's involvement.",
@@ -283,7 +278,6 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Slug:        "zootopia",
 			Director:    "Byron Howard, Rich Moore",
 			Cast:        "Ginnifer Goodwin, Jason Bateman, Idris Elba, Jenny Slate",
-			Genre:       "Animation, Comedy, Adventure, Family",
 			Duration:    108,
 			ReleaseDate: &releaseDate4,
 			Description: "In a city of anthropomorphic animals, a rookie bunny cop and a cynical con artist fox must work together to uncover a conspiracy.",
@@ -1075,7 +1069,6 @@ func SeedGenres(ctx context.Context, db *bun.DB) error {
 }
 
 func SeedMovieGenres(ctx context.Context, db *bun.DB) error {
-	// Get all movies and genres
 	var movies []models.Movie
 	err := db.NewSelect().Model(&movies).Scan(ctx)
 	if err != nil {
@@ -1097,28 +1090,20 @@ func SeedMovieGenres(ctx context.Context, db *bun.DB) error {
 		genreNameToId[g.Name] = g.Id
 	}
 
+	movieGenresMap := map[string][]string{
+		"Avengers: Endgame":       {"Action", "Adventure", "Drama"},
+		"Spider-Man: No Way Home": {"Action", "Adventure", "Sci-Fi"},
+		"Top Gun: Maverick":       {"Action", "Drama"},
+		"Dune":                    {"Action", "Adventure", "Drama", "Sci-Fi"},
+		"The Batman":              {"Action", "Crime", "Drama"},
+		"Zootopia":                {"Animation", "Comedy", "Adventure", "Family"},
+	}
+
 	var movieGenres []*models.MovieGenre
 	for _, movie := range movies {
-		if movie.Genre == "" {
+		genreNames, exists := movieGenresMap[movie.Title]
+		if !exists {
 			continue
-		}
-
-		var genreNames []string
-		switch movie.Genre {
-		case "Action, Adventure, Drama":
-			genreNames = []string{"Action", "Adventure", "Drama"}
-		case "Action, Adventure, Sci-Fi":
-			genreNames = []string{"Action", "Adventure", "Sci-Fi"}
-		case "Action, Drama":
-			genreNames = []string{"Action", "Drama"}
-		case "Action, Adventure, Drama, Sci-Fi":
-			genreNames = []string{"Action", "Adventure", "Drama", "Sci-Fi"}
-		case "Action, Crime, Drama":
-			genreNames = []string{"Action", "Crime", "Drama"}
-		case "Animation, Comedy, Adventure, Family":
-			genreNames = []string{"Animation", "Comedy", "Adventure", "Family"}
-		default:
-			genreNames = []string{"Drama"}
 		}
 
 		for _, genreName := range genreNames {
