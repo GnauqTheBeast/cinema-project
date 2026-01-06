@@ -107,58 +107,42 @@ export async function startGrpcServer(): Promise<void> {
       try {
         const { email, name, password, role_id, address, phone_number, gender, dob } = call.request;
 
-        // Check if user already exists
         const existing = await models.User.findOne({ where: { email } });
-        let id = existing?.get('id') as string | undefined;
-        let created = false;
 
-        if (!existing) {
-          // Create new staff user with pending status
-          id = uuidv4();
-          await models.User.create({
-            id,
-            email,
-            name,
-            password,
-            role_id: role_id || null,
-            address: address || null,
-            phone_number: phone_number || null,
-            gender: gender || null,
-            dob: dob ? new Date(dob) : null,
-            status: 'PENDING' // Staff accounts need to login first to activate
+        if (existing) {
+          return callback({
+            code: grpc.status.ALREADY_EXISTS,
+            message: 'Email đã tồn tại trong hệ thống'
           } as any);
-
-          // Create staff profile
-          await models.StaffProfile.create({
-            id: uuidv4(),
-            user_id: id,
-            salary: 0,
-            position: '',
-            department: '',
-            hire_date: new Date(),
-            is_active: true
-          } as any);
-
-          created = true;
-        } else {
-          // Update existing user info and set to pending
-          await (existing as any).update({
-            status: 'PENDING',
-            role_id: role_id || existing.get('role_id'),
-            name: name || existing.get('name'),
-            address: address || existing.get('address'),
-            phone_number: phone_number || existing.get('phone_number'),
-            gender: gender || existing.get('gender'),
-            dob: dob ? new Date(dob) : existing.get('dob')
-          });
-          id = existing.get('id') as string;
         }
 
-        const message = created
-          ? 'Tạo tài khoản nhân viên thành công. Nhân viên cần đăng nhập để kích hoạt tài khoản.'
-          : 'Tài khoản đã tồn tại, đã cập nhật thông tin';
+        const id = uuidv4();
+        await models.User.create({
+          id,
+          email,
+          name,
+          password,
+          role_id: role_id || null,
+          address: address || null,
+          phone_number: phone_number || null,
+          gender: gender || null,
+          dob: dob ? new Date(dob) : null,
+          status: 'PENDING'
+        } as any);
 
-        callback(null, { id, created, message });
+        await models.StaffProfile.create({
+          id: uuidv4(),
+          user_id: id,
+          salary: 0,
+          position: '',
+          department: '',
+          hire_date: new Date(),
+          is_active: true
+        } as any);
+
+        const message = 'Tạo tài khoản nhân viên thành công. Nhân viên cần đăng nhập để kích hoạt tài khoản.';
+
+        callback(null, { id, created: true, message });
       } catch (e: any) {
         callback({ code: grpc.status.INTERNAL, message: e.message } as any);
       }
@@ -197,6 +181,70 @@ export async function startGrpcServer(): Promise<void> {
           })),
           success: true,
           message: 'Permissions retrieved successfully'
+        });
+      } catch (e: any) {
+        callback({ code: grpc.status.INTERNAL, message: e.message } as any);
+      }
+    },
+    getRoleByName: async (
+      call: grpc.ServerUnaryCall<any, any>,
+      callback: grpc.sendUnaryData<any>
+    ) => {
+      try {
+        const { name } = call.request;
+
+        const roleResult = await models.sequelize.query<{ id: string }>(
+          'SELECT id FROM roles WHERE name = :name LIMIT 1',
+          { replacements: { name }, type: QueryTypes.SELECT }
+        );
+
+        if (roleResult.length === 0) {
+          return callback(null, { found: false });
+        }
+
+        callback(null, { found: true, id: roleResult[0].id });
+      } catch (e: any) {
+        callback({ code: grpc.status.INTERNAL, message: e.message } as any);
+      }
+    },
+    getUserWithRoleByEmail: async (
+      call: grpc.ServerUnaryCall<any, any>,
+      callback: grpc.sendUnaryData<any>
+    ) => {
+      try {
+        const { email } = call.request;
+
+        const userWithRole = await models.sequelize.query<{
+          id: string;
+          email: string;
+          name: string;
+          role_name: string;
+          role_id: string;
+        }>(
+          `SELECT u.id, u.email, u.name, r.name as role_name, u.role_id
+           FROM users u
+           JOIN roles r ON u.role_id = r.id
+           WHERE u.email = :email`,
+          {
+            replacements: { email },
+            type: QueryTypes.SELECT
+          }
+        );
+
+        if (userWithRole.length === 0) {
+          return callback(null, { found: false });
+        }
+
+        const user = userWithRole[0];
+        callback(null, {
+          found: true,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role_name: user.role_name,
+            role_id: user.role_id
+          }
         });
       } catch (e: any) {
         callback({ code: grpc.status.INTERNAL, message: e.message } as any);

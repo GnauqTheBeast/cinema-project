@@ -2,9 +2,7 @@ import Joi from 'joi';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import {NextFunction, Request, Response} from 'express';
-import {QueryTypes} from 'sequelize';
 
-import {sequelize, User} from '../models/index.js';
 import { userClient } from '../services/userGrpcClient.js';
 import {redisClient, redisPubSubClient} from '../config/redis.js';
 import { PermissionService } from '../services/permissionService.js';
@@ -56,16 +54,18 @@ class AuthController {
       const cached = await redisClient.get(cacheKey);
       if (cached) return cached;
 
-      const roleResult = await sequelize.query(
-        'SELECT id FROM roles WHERE name = :name LIMIT 1',
-        { replacements: { name: roleName }, type: QueryTypes.SELECT }
-      ) as { id: string }[];
+      const roleResult: any = await new Promise((resolve, reject) => {
+        userClient.GetRoleByName({ name: roleName }, (err: any, resp: any) => {
+          if (err) return reject(err);
+          resolve(resp);
+        });
+      });
 
-      if (roleResult.length === 0) {
+      if (!roleResult.found) {
         throw new Error(`${roleName} role not found in database`);
       }
 
-      const roleId = roleResult[0].id;
+      const roleId = roleResult.id;
       await redisClient.setEx(cacheKey, 3600, roleId);
       return roleId;
     } catch (error) {
@@ -178,6 +178,18 @@ class AuthController {
       const data = await AuthController.registerSchema.validateAsync(req.body) as IRegisterRequest;
       const { email, password, firstName, lastName, address } = data;
 
+      const existingUser: any = await new Promise((resolve, reject) => {
+        userClient.GetUserByEmail({ email }, (err: any, resp: any) => {
+          if (err) return reject(err);
+          resolve(resp);
+        });
+      });
+
+      if (existingUser.found) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.EMAIL_EXISTS });
+        return;
+      }
+
       const customerRoleId = await AuthController.getCustomerRoleId();
 
       const hashed = await bcrypt.hash(password, AuthController.BCRYPT_SALT_ROUNDS);
@@ -246,18 +258,20 @@ class AuthController {
         return;
       }
 
-      const userWithRole = await sequelize.query(
-        `SELECT u.id, u.email, u.name, r.name as role_name, u.role_id
-         FROM users u 
-         JOIN roles r ON u.role_id = r.id 
-         WHERE u.email = :email`,
-        {
-          replacements: { email },
-          type: QueryTypes.SELECT
-        }
-      ) as Array<{ id: string; email: string; name: string; role_name: string; role_id: string }>;
-      const userRole = userWithRole[0]?.role_name || 'customer';
-      const userRoleId = userWithRole[0]?.role_id;
+      const userWithRoleResp: any = await new Promise((resolve, reject) => {
+        userClient.GetUserWithRoleByEmail({ email }, (err: any, resp: any) => {
+          if (err) return reject(err);
+          resolve(resp);
+        });
+      });
+
+      if (!userWithRoleResp.found) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.INVALID_CREDENTIALS });
+        return;
+      }
+
+      const userRole = userWithRoleResp.user.role_name || 'customer';
+      const userRoleId = userWithRoleResp.user.role_id;
 
       if (userRole !== 'customer') {
         res.status(HttpStatus.FORBIDDEN).json({ message: 'Bạn không có quyền truy cập vào hệ thống.' });
@@ -358,18 +372,20 @@ class AuthController {
         return;
       }
 
-      const userWithRole = await sequelize.query(
-        `SELECT u.id, u.email, u.name, r.name as role_name, u.role_id
-         FROM users u 
-         JOIN roles r ON u.role_id = r.id 
-         WHERE u.email = :email`,
-        {
-          replacements: { email },
-          type: QueryTypes.SELECT
-        }
-      ) as Array<{ id: string; email: string; name: string; role_name: string; role_id: string }>;
-      const userRole = userWithRole[0]?.role_name || 'customer';
-      const userRoleId = userWithRole[0]?.role_id;
+      const userWithRoleResp: any = await new Promise((resolve, reject) => {
+        userClient.GetUserWithRoleByEmail({ email }, (err: any, resp: any) => {
+          if (err) return reject(err);
+          resolve(resp);
+        });
+      });
+
+      if (!userWithRoleResp.found) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.INVALID_CREDENTIALS });
+        return;
+      }
+
+      const userRole = userWithRoleResp.user.role_name;
+      const userRoleId = userWithRoleResp.user.role_id;
 
       if (userRole !== 'admin' && userRole !== 'manager_staff' && userRole !== 'ticket_staff') {
         res.status(HttpStatus.FORBIDDEN).json({ message: 'Bạn không có quyền truy cập vào hệ thống' });
@@ -480,20 +496,26 @@ class AuthController {
     try {
       const { email } = await AuthController.resendOtpSchema.validateAsync(req.body);
       
-      const user = await User.findOne({ where: { email } });
-      if (!user) {
+      const userResp: any = await new Promise((resolve, reject) => {
+        userClient.GetUserByEmail({ email }, (err: any, resp: any) => {
+          if (err) return reject(err);
+          resolve(resp);
+        });
+      });
+
+      if (!userResp.found) {
         res.status(HttpStatus.BAD_REQUEST).json({ message: 'Email không tồn tại trong hệ thống' });
         return;
       }
 
-      if (user.dataValues.status === UserStatus.ACTIVE) {
+      if (userResp.user.status === UserStatus.ACTIVE) {
         res.status(HttpStatus.BAD_REQUEST).json({ message: 'Tài khoản đã được kích hoạt' });
         return;
       }
 
       const verifyCode = AuthController.generateOTP();
       const verifyUrl = AuthController.createVerifyUrl(email, verifyCode);
-      const msg = AuthController.createEmailVerifyMessage(user.dataValues.id, email, verifyCode, verifyUrl);
+      const msg = AuthController.createEmailVerifyMessage(userResp.user.id, email, verifyCode, verifyUrl);
 
       await redisPubSubClient.publish(AuthController.REDIS_TOPICS.EMAIL_VERIFY, JSON.stringify(msg));
       await AuthController.saveOTPToCache(email, verifyCode);
@@ -523,6 +545,18 @@ class AuthController {
 
       const { email, name, address, role, phone_number, gender, dob } = await schema.validateAsync(req.body);
 
+      const existingUser: any = await new Promise((resolve, reject) => {
+        userClient.GetUserByEmail({ email }, (err: any, resp: any) => {
+          if (err) return reject(err);
+          resolve(resp);
+        });
+      });
+
+      if (existingUser.found) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.EMAIL_EXISTS });
+        return;
+      }
+
       let roleId: string;
       if (role === 'manager_staff') {
         roleId = await AuthController.getManagerStaffRoleId();
@@ -547,7 +581,12 @@ class AuthController {
           gender: gender || '',
           dob: dob ? (dob instanceof Date ? dob.toISOString() : new Date(dob).toISOString()) : ''
         }, (err: any, resp: any) => {
-          if (err) return reject(err);
+          if (err) {
+            if (err.code === 6) { 
+              return reject(new Error(ErrorMessages.EMAIL_EXISTS));
+            }
+            return reject(err);
+          }
           resolve(resp);
         });
       });
@@ -578,6 +617,10 @@ class AuthController {
       const error = err as IApiError;
       if (error.isJoi) {
         res.status(HttpStatus.BAD_REQUEST).json({ message: error.details![0].message });
+        return;
+      }
+      if (error.message === ErrorMessages.EMAIL_EXISTS) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: ErrorMessages.EMAIL_EXISTS });
         return;
       }
       next(err);

@@ -9,6 +9,8 @@ service UserService {
   rpc ActivateUser(ActivateUserRequest) returns (ActivateUserResponse);
   rpc CreateStaff(CreateStaffRequest) returns (CreateStaffResponse);
   rpc GetPermissionsByRoleId(GetPermissionsByRoleIdRequest) returns (GetPermissionsByRoleIdResponse);
+  rpc GetRoleByName(GetRoleByNameRequest) returns (GetRoleByNameResponse);
+  rpc GetUserWithRoleByEmail(GetUserWithRoleByEmailRequest) returns (GetUserWithRoleByEmailResponse);
 }
 
 message EnsurePendingRequest {
@@ -26,7 +28,6 @@ message EnsurePendingResponse {
 
 message GetUserByEmailRequest { string email = 1; }
 
-message GetUserByIdRequest { string id = 1; }
 
 message User {
   string id = 1;
@@ -42,10 +43,7 @@ message GetUserByEmailResponse {
   User user = 2;
 }
 
-message GetUserByIdResponse {
-  bool found = 1;
-  User user = 2;
-}
+
 
 message ActivateUserRequest { string email = 1; }
 message ActivateUserResponse { bool success = 1; }
@@ -84,4 +82,37 @@ message GetPermissionsByRoleIdResponse {
   string message = 3;
 }
 
+message GetUserByIdRequest {
+  string id = 1;
+}
 
+message GetUserByIdResponse {
+  bool found = 1;
+  User user = 2;
+}
+
+message GetRoleByNameRequest {
+  string name = 1;
+}
+
+message GetRoleByNameResponse {
+  bool found = 1;
+  string id = 2;
+}
+
+message GetUserWithRoleByEmailRequest {
+  string email = 1;
+}
+
+message UserWithRole {
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  string role_name = 4;
+  string role_id = 5;
+}
+
+message GetUserWithRoleByEmailResponse {
+  bool found = 1;
+  UserWithRole user = 2;
+}

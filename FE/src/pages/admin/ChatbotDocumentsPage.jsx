@@ -44,6 +44,19 @@ export default function ChatbotDocumentsPage() {
     fetchDocuments().then()
   }, [fetchDocuments])
 
+  useEffect(() => {
+    const hasProcessing = documents.some(doc => doc.status === 'processing')
+    if (!hasProcessing) {
+      return
+    }
+
+    const intervalId = setInterval(() => {
+      fetchDocuments().then()
+    }, 5000) 
+
+    return () => clearInterval(intervalId)
+  }, [documents, fetchDocuments])
+
   const handleDrag = (e) => {
     e.preventDefault()
     e.stopPropagation()

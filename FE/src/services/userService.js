@@ -35,10 +35,10 @@ export const userService = {
 
   updateUser: async (id, userData) => {
     try {
-      const adminToken = localStorage.getItem('adminToken')
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken')
       const response = await userApi.put(`/users/${id}`, userData, {
         headers: {
-          Authorization: `Bearer ${adminToken}`,
+          Authorization: `Bearer ${token}`,
         },
       })
       return response.data
