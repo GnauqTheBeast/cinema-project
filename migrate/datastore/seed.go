@@ -49,98 +49,36 @@ func SeedRoles(ctx context.Context, db *bun.DB) error {
 }
 
 func SeedPermissions(ctx context.Context, db *bun.DB) error {
-	permissions := []*models.Permission{
-		{
+	permissionsData := []struct {
+		Name        string
+		Code        string
+		Description *string
+	}{
+		{"Movie Manage", "movie_manage", stringPtr("Manage movies (create, update, delete)")},
+		{"Showtime Manage", "showtime_manage", stringPtr("Manage movie showtimes")},
+		{"Seat Manage", "seat_manage", stringPtr("Manage cinema seats")},
+		{"Report View", "report_view", stringPtr("View analytics and operational reports")},
+		{"Profile View", "profile_view", stringPtr("View profile details")},
+		{"Profile Update", "profile_update", stringPtr("Update profile details")},
+		{"Booking Create", "booking_create", stringPtr("Create bookings")},
+		{"Booking Manage", "booking_manage", stringPtr("Manage bookings")},
+		{"Ticket Issue", "ticket_issue", stringPtr("Issue or print tickets")},
+		{"Payment Process", "payment_process", stringPtr("Handle payments for bookings")},
+		{"Ticket View", "ticket_view", stringPtr("View tickets")},
+		{"Staff Manage", "staff_manage", stringPtr("Manage staff accounts")},
+		{"News Manage", "news_manage", stringPtr("Manage news articles and summaries")},
+		{"Permission Manage", "permission_manage", stringPtr("Manage role permissions (assign/unassign)")},
+	}
+
+	var permissions []*models.Permission
+	for _, permData := range permissionsData {
+		permissions = append(permissions, &models.Permission{
 			Id:          uuid.New().String(),
-			Name:        "Movie Manage",
-			Code:        "movie_manage",
-			Description: stringPtr("Manage movies (create, update, delete)"),
+			Name:        permData.Name,
+			Code:        permData.Code,
+			Description: permData.Description,
 			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Showtime Manage",
-			Code:        "showtime_manage",
-			Description: stringPtr("Manage movie showtimes"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Seat Manage",
-			Code:        "seat_manage",
-			Description: stringPtr("Manage cinema seats"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Report View",
-			Code:        "report_view",
-			Description: stringPtr("View analytics and operational reports"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Profile View",
-			Code:        "profile_view",
-			Description: stringPtr("View profile details"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Profile Update",
-			Code:        "profile_update",
-			Description: stringPtr("Update profile details"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Booking Create",
-			Code:        "booking_create",
-			Description: stringPtr("Create bookings"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Booking Manage",
-			Code:        "booking_manage",
-			Description: stringPtr("Manage bookings"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Ticket Issue",
-			Code:        "ticket_issue",
-			Description: stringPtr("Issue or print tickets"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Payment Process",
-			Code:        "payment_process",
-			Description: stringPtr("Handle payments for bookings"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Ticket View",
-			Code:        "ticket_view",
-			Description: stringPtr("View tickets"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Staff Manage",
-			Code:        "staff_manage",
-			Description: stringPtr("Manage staff accounts"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "News Manage",
-			Code:        "news_manage",
-			Description: stringPtr("Manage news articles and summaries"),
-			CreatedAt:   time.Now(),
-		},
+		})
 	}
 
 	_, err := db.NewInsert().Model(&permissions).Exec(ctx)
@@ -246,10 +184,6 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 				rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: rid, PermissionId: pid, CreatedAt: time.Now()})
 			}
 		}
-	}
-
-	if len(rolePerms) == 0 {
-		return fmt.Errorf("no role-permission mappings to insert; check roles/permissions")
 	}
 
 	if _, err := db.NewInsert().Model(&rolePerms).Exec(ctx); err != nil {

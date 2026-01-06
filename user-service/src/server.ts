@@ -6,6 +6,7 @@ import { Server } from 'http';
 import DatabaseManager from './config/database.js';
 import { RedisManager } from './config/redis.js';
 import userRoutes from './routes/user.js';
+import roleRoutes from './routes/role.js';
 import { startGrpcServer } from './transport/grpc/server.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { IHealthCheck, IServerConfig, IDatabaseManager } from './types/index.js';
@@ -61,6 +62,7 @@ class UserServer {
 
   private initializeRoutes(): void {
     this.app.use('/api/v1/users', userRoutes);
+    this.app.use('/api/v1', roleRoutes);
 
     this.app.get('/api/v1/health', this.healthCheck.bind(this));
 

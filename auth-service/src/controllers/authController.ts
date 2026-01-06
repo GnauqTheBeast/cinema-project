@@ -260,7 +260,7 @@ class AuthController {
       const userRoleId = userWithRole[0]?.role_id;
 
       if (userRole !== 'customer') {
-        res.status(HttpStatus.FORBIDDEN).json({ message: 'Tài khoản không thuộc khách hàng. Vui lòng đăng nhập tại trang quản trị.' });
+        res.status(HttpStatus.FORBIDDEN).json({ message: 'Bạn không có quyền truy cập vào hệ thống.' });
         return;
       }
 
@@ -339,8 +339,18 @@ class AuthController {
         return;
       }
 
-      if (userResp.user.status !== UserStatus.ACTIVE) {
-        res.status(HttpStatus.BAD_REQUEST).json({ 
+      // If staff account is PENDING (first login), activate it
+      let isFirstLogin = false;
+      if (userResp.user.status === UserStatus.PENDING) {
+        await new Promise<void>((resolve, reject) => {
+          userClient.ActivateUser({ email }, (err: any, resp: any) => {
+            if (err) return reject(err);
+            resolve();
+          });
+        });
+        isFirstLogin = true;
+      } else if (userResp.user.status !== UserStatus.ACTIVE) {
+        res.status(HttpStatus.BAD_REQUEST).json({
           message: 'Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email để xác thực OTP.',
           requireVerification: true,
           email: email
@@ -362,13 +372,15 @@ class AuthController {
       const userRoleId = userWithRole[0]?.role_id;
 
       if (userRole !== 'admin' && userRole !== 'manager_staff' && userRole !== 'ticket_staff') {
-        res.status(HttpStatus.FORBIDDEN).json({ message: 'Bạn không có quyền truy cập vào hệ thống quản trị' });
+        res.status(HttpStatus.FORBIDDEN).json({ message: 'Bạn không có quyền truy cập vào hệ thống' });
         return;
       }
 
       let permissions: string[] = [];
       if (userRoleId) {
         try {
+          // Clear cache before fetching to ensure we get the latest permissions on login
+          await PermissionService.clearPermissionsCache(userRoleId);
           const userPermissions = await PermissionService.getPermissionsByRoleId(userRoleId);
           permissions = userPermissions.map(p => p.code);
         } catch (error) {
@@ -410,7 +422,15 @@ class AuthController {
         }
       };
 
-      res.json(response);
+      if (isFirstLogin) {
+        res.json({
+          ...response,
+          isFirstLogin: true,
+          message: 'Đăng nhập thành công! Chào mừng bạn đến với hệ thống.'
+        });
+      } else {
+        res.json(response);
+      }
     } catch (err) {
       const error = err as IApiError;
       if (error.isJoi) {
@@ -495,10 +515,13 @@ class AuthController {
         email: Joi.string().email().required(),
         name: Joi.string().required(),
         address: Joi.string().allow('', null),
-        role: Joi.string().valid('manager_staff', 'ticket_staff').required()
+        role: Joi.string().valid('manager_staff', 'ticket_staff').required(),
+        phone_number: Joi.string().allow('', null).optional(),
+        gender: Joi.string().valid('male', 'female', 'other').allow(null).optional(),
+        dob: Joi.date().allow(null).optional()
       });
 
-      const { email, name, address, role } = await schema.validateAsync(req.body);
+      const { email, name, address, role, phone_number, gender, dob } = await schema.validateAsync(req.body);
 
       let roleId: string;
       if (role === 'manager_staff') {
@@ -519,7 +542,10 @@ class AuthController {
           name,
           password: hashed,
           role_id: roleId,
-          address
+          address: address || '',
+          phone_number: phone_number || '',
+          gender: gender || '',
+          dob: dob ? (dob instanceof Date ? dob.toISOString() : new Date(dob).toISOString()) : ''
         }, (err: any, resp: any) => {
           if (err) return reject(err);
           resolve(resp);
@@ -544,7 +570,8 @@ class AuthController {
           email,
           name,
           role: role,
-          status: 'ACTIVE'
+          // Staff account is created with PENDING status and will be activated on first login
+          status: 'PENDING'
         }
       });
     } catch (err) {
@@ -566,6 +593,7 @@ class AuthController {
     }
     return password;
   }
+
 }
 
 export const register = AuthController.register.bind(AuthController);
