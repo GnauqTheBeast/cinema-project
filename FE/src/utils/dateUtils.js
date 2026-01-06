@@ -170,8 +170,9 @@ export const getDurationInDays = (startDate, endDate) => {
  */
 export const getLastDaysRange = (days, referenceDate = new Date()) => {
   const endDate = new Date(referenceDate)
+  endDate.setDate(endDate.getDate() + 1)
   const startDate = new Date(referenceDate)
-  startDate.setDate(endDate.getDate() - days)
+  startDate.setDate(startDate.getDate() - days)
 
   return {
     startDate: formatDateForAPI(startDate),
@@ -187,8 +188,9 @@ export const getLastDaysRange = (days, referenceDate = new Date()) => {
  */
 export const getLastMonthsRange = (months, referenceDate = new Date()) => {
   const endDate = new Date(referenceDate)
+  endDate.setDate(endDate.getDate() + 1)
   const startDate = new Date(referenceDate)
-  startDate.setMonth(endDate.getMonth() - months)
+  startDate.setMonth(startDate.getMonth() - months)
 
   return {
     startDate: formatDateForAPI(startDate),
@@ -204,8 +206,9 @@ export const getLastMonthsRange = (months, referenceDate = new Date()) => {
  */
 export const getLastYearsRange = (years, referenceDate = new Date()) => {
   const endDate = new Date(referenceDate)
+  endDate.setDate(endDate.getDate() + 1)
   const startDate = new Date(referenceDate)
-  startDate.setFullYear(endDate.getFullYear() - years)
+  startDate.setFullYear(startDate.getFullYear() - years)
 
   return {
     startDate: formatDateForAPI(startDate),

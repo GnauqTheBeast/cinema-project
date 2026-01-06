@@ -71,7 +71,6 @@ class MovieGrpcClient {
         return new Promise((resolve, reject) => {
             client.GetShowtime({ id: showtimeId }, (error, response) => {
                 if (error) {
-                    console.error('gRPC GetShowtime error:', error)
                     reject(error)
                     return
                 }
@@ -87,16 +86,11 @@ class MovieGrpcClient {
     }
 
     async getShowtimes(showtimeIds: string[]): Promise<ShowtimeData[]> {
-        if (showtimeIds.length === 0) {
-            return []
-        }
-
         const client = this.connect()
 
         return new Promise((resolve, reject) => {
             client.GetShowtimes({ ids: showtimeIds }, (error, response) => {
                 if (error) {
-                    console.error('gRPC GetShowtimes error:', error)
                     reject(error)
                     return
                 }

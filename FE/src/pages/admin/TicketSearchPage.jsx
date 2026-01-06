@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { FaSearch, FaTicketAlt, FaFilm, FaClock, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
 import AdminLayout from '../../components/admin/AdminLayout'
+import TicketModal from '../../components/admin/TicketModal'
 import { bookingService } from '../../services/bookingService'
 import { showtimeService } from '../../services/showtimeApi'
 import { formatCurrency, formatDateTime } from '../../utils/formatters'
@@ -15,6 +16,8 @@ const TicketSearchPage = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showTicketModal, setShowTicketModal] = useState(false)
+  const [exportedTicket, setExportedTicket] = useState(null)
 
   useEffect(() => {
     fetchScheduledShowtimes().then()
@@ -40,11 +43,15 @@ const TicketSearchPage = () => {
     }
   }
 
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
   const searchByBookingId = async (bookingId) => {
     try {
       setLoading(true)
       setError('')
       setSuccess('')
+
+      await delay(1500)
 
       const response = await bookingService.searchTickets(bookingId, '')
 
@@ -79,6 +86,9 @@ const TicketSearchPage = () => {
 
     try {
       setLoading(true)
+
+      await delay(1500)
+
       const response = await bookingService.searchTickets(
         searchType === 'booking_id' ? searchValue : '',
         searchType === 'showtime_id' ? searchValue : ''
@@ -116,6 +126,13 @@ const TicketSearchPage = () => {
       const response = await bookingService.markTicketAsUsed(ticketId)
       if (response.code === 200) {
         setSuccess('Xuất vé thành công!')
+
+        const ticket = tickets.find(t => t.id === ticketId)
+        if (ticket) {
+          setExportedTicket(ticket)
+          setShowTicketModal(true)
+        }
+
         setTickets(tickets.map(t =>
           t.id === ticketId ? { ...t, status: 'USED' } : t
         ))
@@ -317,6 +334,15 @@ const TicketSearchPage = () => {
             </div>
           </div>
         )}
+
+        <TicketModal
+          ticket={exportedTicket}
+          isOpen={showTicketModal}
+          onClose={() => {
+            setShowTicketModal(false)
+            setExportedTicket(null)
+          }}
+        />
       </div>
     </AdminLayout>
   )

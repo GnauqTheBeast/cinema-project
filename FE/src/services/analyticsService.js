@@ -2,9 +2,11 @@ import apiClient from './apiClient'
 
 const analyticsService = {
   getRevenueByTime: async (startDate, endDate, limit = 100, groupBy = 'day') => {
+    const adjustedEndDate = new Date(endDate)
+    adjustedEndDate.setDate(adjustedEndDate.getDate() + 1)
     const params = {
       start_date: startDate,
-      end_date: endDate,
+      end_date: adjustedEndDate.toISOString().split('T')[0],
       limit,
       group_by: groupBy,
     }

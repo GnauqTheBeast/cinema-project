@@ -92,7 +92,6 @@ class BookingGrpcClient {
                 { start_date: startDate, end_date: endDate, limit, group_by: groupBy },
                 (error, response) => {
                     if (error) {
-                        console.error('gRPC GetRevenueByTime error:', error)
                         reject(error)
                         return
                     }
@@ -121,7 +120,6 @@ class BookingGrpcClient {
                 { start_date: startDate, end_date: endDate, showtime_id: showtimeId, limit },
                 (error, response) => {
                     if (error) {
-                        console.error('gRPC GetRevenueByShowtime error:', error)
                         reject(error)
                         return
                     }
@@ -137,6 +135,35 @@ class BookingGrpcClient {
         })
     }
 
+<<<<<<< HEAD
+=======
+    async getRevenueByBookingType(
+        startDate: string,
+        endDate: string,
+    ): Promise<RevenueByBookingType[]> {
+        const client = this.connect()
+
+        return new Promise((resolve, reject) => {
+            client.GetRevenueByBookingType(
+                { start_date: startDate, end_date: endDate },
+                (error, response) => {
+                    if (error) {
+                        reject(error)
+                        return
+                    }
+
+                    if (!response.success) {
+                        resolve([])
+                        return
+                    }
+
+                    resolve(response.data)
+                },
+            )
+        })
+    }
+
+>>>>>>> 28ed109 (fix: box-office print out ticket)
     async getTotalRevenue(startDate: string, endDate: string): Promise<number> {
         const client = this.connect()
 
@@ -145,7 +172,6 @@ class BookingGrpcClient {
                 { start_date: startDate, end_date: endDate },
                 (error, response) => {
                     if (error) {
-                        console.error('gRPC GetTotalRevenue error:', error)
                         reject(error)
                         return
                     }
