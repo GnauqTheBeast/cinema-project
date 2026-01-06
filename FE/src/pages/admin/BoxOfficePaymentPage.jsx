@@ -32,22 +32,15 @@ const BoxOfficePaymentPage = () => {
       setBooking(bookingResponse.data)
 
       try {
-        const paymentResponse = await apiClient.get(`/payments/booking/${bookingId}`)
-        if (paymentResponse.data && paymentResponse.data.success) {
-          setPayment(paymentResponse.data.data)
+        const createPaymentResponse = await apiClient.post('/payments', {
+          booking_id: bookingId,
+          amount: bookingResponse.data.total_amount,
+        })
+        if (createPaymentResponse.data && createPaymentResponse.data.success) {
+          setPayment(createPaymentResponse.data.data)
         }
       } catch (paymentErr) {
-        try {
-          const createPaymentResponse = await apiClient.post('/payments', {
-            booking_id: bookingId,
-            amount: bookingResponse.data.total_amount,
-          })
-          if (createPaymentResponse.data && createPaymentResponse.data.success) {
-            setPayment(createPaymentResponse.data.data)
-          }
-        } catch (createErr) {
-          console.error('Error creating payment:', createErr)
-        }
+        console.error('Error creating payment:', paymentErr)
       }
     } catch (err) {
       console.error('Error fetching booking:', err)
