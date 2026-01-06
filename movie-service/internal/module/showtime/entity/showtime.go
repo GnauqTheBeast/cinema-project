@@ -16,7 +16,6 @@ type Movie struct {
 	ReleaseDate time.Time `bun:"release_date" json:"release_date"`
 	Director    string    `bun:"director" json:"director"`
 	Cast        string    `bun:"cast" json:"cast"`
-	Genre       string    `bun:"genre" json:"genre"`
 	PosterUrl   string    `bun:"poster_url" json:"poster_url"`
 	TrailerUrl  string    `bun:"trailer_url" json:"trailer_url"`
 	Status      string    `bun:"status" json:"status"`

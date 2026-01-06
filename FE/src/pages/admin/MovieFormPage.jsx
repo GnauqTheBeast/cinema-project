@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { movieService } from '../../services/movieApi'
+import { movieService, getGenres, createMovie, updateMovie } from '../../services/movieService'
 import Button from '../../components/common/Button'
 import Input from '../../components/common/Input'
 import Select from '../../components/common/Select'
@@ -17,12 +17,13 @@ export default function MovieFormPage() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [genres, setGenres] = useState([])
 
   const [formData, setFormData] = useState({
     title: '',
     director: '',
     cast: '',
-    genre: '',
+    genres: [],
     duration: '',
     release_date: '',
     description: '',
@@ -37,6 +38,19 @@ export default function MovieFormPage() {
     }
   }, [id, isEditing])
 
+  useEffect(() => {
+    fetchGenres()
+  }, [])
+
+  const fetchGenres = async () => {
+    try {
+      const response = await getGenres()
+      setGenres(response.data || [])
+    } catch (err) {
+      throw err
+    }
+  }
+
   const fetchMovie = async () => {
     try {
       setLoading(true)
@@ -47,7 +61,7 @@ export default function MovieFormPage() {
         title: movie.title || '',
         director: movie.director || '',
         cast: movie.cast || '',
-        genre: movie.genre || '',
+        genres: (movie.genres || []).map(g => g.id || g),
         duration: movie.duration?.toString() || '',
         release_date: movie.release_date ? movie.release_date.split('T')[0] : '',
         description: movie.description || '',
@@ -69,6 +83,15 @@ export default function MovieFormPage() {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+    }))
+  }
+
+  const handleGenreChange = (genreId, checked) => {
+    setFormData((prev) => ({
+      ...prev,
+      genres: checked
+        ? [...prev.genres, genreId]
+        : prev.genres.filter(g => g !== genreId)
     }))
   }
 
@@ -96,9 +119,9 @@ export default function MovieFormPage() {
       setSaving(true)
 
       if (isEditing) {
-        await movieService.updateMovie(id, movieData)
+        await updateMovie(id, movieData)
       } else {
-        await movieService.createMovie(movieData)
+        await createMovie(movieData)
       }
 
       navigate('/admin/movies')
@@ -167,13 +190,24 @@ export default function MovieFormPage() {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input
-                label="Thể loại"
-                name="genre"
-                value={formData.genre}
-                onChange={handleChange}
-                placeholder="VD: Hành động, Tâm lý, Hài"
-              />
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Thể loại
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {genres.map((genre) => (
+                    <label key={genre.id} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.genres.includes(genre.id)}
+                        onChange={(e) => handleGenreChange(genre.id, e.target.checked)}
+                        className="mr-2"
+                      />
+                      <span className="text-sm">{genre.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
 
               <Input
                 label="Thời lượng (phút)"

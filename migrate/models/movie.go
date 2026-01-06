@@ -14,7 +14,6 @@ type Movie struct {
 	Slug        string     `bun:"slug,notnull" json:"slug"`
 	Director    string     `bun:"director" json:"director"`
 	Cast        string     `bun:"cast" json:"cast"`
-	Genre       string     `bun:"genre" json:"genre"`
 	Duration    int        `bun:"duration,notnull" json:"duration"`
 	ReleaseDate *time.Time `bun:"release_date,type:date" json:"release_date"`
 	Description string     `bun:"description" json:"description"`

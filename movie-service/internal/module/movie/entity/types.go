@@ -7,7 +7,7 @@ type CreateMovieRequest struct {
 	Title       string     `json:"title" binding:"required,min=1,max=255"`
 	Director    string     `json:"director,omitempty"`
 	Cast        string     `json:"cast,omitempty"`
-	Genre       string     `json:"genre,omitempty"`
+	Genres      []string   `json:"genres,omitempty"`
 	Duration    int        `json:"duration" binding:"required,min=1"`
 	ReleaseDate *time.Time `json:"release_date,omitempty"`
 	Description string     `json:"description,omitempty"`
@@ -20,7 +20,7 @@ type UpdateMovieRequest struct {
 	Title       string     `json:"title" binding:"required,min=1,max=255"`
 	Director    string     `json:"director,omitempty"`
 	Cast        string     `json:"cast,omitempty"`
-	Genre       string     `json:"genre,omitempty"`
+	Genres      []string   `json:"genres,omitempty"`
 	Duration    int        `json:"duration" binding:"required,min=1"`
 	ReleaseDate *time.Time `json:"release_date,omitempty"`
 	Description string     `json:"description,omitempty"`
@@ -45,7 +45,7 @@ type MovieResponse struct {
 	Title       string     `json:"title"`
 	Director    string     `json:"director,omitempty"`
 	Cast        string     `json:"cast,omitempty"`
-	Genre       string     `json:"genre,omitempty"`
+	Genres      []string   `json:"genres,omitempty"`
 	Duration    int        `json:"duration"`
 	ReleaseDate *time.Time `json:"release_date,omitempty"`
 	Description string     `json:"description,omitempty"`
@@ -75,7 +75,6 @@ func (r *CreateMovieRequest) ToEntity() *Movie {
 		Title:       r.Title,
 		Director:    r.Director,
 		Cast:        r.Cast,
-		Genre:       Genre(r.Genre),
 		Duration:    r.Duration,
 		ReleaseDate: r.ReleaseDate,
 		Description: r.Description,
@@ -97,7 +96,6 @@ func (r *UpdateMovieRequest) ToEntity(id string) *Movie {
 		Title:       r.Title,
 		Director:    r.Director,
 		Cast:        r.Cast,
-		Genre:       Genre(r.Genre),
 		Duration:    r.Duration,
 		ReleaseDate: r.ReleaseDate,
 		Description: r.Description,
@@ -113,12 +111,17 @@ func (r *UpdateMovieRequest) ToEntity(id string) *Movie {
 }
 
 func ToMovieResponse(movie *Movie) *MovieResponse {
+	genres := make([]string, len(movie.MovieGenres))
+	for i, genre := range movie.MovieGenres {
+		genres[i] = genre.Genre.Name
+	}
+
 	return &MovieResponse{
 		Id:          movie.Id,
 		Title:       movie.Title,
 		Director:    movie.Director,
 		Cast:        movie.Cast,
-		Genre:       string(movie.Genre),
+		Genres:      genres,
 		Duration:    movie.Duration,
 		ReleaseDate: movie.ReleaseDate,
 		Description: movie.Description,

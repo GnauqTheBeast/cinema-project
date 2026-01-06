@@ -25,8 +25,9 @@ type MovieBiz interface {
 	GetMovieById(ctx context.Context, id string) (*entity.Movie, error)
 	GetMovies(ctx context.Context, page, size int, search string, status string) ([]*entity.Movie, int, error)
 	GetMovieStats(ctx context.Context) ([]*entity.MovieStat, error)
-	CreateMovie(ctx context.Context, movie *entity.Movie) error
-	UpdateMovie(ctx context.Context, movie *entity.Movie) error
+	GetGenres(ctx context.Context) ([]*entity.Genre, error)
+	CreateMovie(ctx context.Context, movie *entity.Movie, genreIds []string) error
+	UpdateMovie(ctx context.Context, movie *entity.Movie, genreIds []string) error
 	DeleteMovie(ctx context.Context, id string) error
 	UpdateMovieStatus(ctx context.Context, id string, status entity.MovieStatus) error
 	ValidateMovieForShowtime(ctx context.Context, movieId string) error
@@ -37,8 +38,9 @@ type MovieRepository interface {
 	GetMany(ctx context.Context, limit, offset int, search string, status string) ([]*entity.Movie, error)
 	GetTotalCount(ctx context.Context, search string, status string) (int, error)
 	GetMovieStats(ctx context.Context) ([]*entity.MovieStat, error)
-	Create(ctx context.Context, movie *entity.Movie) error
-	Update(ctx context.Context, movie *entity.Movie) error
+	GetGenres(ctx context.Context) ([]*entity.Genre, error)
+	Create(ctx context.Context, movie *entity.Movie, genreIds []string) error
+	Update(ctx context.Context, movie *entity.Movie, genreIds []string) error
 	Delete(ctx context.Context, id string) error
 }
 
@@ -138,7 +140,7 @@ func (b *business) GetMovies(ctx context.Context, page, size int, search string,
 	return movies, total, nil
 }
 
-func (b *business) CreateMovie(ctx context.Context, movie *entity.Movie) error {
+func (b *business) CreateMovie(ctx context.Context, movie *entity.Movie, genreIds []string) error {
 	if movie == nil {
 		return ErrInvalidMovieData
 	}
@@ -151,7 +153,7 @@ func (b *business) CreateMovie(ctx context.Context, movie *entity.Movie) error {
 		movie.Status = entity.MovieStatusUpcoming
 	}
 
-	err := b.repository.Create(ctx, movie)
+	err := b.repository.Create(ctx, movie, genreIds)
 	if err != nil {
 		return fmt.Errorf("failed to create movie: %w", err)
 	}
@@ -161,7 +163,7 @@ func (b *business) CreateMovie(ctx context.Context, movie *entity.Movie) error {
 	return nil
 }
 
-func (b *business) UpdateMovie(ctx context.Context, movie *entity.Movie) error {
+func (b *business) UpdateMovie(ctx context.Context, movie *entity.Movie, genreIds []string) error {
 	if movie == nil || movie.Id == "" {
 		return ErrInvalidMovieData
 	}
@@ -182,7 +184,7 @@ func (b *business) UpdateMovie(ctx context.Context, movie *entity.Movie) error {
 		}
 	}
 
-	err = b.repository.Update(ctx, movie)
+	err = b.repository.Update(ctx, movie, genreIds)
 	if err != nil {
 		return fmt.Errorf("failed to update movie: %w", err)
 	}
@@ -229,7 +231,7 @@ func (b *business) UpdateMovieStatus(ctx context.Context, id string, status enti
 	}
 
 	movie.Status = status
-	err = b.repository.Update(ctx, movie)
+	err = b.repository.Update(ctx, movie, nil)
 	if err != nil {
 		return fmt.Errorf("failed to update movie status: %w", err)
 	}
@@ -238,6 +240,19 @@ func (b *business) UpdateMovieStatus(ctx context.Context, id string, status enti
 	b.invalidateMoviesListCache(ctx)
 
 	return nil
+}
+
+func (b *business) GetGenres(ctx context.Context) ([]*entity.Genre, error) {
+	callback := func() ([]*entity.Genre, error) {
+		return b.repository.GetGenres(ctx)
+	}
+
+	genres, err := caching.UseCacheWithRO(ctx, b.roCache, b.cache, "genres", CACHE_TTL_1_HOUR, callback)
+	if err != nil {
+		return nil, err
+	}
+
+	return genres, nil
 }
 
 func (b *business) GetMovieStats(ctx context.Context) ([]*entity.MovieStat, error) {
