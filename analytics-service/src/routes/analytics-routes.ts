@@ -90,24 +90,6 @@ router.get('/revenue/by-genre', async (req: Request, res: Response) => {
     }
 })
 
-router.get('/revenue/by-booking-type', async (req: Request, res: Response) => {
-    try {
-        const filters = parseFilters(req.query)
-        const data = await analyticsService.getRevenueByBookingType(filters)
-
-        res.json({
-            success: true,
-            data,
-        })
-    } catch (error) {
-        console.error('Error fetching revenue by booking type:', error)
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch revenue by booking type',
-        })
-    }
-})
-
 router.get('/revenue/total', async (req: Request, res: Response) => {
     try {
         const filters = parseFilters(req.query)

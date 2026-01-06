@@ -2,6 +2,7 @@ import { FaTimes, FaTicketAlt, FaFilm, FaClock } from 'react-icons/fa'
 import { formatCurrency } from '../../utils/formatters'
 
 export default function TicketModal({ ticket, isOpen, onClose }) {
+  if (!isOpen || !ticket) return null
   console.log('TicketModal render:', { isOpen, ticket })
 
   if (!isOpen || !ticket) {

@@ -174,7 +174,6 @@ Hãy trả lời câu hỏi của khách hàng dựa trên thông tin tham khả
     }
 
     private validateResponse(response: string): boolean {
-        // Check for suspicious content
         const suspiciousResponses = [
             'TÔI LÀ AI',
             'I AM AI',

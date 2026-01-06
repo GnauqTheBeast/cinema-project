@@ -37,13 +37,6 @@ export interface RevenueByGenre {
     movie_count: number
 }
 
-export interface RevenueByBookingType {
-    booking_type: string
-    total_revenue: number
-    total_bookings: number
-    percentage: number
-}
-
 export interface Movie {
     id: string
     title: string

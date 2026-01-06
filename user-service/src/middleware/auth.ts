@@ -58,10 +58,6 @@ const initAuthClient = () => {
   }
 };
 
-/**
- * Middleware để xác thực token từ Redis cache với fallback gọi auth-service
- * Sử dụng cho các service khác để tránh gọi auth-service khi có thể
- */
 export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
@@ -80,11 +76,9 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   redis.get(tokenKey)
     .then(cachedData => {
       if (cachedData) {
-        // Token found in cache, use cached data
         try {
           const userInfo: CachedUserInfo = JSON.parse(cachedData);
 
-          // Attach user info to request
           (req as AuthenticatedRequest).user = {
             id: userInfo.id,
             email: userInfo.email,
@@ -102,14 +96,12 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
           });
         }
       } else {
-        // Token not in cache, call auth-service to verify
         console.log(`Token not in cache, calling auth-service: ${token.substring(0, 10)}...`);
         callAuthService(token, req as AuthenticatedRequest, res, next);
       }
     })
     .catch(error => {
       console.error('Redis error during token validation:', error);
-      // If Redis fails, try calling auth-service as fallback
       callAuthService(token, req as AuthenticatedRequest, res, next);
     });
 };
@@ -142,17 +134,15 @@ const callAuthService = (token: string, req: AuthenticatedRequest, res: Response
       return;
     }
 
-    // Cache the validated user info
     const userInfo: CachedUserInfo = {
       id: response.id,
-      email: '', // Auth service doesn't return email in response
+      email: '',
       role: response.role,
-      roleId: '', // Auth service doesn't return roleId in response
+      roleId: '',
       permissions: response.permissions || [],
       cachedAt: new Date().toISOString()
     };
 
-    // Cache to Redis asynchronously
     cacheUserInfo(token, userInfo).catch(err => {
       console.error('Failed to cache user info:', err);
     });

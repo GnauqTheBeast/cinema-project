@@ -132,6 +132,11 @@ const TicketSearchPage = () => {
         setSuccess('Xuất vé thành công!')
 
         const ticket = tickets.find(t => t.id === ticketId)
+
+        if (ticket) {
+          setExportedTicket(ticket)
+          setShowTicketModal(true)
+        }
         console.log('Found ticket:', ticket)
 
         if (ticket) {

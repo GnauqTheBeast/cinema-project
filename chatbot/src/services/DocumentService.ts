@@ -40,7 +40,6 @@ export class DocumentService {
             const fileInfo = await this.extractor.getFileInfo(filePath)
             size = fileInfo.size as number
         } catch (error) {
-            // Ignore file info errors
         }
 
         const doc: Document = {
@@ -59,7 +58,6 @@ export class DocumentService {
             this.documentDatastore
                 .updateDocumentStatus(doc.id, DocumentStatus.FAILED)
                 .catch(() => {
-                    // Ignore status update errors
                 })
         })
 
@@ -101,15 +99,11 @@ export class DocumentService {
             }
         }
 
-        // Save all chunks
         await this.chunkDatastore.batchCreateChunks(docChunks)
 
-        // Invalidate chunks cache
         await this.cacheManager.invalidatePattern('document_chunks').catch(() => {
-            // Ignore cache invalidation errors
         })
 
-        // Update document status to completed
         await this.documentDatastore.updateDocumentStatus(doc.id, DocumentStatus.COMPLETED)
     }
 
@@ -122,15 +116,11 @@ export class DocumentService {
     }
 
     async deleteDocument(docID: string): Promise<void> {
-        // Delete chunks first
         await this.chunkDatastore.deleteChunksByDocumentId(docID)
 
-        // Delete document
         await this.documentDatastore.deleteDocument(docID)
 
-        // Invalidate cache
         await this.cacheManager.invalidatePattern('document_chunks').catch(() => {
-            // Ignore cache invalidation errors
         })
     }
 

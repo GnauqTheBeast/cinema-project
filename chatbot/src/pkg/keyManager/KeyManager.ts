@@ -28,7 +28,6 @@ export class KeyManager {
             return ''
         }
 
-        // Round-robin selection
         const key = this.keys[this.counter % this.keys.length]
         this.counter++
         return key
@@ -43,7 +42,6 @@ export class KeyManager {
     }
 
     getAllKeys(): string[] {
-        // Return copy to prevent external modification
         return [...this.keys]
     }
 }

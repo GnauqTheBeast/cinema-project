@@ -9,7 +9,7 @@ export interface Permission {
 }
 
 export class PermissionService {
-  private static readonly CACHE_TTL = 1800; // 30 minutes
+  private static readonly CACHE_TTL = 1800;
   private static readonly CACHE_PREFIX = 'permissions:';
 
   static async getPermissionsByRoleId(roleId: string): Promise<Permission[]> {

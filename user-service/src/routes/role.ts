@@ -13,7 +13,6 @@ const handleAsync = (fn: (req: Request, res: Response, next: NextFunction) => Pr
   };
 };
 
-// All routes require 'permission_manage' permission
 router.get(
   '/roles',
   authenticateToken,

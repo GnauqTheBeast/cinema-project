@@ -4,7 +4,6 @@ import redisClient from '../config/redis.js'
 import {
     RevenueByMovie,
     RevenueByShowtime,
-    RevenueByBookingType,
     AnalyticsFilters,
     RevenueByGenre,
 } from '../types/index.js'
@@ -148,23 +147,6 @@ class AnalyticsService {
 
         await redisClient.set(cacheKey, JSON.stringify(result), 300)
         return result
-    }
-
-    async getRevenueByBookingType(filters: AnalyticsFilters): Promise<RevenueByBookingType[]> {
-        const cacheKey = `analytics:revenue:booking_type:${JSON.stringify(filters)}`
-
-        const cached = await redisClient.get(cacheKey)
-        if (cached) {
-            return JSON.parse(cached)
-        }
-
-        const data = await bookingGrpcClient.getRevenueByBookingType(
-            filters.start_date || '',
-            filters.end_date || '',
-        )
-
-        await redisClient.set(cacheKey, JSON.stringify(data), 300)
-        return data
     }
 
     async getRevenueByGenre(filters: AnalyticsFilters): Promise<RevenueByGenre[]> {

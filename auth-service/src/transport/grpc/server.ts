@@ -28,8 +28,6 @@ export async function startAuthGrpcServer(): Promise<void> {
       try {
         const { email, otp } = call.request;
         
-        // TODO: Implement OTP verification logic here
-        // For now, return a mock response
         callback(null, {
           verified: true,
           message: 'OTP verified successfully'

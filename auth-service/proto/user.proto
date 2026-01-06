@@ -5,9 +5,12 @@ package pb;
 service UserService {
   rpc EnsurePending(EnsurePendingRequest) returns (EnsurePendingResponse);
   rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
+  rpc GetUserById(GetUserByIdRequest) returns (GetUserByIdResponse);
   rpc ActivateUser(ActivateUserRequest) returns (ActivateUserResponse);
   rpc CreateStaff(CreateStaffRequest) returns (CreateStaffResponse);
   rpc GetPermissionsByRoleId(GetPermissionsByRoleIdRequest) returns (GetPermissionsByRoleIdResponse);
+  rpc GetRoleByName(GetRoleByNameRequest) returns (GetRoleByNameResponse);
+  rpc GetUserWithRoleByEmail(GetUserWithRoleByEmailRequest) returns (GetUserWithRoleByEmailResponse);
 }
 
 message EnsurePendingRequest {
@@ -74,4 +77,39 @@ message GetPermissionsByRoleIdResponse {
   repeated Permission permissions = 1;
   bool success = 2;
   string message = 3;
+}
+
+message GetUserByIdRequest {
+  string id = 1;
+}
+
+message GetUserByIdResponse {
+  bool found = 1;
+  User user = 2;
+}
+
+message GetRoleByNameRequest {
+  string name = 1;
+}
+
+message GetRoleByNameResponse {
+  bool found = 1;
+  string id = 2;
+}
+
+message GetUserWithRoleByEmailRequest {
+  string email = 1;
+}
+
+message UserWithRole {
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  string role_name = 4;
+  string role_id = 5;
+}
+
+message GetUserWithRoleByEmailResponse {
+  bool found = 1;
+  UserWithRole user = 2;
 }
