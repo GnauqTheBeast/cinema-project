@@ -70,43 +70,23 @@ func SeedPermissions(ctx context.Context, db *bun.DB) error {
 		{"Permission Manage", "permission_manage", stringPtr("Manage role permissions (assign/unassign)")},
 	}
 
-	// Get existing permissions
-	var existingPerms []models.Permission
-	err := db.NewSelect().Model(&existingPerms).Scan(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to check existing permissions: %w", err)
-	}
-
-	// Create map of existing permission codes
-	existingCodes := make(map[string]bool)
-	for _, p := range existingPerms {
-		existingCodes[p.Code] = true
-	}
-
-	// Only insert new permissions
-	var newPermissions []*models.Permission
+	var permissions []*models.Permission
 	for _, permData := range permissionsData {
-		if !existingCodes[permData.Code] {
-			newPermissions = append(newPermissions, &models.Permission{
-				Id:          uuid.New().String(),
-				Name:        permData.Name,
-				Code:        permData.Code,
-				Description: permData.Description,
-				CreatedAt:   time.Now(),
-			})
-		}
+		permissions = append(permissions, &models.Permission{
+			Id:          uuid.New().String(),
+			Name:        permData.Name,
+			Code:        permData.Code,
+			Description: permData.Description,
+			CreatedAt:   time.Now(),
+		})
 	}
 
-	if len(newPermissions) > 0 {
-		_, err = db.NewInsert().Model(&newPermissions).Exec(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to seed permissions: %w", err)
-		}
-		fmt.Printf("Permissions seeded successfully! Added %d new permissions\n", len(newPermissions))
-	} else {
-		fmt.Println("All permissions already exist, skipping...")
+	_, err := db.NewInsert().Model(&permissions).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to seed permissions: %w", err)
 	}
 
+	fmt.Println("Permissions seeded successfully!")
 	return nil
 }
 
@@ -123,19 +103,6 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 
 	if len(roles) == 0 || len(permissions) == 0 {
 		return fmt.Errorf("roles or permissions missing; seed roles and permissions first")
-	}
-
-	// Get existing role_permissions
-	var existingRolePerms []models.RolePermission
-	if err := db.NewSelect().Model(&existingRolePerms).Scan(ctx); err != nil {
-		return fmt.Errorf("failed to get existing role_permissions: %w", err)
-	}
-
-	// Create map of existing role_permission pairs
-	existingPairs := make(map[string]bool)
-	for _, rp := range existingRolePerms {
-		key := rp.RoleId + ":" + rp.PermissionId
-		existingPairs[key] = true
 	}
 
 	roleNameToId := map[string]string{}
@@ -187,10 +154,7 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 	if adminId, ok := roleNameToId["admin"]; ok {
 		for _, code := range allCodes {
 			if pid, ok := permCodeToId[code]; ok {
-				key := adminId + ":" + pid
-				if !existingPairs[key] {
-					rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: adminId, PermissionId: pid, CreatedAt: time.Now()})
-				}
+				rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: adminId, PermissionId: pid, CreatedAt: time.Now()})
 			}
 		}
 	}
@@ -199,10 +163,7 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 	if rid, ok := roleNameToId["manager_staff"]; ok {
 		for _, code := range managerStaffCodes {
 			if pid, ok := permCodeToId[code]; ok {
-				key := rid + ":" + pid
-				if !existingPairs[key] {
-					rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: rid, PermissionId: pid, CreatedAt: time.Now()})
-				}
+				rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: rid, PermissionId: pid, CreatedAt: time.Now()})
 			}
 		}
 	}
@@ -211,10 +172,7 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 	if rid, ok := roleNameToId["ticket_staff"]; ok {
 		for _, code := range ticketStaffCodes {
 			if pid, ok := permCodeToId[code]; ok {
-				key := rid + ":" + pid
-				if !existingPairs[key] {
-					rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: rid, PermissionId: pid, CreatedAt: time.Now()})
-				}
+				rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: rid, PermissionId: pid, CreatedAt: time.Now()})
 			}
 		}
 	}
@@ -223,23 +181,16 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 	if rid, ok := roleNameToId["customer"]; ok {
 		for _, code := range customerCodes {
 			if pid, ok := permCodeToId[code]; ok {
-				key := rid + ":" + pid
-				if !existingPairs[key] {
-					rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: rid, PermissionId: pid, CreatedAt: time.Now()})
-				}
+				rolePerms = append(rolePerms, &models.RolePermission{Id: uuid.New().String(), RoleId: rid, PermissionId: pid, CreatedAt: time.Now()})
 			}
 		}
 	}
 
-	if len(rolePerms) > 0 {
-		if _, err := db.NewInsert().Model(&rolePerms).Exec(ctx); err != nil {
-			return fmt.Errorf("failed to seed role_permissions: %w", err)
-		}
-		fmt.Printf("Role permissions seeded successfully! Added %d new role-permission mappings\n", len(rolePerms))
-	} else {
-		fmt.Println("All role-permission mappings already exist, skipping...")
+	if _, err := db.NewInsert().Model(&rolePerms).Exec(ctx); err != nil {
+		return fmt.Errorf("failed to seed role_permissions: %w", err)
 	}
 
+	fmt.Println("Role permissions seeded successfully!")
 	return nil
 }
 

@@ -101,6 +101,9 @@ const StaffFormPage = () => {
           email: formData.email,
           role: formData.role,
           address: formData.address,
+          phone_number: formData.phone_number,
+          gender: formData.gender,
+          dob: formData.dob,
         }
 
         await userService.createStaff(createData)

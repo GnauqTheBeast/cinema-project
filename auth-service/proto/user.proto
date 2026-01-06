@@ -48,6 +48,9 @@ message CreateStaffRequest {
   string password = 3;
   string role_id = 4;
   string address = 5;
+  string phone_number = 6;
+  string gender = 7;
+  string dob = 8;
 }
 
 message CreateStaffResponse {

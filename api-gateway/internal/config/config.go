@@ -160,7 +160,7 @@ func setDefaults() {
 	viper.SetDefault("services.user_service.timeout", 30)
 	viper.SetDefault("services.user_service.retries", 3)
 
-	viper.SetDefault("services.chatbot.url", "http://localhost:8001")
+	viper.SetDefault("services.chatbot.url", "http://localhost:8089")
 	viper.SetDefault("services.chatbot.health_check_path", "/health")
 	viper.SetDefault("services.chatbot.timeout", 30)
 	viper.SetDefault("services.chatbot.retries", 3)

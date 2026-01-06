@@ -105,7 +105,7 @@ export async function startGrpcServer(): Promise<void> {
       callback: grpc.sendUnaryData<any>
     ) => {
       try {
-        const { email, name, password, role_id, address } = call.request;
+        const { email, name, password, role_id, address, phone_number, gender, dob } = call.request;
 
         // Check if user already exists
         const existing = await models.User.findOne({ where: { email } });
@@ -113,7 +113,7 @@ export async function startGrpcServer(): Promise<void> {
         let created = false;
 
         if (!existing) {
-          // Create new staff user with active status
+          // Create new staff user with pending status
           id = uuidv4();
           await models.User.create({
             id,
@@ -122,7 +122,10 @@ export async function startGrpcServer(): Promise<void> {
             password,
             role_id: role_id || null,
             address: address || null,
-            status: 'ACTIVE' // Staff accounts are active immediately
+            phone_number: phone_number || null,
+            gender: gender || null,
+            dob: dob ? new Date(dob) : null,
+            status: 'PENDING' // Staff accounts need to login first to activate
           } as any);
 
           // Create staff profile
@@ -138,19 +141,22 @@ export async function startGrpcServer(): Promise<void> {
 
           created = true;
         } else {
-          // Update existing user to active and staff role
+          // Update existing user info and set to pending
           await (existing as any).update({
-            status: 'ACTIVE',
+            status: 'PENDING',
             role_id: role_id || existing.get('role_id'),
             name: name || existing.get('name'),
-            address: address || existing.get('address')
+            address: address || existing.get('address'),
+            phone_number: phone_number || existing.get('phone_number'),
+            gender: gender || existing.get('gender'),
+            dob: dob ? new Date(dob) : existing.get('dob')
           });
           id = existing.get('id') as string;
         }
 
         const message = created
-          ? 'Tạo tài khoản nhân viên thành công'
-          : 'Tài khoản đã tồn tại, đã cập nhật trạng thái active';
+          ? 'Tạo tài khoản nhân viên thành công. Nhân viên cần đăng nhập để kích hoạt tài khoản.'
+          : 'Tài khoản đã tồn tại, đã cập nhật thông tin';
 
         callback(null, { id, created, message });
       } catch (e: any) {
