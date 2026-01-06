@@ -1,11 +1,12 @@
 import apiClient from './apiClient'
 
 const analyticsService = {
-  getRevenueByTime: async (startDate, endDate, limit = 100) => {
+  getRevenueByTime: async (startDate, endDate, limit = 100, groupBy = 'day') => {
     const params = {
       start_date: startDate,
       end_date: endDate,
       limit,
+      group_by: groupBy,
     }
 
     const response = await apiClient.get('/analytics/revenue/time', { params })

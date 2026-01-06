@@ -21,6 +21,7 @@ class AnalyticsService {
             filters.start_date || '',
             filters.end_date || '',
             filters.limit || 100,
+            filters.group_by || 'day',
         )
 
         await redisClient.set(cacheKey, JSON.stringify(data), 300)

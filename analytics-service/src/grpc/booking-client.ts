@@ -36,7 +36,7 @@ interface GetTotalRevenueResponse {
 
 interface BookingServiceClient {
     GetRevenueByTime(
-        request: { start_date: string; end_date: string; limit: number },
+        request: { start_date: string; end_date: string; limit: number; group_by: string },
         callback: (error: grpc.ServiceError | null, response: GetRevenueByTimeResponse) => void,
     ): void
 
@@ -83,12 +83,13 @@ class BookingGrpcClient {
         startDate: string,
         endDate: string,
         limit: number = 100,
+        groupBy: string = 'day',
     ): Promise<RevenueByTime[]> {
         const client = this.connect()
 
         return new Promise((resolve, reject) => {
             client.GetRevenueByTime(
-                { start_date: startDate, end_date: endDate, limit },
+                { start_date: startDate, end_date: endDate, limit, group_by: groupBy },
                 (error, response) => {
                     if (error) {
                         console.error('gRPC GetRevenueByTime error:', error)
