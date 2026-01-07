@@ -233,7 +233,7 @@ const StaffPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(user.role_id)}`}
+                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(user.role.name)}`}
                         >
                           {user.role.name}
                         </span>
@@ -260,7 +260,7 @@ const StaffPage = () => {
                           >
                             <FaEdit />
                           </Link>
-                          {user.role_id !== 'admin' && (
+                          {user.role?.name !== 'admin' && (
                             <button
                               onClick={() => handleDelete(user.id, user.name)}
                               className="text-red-600 hover:text-red-900"
@@ -372,7 +372,7 @@ const StaffPage = () => {
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-blue-600 mb-2">
-                    {staffs.filter((u) => u.role_id === 'manager_staff').length}
+                    {staffs.filter((u) => u.role?.name === 'manager_staff').length}
                   </div>
                   <div className="text-sm text-gray-600 uppercase tracking-wide font-medium">
                     Quản lý rạp
@@ -380,7 +380,7 @@ const StaffPage = () => {
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-indigo-600 mb-2">
-                    {staffs.filter((u) => u.role_id === 'ticket_staff').length}
+                    {staffs.filter((u) => u.role?.name === 'ticket_staff').length}
                   </div>
                   <div className="text-sm text-gray-600 uppercase tracking-wide font-medium">
                     Nhân viên bán vé
