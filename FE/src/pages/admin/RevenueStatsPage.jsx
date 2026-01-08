@@ -32,6 +32,7 @@ export default function RevenueStatsPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
   const [dateRange, setDateRange] = useState(getLastMonthsRange(6))
+  const [tempDateRange, setTempDateRange] = useState(getLastMonthsRange(6))
   const [selectedMovie, setSelectedMovie] = useState(null)
   const [showtimeData, setShowtimeData] = useState([])
   const [showtimeLoading, setShowtimeLoading] = useState(false)
@@ -133,6 +134,21 @@ export default function RevenueStatsPage() {
     setShowtimeData([])
   }
 
+  const handleApplyDateRange = () => {
+    setDateRange(tempDateRange)
+  }
+
+  const handlePresetClick = (range) => {
+    setDateRange(range)
+    setTempDateRange(range)
+  }
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleApplyDateRange()
+    }
+  }
+
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
@@ -151,7 +167,7 @@ export default function RevenueStatsPage() {
 
   const tabs = [
     { id: 'overview', label: 'Tổng quan' },
-    { id: 'monthly', label: 'Theo tháng' },
+    { id: 'monthly', label: 'Theo thời gian' },
     { id: 'movies', label: 'Theo phim' },
   ]
 
@@ -183,8 +199,9 @@ export default function RevenueStatsPage() {
               </label>
               <input
                 type="date"
-                value={dateRange.startDate}
-                onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                value={tempDateRange.startDate}
+                onChange={(e) => setTempDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                onKeyPress={handleKeyPress}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
@@ -195,43 +212,51 @@ export default function RevenueStatsPage() {
               </label>
               <input
                 type="date"
-                value={dateRange.endDate}
-                onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                value={tempDateRange.endDate}
+                onChange={(e) => setTempDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                onKeyPress={handleKeyPress}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 opacity-0">
-                Preset
+                Áp dụng
               </label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setDateRange(getLastDaysRange(7))}
-                  className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  7 ngày
-                </button>
-                <button
-                  onClick={() => setDateRange(getLastDaysRange(30))}
-                  className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  30 ngày
-                </button>
-                <button
-                  onClick={() => setDateRange(getLastMonthsRange(6))}
-                  className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  6 tháng
-                </button>
-                <button
-                  onClick={() => setDateRange(getLastYearsRange(1))}
-                  className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  1 năm
-                </button>
-              </div>
+              <button
+                onClick={handleApplyDateRange}
+                className="px-6 py-2 text-sm bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors font-medium"
+              >
+                Áp dụng
+              </button>
             </div>
+          </div>
+
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => handlePresetClick(getLastDaysRange(7))}
+              className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              7 ngày
+            </button>
+            <button
+              onClick={() => handlePresetClick(getLastDaysRange(30))}
+              className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              30 ngày
+            </button>
+            <button
+              onClick={() => handlePresetClick(getLastMonthsRange(6))}
+              className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              6 tháng
+            </button>
+            <button
+              onClick={() => handlePresetClick(getLastYearsRange(1))}
+              className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              1 năm
+            </button>
           </div>
         </div>
 
@@ -317,7 +342,7 @@ export default function RevenueStatsPage() {
         {activeTab === 'monthly' && (
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">
-              Doanh Thu Hàng Tháng
+              Doanh Thu Theo Thời Gian
             </h3>
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={timeSeriesData}>
