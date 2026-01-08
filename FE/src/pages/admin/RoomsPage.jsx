@@ -57,13 +57,13 @@ const RoomsPage = () => {
     setCurrentPage(1)
   }
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (room) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa phòng này?')) {
       return
     }
 
     try {
-      await roomService.deleteRoom(id)
+      await roomService.deleteRoom(room.id)
       fetchRooms()
     } catch (err) {
       alert('Có lỗi xảy ra khi xóa phòng')
