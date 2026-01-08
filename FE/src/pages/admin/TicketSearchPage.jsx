@@ -124,9 +124,7 @@ const TicketSearchPage = () => {
       setError('')
       setSuccess('')
 
-      console.log('Marking ticket as used:', ticketId)
       const response = await bookingService.markTicketAsUsed(ticketId)
-      console.log('Mark ticket response:', response)
 
       if (response.code === 200) {
         setSuccess('Xuất vé thành công!')
@@ -136,15 +134,6 @@ const TicketSearchPage = () => {
         if (ticket) {
           setExportedTicket(ticket)
           setShowTicketModal(true)
-        }
-        console.log('Found ticket:', ticket)
-
-        if (ticket) {
-          setExportedTicket(ticket)
-          setShowTicketModal(true)
-          console.log('Modal should now be open')
-        } else {
-          console.error('Ticket not found in tickets array')
         }
 
         setTickets(tickets.map(t =>
@@ -353,18 +342,10 @@ const TicketSearchPage = () => {
           ticket={exportedTicket}
           isOpen={showTicketModal}
           onClose={() => {
-            console.log('Closing modal')
             setShowTicketModal(false)
             setExportedTicket(null)
           }}
         />
-
-        {/* Debug info */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="fixed bottom-4 right-4 bg-black text-white p-4 rounded-lg text-sm z-[10000]">
-            Modal Debug: isOpen={String(showTicketModal)}, hasTicket={String(!!exportedTicket)}
-          </div>
-        )}
       </div>
     </AdminLayout>
   )
