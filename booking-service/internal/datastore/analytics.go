@@ -30,28 +30,12 @@ type RevenueByBookingType struct {
 	Percentage    float64 `bun:"percentage"`
 }
 
-func GetRevenueByTime(ctx context.Context, db *bun.DB, startDate, endDate, groupBy string, limit int) ([]*RevenueByTime, error) {
+func GetRevenueByTime(ctx context.Context, db *bun.DB, startDate, endDate string, limit int) ([]*RevenueByTime, error) {
 	var results []*RevenueByTime
-
-	// Default to 'day' if not specified
-	if groupBy == "" {
-		groupBy = "day"
-	}
-
-	// Validate groupBy parameter to prevent SQL injection
-	validGroupBy := map[string]bool{
-		"day":   true,
-		"week":  true,
-		"month": true,
-		"year":  true,
-	}
-	if !validGroupBy[groupBy] {
-		groupBy = "day"
-	}
 
 	query := `
 		SELECT
-			DATE_TRUNC('` + groupBy + `', created_at) as time_period,
+			DATE_TRUNC('day', created_at) as time_period,
 			SUM(total_amount) as total_revenue,
 			COUNT(*) as total_bookings,
 			AVG(total_amount) as avg_booking_value
@@ -72,7 +56,7 @@ func GetRevenueByTime(ctx context.Context, db *bun.DB, startDate, endDate, group
 	}
 
 	query += `
-		GROUP BY DATE_TRUNC('` + groupBy + `', created_at)
+		GROUP BY DATE_TRUNC('day', created_at)
 		ORDER BY time_period DESC
 		LIMIT ?
 	`

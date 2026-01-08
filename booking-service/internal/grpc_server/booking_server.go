@@ -96,19 +96,14 @@ func (s *BookingServer) CreateTickets(ctx context.Context, req *pb.CreateTickets
 }
 
 func (s *BookingServer) GetRevenueByTime(ctx context.Context, req *pb.GetRevenueByTimeRequest) (*pb.GetRevenueByTimeResponse, error) {
-	logrus.Infof("[gRPC] GetRevenueByTime called: start=%s, end=%s, limit=%d, group_by=%s", req.StartDate, req.EndDate, req.Limit, req.GroupBy)
+	logrus.Infof("[gRPC] GetRevenueByTime called: start=%s, end=%s, limit=%d", req.StartDate, req.EndDate, req.Limit)
 
 	limit := int(req.Limit)
 	if limit <= 0 {
 		limit = 100
 	}
 
-	groupBy := req.GroupBy
-	if groupBy == "" {
-		groupBy = "day"
-	}
-
-	results, err := datastore.GetRevenueByTime(ctx, s.db, req.StartDate, req.EndDate, groupBy, limit)
+	results, err := datastore.GetRevenueByTime(ctx, s.db, req.StartDate, req.EndDate, limit)
 	if err != nil {
 		logrus.Errorf("[gRPC] Failed to get revenue by time: %v", err)
 		return &pb.GetRevenueByTimeResponse{
@@ -128,7 +123,7 @@ func (s *BookingServer) GetRevenueByTime(ctx context.Context, req *pb.GetRevenue
 		})
 	}
 
-	logrus.Infof("[gRPC] Successfully retrieved %d revenue records by time (grouped by %s)", len(data), groupBy)
+	logrus.Infof("[gRPC] Successfully retrieved %d revenue records by time (grouped by day)", len(data))
 	return &pb.GetRevenueByTimeResponse{
 		Success: true,
 		Message: "Revenue by time retrieved successfully",

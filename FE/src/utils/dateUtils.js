@@ -1,24 +1,12 @@
-/**
- * Date utility functions for dashboard analytics
- * Handles week calculations, API formatting, and display strings
- */
-
-/**
- * Get start and end date for current week (Monday - Sunday)
- * @param {Date} date - Reference date (defaults to today)
- * @returns {Object} { startDate: 'YYYY-MM-DD', endDate: 'YYYY-MM-DD' }
- */
 export const getWeekRange = (date = new Date()) => {
   const current = new Date(date)
-  const dayOfWeek = current.getDay() // 0 = Sunday, 1 = Monday, ...
+  const dayOfWeek = current.getDay()
 
-  // Calculate Monday of current week
-  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek // If Sunday, go back 6 days
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
   const monday = new Date(current)
   monday.setDate(current.getDate() + diff)
   monday.setHours(0, 0, 0, 0)
 
-  // Calculate Sunday of current week
   const sunday = new Date(monday)
   sunday.setDate(monday.getDate() + 6)
   sunday.setHours(23, 59, 59, 999)
@@ -36,7 +24,7 @@ export const getWeekRange = (date = new Date()) => {
  */
 export const getPreviousWeekRange = (date = new Date()) => {
   const current = new Date(date)
-  current.setDate(current.getDate() - 7) // Go back 7 days
+  current.setDate(current.getDate() - 7)
   return getWeekRange(current)
 }
 
@@ -214,4 +202,72 @@ export const getLastYearsRange = (years, referenceDate = new Date()) => {
     startDate: formatDateForAPI(startDate),
     endDate: formatDateForAPI(endDate),
   }
+}
+
+export const getGroupByFromDateRange = (startDate, endDate) => {
+  const daysDiff = getDurationInDays(startDate, endDate)
+
+  if (daysDiff >= 365) {
+    return 'year'
+  } else if (daysDiff >= 30) {
+    return 'month'
+  }
+  return 'day'
+}
+
+export const formatPeriodDisplayName = (date, groupBy) => {
+  const dateObj = new Date(date)
+
+  if (groupBy === 'year') {
+    return dateObj.toLocaleDateString('vi-VN', { year: 'numeric' })
+  } else if (groupBy === 'month') {
+    return dateObj.toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' })
+  } else {
+    return dateObj.toLocaleDateString('vi-VN', { day: 'numeric', month: 'short' })
+  }
+}
+
+export const groupRevenueData = (dailyData, groupBy) => {
+  if (!dailyData || dailyData.length === 0) {
+    return []
+  }
+
+  if (groupBy === 'day') {
+    return dailyData.map(item => ({
+      displayName: formatPeriodDisplayName(item.time_period, 'day'),
+      revenue: item.total_revenue,
+      bookings: item.total_bookings,
+    }))
+  }
+
+  const grouped = new Map()
+
+  dailyData.forEach(item => {
+    const date = new Date(item.time_period)
+    let key
+
+    if (groupBy === 'year') {
+      key = date.getFullYear().toString()
+    } else if (groupBy === 'month') {
+      key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    }
+
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        time_period: item.time_period,
+        revenue: 0,
+        bookings: 0,
+      })
+    }
+
+    const existing = grouped.get(key)
+    existing.revenue += item.total_revenue
+    existing.bookings += item.total_bookings
+  })
+
+  return Array.from(grouped.values()).map(item => ({
+    displayName: formatPeriodDisplayName(item.time_period, groupBy),
+    revenue: item.revenue,
+    bookings: item.bookings,
+  }))
 }

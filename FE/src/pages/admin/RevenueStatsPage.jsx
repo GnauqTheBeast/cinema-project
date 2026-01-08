@@ -17,7 +17,13 @@ import {
 import AdminLayout from '../../components/admin/AdminLayout'
 import ShowtimeRevenueModal from '../../components/admin/ShowtimeRevenueModal'
 import analyticsService from '../../services/analyticsService'
-import { getLastDaysRange, getLastMonthsRange, getLastYearsRange, getDurationInDays } from '../../utils/dateUtils'
+import {
+  getLastDaysRange,
+  getLastMonthsRange,
+  getLastYearsRange,
+  getGroupByFromDateRange,
+  groupRevenueData
+} from '../../utils/dateUtils'
 
 export default function RevenueStatsPage() {
   const [timeSeriesData, setTimeSeriesData] = useState([])
@@ -35,43 +41,17 @@ export default function RevenueStatsPage() {
       try {
         setLoading(true)
 
-        const daysDiff = getDurationInDays(dateRange.startDate, dateRange.endDate)
-
-        // Determine group_by based on date range
-        let groupBy = 'day'
-        if (daysDiff > 90) {
-          groupBy = 'month'
-        } else if (daysDiff > 30) {
-          groupBy = 'week'
-        }
+        const groupBy = getGroupByFromDateRange(dateRange.startDate, dateRange.endDate)
 
         const [timeData, movieRevenueData, totalRevenueData] =
           await Promise.all([
-            analyticsService.getRevenueByTime(dateRange.startDate, dateRange.endDate, 180, groupBy),
+            analyticsService.getRevenueByTime(dateRange.startDate, dateRange.endDate, 1000),
             analyticsService.getRevenueByMovie(dateRange.startDate, dateRange.endDate, 10),
             analyticsService.getTotalRevenue(dateRange.startDate, dateRange.endDate),
           ])
 
-        // Format the data returned from API
         const timeSeriesData = timeData.success && timeData.data
-          ? timeData.data.map((item) => {
-              const date = new Date(item.time_period)
-              let displayName
-
-              if (groupBy === 'month') {
-                displayName = date.toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' })
-              } else if (groupBy === 'week') {
-                displayName = date.toLocaleDateString('vi-VN', { day: 'numeric', month: 'short' })
-              } else {
-                displayName = date.toLocaleDateString('vi-VN', { day: 'numeric', month: 'short' })
-              }
-
-              return {
-                displayName,
-                revenue: item.total_revenue,
-                bookings: item.total_bookings,
-              }
-            }).reverse()
+          ? groupRevenueData(timeData.data, groupBy).reverse()
           : []
 
         const movies =
@@ -173,7 +153,6 @@ export default function RevenueStatsPage() {
     { id: 'overview', label: 'Tổng quan' },
     { id: 'monthly', label: 'Theo tháng' },
     { id: 'movies', label: 'Theo phim' },
-    // { id: 'genres', label: 'Theo thể loại' },
   ]
 
   if (loading) {
