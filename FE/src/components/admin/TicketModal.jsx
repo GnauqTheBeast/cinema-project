@@ -1,11 +1,12 @@
 import { FaTimes, FaTicketAlt, FaFilm, FaClock } from 'react-icons/fa'
 import { formatCurrency } from '../../utils/formatters'
+import { printTicket } from '../../utils/printTicket'
 
 export default function TicketModal({ ticket, isOpen, onClose }) {
   if (!isOpen || !ticket) return null
 
   const handlePrint = () => {
-    window.print()
+    printTicket(ticket)
   }
 
   return (
