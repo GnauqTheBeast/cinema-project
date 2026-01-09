@@ -39,6 +39,7 @@ const ShowtimeFormPage = () => {
   const [conflictWarning, setConflictWarning] = useState('')
   const [timeInfo, setTimeInfo] = useState('')
   const [selectedMovie, setSelectedMovie] = useState(null)
+  const [selectedRoom, setSelectedRoom] = useState(null)
 
   const showtimeFormats = showtimeService.getShowtimeFormats()
   const showtimeStatuses = showtimeService.getShowtimeStatuses()
@@ -74,6 +75,13 @@ const ShowtimeFormPage = () => {
       setSelectedMovie(movie)
     }
   }, [formData.movie_id, movies])
+
+  useEffect(() => {
+    if (formData.room_id) {
+      const room = rooms.find((r) => r.id === formData.room_id)
+      setSelectedRoom(room)
+    }
+  }, [formData.room_id, rooms])
 
   useEffect(() => {
     if (formData.start_time && selectedMovie?.duration) {
@@ -271,6 +279,40 @@ const ShowtimeFormPage = () => {
     setFormData((prev) => ({ ...prev, movie_id: movieId }))
   }
 
+  const handleRoomChange = (e) => {
+    const roomId = e.target.value
+    const room = rooms.find((r) => r.id === roomId)
+
+    if (room && room.room_type === 'IMAX') {
+      setFormData((prev) => ({ ...prev, room_id: roomId, format: 'IMAX' }))
+    } else {
+      setFormData((prev) => ({ ...prev, room_id: roomId }))
+    }
+  }
+
+  const getRoomTypeLabel = (roomType) => {
+    switch (roomType) {
+      case 'STANDARD':
+        return 'Standard'
+      case 'VIP':
+        return 'VIP'
+      case 'IMAX':
+        return 'IMAX'
+      default:
+        return roomType
+    }
+  }
+
+  const getAvailableFormats = () => {
+    if (!selectedRoom) return showtimeFormats
+
+    if (selectedRoom.room_type === 'IMAX') {
+      return showtimeFormats.filter(f => f.value === 'IMAX')
+    }
+
+    return showtimeFormats.filter(f => f.value === '2D' || f.value === '3D')
+  }
+
   if (loading && isEditing) {
     return (
       <AdminLayout>
@@ -406,14 +448,14 @@ const ShowtimeFormPage = () => {
                     id="room_id"
                     name="room_id"
                     value={formData.room_id}
-                    onChange={handleChange}
+                    onChange={handleRoomChange}
                     required
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                   >
                     <option value="">-- Chọn phòng chiếu --</option>
                     {rooms.map((room) => (
                       <option key={room.id} value={room.id}>
-                        Phòng {room.room_number}
+                        Phòng {room.room_number} - {getRoomTypeLabel(room.room_type)}
                       </option>
                     ))}
                   </select>
@@ -480,14 +522,20 @@ const ShowtimeFormPage = () => {
                     value={formData.format}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                    disabled={selectedRoom?.room_type === 'IMAX'}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
-                    {showtimeFormats.map((format) => (
+                    {getAvailableFormats().map((format) => (
                       <option key={format.value} value={format.value}>
                         {format.label}
                       </option>
                     ))}
                   </select>
+                  {selectedRoom?.room_type === 'IMAX' && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Phòng IMAX chỉ chiếu định dạng IMAX
+                    </p>
+                  )}
                 </div>
 
                 {/* Base Price */}
