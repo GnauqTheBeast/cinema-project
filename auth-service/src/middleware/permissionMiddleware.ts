@@ -12,9 +12,6 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-/**
- * Middleware để xác thực JWT token từ Authorization header
- */
 export const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
@@ -45,9 +42,6 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
   }
 };
 
-/**
- * Middleware để kiểm tra role cụ thể
- */
 export const requireRole = (allowedRoles: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
@@ -72,9 +66,6 @@ export const requireRole = (allowedRoles: string[]) => {
   };
 };
 
-/**
- * Middleware để kiểm tra permission cụ thể
- */
 export const requirePermission = (requiredPermission: string) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
@@ -99,9 +90,6 @@ export const requirePermission = (requiredPermission: string) => {
   };
 };
 
-/**
- * Middleware để kiểm tra một trong các permissions
- */
 export const requireAnyPermission = (requiredPermissions: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
@@ -130,9 +118,6 @@ export const requireAnyPermission = (requiredPermissions: string[]) => {
   };
 };
 
-/**
- * Middleware để kiểm tra tất cả permissions
- */
 export const requireAllPermissions = (requiredPermissions: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
@@ -161,9 +146,6 @@ export const requireAllPermissions = (requiredPermissions: string[]) => {
   };
 };
 
-/**
- * Middleware để kiểm tra admin role
- */
 export const requireAdmin = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
   if (!req.user) {
     res.status(HttpStatus.UNAUTHORIZED).json({ 
@@ -185,9 +167,6 @@ export const requireAdmin = (req: AuthenticatedRequest, res: Response, next: Nex
   next();
 };
 
-/**
- * Middleware để kiểm tra staff role (admin, manager_staff, ticket_staff)
- */
 export const requireStaff = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
   if (!req.user) {
     res.status(HttpStatus.UNAUTHORIZED).json({ 
@@ -210,9 +189,6 @@ export const requireStaff = (req: AuthenticatedRequest, res: Response, next: Nex
   next();
 };
 
-/**
- * Middleware để kiểm tra customer role
- */
 export const requireCustomer = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
   if (!req.user) {
     res.status(HttpStatus.UNAUTHORIZED).json({ 

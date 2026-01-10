@@ -25,10 +25,13 @@ movieApi.interceptors.request.use(
 )
 
 export const movieService = {
-  getMovies: async (page = 1, size = 10, search = '') => {
+  getMovies: async (page = 1, size = 10, search = '', status = '') => {
     let url = `/movies?page=${page}&size=${size}`
     if (search) {
       url += `&search=${encodeURIComponent(search)}`
+    }
+    if (status) {
+      url += `&status=${encodeURIComponent(status)}`
     }
     const response = await movieApi.get(url)
     return response.data

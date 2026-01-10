@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
 
@@ -37,6 +38,10 @@ func main() {
 			log.Println(SeedAll(ctx, db))
 			return
 		case "reset":
+			log.Println("Flushing Redis...")
+			if err := FlushRedis(ctx); err != nil {
+				log.Printf("Warning: Failed to flush Redis: %v\n", err)
+			}
 			log.Println("Dropping all tables...")
 			if err := DropAllTables(ctx, db); err != nil {
 				log.Fatal(err)
@@ -73,8 +78,8 @@ func MigrateAll(ctx context.Context, db *bun.DB) error {
 		datastore.CreateStaffProfileTable,
 		datastore.CreateCustomerProfileTable,
 		datastore.CreateOutboxEventTable,
-		datastore.CreateNewsArticleTable,
-		datastore.CreateNewsSummaryTable,
+		//datastore.CreateNewsArticleTable,
+		//datastore.CreateNewsSummaryTable,
 		datastore.CreateDocumentTable,
 		datastore.CreateDocumentChunkTable,
 		datastore.CreateChatTable,
@@ -95,8 +100,8 @@ func DropAllTables(ctx context.Context, db *bun.DB) error {
 		datastore.DropChatTable,
 		datastore.DropDocumentChunkTable,
 		datastore.DropDocumentTable,
-		datastore.DropNewsSummaryTable,
-		datastore.DropNewsArticleTable,
+		//datastore.DropNewsSummaryTable,
+		//datastore.DropNewsArticleTable,
 		datastore.DropCustomerProfileTable,
 		datastore.DropStaffProfileTable,
 		datastore.DropNotificationTable,
@@ -131,8 +136,8 @@ func SeedAll(ctx context.Context, db *bun.DB) error {
 		datastore.SeedRoles,
 		datastore.SeedPermissions,
 		datastore.SeedRolePermissions,
-		datastore.SeedMovies,
 		datastore.SeedGenres,
+		datastore.SeedMovies,
 		datastore.SeedMovieGenres,
 		datastore.SeedRooms,
 		datastore.SeedSeats,
@@ -150,5 +155,33 @@ func SeedAll(ctx context.Context, db *bun.DB) error {
 	}
 
 	fmt.Println("All data seeded successfully!")
+	return nil
+}
+
+func FlushRedis(ctx context.Context) error {
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		redisURL = "redis://localhost:6379/0"
+	}
+
+	opts, err := redis.ParseURL(redisURL)
+	if err != nil {
+		return fmt.Errorf("failed to parse Redis URL: %w", err)
+	}
+
+	client := redis.NewClient(opts)
+	defer client.Close()
+
+	// Test connection
+	if err := client.Ping(ctx).Err(); err != nil {
+		return fmt.Errorf("failed to connect to Redis: %w", err)
+	}
+
+	// Flush all databases
+	if err := client.FlushAll(ctx).Err(); err != nil {
+		return fmt.Errorf("failed to flush Redis: %w", err)
+	}
+
+	fmt.Println("Redis flushed successfully!")
 	return nil
 }

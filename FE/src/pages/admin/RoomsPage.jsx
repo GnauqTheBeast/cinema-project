@@ -57,13 +57,13 @@ const RoomsPage = () => {
     setCurrentPage(1)
   }
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (room) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa phòng này?')) {
       return
     }
 
     try {
-      await roomService.deleteRoom(id)
+      await roomService.deleteRoom(room.id)
       fetchRooms()
     } catch (err) {
       alert('Có lỗi xảy ra khi xóa phòng')
@@ -71,26 +71,16 @@ const RoomsPage = () => {
     }
   }
 
-  const handleStatusChange = async (id, newStatus) => {
-    try {
-      await roomService.updateRoomStatus(id, newStatus)
-      fetchRooms()
-    } catch (err) {
-      alert('Có lỗi xảy ra khi cập nhật trạng thái')
-      console.error('Error updating status:', err)
-    }
-  }
-
   const getStatusColor = (status) => {
     switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800'
-      case 'inactive':
-        return 'bg-red-100 text-red-800'
-      case 'maintenance':
-        return 'bg-yellow-100 text-yellow-800'
+      case 'ACTIVE':
+        return 'bg-green-500 text-white'
+      case 'INACTIVE':
+        return 'bg-red-500 text-white'
+      case 'MAINTENANCE':
+        return 'bg-yellow-500 text-white'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-500 text-white'
     }
   }
 
@@ -99,8 +89,9 @@ const RoomsPage = () => {
     return roomType ? roomType.label : type
   }
 
-  const handleView = (room) => {
-    navigate(`/admin/rooms/${room.id}`)
+  const getStatusLabel = (status) => {
+    const roomStatus = roomStatuses.find((s) => s.value === status)
+    return roomStatus ? roomStatus.label : status
   }
 
   const handleEdit = (room) => {
@@ -133,17 +124,9 @@ const RoomsPage = () => {
     {
       label: 'Trạng thái',
       render: (room) => (
-        <select
-          value={room.status}
-          onChange={(e) => handleStatusChange(room.id, e.target.value)}
-          className={`text-xs px-2 py-1 rounded-full ${getStatusColor(room.status)} border-0`}
-        >
-          {roomStatuses.map((status) => (
-            <option key={status.value} value={status.value}>
-              {status.label}
-            </option>
-          ))}
-        </select>
+        <span className={`text-xs px-3 py-1 rounded-full font-medium ${getStatusColor(room.status)}`}>
+          {getStatusLabel(room.status)}
+        </span>
       )
     },
     {
@@ -236,10 +219,9 @@ const RoomsPage = () => {
             <DataTable
               columns={columns}
               data={rooms}
-              onView={handleView}
               onEdit={handleEdit}
               onDelete={handleDelete}
-              actions={['view', 'edit', 'delete']}
+              actions={['edit', 'delete']}
               emptyMessage="Không có phòng nào"
               loading={loading}
             />

@@ -14,20 +14,26 @@ const (
 	MovieStatusEnded    MovieStatus = "ENDED"
 )
 
-type Genre string
+type Genre struct {
+	bun.BaseModel `bun:"table:genres,alias:g"`
 
-const (
-	GenreAction    Genre = "ACTION"
-	GenreComedy    Genre = "COMEDY"
-	GenreDrama     Genre = "DRAMA"
-	GenreHorror    Genre = "HORROR"
-	GenreRomance   Genre = "ROMANCE"
-	GenreSciFi     Genre = "SCI-FI"
-	GenreThriller  Genre = "THRILLER"
-	GenreWestern   Genre = "WESTERN"
-	GenreAnimation Genre = "ANIMATION"
-	GenreFamily    Genre = "FAMILY"
-)
+	Id          string  `bun:"id,pk" json:"id"`
+	Name        string  `bun:"name,notnull,unique" json:"name"`
+	Slug        string  `bun:"slug,notnull,unique" json:"slug"`
+	Description *string `bun:"description" json:"description"`
+}
+
+type MovieGenre struct {
+	bun.BaseModel `bun:"table:movie_genres,alias:mg"`
+
+	Id        string    `bun:"id,pk" json:"id"`
+	MovieId   string    `bun:"movie_id,notnull" json:"movie_id"`
+	GenreId   string    `bun:"genre_id,notnull" json:"genre_id"`
+	CreatedAt time.Time `bun:"created_at,nullzero,notnull,default:current_timestamp" json:"created_at"`
+
+	Movie *Movie `bun:"rel:belongs-to,join:movie_id=id" json:"movie,omitempty"`
+	Genre *Genre `bun:"rel:belongs-to,join:genre_id=id" json:"genre,omitempty"`
+}
 
 type Movie struct {
 	bun.BaseModel `bun:"table:movies,alias:m"`
@@ -37,7 +43,6 @@ type Movie struct {
 	Slug        string      `bun:"slug,notnull" json:"slug"`
 	Director    string      `bun:"director" json:"director"`
 	Cast        string      `bun:"cast" json:"cast"`
-	Genre       Genre       `bun:"genre" json:"genre"`
 	Duration    int         `bun:"duration,notnull" json:"duration"`
 	ReleaseDate *time.Time  `bun:"release_date,type:date" json:"release_date"`
 	Description string      `bun:"description" json:"description"`
@@ -46,6 +51,9 @@ type Movie struct {
 	Status      MovieStatus `bun:"status,notnull" json:"status"`
 	CreatedAt   *time.Time  `bun:"created_at,nullzero,default:current_timestamp" json:"created_at"`
 	UpdatedAt   *time.Time  `bun:"updated_at" json:"updated_at"`
+
+	MovieGenres []*MovieGenre `bun:"rel:has-many,join:id=movie_id" json:"movie_genres,omitempty"`
+	Genres      []*Genre      `bun:"-" json:"genres,omitempty"` // Computed field
 }
 
 func (m *Movie) IsValid() bool {

@@ -39,7 +39,6 @@ function chunkByFixedSize(text: string, config: ChunkConfig): TextChunk[] {
             end = textLen
         }
 
-        // Try to break at word boundary
         if (end < textLen) {
             for (let i = end - 1; i > start && i > end - 50; i--) {
                 if (text[i] === ' ' || text[i] === '\n') {
@@ -91,9 +90,7 @@ function chunkBySentence(text: string, config: ChunkConfig): TextChunk[] {
             }
         }
 
-        // Check if adding sentence exceeds max size
         if (currentChunk.length > 0 && currentChunk.length + sentence.length + 1 > config.maxSize) {
-            // Save current chunk
             const chunkContent = currentChunk.trim()
             if (chunkContent.length >= config.minSize) {
                 chunks.push({
@@ -104,10 +101,8 @@ function chunkBySentence(text: string, config: ChunkConfig): TextChunk[] {
                 })
             }
 
-            // Start new chunk with overlap
             currentChunk = ''
             if (config.overlap > 0 && chunks.length > 0) {
-                // Add last few sentences as overlap
                 const overlapText = getOverlapText(sentences, i, config.overlap)
                 if (overlapText) {
                     currentChunk = overlapText + ' '
@@ -120,7 +115,6 @@ function chunkBySentence(text: string, config: ChunkConfig): TextChunk[] {
         sentenceStart += sentence.length
     }
 
-    // Add final chunk
     if (currentChunk.length > 0) {
         const chunkContent = currentChunk.trim()
         if (chunkContent.length >= config.minSize) {
@@ -149,7 +143,6 @@ function chunkByParagraph(text: string, config: ChunkConfig): TextChunk[] {
             continue
         }
 
-        // Calculate position in original text
         if (i === 0) {
             paragraphStart = 0
             currentStart = 0
@@ -160,12 +153,10 @@ function chunkByParagraph(text: string, config: ChunkConfig): TextChunk[] {
             }
         }
 
-        // Check if adding paragraph exceeds max size
         if (
             currentChunk.length > 0 &&
             currentChunk.length + paragraph.length + 2 > config.maxSize
         ) {
-            // Save current chunk
             const chunkContent = currentChunk.trim()
             if (chunkContent.length >= config.minSize) {
                 chunks.push({
@@ -176,7 +167,6 @@ function chunkByParagraph(text: string, config: ChunkConfig): TextChunk[] {
                 })
             }
 
-            // Start new chunk
             currentChunk = ''
             currentStart = paragraphStart
         }
@@ -185,7 +175,6 @@ function chunkByParagraph(text: string, config: ChunkConfig): TextChunk[] {
         paragraphStart += paragraph.length + 2
     }
 
-    // Add final chunk
     if (currentChunk.length > 0) {
         const chunkContent = currentChunk.trim()
         if (chunkContent.length >= config.minSize) {
@@ -246,7 +235,6 @@ function getOverlapText(
 }
 
 function estimateTokenCount(text: string): number {
-    // Rough estimation: 1 token ≈ 4 characters for Vietnamese/English
     return Math.ceil([...text].length / 4)
 }
 

@@ -5,7 +5,7 @@ export interface DocumentChunk {
     document_id: string
     chunk_index: number
     content: string
-    embedding: string
+    embedding: number[]
     start_pos: number
     end_pos: number
     token_count: number

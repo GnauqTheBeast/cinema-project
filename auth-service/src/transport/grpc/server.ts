@@ -2,6 +2,7 @@ import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import path from 'path';
 import { TokenService } from '../../services/tokenService.js';
+import { PermissionService } from '../../services/permissionService.js';
 
 const PROTO_PATH = path.resolve(process.cwd(), 'proto', 'auth.proto');
 
@@ -27,8 +28,6 @@ export async function startAuthGrpcServer(): Promise<void> {
       try {
         const { email, otp } = call.request;
         
-        // TODO: Implement OTP verification logic here
-        // For now, return a mock response
         callback(null, {
           verified: true,
           message: 'OTP verified successfully'
@@ -46,6 +45,31 @@ export async function startAuthGrpcServer(): Promise<void> {
         const { token } = call.request;
         const result = await TokenService.verifyTokenFromCache(token);
         callback(null, result);
+      } catch (e: any) {
+        callback({ code: grpc.status.INTERNAL, message: e.message } as any);
+      }
+    },
+
+    clearPermissionsCache: async (
+      call: grpc.ServerUnaryCall<any, any>,
+      callback: grpc.sendUnaryData<any>
+    ) => {
+      try {
+        const { role_id } = call.request;
+        
+        if (!role_id) {
+          return callback({ 
+            code: grpc.status.INVALID_ARGUMENT, 
+            message: 'role_id is required' 
+          } as any);
+        }
+
+        await PermissionService.clearPermissionsCache(role_id);
+        
+        callback(null, {
+          success: true,
+          message: `Permissions cache cleared for role: ${role_id}`
+        });
       } catch (e: any) {
         callback({ code: grpc.status.INTERNAL, message: e.message } as any);
       }

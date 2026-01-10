@@ -16,13 +16,6 @@ interface RevenueByShowtime {
     total_tickets: number
 }
 
-interface RevenueByBookingType {
-    booking_type: string
-    total_revenue: number
-    total_bookings: number
-    percentage: number
-}
-
 interface GetRevenueByTimeResponse {
     success: boolean
     message: string
@@ -33,12 +26,6 @@ interface GetRevenueByShowtimeResponse {
     success: boolean
     message: string
     data: RevenueByShowtime[]
-}
-
-interface GetRevenueByBookingTypeResponse {
-    success: boolean
-    message: string
-    data: RevenueByBookingType[]
 }
 
 interface GetTotalRevenueResponse {
@@ -56,14 +43,6 @@ interface BookingServiceClient {
     GetRevenueByShowtime(
         request: { start_date: string; end_date: string; showtime_id: string; limit: number },
         callback: (error: grpc.ServiceError | null, response: GetRevenueByShowtimeResponse) => void,
-    ): void
-
-    GetRevenueByBookingType(
-        request: { start_date: string; end_date: string },
-        callback: (
-            error: grpc.ServiceError | null,
-            response: GetRevenueByBookingTypeResponse,
-        ) => void,
     ): void
 
     GetTotalRevenue(
@@ -112,7 +91,6 @@ class BookingGrpcClient {
                 { start_date: startDate, end_date: endDate, limit },
                 (error, response) => {
                     if (error) {
-                        console.error('gRPC GetRevenueByTime error:', error)
                         reject(error)
                         return
                     }
@@ -141,34 +119,6 @@ class BookingGrpcClient {
                 { start_date: startDate, end_date: endDate, showtime_id: showtimeId, limit },
                 (error, response) => {
                     if (error) {
-                        console.error('gRPC GetRevenueByShowtime error:', error)
-                        reject(error)
-                        return
-                    }
-
-                    if (!response.success) {
-                        resolve([])
-                        return
-                    }
-
-                    resolve(response.data)
-                },
-            )
-        })
-    }
-
-    async getRevenueByBookingType(
-        startDate: string,
-        endDate: string,
-    ): Promise<RevenueByBookingType[]> {
-        const client = this.connect()
-
-        return new Promise((resolve, reject) => {
-            client.GetRevenueByBookingType(
-                { start_date: startDate, end_date: endDate },
-                (error, response) => {
-                    if (error) {
-                        console.error('gRPC GetRevenueByBookingType error:', error)
                         reject(error)
                         return
                     }
@@ -192,7 +142,6 @@ class BookingGrpcClient {
                 { start_date: startDate, end_date: endDate },
                 (error, response) => {
                     if (error) {
-                        console.error('gRPC GetTotalRevenue error:', error)
                         reject(error)
                         return
                     }

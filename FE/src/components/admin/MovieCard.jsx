@@ -61,7 +61,7 @@ export default function MovieCard({ movie }) {
           <div className="truncate">
             <span className="font-medium text-gray-700">Genre:</span>{' '}
             <span className="truncate" title={movie.genre}>
-              {movie.genre || 'Unknown'}
+              {movie.genres.join(', ') || 'Unknown'}
             </span>
           </div>
 

@@ -117,7 +117,6 @@ export class UserController {
     try {
       const authenticatedUser = req.user;
 
-      // Authorization check
       if (!authenticatedUser) {
         const response: IApiResponse = {
           success: false,
@@ -138,7 +137,6 @@ export class UserController {
         return;
       }
 
-      // Get query parameters for pagination and filtering
       const page = parseInt(req.query.page as string) || 1;
       const size = parseInt(req.query.size as string) || 10;
       const role = req.query.role as string || '';
@@ -168,7 +166,6 @@ export class UserController {
     try {
       const authenticatedUser = req.user;
 
-      // Authorization check
       if (!authenticatedUser) {
         const response: IApiResponse = {
           success: false,
@@ -189,7 +186,6 @@ export class UserController {
         return;
       }
 
-      // Get query parameters for pagination and filtering
       const page = parseInt(req.query.page as string) || 1;
       const size = parseInt(req.query.size as string) || 10;
       const role = req.query.role as string || '';
@@ -220,7 +216,6 @@ export class UserController {
       const { userId } = req.params;
       const authenticatedUser = req.user;
 
-      // Authorization check
       if (!authenticatedUser) {
         const response: IApiResponse = {
           success: false,

@@ -4,10 +4,11 @@ import { FaArrowLeft, FaShoppingCart, FaCreditCard } from 'react-icons/fa'
 import Header from '../../components/Header'
 import SeatGrid from '../../components/SeatGrid'
 import { showtimeService } from '../../services/showtimeApi'
-import { clientSeatService } from '../../services/clientSeatService'
 import { bookingService } from '../../services/bookingService'
 import { getSeatTypeLabel, getSeatPrice, calculateBookingTotal } from '../../constants/seatConstants'
 import { formatPrice } from '../../utils/formatters'
+import { isSeatClickable } from '../../utils/seatUtils'
+import { useLockedSeats } from '../../hooks/useLockedSeats'
 
 const BookingPage = () => {
   const { showtimeId } = useParams()
@@ -17,50 +18,22 @@ const BookingPage = () => {
   const [showtime, setShowtime] = useState(null)
   const [room, setRoom] = useState(null)
   const [seats, setSeats] = useState([])
-  const [lockedSeats, setLockedSeats] = useState([])
-  const [bookedSeats, setBookedSeats] = useState([])
   const [selectedSeats, setSelectedSeats] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [step, setStep] = useState(1)
 
+  const { lockedSeats, bookedSeats } = useLockedSeats(
+    showtimeId,
+    seats,
+    selectedSeats,
+    setSelectedSeats,
+    step === 1
+  )
+
   useEffect(() => {
-    fetchBookingData()
+    fetchBookingData().then()
   }, [showtimeId])
-
-  useEffect(() => {
-    if (!showtimeId || step !== 1) {
-      return
-    }
-
-    const pollLockedSeats = async () => {
-      try {
-        const response = await clientSeatService.getLockedSeats(showtimeId)
-        const lockedSeatIds = response.data?.locked_seat_ids || []
-        const bookedSeatIds = response.data?.booked_seat_ids || []
-
-        const newLockedSeats = seats.filter(seat => lockedSeatIds.includes(seat.id))
-        const newBookedSeats = seats.filter(seat => bookedSeatIds.includes(seat.id))
-        
-        setLockedSeats(newLockedSeats)
-        setBookedSeats(newBookedSeats)
-
-        if (selectedSeats.length > 0) {
-          const unavailableSeatIds = [...lockedSeatIds, ...bookedSeatIds]
-          const updatedSelectedSeats = selectedSeats.filter(seat => !unavailableSeatIds.includes(seat.id))
-          if (updatedSelectedSeats.length !== selectedSeats.length) {
-            setSelectedSeats(updatedSelectedSeats)
-          }
-        }
-      } catch (err) {
-        console.error('Error polling locked seats:', err)
-      }
-    }
-
-    const intervalId = setInterval(pollLockedSeats, 5000)
-
-    return () => clearInterval(intervalId)
-  }, [showtimeId, step, selectedSeats, seats])
 
   const fetchBookingData = async () => {
     try {
@@ -85,22 +58,12 @@ const BookingPage = () => {
   }
 
   const handleSeatClick = (seat) => {
-    if (!seat || seat.status === 'OCCUPIED' || seat.status === 'MAINTENANCE' || seat.status === 'BLOCKED') {
-      return
-    }
-
-    const isLocked = lockedSeats && lockedSeats.some(lockedSeat => lockedSeat.id === seat.id)
-    if (isLocked) {
-      return
-    }
-
-    const isBooked = bookedSeats && bookedSeats.some(bookedSeat => bookedSeat.id === seat.id)
-    if (isBooked) {
+    if (!isSeatClickable(seat, lockedSeats, bookedSeats)) {
       return
     }
 
     const isSelected = selectedSeats.some(s => s.id === seat.id)
-    
+
     if (isSelected) {
       setSelectedSeats(selectedSeats.filter(s => s.id !== seat.id))
     } else {
@@ -150,7 +113,7 @@ const BookingPage = () => {
       if (err.response?.status === 400 && err.response?.data?.error === 'Seat already booked') {
         alert('Một hoặc nhiều ghế bạn chọn đã được đặt bởi người khác. Vui lòng chọn ghế khác.')
         setSelectedSeats([])
-        fetchBookingData()
+        fetchBookingData().then()
       } else if (err.response?.data?.error) {
         alert(err.response.data.error)
       } else {

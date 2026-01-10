@@ -1,5 +1,6 @@
 import { FaCouch } from 'react-icons/fa'
 import { COUPLE_ROWS, getSeatTypeLabel } from '../constants/seatConstants'
+import { isSeatLocked, isSeatBooked } from '../utils/seatUtils'
 
 const SeatGrid = ({
   seats = [],
@@ -44,8 +45,8 @@ const SeatGrid = ({
 
   const getSeatColor = (seat) => {
     const isSelected = selectedSeats.some(s => s.id === seat.id)
-    const isLocked = lockedSeats && lockedSeats.some(lockedSeat => lockedSeat.id === seat.id)
-    const isBooked = bookedSeats && bookedSeats.some(bookedSeat => bookedSeat.id === seat.id)
+    const isLocked = isSeatLocked(seat, lockedSeats)
+    const isBooked = isSeatBooked(seat, bookedSeats)
 
     if (colorScheme === 'admin') {
       if (!seat) {

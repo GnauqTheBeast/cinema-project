@@ -112,23 +112,25 @@ export default function MovieListItem({
       </div>
 
       {/* Hover Action */}
-      <div className="px-4 pb-4">
-        <button
-          type="button"
-          onClick={handleViewShowtimes}
-          disabled={isLoadingShowtimes}
-          className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white text-center py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-medium hover:from-red-700 hover:to-red-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {isLoadingShowtimes ? (
-            <>
-              <FaSpinner className="animate-spin text-sm" />
-              Đang tải...
-            </>
-          ) : (
-            'Xem lịch chiếu'
-          )}
-        </button>
-      </div>
+      {movie.status !== 'UPCOMING' && (
+        <div className="px-4 pb-4">
+          <button
+            type="button"
+            onClick={handleViewShowtimes}
+            disabled={isLoadingShowtimes}
+            className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white text-center py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-medium hover:from-red-700 hover:to-red-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isLoadingShowtimes ? (
+              <>
+                <FaSpinner className="animate-spin text-sm" />
+                Đang tải...
+              </>
+            ) : (
+              'Xem lịch chiếu'
+            )}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

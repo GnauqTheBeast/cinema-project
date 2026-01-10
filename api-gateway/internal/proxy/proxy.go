@@ -166,7 +166,9 @@ func (p *Proxy) getTargetService(path string) (*ServiceInfo, string) {
 			Endpoint: p.config.Services.MovieService,
 		}, path
 
-	case strings.HasPrefix(path, "/api/v1/users"):
+	case strings.HasPrefix(path, "/api/v1/users"),
+		strings.HasPrefix(path, "/api/v1/roles"),
+		strings.HasPrefix(path, "/api/v1/permissions"):
 		return &ServiceInfo{
 			Name:     "user-service",
 			Endpoint: p.config.Services.UserService,

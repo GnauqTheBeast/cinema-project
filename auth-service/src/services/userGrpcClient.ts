@@ -21,5 +21,3 @@ const userClient = new UserService(address, grpc.credentials.createInsecure());
 
 export { userClient };
 export type UserClient = typeof userClient;
-
-

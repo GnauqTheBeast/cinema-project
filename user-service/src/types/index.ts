@@ -107,3 +107,32 @@ export enum ErrorMessages {
   GET_SUCCESS = 'User retrieved successfully',
   INTERNAL_ERROR = 'Internal server error'
 }
+
+export interface IPermission {
+  id: string;
+  name: string;
+  code: string;
+  description?: string | null;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+export interface IRole {
+  id: string;
+  name: string;
+  description?: string | null;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+export interface IRoleWithPermissions extends IRole {
+  permissions: IPermission[];
+}
+
+export interface IUpdateRolePermissionsRequest {
+  permission_ids: string[]; // Array of permission IDs to assign
+}
+
+export interface IAssignPermissionRequest {
+  permission_id: string;
+}

@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react'
-import { FaCalendarAlt, FaClock, FaEdit, FaEye, FaPlus, FaSearch, FaTrash } from 'react-icons/fa'
-import { Link } from 'react-router-dom'
+import { FaCalendarAlt, FaClock, FaEdit, FaPlus, FaSearch, FaTrash, FaTable, FaStream } from 'react-icons/fa'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { showtimeService } from '../../services/showtimeApi'
+import { roomService } from '../../services/roomApi'
 import Card from '../../components/common/Card'
 import Button from '../../components/common/Button'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
+import ShowtimeTimelineView from '../../components/admin/ShowtimeTimelineView'
+import { formatDateTime, toLocalDatetimeString } from '../../utils/dateUtils'
 
 const ShowtimesPage = () => {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [showtimes, setShowtimes] = useState([])
   const [rooms, setRooms] = useState([])
   const [movies, setMovies] = useState([])
@@ -22,6 +27,8 @@ const ShowtimesPage = () => {
   const [selectedStatus, setSelectedStatus] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [viewMode, setViewMode] = useState(() => searchParams.get('view') || 'table')
+  const [timelineDate, setTimelineDate] = useState(() => searchParams.get('date') || new Date().toISOString().split('T')[0])
 
   const showtimeFormats = showtimeService.getShowtimeFormats()
   const showtimeStatuses = showtimeService.getShowtimeStatuses()
@@ -29,16 +36,29 @@ const ShowtimesPage = () => {
   const fetchShowtimes = async () => {
     try {
       setLoading(true)
+
+      const pageSize = viewMode === 'timeline' ? 1000 : 10
+
+      let useDateFrom = dateFrom
+      let useDateTo = dateTo
+
+      if (viewMode === 'timeline') {
+        useDateFrom = timelineDate
+        const nextDay = new Date(timelineDate)
+        nextDay.setDate(nextDay.getDate() + 1)
+        useDateTo = nextDay.toISOString().split('T')[0]
+      }
+
       const response = await showtimeService.getShowtimes(
         currentPage,
-        10,
+        pageSize,
         search,
         selectedMovie,
         selectedRoom,
         selectedFormat,
         selectedStatus,
-        dateFrom,
-        dateTo,
+        useDateFrom,
+        useDateTo,
       )
 
       if (response.success) {
@@ -63,7 +83,9 @@ const ShowtimesPage = () => {
         })
 
         setMovies(uniqueMovies)
-        setRooms(uniqueRooms)
+        if (viewMode !== 'timeline') {
+          setRooms(uniqueRooms)
+        }
       } else {
         setError('Không thể tải danh sách lịch chiếu')
       }
@@ -76,7 +98,7 @@ const ShowtimesPage = () => {
   }
 
   useEffect(() => {
-    fetchShowtimes()
+    fetchShowtimes().then()
   }, [
     currentPage,
     search,
@@ -86,7 +108,31 @@ const ShowtimesPage = () => {
     selectedStatus,
     dateFrom,
     dateTo,
+    viewMode,
+    timelineDate,
   ])
+
+  useEffect(() => {
+    if (viewMode === 'timeline') {
+      fetchAllRooms().then()
+    }
+  }, [viewMode])
+
+  const fetchAllRooms = async () => {
+    try {
+      const response = await roomService.getRooms(1, 100, '', '', 'ACTIVE')
+      if (response.success) {
+        const roomsData = response.data?.data || []
+        setRooms(roomsData)
+      }
+    } catch (err) {
+      console.error('Error fetching rooms:', err)
+    }
+  }
+
+  const handleDateChange = (newDate) => {
+    setTimelineDate(newDate)
+  }
 
   const handleSearch = (e) => {
     setSearch(e.target.value)
@@ -100,7 +146,7 @@ const ShowtimesPage = () => {
 
     try {
       await showtimeService.deleteShowtime(id)
-      fetchShowtimes()
+      fetchShowtimes().then()
     } catch (err) {
       alert('Có lỗi xảy ra khi xóa lịch chiếu')
       console.error('Error deleting showtime:', err)
@@ -110,7 +156,7 @@ const ShowtimesPage = () => {
   const handleStatusChange = async (id, newStatus) => {
     try {
       await showtimeService.updateShowtimeStatus(id, newStatus)
-      fetchShowtimes()
+      fetchShowtimes().then()
     } catch (err) {
       alert('Có lỗi xảy ra khi cập nhật trạng thái')
       console.error('Error updating status:', err)
@@ -145,21 +191,15 @@ const ShowtimesPage = () => {
     return showtime.movie ? showtime.movie.title : showtime.movie_id
   }
 
-  const formatDateTime = (dateTimeStr) => {
-    const date = new Date(dateTimeStr)
-    return date.toLocaleString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
-
   const isUpcoming = (showtime) => {
     const now = new Date()
     const startTime = new Date(showtime.start_time)
     return startTime > now && showtime.status === 'SCHEDULED'
+  }
+
+  const handleCreateFromTimeline = (roomId, startTime) => {
+    const dateTimeStr = toLocalDatetimeString(startTime)
+    navigate(`/admin/showtimes/new?roomId=${roomId}&startTime=${encodeURIComponent(dateTimeStr)}`)
   }
 
   return (
@@ -169,18 +209,66 @@ const ShowtimesPage = () => {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Quản lý Lịch chiếu</h1>
-              <p className="text-gray-600">Quản lý lịch chiếu phim với tính năng làm tròn 30 phút</p>
+              <p className="text-gray-600">Quản lý lịch chiếu phim</p>
             </div>
-            <Link to="/admin/showtimes/new">
-              <Button>
-                <FaPlus />
-                <span>Thêm lịch chiếu mới</span>
-              </Button>
-            </Link>
+            <div className="flex items-center gap-3">
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                    viewMode === 'table'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <FaTable />
+                  <span>Bảng</span>
+                </button>
+                <button
+                  onClick={() => setViewMode('timeline')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                    viewMode === 'timeline'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <FaStream />
+                  <span>Timeline</span>
+                </button>
+              </div>
+              <Link to="/admin/showtimes/new">
+                <Button>
+                  <FaPlus />
+                  <span>Thêm mới</span>
+                </Button>
+              </Link>
+            </div>
           </div>
         </Card>
 
-        <Card>
+        {viewMode === 'timeline' && (
+          <Card>
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Chọn ngày xem timeline
+                </label>
+                <div className="relative">
+                  <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="date"
+                    value={timelineDate}
+                    onChange={(e) => setTimelineDate(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {viewMode === 'table' && (
+          <Card>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div className="relative">
               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -304,6 +392,7 @@ const ShowtimesPage = () => {
             </Button>
           </div>
         </Card>
+        )}
 
         {loading ? (
           <LoadingSpinner size="lg" text="Đang tải danh sách lịch chiếu..." />
@@ -317,6 +406,14 @@ const ShowtimesPage = () => {
               </div>
             </div>
           </div>
+        ) : viewMode === 'timeline' ? (
+          <ShowtimeTimelineView
+            showtimes={showtimes}
+            rooms={rooms}
+            selectedDate={timelineDate}
+            onCreateShowtime={handleCreateFromTimeline}
+            onDateChange={handleDateChange}
+          />
         ) : (
           <>
             <Card padding="none">
@@ -401,13 +498,6 @@ const ShowtimesPage = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">
                           <Link
-                            to={`/admin/showtimes/${showtime.id}`}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="Xem chi tiết"
-                          >
-                            <FaEye />
-                          </Link>
-                          <Link
                             to={`/admin/showtimes/${showtime.id}/edit`}
                             className="text-indigo-600 hover:text-indigo-900"
                             title="Chỉnh sửa"
@@ -453,11 +543,10 @@ const ShowtimesPage = () => {
                     </button>
 
                   {(() => {
-                    const delta = 2 // Số trang hiện thị ở mỗi bên của trang hiện tại
+                    const delta = 2
                     const range = []
                     const rangeWithDots = []
 
-                    // Tính toán các trang cần hiện thị
                     for (
                       let i = Math.max(2, currentPage - delta);
                       i <= Math.min(totalPages - 1, currentPage + delta);
@@ -466,17 +555,14 @@ const ShowtimesPage = () => {
                       range.push(i)
                     }
 
-                    // Luôn hiện trang 1
                     if (currentPage - delta > 2) {
                       rangeWithDots.push(1, '...')
                     } else {
                       rangeWithDots.push(1)
                     }
 
-                    // Thêm các trang trong range (nếu không phải trang 1)
                     rangeWithDots.push(...range.filter((page) => page !== 1))
 
-                    // Thêm dấu ... và trang cuối nếu cần
                     if (currentPage + delta < totalPages - 1) {
                       rangeWithDots.push('...', totalPages)
                     } else if (totalPages > 1 && !rangeWithDots.includes(totalPages)) {

@@ -80,20 +80,6 @@ export const showtimeService = {
     return response.data
   },
 
-  getShowtimesByRoom: async (roomId, date = '') => {
-    let url = `/rooms/${roomId}/showtimes`
-    if (date) {
-      url += `?date=${date}`
-    }
-    const response = await showtimeApi.get(url)
-    return response.data
-  },
-
-  getUpcomingShowtimes: async (limit = 10) => {
-    const response = await showtimeApi.get(`/showtimes/upcoming?limit=${limit}`)
-    return response.data
-  },
-
   createShowtime: async (showtimeData) => {
     const response = await showtimeApi.post('/showtimes', showtimeData)
     return response.data
@@ -118,7 +104,6 @@ export const showtimeService = {
     { value: '2D', label: '2D' },
     { value: '3D', label: '3D' },
     { value: 'IMAX', label: 'IMAX' },
-    { value: '4DX', label: '4DX' },
   ],
 
   getShowtimeStatuses: () => [

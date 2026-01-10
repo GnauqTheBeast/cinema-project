@@ -10,15 +10,17 @@ import {
   FaSave,
   FaTags,
 } from 'react-icons/fa'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { movieService } from '../../services/movieApi'
 import { roomService } from '../../services/roomApi'
 import { showtimeService } from '../../services/showtimeApi'
+import { toLocalDatetimeString } from '../../utils/dateUtils'
 
 const ShowtimeFormPage = () => {
   const navigate = useNavigate()
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
   const isEditing = Boolean(id)
 
   const [formData, setFormData] = useState({
@@ -37,6 +39,7 @@ const ShowtimeFormPage = () => {
   const [conflictWarning, setConflictWarning] = useState('')
   const [timeInfo, setTimeInfo] = useState('')
   const [selectedMovie, setSelectedMovie] = useState(null)
+  const [selectedRoom, setSelectedRoom] = useState(null)
 
   const showtimeFormats = showtimeService.getShowtimeFormats()
   const showtimeStatuses = showtimeService.getShowtimeStatuses()
@@ -46,6 +49,17 @@ const ShowtimeFormPage = () => {
     fetchMovies().then()
     if (isEditing) {
       fetchShowtime().then()
+    } else {
+      const roomId = searchParams.get('roomId')
+      const startTime = searchParams.get('startTime')
+
+      if (roomId || startTime) {
+        setFormData(prev => ({
+          ...prev,
+          ...(roomId && { room_id: roomId }),
+          ...(startTime && { start_time: startTime })
+        }))
+      }
     }
   }, [id, isEditing])
 
@@ -62,9 +76,32 @@ const ShowtimeFormPage = () => {
     }
   }, [formData.movie_id, movies])
 
+  useEffect(() => {
+    if (formData.room_id) {
+      const room = rooms.find((r) => r.id === formData.room_id)
+      setSelectedRoom(room)
+    }
+  }, [formData.room_id, rooms])
+
+  useEffect(() => {
+    if (formData.start_time && selectedMovie?.duration) {
+      const duration = selectedMovie.duration
+      const [datePart, timePart] = formData.start_time.split('T')
+      const [hours, minutes] = timePart.split(':').map(Number)
+
+      const totalMinutes = hours * 60 + minutes + duration
+      const endHours = Math.floor(totalMinutes / 60) % 24
+      const endMinutes = totalMinutes % 60
+
+      const endTime = `${datePart}T${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`
+
+      setFormData((prev) => ({ ...prev, end_time: endTime }))
+    }
+  }, [formData.start_time, selectedMovie?.duration])
+
   const fetchRooms = async () => {
     try {
-      const response = await roomService.getRooms(1, 100)
+      const response = await roomService.getRooms(1, 100, '', '', 'ACTIVE')
       if (response.success) {
         setRooms(response.data.data || [])
       }
@@ -75,7 +112,7 @@ const ShowtimeFormPage = () => {
 
   const fetchMovies = async () => {
     try {
-      const response = await movieService.getMovies(1, 100)
+      const response = await movieService.getMovies(1, 100, '', 'SHOWING')
       if (response.success) {
         setMovies(response.data.movies || [])
       }
@@ -94,8 +131,8 @@ const ShowtimeFormPage = () => {
         setFormData({
           movie_id: showtime.movie_id,
           room_id: showtime.room_id,
-          start_time: new Date(showtime.start_time).toISOString().slice(0, 16),
-          end_time: new Date(showtime.end_time).toISOString().slice(0, 16),
+          start_time: toLocalDatetimeString(showtime.start_time),
+          end_time: toLocalDatetimeString(showtime.end_time),
           format: showtime.format,
           base_price: showtime.base_price.toString(),
           status: showtime.status,
@@ -123,7 +160,6 @@ const ShowtimeFormPage = () => {
 
       info += `Thời lượng lịch chiếu: ${Math.floor(scheduledDuration / 60)}h ${scheduledDuration % 60}m`
 
-      // Add movie duration validation
       if (selectedMovie && selectedMovie.duration) {
         const movieDuration = selectedMovie.duration
         info += '\n'
@@ -207,7 +243,13 @@ const ShowtimeFormPage = () => {
         await showtimeService.createShowtime(requestData)
       }
 
-      navigate('/admin/showtimes')
+      const fromTimeline = searchParams.get('roomId') && searchParams.get('startTime')
+      if (fromTimeline) {
+        const createdDate = new Date(formData.start_time).toISOString().split('T')[0]
+        navigate(`/admin/showtimes?view=timeline&date=${createdDate}`)
+      } else {
+        navigate('/admin/showtimes')
+      }
     } catch (err) {
       if (err.response?.data?.message?.includes('conflicts')) {
         setError('Lịch chiếu bị trùng với lịch chiếu khác trong phòng')
@@ -232,62 +274,43 @@ const ShowtimeFormPage = () => {
     }))
   }
 
-  const calculateEndTime = (startTime, movieDuration) => {
-    if (!startTime) return ''
-
-    const durationMinutes = movieDuration || 120 // default 2 hours if no movie duration
-
-    // Create date object from datetime-local input format
-    const startDate = new Date(startTime)
-
-    // Add movie duration in minutes
-    const endDate = new Date(startDate.getTime() + durationMinutes * 60 * 1000)
-
-    console.log('calculateEndTime debug:', {
-      startTime,
-      durationMinutes,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      result: endDate.toISOString().slice(0, 16),
-    })
-
-    // Return in datetime-local format (YYYY-MM-DDTHH:mm)
-    return endDate.toISOString().slice(0, 16)
-  }
-
-  const handleStartTimeChange = (e) => {
-    const startTime = e.target.value
-    let endTime = formData.end_time
-
-    if (startTime) {
-      const movieDuration = selectedMovie?.duration
-      endTime = calculateEndTime(startTime, movieDuration)
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      start_time: startTime,
-      end_time: endTime,
-    }))
-  }
-
   const handleMovieChange = (e) => {
     const movieId = e.target.value
-    const movie = movies.find((m) => m.id === movieId)
+    setFormData((prev) => ({ ...prev, movie_id: movieId }))
+  }
 
-    setFormData((prev) => {
-      let newEndTime = prev.end_time
+  const handleRoomChange = (e) => {
+    const roomId = e.target.value
+    const room = rooms.find((r) => r.id === roomId)
 
-      if (prev.start_time && movie?.duration) {
-        newEndTime = calculateEndTime(prev.start_time, movie.duration)
-      }
+    if (room && room.room_type === 'IMAX') {
+      setFormData((prev) => ({ ...prev, room_id: roomId, format: 'IMAX' }))
+    } else {
+      setFormData((prev) => ({ ...prev, room_id: roomId }))
+    }
+  }
 
-      return {
-        ...prev,
-        movie_id: movieId,
-        end_time: newEndTime,
-      }
-    })
+  const getRoomTypeLabel = (roomType) => {
+    switch (roomType) {
+      case 'STANDARD':
+        return 'Standard'
+      case 'VIP':
+        return 'VIP'
+      case 'IMAX':
+        return 'IMAX'
+      default:
+        return roomType
+    }
+  }
+
+  const getAvailableFormats = () => {
+    if (!selectedRoom) return showtimeFormats
+
+    if (selectedRoom.room_type === 'IMAX') {
+      return showtimeFormats.filter(f => f.value === 'IMAX')
+    }
+
+    return showtimeFormats.filter(f => f.value === '2D' || f.value === '3D')
   }
 
   if (loading && isEditing) {
@@ -425,14 +448,14 @@ const ShowtimeFormPage = () => {
                     id="room_id"
                     name="room_id"
                     value={formData.room_id}
-                    onChange={handleChange}
+                    onChange={handleRoomChange}
                     required
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                   >
                     <option value="">-- Chọn phòng chiếu --</option>
                     {rooms.map((room) => (
                       <option key={room.id} value={room.id}>
-                        Phòng {room.room_number} ({room.room_type.toUpperCase()})
+                        Phòng {room.room_number} - {getRoomTypeLabel(room.room_type)}
                       </option>
                     ))}
                   </select>
@@ -454,7 +477,7 @@ const ShowtimeFormPage = () => {
                     id="start_time"
                     name="start_time"
                     value={formData.start_time}
-                    onChange={handleStartTimeChange}
+                    onChange={handleChange}
                     required
                     min={new Date().toISOString().slice(0, 16)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
@@ -499,14 +522,20 @@ const ShowtimeFormPage = () => {
                     value={formData.format}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                    disabled={selectedRoom?.room_type === 'IMAX'}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
-                    {showtimeFormats.map((format) => (
+                    {getAvailableFormats().map((format) => (
                       <option key={format.value} value={format.value}>
                         {format.label}
                       </option>
                     ))}
                   </select>
+                  {selectedRoom?.room_type === 'IMAX' && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Phòng IMAX chỉ chiếu định dạng IMAX
+                    </p>
+                  )}
                 </div>
 
                 {/* Base Price */}

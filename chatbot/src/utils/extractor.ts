@@ -47,18 +47,15 @@ export class TextExtractor {
         for (let line of lines) {
             line = line.trim()
 
-            // Skip empty lines
             if (!line) {
                 cleanedLines.push('')
                 continue
             }
 
-            // Remove markdown headers
             if (line.startsWith('#')) {
                 line = line.replace(/^#+\s*/, '').trim()
             }
 
-            // Remove markdown links [text](url) -> text
             while (line.includes('[') && line.includes('](')) {
                 const start = line.indexOf('[')
                 const middle = line.indexOf('](', start)
@@ -71,18 +68,15 @@ export class TextExtractor {
                 line = line.substring(0, start) + linkText + line.substring(end + 1)
             }
 
-            // Remove bold/italic markers
             line = line.replace(/\*\*/g, '')
             line = line.replace(/\*/g, '')
             line = line.replace(/__/g, '')
             line = line.replace(/_/g, '')
 
-            // Skip code blocks
             if (line.startsWith('```')) {
                 continue
             }
 
-            // Remove inline code
             line = line.replace(/`/g, '')
 
             cleanedLines.push(line)
@@ -95,13 +89,11 @@ export class TextExtractor {
         try {
             const stats = await fs.stat(filePath)
 
-            // Check file size (limit to 10MB)
-            const maxSize = 10 * 1024 * 1024 // 10MB
+            const maxSize = 10 * 1024 * 1024
             if (stats.size > maxSize) {
                 throw new Error(`File too large: ${stats.size} bytes (max: ${maxSize} bytes)`)
             }
 
-            // Check file extension
             const ext = path.extname(filePath).toLowerCase()
             const allowedExts = ['.txt', '.pdf', '.md']
 
@@ -122,14 +114,12 @@ export class TextExtractor {
         const stats = await fs.stat(filePath)
         const ext = path.extname(filePath).toLowerCase()
 
-        // Count lines for text files
         let lineCount = 0
         if (ext === '.txt') {
             try {
                 const content = await fs.readFile(filePath, 'utf-8')
                 lineCount = content.split('\n').length
             } catch (error) {
-                // Ignore errors
             }
         }
 

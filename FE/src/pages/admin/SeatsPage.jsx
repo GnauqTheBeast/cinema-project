@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FaEdit, FaEye, FaList, FaPlus, FaSearch, FaTh, FaTrash } from 'react-icons/fa'
+import { FaEdit, FaList, FaPlus, FaSearch, FaTh, FaTrash } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
 import AdminLayout from '../../components/admin/AdminLayout'
 import SeatGrid from '../../components/SeatGrid'
@@ -462,13 +462,6 @@ const SeatsPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">
-                          <Link
-                            to={`/admin/seats/${seat.id}`}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="Xem chi tiết"
-                          >
-                            <FaEye />
-                          </Link>
                           <Link
                             to={`/admin/seats/${seat.id}/edit`}
                             className="text-indigo-600 hover:text-indigo-900"

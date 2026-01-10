@@ -54,11 +54,11 @@ export default function MovieDetailPage() {
 
   const getStatusColorClasses = (status) => {
     switch (status) {
-      case 'upcoming':
+      case 'UPCOMMING':
         return 'bg-orange-500'
-      case 'showing':
+      case 'SHOWING':
         return 'bg-green-500'
-      case 'ended':
+      case 'ENDED':
         return 'bg-red-500'
       default:
         return 'bg-gray-500'

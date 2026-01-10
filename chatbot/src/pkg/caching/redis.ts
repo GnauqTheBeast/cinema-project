@@ -33,7 +33,6 @@ export class RedisCache implements ICache {
             }
         } catch (error) {
             logger.error('Error setting cache', { key, error })
-            // Fire and forget - don't throw
         }
     }
 
@@ -100,7 +99,6 @@ export class CacheManager {
 
         const value = await callback()
 
-        // Store in cache (fire and forget)
         this.set(key, value, ttlMs).catch((err) => {
             logger.error('Error caching value', { key, error: err })
         })

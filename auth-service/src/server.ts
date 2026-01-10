@@ -42,17 +42,14 @@ class AuthServer {
   }
 
   private initializeMiddleware(): void {
-    // CORS configuration
     this.app.use(cors({ 
       origin: this.config.corsOrigin, 
       credentials: true 
     }));
 
-    // Body parsing
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-    // Request logging middleware
     this.app.use((req: Request, res: Response, next: NextFunction) => {
       console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
       next();
@@ -62,13 +59,10 @@ class AuthServer {
   }
 
   private initializeRoutes(): void {
-    // API routes
     this.app.use('/api/v1/auth', authRoutes);
 
-    // Health check endpoint
     this.app.get('/api/v1/health', this.healthCheck.bind(this));
 
-    // Root endpoint
     this.app.get('/', (req: Request, res: Response) => {
       res.json({ 
         message: 'Auth Service API',
@@ -108,7 +102,6 @@ class AuthServer {
   }
 
   private initializeErrorHandling(): void {
-    // 404 handler
     this.app.use('*', (req: Request, res: Response) => {
       res.status(404).json({ 
         message: `Route ${req.originalUrl} not found`,
@@ -116,7 +109,6 @@ class AuthServer {
       });
     });
 
-    // Global error handler
     this.app.use((err: IApiError, req: Request, res: Response, next: NextFunction) => {
       console.error('Error occurred:', {
         message: err.message,
@@ -178,35 +170,29 @@ class AuthServer {
     try {
       console.log('Starting Auth Service (HTTP + gRPC)...');
 
-      // Initialize database
       const dbInitialized = await this.initializeDatabase();
       if (!dbInitialized) {
         throw new Error('Failed to initialize database');
       }
 
-      // Initialize Redis
       const redisInitialized = await this.initializeRedis();
       if (!redisInitialized) {
         console.warn('Redis initialization failed, continuing without Redis cache');
       }
 
-      // Start HTTP server
       const server = this.app.listen(this.port, () => {
         console.log(`🚀 Auth HTTP service running on port ${this.port}`);
         console.log(`🏥 Health check available at http://localhost:${this.port}/api/v1/health`);
         console.log(`📝 API documentation: http://localhost:${this.port}/`);
       });
 
-      // Start gRPC server
       try {
         await startAuthGrpcServer();
         console.log(`🔌 Auth gRPC server started successfully`);
       } catch (error) {
         console.error('Failed to start gRPC server:', error);
-        // Don't exit, continue with HTTP server only
       }
 
-      // Graceful shutdown handling
       this.setupGracefulShutdown(server);
 
       return server;
@@ -223,7 +209,6 @@ class AuthServer {
       server.close(async () => {
         console.log('HTTP server closed');
 
-        // Close database connection
         if (this.databaseManager) {
           try {
             await DatabaseManager.getSequelize().close();
@@ -233,7 +218,6 @@ class AuthServer {
           }
         }
 
-        // Close Redis connections
         if (this.redisManager) {
           try {
             const disconnected = await this.redisManager.disconnect();
@@ -253,7 +237,6 @@ class AuthServer {
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
     
-    // Handle uncaught exceptions
     process.on('uncaughtException', (error: Error) => {
       console.error('Uncaught Exception:', error);
       process.exit(1);
@@ -274,7 +257,6 @@ class AuthServer {
   }
 }
 
-// Create and start server
 const authServer = new AuthServer();
 authServer.start().catch(error => {
   console.error('Failed to start server:', error);

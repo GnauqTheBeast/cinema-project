@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { FaSearch, FaTicketAlt, FaFilm, FaClock, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
 import AdminLayout from '../../components/admin/AdminLayout'
+import TicketModal from '../../components/admin/TicketModal'
 import { bookingService } from '../../services/bookingService'
 import { showtimeService } from '../../services/showtimeApi'
 import { formatCurrency, formatDateTime } from '../../utils/formatters'
 
 const TicketSearchPage = () => {
+  const [searchParams] = useSearchParams()
   const [searchType, setSearchType] = useState('booking_id')
   const [searchValue, setSearchValue] = useState('')
   const [showtimes, setShowtimes] = useState([])
@@ -13,9 +16,18 @@ const TicketSearchPage = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showTicketModal, setShowTicketModal] = useState(false)
+  const [exportedTicket, setExportedTicket] = useState(null)
 
   useEffect(() => {
     fetchScheduledShowtimes().then()
+
+    const bookingIdFromUrl = searchParams.get('bookingId')
+    if (bookingIdFromUrl) {
+      setSearchType('booking_id')
+      setSearchValue(bookingIdFromUrl)
+      searchByBookingId(bookingIdFromUrl).then()
+    }
   }, [])
 
   const fetchScheduledShowtimes = async () => {
@@ -31,6 +43,37 @@ const TicketSearchPage = () => {
     }
   }
 
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+  const searchByBookingId = async (bookingId) => {
+    try {
+      setLoading(true)
+      setError('')
+      setSuccess('')
+
+      await delay(1500)
+
+      const response = await bookingService.searchTickets(bookingId, '')
+
+      if (response.code !== 200 || !response.data) {
+        setError('Không thể tìm kiếm vé')
+        return
+      }
+
+      const ticketsData = response.data.tickets || []
+      setTickets(ticketsData)
+
+      if (ticketsData.length === 0) {
+        setError('Không tìm thấy vé')
+      }
+    } catch (err) {
+      setError('Có lỗi xảy ra khi tìm kiếm vé')
+      console.error('Error searching tickets:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleSearch = async (e) => {
     e.preventDefault()
     setError('')
@@ -43,6 +86,9 @@ const TicketSearchPage = () => {
 
     try {
       setLoading(true)
+
+      await delay(1500)
+
       const response = await bookingService.searchTickets(
         searchType === 'booking_id' ? searchValue : '',
         searchType === 'showtime_id' ? searchValue : ''
@@ -68,7 +114,8 @@ const TicketSearchPage = () => {
   }
 
   const handleExportTicket = async (ticketId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xuất vé này? Vé sẽ được đánh dấu là đã sử dụng.')) {
+    const confirmed = window.confirm('Bạn có chắc chắn muốn xuất vé này? Vé sẽ được đánh dấu là đã sử dụng.')
+    if (!confirmed) {
       return
     }
 
@@ -78,8 +125,17 @@ const TicketSearchPage = () => {
       setSuccess('')
 
       const response = await bookingService.markTicketAsUsed(ticketId)
+
       if (response.code === 200) {
         setSuccess('Xuất vé thành công!')
+
+        const ticket = tickets.find(t => t.id === ticketId)
+
+        if (ticket) {
+          setExportedTicket(ticket)
+          setShowTicketModal(true)
+        }
+
         setTickets(tickets.map(t =>
           t.id === ticketId ? { ...t, status: 'USED' } : t
         ))
@@ -281,6 +337,15 @@ const TicketSearchPage = () => {
             </div>
           </div>
         )}
+
+        <TicketModal
+          ticket={exportedTicket}
+          isOpen={showTicketModal}
+          onClose={() => {
+            setShowTicketModal(false)
+            setExportedTicket(null)
+          }}
+        />
       </div>
     </AdminLayout>
   )

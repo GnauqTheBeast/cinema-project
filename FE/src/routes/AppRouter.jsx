@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AdminLoginPage from '../pages/admin/AdminLoginPage'
 import BoxOfficePage from '../pages/admin/BoxOfficePage'
+import BoxOfficePaymentPage from '../pages/admin/BoxOfficePaymentPage'
 import TicketSearchPage from '../pages/admin/TicketSearchPage'
 import ChatbotDocumentsPage from '../pages/admin/ChatbotDocumentsPage'
 import DashboardPage from '../pages/admin/DashboardPage'
@@ -18,6 +19,7 @@ import ShowtimeFormPage from '../pages/admin/ShowtimeFormPage'
 import ShowtimesPage from '../pages/admin/ShowtimesPage'
 import StaffPage from '../pages/admin/StaffPage'
 import StaffFormPage from '../pages/admin/StaffFormPage'
+import PermissionManagementPage from '../pages/admin/PermissionManagementPage'
 import BookingPage from '../pages/client/BookingPage'
 import BookingHistoryPage from '../pages/client/BookingHistoryPage'
 import BookingSuccessPage from '../pages/client/BookingSuccessPage'
@@ -61,6 +63,22 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
     const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}')
     if (adminUser.role !== 'ticket_staff') {
       return <Navigate to="/admin/dashboard" replace />
+    }
+
+    return children
+  }
+
+  const ManagerRoute = ({ children }) => {
+    if (!adminToken) {
+      return <Navigate to="/admin/login" replace />
+    }
+
+    const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}')
+    if (adminUser.role !== 'admin' && adminUser.role !== 'manager_staff') {
+      if (adminUser.role === 'ticket_staff') {
+        return <Navigate to="/admin/box-office" replace />
+      }
+      return <Navigate to="/admin/login" replace />
     }
 
     return children
@@ -128,9 +146,9 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
       <Route
         path="/admin/dashboard"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <DashboardPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
 
@@ -138,33 +156,33 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
       <Route
         path="/admin/movies"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <AdminMoviesPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
       <Route
         path="/admin/movies/new"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <MovieFormPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
       <Route
         path="/admin/movies/:id"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <MovieDetailPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
       <Route
         path="/admin/movies/:id/edit"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <MovieFormPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
 
@@ -172,17 +190,17 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
       <Route
         path="/admin/news"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <AdminNewsPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
       <Route
         path="/admin/news/:id/edit"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <NewsFormPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
 
@@ -190,25 +208,25 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
       <Route
         path="/admin/rooms"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <RoomsPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
       <Route
         path="/admin/rooms/new"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <RoomFormPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
       <Route
         path="/admin/rooms/:id/edit"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <RoomFormPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
 
@@ -216,25 +234,25 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
       <Route
         path="/admin/seats"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <SeatsPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
       <Route
         path="/admin/seats/new"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <SeatFormPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
       <Route
         path="/admin/seats/:id/edit"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <SeatFormPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
 
@@ -242,25 +260,25 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
       <Route
         path="/admin/showtimes"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <ShowtimesPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
       <Route
         path="/admin/showtimes/new"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <ShowtimeFormPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
       <Route
         path="/admin/showtimes/:id/edit"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <ShowtimeFormPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
 
@@ -268,9 +286,9 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
       <Route
         path="/admin/revenue"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <RevenueStatsPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
 
@@ -278,32 +296,42 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
       <Route
         path="/admin/staff"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <StaffPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
       <Route
         path="/admin/staff/new"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <StaffFormPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
       <Route
         path="/admin/staff/:id"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <StaffPage />
-          </AdminRoute>
+          </ManagerRoute>
         }
       />
       <Route
         path="/admin/staff/:id/edit"
         element={
-          <AdminRoute>
+          <ManagerRoute>
             <StaffFormPage />
+          </ManagerRoute>
+        }
+      />
+
+      {/* Permission Management */}
+      <Route
+        path="/admin/permissions"
+        element={
+          <AdminRoute>
+            <PermissionManagementPage />
           </AdminRoute>
         }
       />
@@ -313,6 +341,15 @@ const AppRouter = ({ token, setToken, adminToken, setAdminToken }) => {
         element={
           <TicketStaffRoute>
             <BoxOfficePage />
+          </TicketStaffRoute>
+        }
+      />
+
+      <Route
+        path="/admin/box-office/payment/:bookingId"
+        element={
+          <TicketStaffRoute>
+            <BoxOfficePaymentPage />
           </TicketStaffRoute>
         }
       />

@@ -49,98 +49,36 @@ func SeedRoles(ctx context.Context, db *bun.DB) error {
 }
 
 func SeedPermissions(ctx context.Context, db *bun.DB) error {
-	permissions := []*models.Permission{
-		{
+	permissionsData := []struct {
+		Name        string
+		Code        string
+		Description *string
+	}{
+		{"Movie Manage", "movie_manage", stringPtr("Manage movies (create, update, delete)")},
+		{"Showtime Manage", "showtime_manage", stringPtr("Manage movie showtimes")},
+		{"Seat Manage", "seat_manage", stringPtr("Manage cinema seats")},
+		{"Report View", "report_view", stringPtr("View analytics and operational reports")},
+		{"Profile View", "profile_view", stringPtr("View profile details")},
+		{"Profile Update", "profile_update", stringPtr("Update profile details")},
+		{"Booking Create", "booking_create", stringPtr("Create bookings")},
+		{"Booking Manage", "booking_manage", stringPtr("Manage bookings")},
+		{"Ticket Issue", "ticket_issue", stringPtr("Issue or print tickets")},
+		{"Payment Process", "payment_process", stringPtr("Handle payments for bookings")},
+		{"Ticket View", "ticket_view", stringPtr("View tickets")},
+		{"Staff Manage", "staff_manage", stringPtr("Manage staff accounts")},
+		{"News Manage", "news_manage", stringPtr("Manage news articles and summaries")},
+		{"Permission Manage", "permission_manage", stringPtr("Manage role permissions (assign/unassign)")},
+	}
+
+	var permissions []*models.Permission
+	for _, permData := range permissionsData {
+		permissions = append(permissions, &models.Permission{
 			Id:          uuid.New().String(),
-			Name:        "Movie Manage",
-			Code:        "movie_manage",
-			Description: stringPtr("Manage movies (create, update, delete)"),
+			Name:        permData.Name,
+			Code:        permData.Code,
+			Description: permData.Description,
 			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Showtime Manage",
-			Code:        "showtime_manage",
-			Description: stringPtr("Manage movie showtimes"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Seat Manage",
-			Code:        "seat_manage",
-			Description: stringPtr("Manage cinema seats"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Report View",
-			Code:        "report_view",
-			Description: stringPtr("View analytics and operational reports"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Profile View",
-			Code:        "profile_view",
-			Description: stringPtr("View profile details"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Profile Update",
-			Code:        "profile_update",
-			Description: stringPtr("Update profile details"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Booking Create",
-			Code:        "booking_create",
-			Description: stringPtr("Create bookings"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Booking Manage",
-			Code:        "booking_manage",
-			Description: stringPtr("Manage bookings"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Ticket Issue",
-			Code:        "ticket_issue",
-			Description: stringPtr("Issue or print tickets"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Payment Process",
-			Code:        "payment_process",
-			Description: stringPtr("Handle payments for bookings"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Ticket View",
-			Code:        "ticket_view",
-			Description: stringPtr("View tickets"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "Staff Manage",
-			Code:        "staff_manage",
-			Description: stringPtr("Manage staff accounts"),
-			CreatedAt:   time.Now(),
-		},
-		{
-			Id:          uuid.New().String(),
-			Name:        "News Manage",
-			Code:        "news_manage",
-			Description: stringPtr("Manage news articles and summaries"),
-			CreatedAt:   time.Now(),
-		},
+		})
 	}
 
 	_, err := db.NewInsert().Model(&permissions).Exec(ctx)
@@ -248,10 +186,6 @@ func SeedRolePermissions(ctx context.Context, db *bun.DB) error {
 		}
 	}
 
-	if len(rolePerms) == 0 {
-		return fmt.Errorf("no role-permission mappings to insert; check roles/permissions")
-	}
-
 	if _, err := db.NewInsert().Model(&rolePerms).Exec(ctx); err != nil {
 		return fmt.Errorf("failed to seed role_permissions: %w", err)
 	}
@@ -266,6 +200,7 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 	releaseDate2 := time.Date(2024, 4, 20, 0, 0, 0, 0, time.UTC)
 	releaseDate3 := time.Date(2024, 5, 10, 0, 0, 0, 0, time.UTC)
 	releaseDate4 := time.Date(2025, 6, 15, 0, 0, 0, 0, time.UTC)
+	releaseDate5 := time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC)
 
 	movies := []*models.Movie{
 		{
@@ -274,7 +209,6 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Slug:        "avengers-endgame",
 			Director:    "Anthony Russo, Joe Russo",
 			Cast:        "Robert Downey Jr., Chris Evans, Mark Ruffalo, Chris Hemsworth",
-			Genre:       "Action, Adventure, Drama",
 			Duration:    181,
 			ReleaseDate: &releaseDate1,
 			Description: "After the devastating events of Avengers: Infinity War, the universe is in ruins due to the efforts of the Mad Titan, Thanos.",
@@ -289,7 +223,6 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Slug:        "spider-man-no-way-home",
 			Director:    "Jon Watts",
 			Cast:        "Tom Holland, Zendaya, Benedict Cumberbatch, Jacob Batalon",
-			Genre:       "Action, Adventure, Sci-Fi",
 			Duration:    148,
 			ReleaseDate: &releaseDate2,
 			Description: "With Spider-Man's identity now revealed, Peter asks Doctor Strange for help. When a spell goes wrong, dangerous foes from other worlds start to appear.",
@@ -304,7 +237,6 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Slug:        "top-gun-maverick",
 			Director:    "Joseph Kosinski",
 			Cast:        "Tom Cruise, Miles Teller, Jennifer Connelly, Jon Hamm",
-			Genre:       "Action, Drama",
 			Duration:    130,
 			ReleaseDate: &releaseDate3,
 			Description: "After thirty years, Maverick is still pushing the envelope as a top naval aviator, but must confront ghosts of his past when he leads TOP GUN's elite graduates on a mission.",
@@ -319,7 +251,6 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Slug:        "dune",
 			Director:    "Denis Villeneuve",
 			Cast:        "Timothée Chalamet, Rebecca Ferguson, Oscar Isaac, Josh Brolin",
-			Genre:       "Action, Adventure, Drama, Sci-Fi",
 			Duration:    155,
 			ReleaseDate: &releaseDate1,
 			Description: "Paul Atreides, a brilliant and gifted young man born into a great destiny beyond his understanding, must travel to the most dangerous planet in the universe.",
@@ -334,7 +265,6 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Slug:        "the-batman",
 			Director:    "Matt Reeves",
 			Cast:        "Robert Pattinson, Zoë Kravitz, Paul Dano, Jeffrey Wright",
-			Genre:       "Action, Crime, Drama",
 			Duration:    176,
 			ReleaseDate: &releaseDate2,
 			Description: "When a sadistic serial killer begins murdering key political figures in Gotham, Batman is forced to investigate the city's hidden corruption and question his family's involvement.",
@@ -349,13 +279,26 @@ func SeedMovies(ctx context.Context, db *bun.DB) error {
 			Slug:        "zootopia",
 			Director:    "Byron Howard, Rich Moore",
 			Cast:        "Ginnifer Goodwin, Jason Bateman, Idris Elba, Jenny Slate",
-			Genre:       "Animation, Comedy, Adventure, Family",
 			Duration:    108,
 			ReleaseDate: &releaseDate4,
 			Description: "In a city of anthropomorphic animals, a rookie bunny cop and a cynical con artist fox must work together to uncover a conspiracy.",
 			TrailerURL:  "https://www.youtube.com/watch?v=jWM0ct-OLsM",
 			PosterURL:   "https://artofthemovies.co.uk/cdn/shop/files/IMG_1521_1024x1024@2x.jpg?v=1762441851",
 			Status:      "UPCOMING",
+			CreatedAt:   &now,
+		},
+		{
+			Id:          uuid.New().String(),
+			Title:       "Inception",
+			Slug:        "inception",
+			Director:    "Christopher Nolan",
+			Cast:        "Leonardo DiCaprio, Joseph Gordon-Levitt, Elliot Page, Tom Hardy",
+			Duration:    148,
+			ReleaseDate: &releaseDate5,
+			Description: "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
+			TrailerURL:  "https://www.youtube.com/watch?v=YoHD9XEInc0",
+			PosterURL:   "https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",
+			Status:      "SHOWING",
 			CreatedAt:   &now,
 		},
 	}
@@ -424,7 +367,6 @@ func SeedRooms(ctx context.Context, db *bun.DB) error {
 }
 
 func SeedUsers(ctx context.Context, db *bun.DB) error {
-	// Get role IDs first
 	var roles []models.Role
 	err := db.NewSelect().Model(&roles).Scan(ctx)
 	if err != nil {
@@ -491,6 +433,19 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 		},
 		{
 			Id:          uuid.New().String(),
+			Name:        "Ticket Staff 2",
+			Email:       "ticket2@cinema.com",
+			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+			PhoneNumber: stringPtr("+1234567892"),
+			RoleId:      &ticketStaffRoleId,
+			Address:     stringPtr("123 Ticket Street"),
+			Dob:         time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
+			Gender:      "female",
+			Status:      "ACTIVE",
+			CreatedAt:   now,
+		},
+		{
+			Id:          uuid.New().String(),
 			Name:        "Alice",
 			Email:       "alice@email.com",
 			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
@@ -528,6 +483,19 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 			Status:      "ACTIVE",
 			CreatedAt:   now,
 		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "Quang Nguyen",
+			Email:       "quangnguyenngoc314@gmail.com",
+			Password:    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+			PhoneNumber: stringPtr("+1234567894"),
+			RoleId:      &customerRoleId,
+			Address:     stringPtr("123 Emma Street"),
+			Dob:         time.Date(2003, 10, 5, 0, 0, 0, 0, time.UTC),
+			Gender:      "male",
+			Status:      "ACTIVE",
+			CreatedAt:   now,
+		},
 	}
 
 	_, err = db.NewInsert().Model(&users).Exec(ctx)
@@ -541,77 +509,77 @@ func SeedUsers(ctx context.Context, db *bun.DB) error {
 
 func SeedBookings(ctx context.Context, db *bun.DB) error {
 	var users []models.User
-	err := db.NewSelect().Model(&users).Limit(5).Scan(ctx)
+	err := db.NewSelect().Model(&users).Where("role_id IN (SELECT id FROM roles WHERE name = 'customer')").Scan(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get users: %w", err)
 	}
 
 	var showtimes []models.Showtime
-	err = db.NewSelect().Model(&showtimes).Limit(5).Scan(ctx)
+	err = db.NewSelect().Model(&showtimes).Scan(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get showtimes: %w", err)
 	}
 
-	var seats []models.Seat
-	err = db.NewSelect().Model(&seats).Limit(10).Scan(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get seats: %w", err)
+	if len(users) == 0 || len(showtimes) == 0 {
+		return fmt.Errorf("no users or showtimes found")
 	}
 
-	bookings := []models.Booking{
-		{
-			Id:          uuid.New().String(),
-			UserId:      users[3].Id,
-			ShowtimeId:  showtimes[0].Id,
-			TotalAmount: 200000,
-			Status:      "CONFIRMED",
-			CreatedAt:   time.Now().Add(-24 * time.Hour),
-		},
-		{
-			Id:          uuid.New().String(),
-			UserId:      users[3].Id,
-			ShowtimeId:  showtimes[1].Id,
-			TotalAmount: 100000,
-			Status:      "CONFIRMED",
-			CreatedAt:   time.Now().Add(-48 * time.Hour),
-		},
-		{
-			Id:          uuid.New().String(),
-			UserId:      users[3].Id,
-			ShowtimeId:  showtimes[2].Id,
-			TotalAmount: 300000,
-			Status:      "PENDING",
-			CreatedAt:   time.Now().Add(-72 * time.Hour),
-		},
-		{
-			Id:          uuid.New().String(),
-			UserId:      users[1].Id,
-			ShowtimeId:  showtimes[0].Id,
-			TotalAmount: 150000,
-			Status:      "CONFIRMED",
-			CreatedAt:   time.Now().Add(-96 * time.Hour),
-		},
-		{
-			Id:          uuid.New().String(),
-			UserId:      users[2].Id,
-			ShowtimeId:  showtimes[1].Id,
-			TotalAmount: 450000,
-			Status:      "CANCELLED",
-			CreatedAt:   time.Now().Add(-120 * time.Hour),
-		},
+	now := time.Now()
+	var bookings []models.Booking
+
+	// Generate bookings for the past 6 months
+	// Create bookings with varied dates and amounts
+	bookingAmounts := []float64{100000, 150000, 200000, 250000, 300000, 350000, 400000, 450000, 500000}
+	statuses := []string{"CONFIRMED", "CONFIRMED", "CONFIRMED", "CONFIRMED", "CONFIRMED", "PENDING", "CANCELLED"}
+
+	// Generate 10-20 bookings per month for the past 6 months
+	for monthsAgo := 0; monthsAgo < 6; monthsAgo++ {
+		bookingsInMonth := 10 + (monthsAgo % 11) // Vary between 10-20 bookings per month
+
+		for i := 0; i < bookingsInMonth; i++ {
+			// Random day in the month
+			daysAgo := (monthsAgo * 30) + (i % 28) // Distribute throughout the month
+			createdAt := now.AddDate(0, 0, -daysAgo)
+
+			userIdx := (monthsAgo*bookingsInMonth + i) % len(users)
+			showtimeIdx := (monthsAgo*bookingsInMonth + i) % len(showtimes)
+			amountIdx := (monthsAgo + i) % len(bookingAmounts)
+			statusIdx := i % len(statuses)
+
+			booking := models.Booking{
+				Id:          uuid.New().String(),
+				UserId:      users[userIdx].Id,
+				ShowtimeId:  showtimes[showtimeIdx].Id,
+				TotalAmount: bookingAmounts[amountIdx],
+				Status:      statuses[statusIdx],
+				CreatedAt:   createdAt,
+			}
+			bookings = append(bookings, booking)
+		}
 	}
 
-	_, err = db.NewInsert().Model(&bookings).Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to insert bookings: %w", err)
+	// Batch insert bookings
+	batchSize := 100
+	for i := 0; i < len(bookings); i += batchSize {
+		end := i + batchSize
+		if end > len(bookings) {
+			end = len(bookings)
+		}
+
+		batch := bookings[i:end]
+		_, err = db.NewInsert().Model(&batch).Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to insert bookings batch %d-%d: %w", i, end, err)
+		}
 	}
 
+	fmt.Printf("Bookings seeded successfully! Total: %d bookings\n", len(bookings))
 	return nil
 }
 
 func SeedTickets(ctx context.Context, db *bun.DB) error {
 	var bookings []models.Booking
-	err := db.NewSelect().Model(&bookings).Scan(ctx)
+	err := db.NewSelect().Model(&bookings).Where("status = ?", "CONFIRMED").Scan(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get bookings: %w", err)
 	}
@@ -622,29 +590,47 @@ func SeedTickets(ctx context.Context, db *bun.DB) error {
 		return fmt.Errorf("failed to get seats: %w", err)
 	}
 
-	var showtimes []models.Showtime
-	err = db.NewSelect().Model(&showtimes).Scan(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get seats: %w", err)
+	if len(bookings) == 0 || len(seats) == 0 {
+		return fmt.Errorf("no confirmed bookings or seats found")
 	}
 
-	tickets := make([]models.Ticket, 0)
-	for i := 0; i < len(bookings); i++ {
-		tickets = append(tickets, models.Ticket{
-			Id:         uuid.New().String(),
-			BookingId:  bookings[i].Id,
-			ShowtimeId: showtimes[i].Id,
-			Status:     models.TicketStatusUsed,
-			SeatId:     seats[i%len(seats)].Id,
-			CreatedAt:  time.Now(),
-		})
+	var tickets []models.Ticket
+	ticketsPerBooking := []int{1, 2, 2, 3, 4} // Vary number of tickets per booking
+
+	for i, booking := range bookings {
+		numTickets := ticketsPerBooking[i%len(ticketsPerBooking)]
+
+		for j := 0; j < numTickets; j++ {
+			seatIdx := (i*10 + j) % len(seats)
+
+			ticket := models.Ticket{
+				Id:         uuid.New().String(),
+				BookingId:  booking.Id,
+				ShowtimeId: booking.ShowtimeId,
+				Status:     models.TicketStatusUsed,
+				SeatId:     seats[seatIdx].Id,
+				CreatedAt:  booking.CreatedAt,
+			}
+			tickets = append(tickets, ticket)
+		}
 	}
 
-	_, err = db.NewInsert().Model(&tickets).Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to insert tickets: %w", err)
+	// Batch insert tickets
+	batchSize := 500
+	for i := 0; i < len(tickets); i += batchSize {
+		end := i + batchSize
+		if end > len(tickets) {
+			end = len(tickets)
+		}
+
+		batch := tickets[i:end]
+		_, err = db.NewInsert().Model(&batch).Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to insert tickets batch %d-%d: %w", i, end, err)
+		}
 	}
 
+	fmt.Printf("Tickets seeded successfully! Total: %d tickets\n", len(tickets))
 	return nil
 }
 
@@ -904,8 +890,8 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 	}
 
 	timeSlots := map[string][]string{
-		"morning":   {"09:00", "11:30"},
-		"afternoon": {"14:00", "16:30"},
+		"morning":   {"07:00"},
+		"afternoon": {"13:00"},
 		"evening":   {"19:00"},
 	}
 
@@ -917,18 +903,16 @@ func SeedShowtimes(ctx context.Context, db *bun.DB) error {
 				continue
 			}
 
-			for roomIdx, room := range rooms {
-				// Determine which format to use for this movie+room combination
-				// Ensure each time slot has only ONE format per movie per room per day
-				formats := make([]string, 0)
-				switch room.RoomType {
-				case "IMAX":
-					formats = []string{"2D", "3D", "IMAX"}
-				case "STANDARD", "VIP":
-					formats = []string{"2D", "3D"}
-				}
+			selectedRooms := make([]models.Room, 0)
+			selectedRooms = append(selectedRooms, rooms[movieIdx%len(rooms)])
 
-				selectedFormat := formats[(movieIdx+roomIdx+day)%len(formats)]
+			for _, room := range selectedRooms {
+				selectedFormat := "2D"
+				if room.RoomType == "IMAX" {
+					selectedFormat = "IMAX"
+				} else if (movieIdx+day)%3 == 0 {
+					selectedFormat = "3D"
+				}
 
 				for period, times := range timeSlots {
 					for _, timeStr := range times {
@@ -1118,7 +1102,6 @@ func SeedGenres(ctx context.Context, db *bun.DB) error {
 }
 
 func SeedMovieGenres(ctx context.Context, db *bun.DB) error {
-	// Get all movies and genres
 	var movies []models.Movie
 	err := db.NewSelect().Model(&movies).Scan(ctx)
 	if err != nil {
@@ -1140,28 +1123,21 @@ func SeedMovieGenres(ctx context.Context, db *bun.DB) error {
 		genreNameToId[g.Name] = g.Id
 	}
 
+	movieGenresMap := map[string][]string{
+		"Avengers: Endgame":       {"Action", "Adventure", "Drama"},
+		"Spider-Man: No Way Home": {"Action", "Adventure", "Sci-Fi"},
+		"Top Gun: Maverick":       {"Action", "Drama"},
+		"Dune":                    {"Action", "Adventure", "Drama", "Sci-Fi"},
+		"The Batman":              {"Action", "Crime", "Drama"},
+		"Zootopia":                {"Animation", "Comedy", "Adventure", "Family"},
+		"Inception":               {"Action", "Sci-Fi", "Thriller"},
+	}
+
 	var movieGenres []*models.MovieGenre
 	for _, movie := range movies {
-		if movie.Genre == "" {
+		genreNames, exists := movieGenresMap[movie.Title]
+		if !exists {
 			continue
-		}
-
-		var genreNames []string
-		switch movie.Genre {
-		case "Action, Adventure, Drama":
-			genreNames = []string{"Action", "Adventure", "Drama"}
-		case "Action, Adventure, Sci-Fi":
-			genreNames = []string{"Action", "Adventure", "Sci-Fi"}
-		case "Action, Drama":
-			genreNames = []string{"Action", "Drama"}
-		case "Action, Adventure, Drama, Sci-Fi":
-			genreNames = []string{"Action", "Adventure", "Drama", "Sci-Fi"}
-		case "Action, Crime, Drama":
-			genreNames = []string{"Action", "Crime", "Drama"}
-		case "Animation, Comedy, Adventure, Family":
-			genreNames = []string{"Animation", "Comedy", "Adventure", "Family"}
-		default:
-			genreNames = []string{"Drama"}
 		}
 
 		for _, genreName := range genreNames {

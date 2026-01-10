@@ -95,9 +95,9 @@ const NotificationPanel = ({ userId, isOpen, onClose }) => {
 
   const handleMarkAsRead = async (notificationId) => {
     try {
-      await notificationService.markNotificationAsRead(userId, notificationId, 'read')
+      await notificationService.markNotificationAsRead(userId, notificationId, 'READ')
       setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, status: 'read' } : n))
+        prev.map((n) => (n.id === notificationId ? { ...n, status: 'READ' } : n))
       )
       loadUnreadCount()
     } catch (error) {
@@ -107,24 +107,14 @@ const NotificationPanel = ({ userId, isOpen, onClose }) => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      const unreadIds = notifications.filter((n) => n.status !== 'read').map((n) => n.id)
+      const unreadIds = notifications.filter((n) => n.status !== 'READ').map((n) => n.id)
       if (unreadIds.length === 0) return
 
-      await notificationService.markAsRead(userId, unreadIds)
-      await loadNotifications(page)
-      await loadUnreadCount()
-    } catch (error) {
-      console.error('Failed to mark all as read:', error)
-    }
-  }
-
-  const handleDelete = async (notificationId) => {
-    try {
-      await notificationService.deleteNotification(userId, notificationId)
-      setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
+      await notificationService.markNotificationAsRead(userId, unreadIds, 'READ')
+      setNotifications((prev) => prev.map((n) => (n.id === unreadIds ? { ...n, status: 'READ' } : n)))
       loadUnreadCount()
     } catch (error) {
-      console.error('Failed to delete notification:', error)
+      console.error('Failed to mark notifications as read:', error)
     }
   }
 

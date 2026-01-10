@@ -12,15 +12,7 @@ export const bookingService = {
         params.append('status', status)
       }
 
-      const token = localStorage.getItem('token')
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      const response = await apiClient.get(`/bookings/me?${params.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await apiClient.get(`/bookings/me?${params.toString()}`)
       return response.data
     } catch (error) {
       console.error('Error fetching user bookings:', error)
@@ -30,17 +22,7 @@ export const bookingService = {
 
   createBooking: async (bookingData) => {
     try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      
-      const response = await apiClient.post('/bookings', bookingData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
+      const response = await apiClient.post('/bookings', bookingData)
       return response.data
     } catch (error) {
       console.error('Error creating booking:', error)
@@ -50,16 +32,7 @@ export const bookingService = {
 
   getBookingById: async (bookingId) => {
     try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        throw new Error('Token not found')
-      }
-
-      const response = await apiClient.get(`/bookings/${bookingId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await apiClient.get(`/bookings/${bookingId}`)
       return response.data
     } catch (error) {
       console.error('Error fetching booking:', error)

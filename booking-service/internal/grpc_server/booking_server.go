@@ -123,7 +123,7 @@ func (s *BookingServer) GetRevenueByTime(ctx context.Context, req *pb.GetRevenue
 		})
 	}
 
-	logrus.Infof("[gRPC] Successfully retrieved %d revenue records by time", len(data))
+	logrus.Infof("[gRPC] Successfully retrieved %d revenue records by time (grouped by day)", len(data))
 	return &pb.GetRevenueByTimeResponse{
 		Success: true,
 		Message: "Revenue by time retrieved successfully",

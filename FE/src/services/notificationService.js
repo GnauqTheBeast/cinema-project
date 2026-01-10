@@ -28,21 +28,7 @@ class NotificationService {
     return response.data
   }
 
-  async markAsRead(userId, notificationIds) {
-    const token = localStorage.getItem('token')
-    const response = await axios.post(
-      `${API_URL}/notifications/${userId}/mark-read`,
-      { notification_ids: notificationIds },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    )
-    return response.data
-  }
-
-  async markNotificationAsRead(userId, notificationId, status = 'read') {
+  async markNotificationAsRead(userId, notificationId, status = 'READ') {
     const token = localStorage.getItem('token')
     const response = await axios.put(
       `${API_URL}/notifications/${userId}/${notificationId}/status`,

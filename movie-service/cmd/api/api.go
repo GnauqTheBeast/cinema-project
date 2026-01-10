@@ -66,6 +66,7 @@ func startRouteV1(group *gin.RouterGroup) {
 		movies.GET("", movieApi.GetMovies)
 		movies.POST("", movieApi.CreateMovie)
 		movies.GET("/stats", movieApi.GetMovieStats)
+		movies.GET("/genres", movieApi.GetGenres)
 		movies.GET("/:id", movieApi.GetMovieById)
 		movies.PUT("/:id", movieApi.UpdateMovie)
 		movies.DELETE("/:id", movieApi.DeleteMovie)

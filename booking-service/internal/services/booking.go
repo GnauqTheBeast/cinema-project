@@ -248,17 +248,12 @@ func (s *BookingService) CreateBooking(ctx context.Context, userId string, showt
 		}
 	}
 
-	bookingStatus := models.BookingStatusPending
-	if bookingType == models.BookingTypeOffline {
-		bookingStatus = models.BookingStatusConfirmed
-	}
-
 	booking := &models.Booking{
 		Id:          uuid.New().String(),
 		UserId:      userId,
 		ShowtimeId:  showtimeId,
 		TotalAmount: expectedTotal,
-		Status:      bookingStatus,
+		Status:      models.BookingStatusPending,
 		BookingType: bookingType,
 	}
 

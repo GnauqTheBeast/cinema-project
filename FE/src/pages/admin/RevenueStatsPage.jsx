@@ -17,22 +17,22 @@ import {
 import AdminLayout from '../../components/admin/AdminLayout'
 import ShowtimeRevenueModal from '../../components/admin/ShowtimeRevenueModal'
 import analyticsService from '../../services/analyticsService'
-
-const COLORS = ['#10B981', '#22C55E', '#34D399', '#6EE7B7', '#A7F3D0', '#D1FAE5']
+import {
+  getLastDaysRange,
+  getLastMonthsRange,
+  getLastYearsRange,
+  getGroupByFromDateRange,
+  groupRevenueData
+} from '../../utils/dateUtils'
 
 export default function RevenueStatsPage() {
-  const [monthlyData, setMonthlyData] = useState([])
+  const [timeSeriesData, setTimeSeriesData] = useState([])
   const [movieData, setMovieData] = useState([])
-  const [genreData, setGenreData] = useState([])
   const [overallStats, setOverallStats] = useState({})
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
-  const [dateRange, setDateRange] = useState({
-    startDate: new Date(new Date().setMonth(new Date().getMonth() - 6))
-      .toISOString()
-      .split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
-  })
+  const [dateRange, setDateRange] = useState(getLastMonthsRange(6))
+  const [tempDateRange, setTempDateRange] = useState(getLastMonthsRange(6))
   const [selectedMovie, setSelectedMovie] = useState(null)
   const [showtimeData, setShowtimeData] = useState([])
   const [showtimeLoading, setShowtimeLoading] = useState(false)
@@ -42,56 +42,31 @@ export default function RevenueStatsPage() {
       try {
         setLoading(true)
 
-        const [timeData, movieRevenueData, genreRevenueData, totalRevenueData] =
+        const groupBy = getGroupByFromDateRange(dateRange.startDate, dateRange.endDate)
+
+        const [timeData, movieRevenueData, totalRevenueData] =
           await Promise.all([
-            analyticsService.getRevenueByTime(dateRange.startDate, dateRange.endDate, 180),
+            analyticsService.getRevenueByTime(dateRange.startDate, dateRange.endDate, 1000),
             analyticsService.getRevenueByMovie(dateRange.startDate, dateRange.endDate, 10),
-            analyticsService.getRevenueByGenre(dateRange.startDate, dateRange.endDate),
             analyticsService.getTotalRevenue(dateRange.startDate, dateRange.endDate),
           ])
 
-        const monthlyGrouped = {}
-        if (timeData.success && timeData.data) {
-          timeData.data.forEach((item) => {
-            const date = new Date(item.time_period)
-            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-            const monthName = date.toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' })
-
-            if (!monthlyGrouped[monthKey]) {
-              monthlyGrouped[monthKey] = {
-                monthName,
-                revenue: 0,
-                bookings: 0,
-              }
-            }
-
-            monthlyGrouped[monthKey].revenue += item.total_revenue
-            monthlyGrouped[monthKey].bookings += item.total_bookings
-          })
-        }
-
-        const monthly = Object.values(monthlyGrouped)
+        const timeSeriesData = timeData.success && timeData.data
+          ? groupRevenueData(timeData.data, groupBy).reverse()
+          : []
 
         const movies =
           movieRevenueData.success && movieRevenueData.data
             ? movieRevenueData.data.map((movie) => ({
-                movie_id: movie.movie_id,
-                title: movie.movie_title,
-                revenue: movie.total_revenue,
-                revenueFormatted: formatCurrency(movie.total_revenue),
-                ticketsSold: movie.total_tickets,
-                genre: 'N/A',
-              }))
+              movie_id: movie.movie_id,
+              title: movie.movie_title,
+              revenue: movie.total_revenue,
+              revenueFormatted: formatCurrency(movie.total_revenue),
+              ticketsSold: movie.total_tickets,
+              genre: 'N/A',
+            }))
             : []
 
-        const genres =
-          genreRevenueData.success && genreRevenueData.data
-            ? genreRevenueData.data.map((genre) => ({
-                genre: genre.genre,
-                revenue: genre.total_revenue,
-                revenueFormatted: formatCurrency(genre.total_revenue),
-              }))
-            : []
 
         const totalRevenue = totalRevenueData.success ? totalRevenueData.data.total_revenue : 0
         const totalTickets =
@@ -103,9 +78,8 @@ export default function RevenueStatsPage() {
             ? movieRevenueData.data.reduce((sum, movie) => sum + movie.total_bookings, 0)
             : 0
 
-        setMonthlyData(monthly)
+        setTimeSeriesData(timeSeriesData)
         setMovieData(movies)
-        setGenreData(genres)
         setOverallStats({
           totalRevenue,
           totalRevenueFormatted: formatCurrency(totalRevenue),
@@ -160,6 +134,21 @@ export default function RevenueStatsPage() {
     setShowtimeData([])
   }
 
+  const handleApplyDateRange = () => {
+    setDateRange(tempDateRange)
+  }
+
+  const handlePresetClick = (range) => {
+    setDateRange(range)
+    setTempDateRange(range)
+  }
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleApplyDateRange()
+    }
+  }
+
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
@@ -177,10 +166,9 @@ export default function RevenueStatsPage() {
   }
 
   const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'monthly', label: 'Monthly' },
-    { id: 'movies', label: 'By Movies' },
-    { id: 'genres', label: 'By Genres' },
+    { id: 'overview', label: 'Tổng quan' },
+    { id: 'monthly', label: 'Theo thời gian' },
+    { id: 'movies', label: 'Theo phim' },
   ]
 
   if (loading) {
@@ -188,7 +176,7 @@ export default function RevenueStatsPage() {
       <AdminLayout>
         <div className="text-center py-16 px-6">
           <div className="w-10 h-10 border-3 border-gray-100 border-t-emerald-500 rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-500">Loading revenue statistics...</p>
+          <p className="mt-4 text-gray-500">Đang tải thống kê doanh thu...</p>
         </div>
       </AdminLayout>
     )
@@ -202,16 +190,85 @@ export default function RevenueStatsPage() {
           <p className="m-0 text-gray-500 text-sm">Thống kê doanh thu một cách toàn diện</p>
         </div>
 
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-6">
+          <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Chọn khoảng thời gian</h3>
+          <div className="flex flex-col sm:flex-row gap-4 items-end">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ngày bắt đầu
+              </label>
+              <input
+                type="date"
+                value={tempDateRange.startDate}
+                onChange={(e) => setTempDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                onKeyPress={handleKeyPress}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ngày kết thúc
+              </label>
+              <input
+                type="date"
+                value={tempDateRange.endDate}
+                onChange={(e) => setTempDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                onKeyPress={handleKeyPress}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 opacity-0">
+                Áp dụng
+              </label>
+              <button
+                onClick={handleApplyDateRange}
+                className="px-6 py-2 text-sm bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors font-medium"
+              >
+                Áp dụng
+              </button>
+            </div>
+          </div>
+
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => handlePresetClick(getLastDaysRange(7))}
+              className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              7 ngày
+            </button>
+            <button
+              onClick={() => handlePresetClick(getLastDaysRange(30))}
+              className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              30 ngày
+            </button>
+            <button
+              onClick={() => handlePresetClick(getLastMonthsRange(6))}
+              className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              6 tháng
+            </button>
+            <button
+              onClick={() => handlePresetClick(getLastYearsRange(1))}
+              className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              1 năm
+            </button>
+          </div>
+        </div>
+
         <div className="flex gap-2 mb-6 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 px-6 py-3 rounded-lg text-sm font-medium transition-all ${
-                activeTab === tab.id
-                  ? 'bg-gradient-to-br from-emerald-500 to-red-600 text-white font-semibold'
-                  : 'bg-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-              }`}
+              className={`flex-1 px-6 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
+                ? 'bg-gradient-to-br from-emerald-500 to-red-600 text-white font-semibold'
+                : 'bg-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                }`}
             >
               {tab.label}
             </button>
@@ -223,7 +280,7 @@ export default function RevenueStatsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                 <h3 className="m-0 mb-2 text-gray-500 text-xs font-semibold uppercase tracking-wider">
-                  Total Revenue
+                  Tổng doanh thu
                 </h3>
                 <p className="m-0 text-3xl font-bold text-emerald-500">
                   {overallStats.totalRevenueFormatted}
@@ -232,7 +289,7 @@ export default function RevenueStatsPage() {
 
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                 <h3 className="m-0 mb-2 text-gray-500 text-xs font-semibold uppercase tracking-wider">
-                  Total Tickets
+                  Tổng vé bán
                 </h3>
                 <p className="m-0 text-3xl font-bold text-gray-900">
                   {overallStats.totalTickets?.toLocaleString()}
@@ -241,7 +298,7 @@ export default function RevenueStatsPage() {
 
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                 <h3 className="m-0 mb-2 text-gray-500 text-xs font-semibold uppercase tracking-wider">
-                  Avg Ticket Price
+                  Giá vé trung bình
                 </h3>
                 <p className="m-0 text-3xl font-bold text-gray-900">
                   {overallStats.averageTicketPriceFormatted}
@@ -250,7 +307,7 @@ export default function RevenueStatsPage() {
 
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                 <h3 className="m-0 mb-2 text-gray-500 text-xs font-semibold uppercase tracking-wider">
-                  Total Bookings
+                  Tổng đơn đặt
                 </h3>
                 <p className="m-0 text-3xl font-bold text-gray-900">
                   {overallStats.totalBookings?.toLocaleString()}
@@ -258,36 +315,13 @@ export default function RevenueStatsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Revenue by Genre</h3>
+                <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Xu hướng doanh thu</h3>
                 <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={genreData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ genre }) => genre}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="revenue"
-                    >
-                      {genreData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-
-              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Monthly Trend</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={monthlyData}>
+                  <LineChart data={timeSeriesData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                    <XAxis dataKey="monthName" tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
+                    <XAxis dataKey="displayName" tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
                     <YAxis tickFormatter={formatCurrency} tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
                     <Tooltip content={<CustomTooltip />} />
                     <Line
@@ -296,7 +330,7 @@ export default function RevenueStatsPage() {
                       stroke="#10B981"
                       strokeWidth={3}
                       dot={{ fill: '#FFFFFF', stroke: '#10B981', strokeWidth: 2, r: 5 }}
-                      name="Revenue"
+                      name="Doanh thu"
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -308,16 +342,16 @@ export default function RevenueStatsPage() {
         {activeTab === 'monthly' && (
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">
-              Monthly Revenue Breakdown
+              Doanh Thu Theo Thời Gian
             </h3>
             <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={monthlyData}>
+              <BarChart data={timeSeriesData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                <XAxis dataKey="monthName" tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
+                <XAxis dataKey="displayName" tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
                 <YAxis tickFormatter={formatCurrency} tick={{ fontSize: 12, fill: '#6B7280' }} stroke="#E5E7EB" />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 14 }} />
-                <Bar dataKey="revenue" fill="#10B981" name="Revenue" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="revenue" fill="#10B981" name="Doanh thu" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -326,52 +360,53 @@ export default function RevenueStatsPage() {
         {activeTab === 'movies' && (
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">
-              Top 10 Movies by Revenue
+              Doanh Thu Theo Phim
             </h3>
-            <ResponsiveContainer width="100%" height={500}>
-              <BarChart data={movieData} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                <XAxis
-                  type="number"
-                  tickFormatter={formatCurrency}
-                  tick={{ fontSize: 12, fill: '#6B7280' }}
-                  stroke="#E5E7EB"
-                />
-                <YAxis
-                  dataKey="title"
-                  type="category"
-                  width={150}
-                  tick={{ fontSize: 12, fill: '#6B7280' }}
-                  stroke="#E5E7EB"
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 14 }} />
-                <Bar dataKey="revenue" fill="#10B981" name="Revenue" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {movieData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={500}>
+                <BarChart data={movieData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                  <XAxis
+                    dataKey="title"
+                    tick={{ fontSize: 12, fill: '#6B7280' }}
+                    height={100}
+                    stroke="#E5E7EB"
+                  />
+                  <YAxis
+                    tickFormatter={formatCurrency}
+                    tick={{ fontSize: 12, fill: '#6B7280' }}
+                    stroke="#E5E7EB"
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 14 }} />
+                  <Bar dataKey="revenue" fill="#10B981" name="Doanh thu" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-16">
+                <p className="text-gray-500">Không có dữ liệu doanh thu theo phim</p>
+              </div>
+            )}
 
             <div className="mt-8">
               <h4 className="m-0 mb-1 text-base font-semibold text-gray-900">
-                Detailed Movie Statistics
+                Chi Tiết Doanh Thu Theo Phim
               </h4>
               <p className="text-sm text-gray-500 m-0 mb-4">
-                Click on any movie to view showtime-level details
+                Click để xem chi tiết
               </p>
               <div className="overflow-x-auto border border-gray-200 rounded-lg overflow-hidden">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-gray-50">
                       <th className="px-4 py-4 text-left border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Movie
-                      </th>
-                      <th className="px-4 py-4 text-left border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Genre
+                        Phim
                       </th>
                       <th className="px-4 py-4 text-right border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Revenue
+                        Doanh thu
                       </th>
                       <th className="px-4 py-4 text-right border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Tickets Sold
+                        Vé bán
                       </th>
                     </tr>
                   </thead>
@@ -383,7 +418,6 @@ export default function RevenueStatsPage() {
                         className="cursor-pointer transition-colors border-b border-gray-100 hover:bg-gray-50"
                       >
                         <td className="px-4 py-4 text-sm text-gray-900">{movie.title}</td>
-                        <td className="px-4 py-4 text-sm text-gray-500">{movie.genre}</td>
                         <td className="px-4 py-4 text-right text-sm font-semibold text-gray-900">
                           {movie.revenueFormatted}
                         </td>
@@ -399,61 +433,6 @@ export default function RevenueStatsPage() {
           </div>
         )}
 
-        {activeTab === 'genres' && (
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="m-0 mb-4 text-lg font-semibold text-gray-900">Revenue by Genre</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ResponsiveContainer width="100%" height={400}>
-                <PieChart>
-                  <Pie
-                    data={genreData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ genre, revenue }) =>
-                      `${genre}: ${((revenue / overallStats.totalRevenue) * 100).toFixed(1)}%`
-                    }
-                    outerRadius={120}
-                    fill="#8884d8"
-                    dataKey="revenue"
-                  >
-                    {genreData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: 14 }} />
-                </PieChart>
-              </ResponsiveContainer>
-
-              <div>
-                <h4 className="m-0 mb-4 text-base font-semibold text-gray-900">Genre Breakdown</h4>
-                {genreData.map((genre, index) => (
-                  <div
-                    key={index}
-                    className="flex justify-between items-center px-4 py-3 mb-2 bg-gray-50 rounded-lg border border-gray-200"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-4 h-4 rounded"
-                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                      ></div>
-                      <span className="font-semibold text-gray-900 text-sm">{genre.genre}</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-gray-900 text-base">
-                        {genre.revenueFormatted}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {((genre.revenue / overallStats.totalRevenue) * 100).toFixed(1)}%
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {selectedMovie && (

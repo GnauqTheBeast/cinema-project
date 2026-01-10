@@ -43,36 +43,12 @@ async function startServer() {
         app.get('/api/v1/chatbot/document/:id/chunks', (req, res) =>
             documentHandler.getDocumentChunks(req, res),
         )
-        app.post('/api/v1/chatbot/chat/ask', (req, res) => chatHandler.askQuestion(req, res))
 
         app.post('/document/upload', (req, res) => documentHandler.uploadDocument(req, res))
         app.get('/document/list', (req, res) => documentHandler.listDocuments(req, res))
         app.get('/document/:id', (req, res) => documentHandler.getDocument(req, res))
         app.delete('/document/:id', (req, res) => documentHandler.deleteDocument(req, res))
         app.get('/document/:id/chunks', (req, res) => documentHandler.getDocumentChunks(req, res))
-        app.post('/chat/ask', (req, res) => chatHandler.askQuestion(req, res))
-
-        app.get('/', (_req, res) => {
-            res.status(200).json({
-                message: 'RAG Chatbot API - TypeScript Version',
-                version: '1.0.0',
-                endpoints: {
-                    health: 'GET /health',
-                    chatbot:
-                        'POST /api/v1/chatbot/message - Body: { "message": "your message", "conversation_id": "optional" }',
-                    chat: {
-                        ask: 'POST /chat/ask - Body: { "question": "your question" }',
-                    },
-                    document: {
-                        upload: 'POST /document/upload - Form: document (file), title (optional)',
-                        list: 'GET /document/list?limit=10&offset=0',
-                        get: 'GET /document/:id',
-                        delete: 'DELETE /document/:id',
-                        chunks: 'GET /document/:id/chunks',
-                    },
-                },
-            })
-        })
 
         app.get('/health', (_req, res) => {
             res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() })

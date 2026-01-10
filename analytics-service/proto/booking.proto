@@ -27,6 +27,7 @@ message UpdateBookingStatusResponse {
 
 message CreateTicketsRequest {
   string booking_id = 1;
+  repeated string seat_ids = 2;
 }
 
 message CreateTicketsResponse {

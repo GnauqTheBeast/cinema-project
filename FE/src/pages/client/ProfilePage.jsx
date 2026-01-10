@@ -194,11 +194,11 @@ export default function ProfilePage() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'confirmed':
+      case 'CONFIRMED':
         return 'bg-green-600/20 text-green-400'
-      case 'pending':
+      case 'PENDING':
         return 'bg-yellow-600/20 text-yellow-400'
-      case 'cancelled':
+      case 'CANCELLED':
         return 'bg-red-600/20 text-red-400'
       default:
         return 'bg-gray-600/20 text-gray-400'
@@ -358,7 +358,7 @@ export default function ProfilePage() {
                   <input
                     type="tel"
                     value={editForm.phone_number}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    onChange={(e) => handleInputChange('phone_number', e.target.value)}
                     className="w-full bg-black border border-gray-600 text-white px-3 py-2 rounded-lg focus:outline-none focus:border-red-600"
                   />
                 ) : (

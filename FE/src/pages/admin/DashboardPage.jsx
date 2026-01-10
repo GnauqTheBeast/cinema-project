@@ -41,7 +41,7 @@ export default function DashboardPage() {
   const [weekRange, setWeekRange] = useState({ startDate: '', endDate: '' })
 
   useEffect(() => {
-    fetchDashboardData()
+    fetchDashboardData().then()
   }, [])
 
   const calculateChange = (current, previous) => {
@@ -123,16 +123,17 @@ export default function DashboardPage() {
     }
 
     if (dailyRevenue.success && dailyRevenue.data) {
-      const chartData = dailyRevenue.data.map((item) => ({
-        day: getDayName(item.time_period),
-        date: item.time_period,
-        revenue: item.total_revenue,
-      }))
+      const chartData = dailyRevenue.data
+        .map((item) => ({
+          day: getDayName(item.time_period),
+          date: item.time_period,
+          revenue: item.total_revenue,
+        }))
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
       setDailyData(chartData)
     }
 
     if (movieStatsData.data) {
-      // Transform array response to expected format
       const statsArray = movieStatsData.data
       const transformed = {
         total: 0,

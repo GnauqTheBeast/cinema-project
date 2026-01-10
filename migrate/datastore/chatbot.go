@@ -45,7 +45,12 @@ func CreateDocumentTable(ctx context.Context, db *bun.DB) error {
 }
 
 func CreateDocumentChunkTable(ctx context.Context, db *bun.DB) error {
-	_, err := db.NewCreateTable().
+	_, err := db.Exec("CREATE EXTENSION IF NOT EXISTS vector")
+	if err != nil {
+		return fmt.Errorf("failed to create pgvector extension: %w", err)
+	}
+
+	_, err = db.NewCreateTable().
 		Model((*models.DocumentChunk)(nil)).
 		IfNotExists().
 		ForeignKey("(document_id) REFERENCES documents(id) ON DELETE CASCADE").

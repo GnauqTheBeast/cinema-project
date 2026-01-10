@@ -57,7 +57,6 @@ export class UserService {
       throw new Error(ErrorMessages.INVALID_REQUEST);
     }
 
-    // Check authorization
     if (requestingUserId && requestingUserId !== userId) {
       if (!requestingUserRole || !['admin', 'manager_staff'].includes(requestingUserRole)) {
         throw new Error('You can only update your own profile');
@@ -72,7 +71,6 @@ export class UserService {
       throw new Error(ErrorMessages.USER_NOT_FOUND);
     }
 
-    // Build update fields
     const updateFields: any = {};
     if (updateData.name) updateFields.name = updateData.name;
     if (updateData.phone_number) updateFields.phone_number = updateData.phone_number;
